@@ -1,0 +1,136 @@
+///
+/// Aura Backend Theme - Community Edition — Views (shared chrome)
+///
+/// This file contains ONLY:
+///   1. :root design-system tokens (consumed by every view file)
+///   2. .o_control_panel — breadcrumbs, pager, view-switcher
+///
+/// All view-specific styles live in their own files and are registered
+/// directly in __manifest__.py (no SCSS @import needed):
+///
+///   views/form_view/form_view.scss
+///   views/list_view/list_view.scss
+///   views/kanban_view/kanban_view.scss
+///   views/activity_view/activity_view.scss
+///   views/search_panel/search_panel.scss
+///   views/others/others.scss  (pivot, graph, gantt, map, cohort, dialogs,
+///                               settings sidebar)
+///   views/calendar_view/calendar_view.scss
+///
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 1. DESIGN-SYSTEM TOKENS  — consumed by every view via var(--tbt-*)
+// ════════════════════════════════════════════════════════════════════════════
+
+:root {
+    // Surfaces
+    --tbt-bg:                  var(--tbt-content-bg-dynamic, #f6f6f6);
+    --tbt-surface-low:         #f1f2f4;
+    --tbt-surface-card:        var(--tbt-card-bg-dynamic, #ffffff);
+    --tbt-surface-high:        #ebecef;
+
+    // On-surface text
+    --tbt-on-surface:          #0c0f0f;
+    --tbt-on-surface-variant:  #5a5c5c;
+
+    // Borders / outlines
+    --tbt-outline-ghost:       rgba(171, 173, 175, .15);
+
+    // Colour roles
+    --tbt-primary:             #555b70;
+    --tbt-primary-container:   var(--tbt-brand-color-soft,   #edf1ff);
+    --tbt-secondary:           var(--tbt-brand-color,        #242424);
+    --tbt-secondary-container: var(--tbt-brand-color-softer, #e9eeff);
+    --tbt-tertiary:            var(--tbt-brand-color-emphasis, #0846ed);
+    --tbt-tertiary-container:  #dfe7ff;
+    --tbt-error:               #b3261e;
+    --tbt-error-container:     #f9e2e0;
+
+    // Reusable ambient shadow (brand-tinted, DESIGN.md §4)
+    --tbt-overlay-shadow: 0 0 60px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), 0.06);
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 2. CONTROL PANEL  — breadcrumbs, pager, view-switcher
+//    Shared by all views; lives here rather than in a single view file
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_control_panel {
+    background: var(--tbt-surface-low);
+    border-bottom: none;
+    box-shadow: none;
+
+    // ── Breadcrumbs ───────────────────────────────────────────────────────────
+    .breadcrumb {
+        font-size: 0.8125rem;
+        font-weight: 500;
+
+        .breadcrumb-item {
+            color: var(--tbt-on-surface-variant);
+
+            + .breadcrumb-item::before { color: #99a2aa; }
+
+            &.active,
+            &:last-child {
+                color: var(--tbt-on-surface);
+                font-weight: 600;
+            }
+
+            a {
+                color: var(--tbt-on-surface-variant);
+                text-decoration: none;
+
+                &:hover { color: var(--tbt-secondary); }
+            }
+        }
+    }
+
+    // ── Pager ─────────────────────────────────────────────────────────────────
+    .o_pager {
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--tbt-on-surface-variant);
+
+        .o_pager_previous,
+        .o_pager_next {
+            border-radius: 0.625rem;
+            border: 1px solid var(--tbt-outline-ghost);
+            background: var(--tbt-surface-card);
+            color: var(--tbt-on-surface-variant);
+            transition: background-color 0.12s ease, border-color 0.12s ease;
+
+            &:hover {
+                background: var(--tbt-primary-container);
+                border-color: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .2);
+                color: var(--tbt-secondary);
+            }
+        }
+    }
+
+    // ── View-switcher (list / kanban / form …) ────────────────────────────────
+    .o_switch_view {
+        border-radius: 0.625rem;
+        border: 1px solid transparent;
+        color: var(--tbt-on-surface-variant);
+        transition: background-color 0.12s ease, color 0.12s ease;
+
+        &:hover {
+            background: var(--tbt-primary-container);
+            color: var(--tbt-secondary);
+        }
+
+        &.active {
+            background: var(--tbt-primary-container);
+            color: var(--tbt-secondary);
+            border-color: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .2);
+        }
+    }
+}
+
+// Keep only CRM "Expected Revenue" input transparent inside form title rows.
+.o_form_view .oe_title [name="expected_revenue"] input.o_input,
+.o_form_view .oe_title input[id^="expected_revenue_"].o_input {
+    background: transparent !important;
+}

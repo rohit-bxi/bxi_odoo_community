@@ -1,0 +1,135 @@
+// Aura Backend Theme - Community Edition — Signup / reset password page
+// Keeps auth signup pages visually aligned with the login page.
+
+body.bg-100 .oe_signup_form,
+body.bg-100 .oe_reset_password_form {
+    .form-label,
+    .col-form-label {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #5a5c5c;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: .55rem;
+    }
+
+    .form-control {
+        border: 1px solid var(--tbt-outline-ghost, #dadee1);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.05);
+        color: #0c0f0f;
+        font-size: 1rem;
+        padding: 0.75rem 1rem;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+
+        &::placeholder {
+            color: #9ca3af;
+        }
+
+        &:focus {
+            border: 1px solid var(--tbt-brand-color, #242424);
+            box-shadow: 0 0 0 4px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .1);
+            background: #ffffff;
+            outline: none;
+        }
+
+        &:hover:not(:focus) {
+            border-color: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .3);
+            background: #ffffff;
+        }
+    }
+
+    .input-group {
+        .form-control {
+            border-radius: 6px 0 0 6px;
+            border-right: none;
+            padding-right: 1rem;
+        }
+
+        .btn {
+            border: 1px solid var(--tbt-outline-ghost, #dadee1);
+            border-left: none;
+            border-radius: 0 6px 6px 0;
+            background: rgba(255, 255, 255, 0.05);
+            color: #5a5c5c;
+            padding: 0 1rem;
+            transition: all 0.15s ease;
+
+            &:hover {
+                color: var(--tbt-brand-color, #242424);
+                background: #ffffff;
+                border-color: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .3);
+            }
+        }
+
+        &:focus-within {
+            .form-control, .btn {
+                border-color: var(--tbt-brand-color, #242424);
+            }
+        }
+    }
+
+    .oe_login_buttons {
+        margin-top: 1rem;
+
+        .btn-primary {
+            width: 100%;
+            background: var(--tbt-brand-color, #242424);
+            border: 1px solid var(--tbt-brand-color, #242424);
+            border-radius: .375rem;
+            color: #ffffff;
+            font-size: 1.02rem;
+            font-weight: 700;
+            padding: .8rem 1rem;
+            box-shadow: none;
+
+            &:hover {
+                background: var(--tbt-brand-color-dark, #002388);
+                border-color: var(--tbt-brand-color-dark, #002388);
+                transform: none;
+                box-shadow: none;
+            }
+        }
+
+        .btn-link {
+            display: inline-block;
+            margin-top: .7rem;
+            color: #5a5c5c;
+            font-size: .9rem;
+
+            &:hover {
+                color: var(--tbt-brand-color, #242424);
+            }
+        }
+    }
+
+    .alert {
+        border-radius: 0.75rem;
+        border: 1px solid rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .12);
+        background: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .06);
+        color: #0c0f0f;
+    }
+
+    .field-name,
+    .field-login,
+    .field-password,
+    .field-confirm_password {
+        margin-bottom: 1rem;
+    }
+}
+
+body.bg-100 .oe_signup_form .field-name input,
+body.bg-100 .oe_signup_form .field-login input,
+body.bg-100 .oe_signup_form .field-password input,
+body.bg-100 .oe_signup_form .field-confirm_password input,
+body.bg-100 .oe_reset_password_form .field-login input,
+body.bg-100 .oe_reset_password_form .field-password input,
+body.bg-100 .oe_reset_password_form .field-confirm_password input {
+    width: 100%;
+}
+
+body.bg-100 .oe_signup_form .oe_login_buttons .btn-link,
+body.bg-100 .oe_reset_password_form .oe_login_buttons .btn-link {
+    padding-left: 0;
+    padding-right: 0;
+}

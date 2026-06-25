@@ -1,0 +1,315 @@
+///
+/// Aura Backend Theme - Community Edition — Other Views
+///
+/// Covers: pivot, graph, calendar, gantt, map, cohort, dashboard views,
+///         dialogs/modals, and settings form sidebar.
+///
+/// Design rules (DESIGN.md §2 No-Line, §4 Elevation):
+///   • Surface tonal layering instead of borders for structure
+///   • Brand-tinted accents on active/selected states
+///   • Ambient shadow (0 0 60px rgba(brand, .06)) for floating panels
+///
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 1. PIVOT VIEW  (.o_pivot)
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_pivot {
+    background: var(--tbt-surface-card, #ffffff);
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: none;
+    overflow: hidden;
+
+    table {
+        border-collapse: collapse;
+    }
+
+    // Row/column header cells
+    .o_pivot_header_cell_opened,
+    .o_pivot_header_cell_closed {
+        background: var(--tbt-surface-low, #f1f2f4);
+        border: none;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--tbt-on-surface-variant, #5a5c5c);
+        padding: 0.65rem 1rem;
+        cursor: pointer;
+        transition: background-color 0.1s ease, color 0.1s ease;
+
+        &:hover {
+            background: var(--tbt-brand-color-soft, #edf1ff);
+            color: var(--tbt-brand-color, #242424);
+        }
+    }
+
+    // Measure row header
+    .o_pivot_measure_row {
+        background: var(--tbt-surface-low, #f1f2f4);
+        border: none;
+
+        th {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--tbt-on-surface-variant, #5a5c5c);
+            padding: 0.5rem 1rem;
+            border: none;
+        }
+    }
+
+    // Data cells
+    .o_pivot_cell_value {
+        border: none;
+        font-size: 0.875rem;
+        color: var(--tbt-on-surface, #0c0f0f);
+        padding: 0.6rem 1rem;
+        text-align: right;
+        transition: background-color 0.1s ease;
+
+        &:hover {
+            background: var(--tbt-brand-color-soft, #edf1ff);
+        }
+    }
+
+    // Grand total row/column — slightly stronger surface
+    tfoot td,
+    .o_pivot_origin_row td {
+        background: var(--tbt-surface-low, #f1f2f4) !important;
+        font-weight: 700;
+        border: none !important;
+    }
+
+    // Alternating rows — no lines, tonal shift
+    tbody tr:nth-child(even) td {
+        background: var(--tbt-bg, #f6f6f6);
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 2. GRAPH VIEW  (.o_graph_renderer)
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_graph_renderer {
+    background: var(--tbt-surface-card, #ffffff);
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: none;
+    padding: 1.25rem;
+
+    // Chart canvas container
+    .o_graph_canvas_container {
+        background: transparent;
+    }
+
+    // Alert when too many data points
+    .o_graph_alert {
+        background: var(--tbt-brand-color-soft, #edf1ff);
+        border: none;
+        border-radius: 8px;
+        color: var(--tbt-brand-color, #242424);
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding: 0.75rem 1rem;
+        margin: 0.75rem 0;
+    }
+
+    // "Load all" data button
+    .o_graph_load_all_btn {
+        background: var(--tbt-brand-color-soft, #edf1ff);
+        border: none;
+        border-radius: 999px;
+        color: var(--tbt-brand-color, #242424);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        padding: 0.4rem 1rem;
+        transition: background-color 0.12s ease;
+
+        &:hover {
+            background: var(--tbt-brand-color, #242424);
+            color: #ffffff;
+        }
+    }
+
+    // Custom tooltip
+    .o_graph_custom_tooltip {
+        background: #ffffff;
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 0 60px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), 0.06),
+                    0 12px 30px -20px rgba(12, 15, 15, .35);
+        padding: 0.65rem 0.85rem;
+        font-size: 0.8125rem;
+        color: var(--tbt-on-surface, #0c0f0f);
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// 4. GANTT VIEW  (.o_gantt_view)
+//    (Enterprise/Community addon — safe to include as it won't error if absent)
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_gantt_view {
+    background: var(--tbt-surface-card, #ffffff);
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: none;
+    overflow: hidden;
+
+    // Row separators — ghost level (No-line rule: 15% opacity max)
+    .o_gantt_row {
+        border-bottom: 1px solid rgba(171, 173, 173, .1);
+        transition: background-color 0.1s ease;
+
+        &:hover {
+            background: var(--tbt-brand-color-soft, #edf1ff);
+        }
+    }
+
+    // Period header cells
+    .o_gantt_header_cell {
+        background: var(--tbt-surface-low, #f1f2f4);
+        border: none;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--tbt-on-surface-variant, #5a5c5c);
+        padding: 0.5rem 0.75rem;
+    }
+
+    // Task pills inside the gantt
+    .o_gantt_pill {
+        border-radius: 6px;
+        border: none;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: box-shadow 0.12s ease;
+
+        &:hover {
+            box-shadow: 0 0 60px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), 0.12);
+        }
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 5. MAP VIEW  (.o_map_view)
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_map_view {
+    background: var(--tbt-surface-card, #ffffff);
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: none;
+    overflow: hidden;
+
+    .o_map_renderer {
+        border: none;
+        border-radius: 0 0 0.5rem 0.5rem;
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 6. COHORT VIEW  (.o_cohort_view)
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_cohort_view {
+    background: var(--tbt-surface-card, #ffffff);
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: none;
+    padding: 1rem;
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    thead th {
+        background: var(--tbt-surface-low, #f1f2f4);
+        border: none;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--tbt-on-surface-variant, #5a5c5c);
+        padding: 0.6rem 1rem;
+    }
+
+    tbody td {
+        border: none;
+        padding: 0.55rem 1rem;
+        font-size: 0.875rem;
+        color: var(--tbt-on-surface, #0c0f0f);
+        transition: background-color 0.1s ease;
+    }
+
+    tbody tr:nth-child(even) td {
+        background: var(--tbt-surface-low, #f1f2f4);
+    }
+
+    tbody tr:hover td {
+        background: var(--tbt-brand-color-soft, #edf1ff);
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 7. DIALOGS / MODALS  (.o_dialog)
+//    Ghost border at 15% opacity — satisfies the "Ghost Border" spec §4
+//    Brand-tinted ambient shadow instead of a grey drop-shadow
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_dialog {
+
+    .modal-content {
+        border: 1px solid rgba(171, 173, 173, .15);   // ghost border (§4)
+        border-radius: 14px;
+        box-shadow: 0 0 60px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .06);
+        overflow: hidden;
+    }
+
+    .modal-header {
+        background: var(--tbt-surface-card, #ffffff);
+        border-bottom: 1px solid rgba(171, 173, 173, .15);
+        padding: 1.1rem 1.5rem;
+
+        .modal-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #0c0f0f;
+            letter-spacing: -0.01em;
+        }
+
+        .btn-close {
+            opacity: 0.45;
+            transition: opacity 0.12s ease;
+            &:hover { opacity: 0.85; }
+        }
+    }
+
+    .modal-body {
+        padding: 1.25rem 1.5rem;
+        color: var(--tbt-on-surface-variant, #5a5c5c);
+        font-size: 0.875rem;
+    }
+
+    .modal-footer {
+        background: var(--tbt-surface-low, #f6f6f6);
+        border-top: 1px solid rgba(171, 173, 173, .15);
+        padding: 0.85rem 1.5rem;
+        gap: 0.5rem;
+    }
+}
+
+

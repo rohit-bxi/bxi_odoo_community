@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="aura_backend_theme_free.ChatterRootTheme"
+       t-inherit="mail.Chatter"
+       t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o-mail-Chatter')]" position="attributes">
+            <attribute name="class" add="tbt_chatter_root" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('o-mail-Chatter-topbar')]" position="attributes">
+            <attribute name="class" add="tbt_chatter_topbar" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('o-mail-Chatter-content')]" position="attributes">
+            <attribute name="class" add="tbt_chatter_content" separator=" "/>
+        </xpath>
+    </t>
+
+</templates>

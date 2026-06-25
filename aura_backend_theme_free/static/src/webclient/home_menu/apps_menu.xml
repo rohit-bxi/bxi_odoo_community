@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <t t-name="aura_backend_theme_free.NavBarAppsMenu"
+     t-inherit="web.NavBar.AppsMenu"
+     t-inherit-mode="extension">
+
+    <xpath expr="//div[hasclass('o_navbar_apps_menu')]" position="attributes">
+      <attribute name="class" add="tbt_dashboard_menu" separator=" "/>
+    </xpath>
+
+    <xpath expr="//Dropdown/button" position="replace">
+      <button data-hotkey="h" class="tbt_dashboard_toggle" title="Home Menu">
+        <i class="oi oi-apps"/>
+        <span class="d-none d-xl-inline">Workspace</span>
+      </button>
+    </xpath>
+
+    <xpath expr="//t[@t-set-slot='content']" position="replace">
+      <t t-set-slot="content">
+        <div class="tbt_dashboard_dropdown">
+          <div class="tbt_dashboard_overview">
+            <div class="tbt_dashboard_profile">
+              <img
+                class="tbt_dashboard_avatar"
+                t-att-src="'/web/image?model=res.users&amp;id=' + env.services.user.userId + '&amp;field=avatar_128'"
+                alt="User avatar"
+              />
+              <div class="tbt_dashboard_profile_meta">
+                <div class="tbt_dashboard_profile_name" t-esc="env.services.user.name"/>
+                <div class="tbt_dashboard_profile_login" t-esc="'User #' + env.services.user.userId"/>
+              </div>
+            </div>
+            <div class="tbt_dashboard_landing">
+              <div class="tbt_dashboard_landing_title">Landing Page</div>
+              <div class="tbt_dashboard_landing_value" t-esc="menuService.getCurrentApp() and menuService.getCurrentApp().name or 'Dashboard'"/>
+              <div class="tbt_dashboard_landing_hint">Open the app below to continue where you left off.</div>
+            </div>
+          </div>
+
+          <div class="tbt_dashboard_dropdown_head">
+            <div class="tbt_dashboard_title">Apps</div>
+            <div class="tbt_dashboard_hint">Press H to toggle</div>
+          </div>
+          <div class="tbt_dashboard_apps">
+            <DropdownItem
+              t-foreach="apps"
+              t-as="app"
+              t-key="app.id"
+              class="{ 'o_app': true, 'tbt_dashboard_app': true, focus: menuService.getCurrentApp() === app }"
+              onSelected="() => this.onNavBarDropdownItemSelection(app)"
+              t-esc="app.name"
+              attrs="{ href: getMenuItemHref(app), 'data-menu-xmlid': app.xmlid, 'data-section': app.id }"
+            />
+          </div>
+
+          <div class="tbt_dashboard_quick_actions">
+            <a class="tbt_dashboard_quick_link" href="/odoo/settings">Settings</a>
+            <a class="tbt_dashboard_quick_link" href="/odoo">Dashboard</a>
+          </div>
+        </div>
+      </t>
+    </xpath>
+
+  </t>
+
+  <t t-name="aura_backend_theme_free.NavBarAppsMenuSidebar"
+     t-inherit="web.NavBar.AppsMenu.Sidebar"
+     t-inherit-mode="extension">
+
+    <xpath expr="//div[hasclass('o_app_menu_sidebar')]" position="attributes">
+      <attribute name="class" add="tbt_dashboard_sidebar" separator=" "/>
+    </xpath>
+
+    <xpath expr="//li[contains(@class, 'o_app fw-bolder py-2')]" position="attributes">
+      <attribute name="class" add="tbt_dashboard_mobile_app" separator=" "/>
+    </xpath>
+
+  </t>
+
+</templates>

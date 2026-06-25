@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="tbt_login_layout" inherit_id="web.login_layout" priority="10">
+
+      <xpath expr="//div[contains(concat(' ', normalize-space(@class), ' '), ' container ')]" position="attributes">
+        <attribute name="style"/>
+      </xpath>
+
+      <xpath expr="//div[contains(concat(' ', normalize-space(@class), ' '), ' card-body ')]/div[contains(concat(' ', normalize-space(@class), ' '), ' text-center ') and contains(concat(' ', normalize-space(@class), ' '), ' pb-3 ')]" position="before">
+        <div class="tbt-login-head mb-4">
+          <!-- <h2 class="tbt-login-welcome-text">Welcome Back!</h2> -->
+        </div>
+      </xpath>
+
+      <xpath expr="//div[contains(concat(' ', normalize-space(@class), ' '), ' card-body ')]/div[contains(concat(' ', normalize-space(@class), ' '), ' text-center ') and contains(concat(' ', normalize-space(@class), ' '), ' pb-3 ')]" position="attributes">
+        <attribute name="class" add="tbt-login-stock-logo" separator=" "/>
+      </xpath>
+
+    </template>
+
+</odoo>

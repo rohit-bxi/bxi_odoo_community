@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Background -->
+  <rect width="128" height="128" rx="22" fill="#4f46e5"/>
+  <!-- Subtle inner glow -->
+  <rect width="128" height="128" rx="22" fill="url(#grad)"/>
+  <defs>
+    <radialGradient id="grad" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#818cf8" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#3730a3" stop-opacity="0.0"/>
+    </radialGradient>
+  </defs>
+  <!-- Navbar bar -->
+  <rect x="18" y="22" width="92" height="18" rx="5" fill="#ffffff" opacity="0.95"/>
+  <!-- Three dot menu indicators -->
+  <circle cx="29" cy="31" r="3.5" fill="#4f46e5"/>
+  <circle cx="40" cy="31" r="3.5" fill="#818cf8"/>
+  <circle cx="51" cy="31" r="3.5" fill="#c4b5fd"/>
+  <!-- Main content card -->
+  <rect x="18" y="48" width="92" height="58" rx="7" fill="#ffffff" opacity="0.92"/>
+  <!-- Card header line -->
+  <rect x="26" y="57" width="40" height="5" rx="2.5" fill="#4f46e5" opacity="0.7"/>
+  <!-- Card content lines -->
+  <rect x="26" y="68" width="76" height="4" rx="2" fill="#e2e8f0"/>
+  <rect x="26" y="76" width="60" height="4" rx="2" fill="#e2e8f0"/>
+  <rect x="26" y="84" width="70" height="4" rx="2" fill="#e2e8f0"/>
+  <!-- Stat button pills -->
+  <rect x="26" y="94" width="24" height="6" rx="3" fill="#ede9fe"/>
+  <rect x="55" y="94" width="24" height="6" rx="3" fill="#d1fae5"/>
+  <rect x="84" y="94" width="18" height="6" rx="3" fill="#fee2e2"/>
+</svg>

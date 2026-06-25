@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="tbt_web_fonts_backend" inherit_id="web.layout" priority="20">
+        <xpath expr="//head" position="inside">
+            <style id="tbt-layout-vars">
+                :root {
+                    --tbt-topbar-bg-dynamic: #ffffff;
+                    --tbt-topbar-text-dynamic: #0c0f0f;
+                    --tbt-content-bg-dynamic: #f6f6f6;
+                    --tbt-card-bg-dynamic: #ffffff;
+                    --tbt-loading-display-dynamic: none;
+                    --tbt-loading-text-dynamic: #FFFFFF;
+                    --tbt-loading-style-dynamic: arc;
+                    --tbt-sidebar-bg-dynamic: #f1f2f4;
+                    --tbt-sidebar-border-dynamic: rgba(171, 173, 175, .15);
+                    --tbt-sidebar-text-dynamic: #555b70;
+                    --tbt-sidebar-text-muted-dynamic: #8a8e98;
+                    --tbt-sidebar-surface-dynamic: rgba(255, 255, 255, .7);
+                    --tbt-sidebar-surface-hover-dynamic: #ffffff;
+                    --tbt-sidebar-surface-active-dynamic: #ffffff;
+                    --tbt-sidebar-active-text-dynamic: #0c0f0f;
+                    --tbt-sidebar-icon-dynamic: #6e7380;
+                    --tbt-sidebar-icon-hover-dynamic: #4f5564;
+                    --tbt-sidebar-brand-bg-dynamic: #f6f6f6;
+                }
+            </style>
+        </xpath>
+    </template>
+
+
+</odoo>

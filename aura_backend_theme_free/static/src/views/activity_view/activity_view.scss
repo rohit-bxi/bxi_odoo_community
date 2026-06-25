@@ -1,0 +1,183 @@
+///
+/// Aura Backend Theme - Community Edition — Activity View
+///
+/// Targets (from mail/static/src/views/web/activity/):
+///   .o_activity_view             — outer container
+///   .o_activity_view_table        — the data table
+///   .o_activity_record            — a row (one record)
+///   .o_activity_type_cell         — column header per activity type
+///   .o_activity_summary_cell      — cell with activity bubble(s)
+///   .o_activity_empty_cell        — "+" placeholder cell
+///   .o_activity_view_table_footer — footer row
+///
+/// Design rules (DESIGN.md §2 No-Line, §4 Elevation):
+///   • No 1px borders between rows — alternating background tints instead
+///   • Brand-tinted ambient shadow on hover (not grey drop-shadow)
+///   • Surface card (#ffffff) records on surface-low (#f1f2f4) background
+///
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 1. OUTER CONTAINER
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_activity_view {
+    background: var(--tbt-bg, #f6f6f6);
+    padding: 1rem;
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 2. TABLE WRAPPER
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_activity_view_table {
+    background: var(--tbt-surface-card, #ffffff);
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: none;
+    overflow: hidden;
+
+    // Column headers (activity type names)
+    .o_activity_type_cell {
+        background: var(--tbt-surface-low, #f1f2f4);
+        border-bottom: none;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--tbt-on-surface-variant, #5a5c5c);
+        padding: 0.75rem 1rem;
+        white-space: nowrap;
+    }
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 3. RECORD ROWS
+// ════════════════════════════════════════════════════════════════════════════
+
+    .o_activity_record {
+        border-bottom: none;                        // No-line rule
+        transition: background-color 0.1s ease;
+
+        &:nth-child(even) {
+            background: var(--tbt-surface-low, #f1f2f4);
+        }
+
+        &:hover {
+            background: var(--tbt-brand-color-soft, #edf1ff);
+        }
+    }
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 4. ACTIVITY CELLS
+// ════════════════════════════════════════════════════════════════════════════
+
+    .o_activity_summary_cell {
+        padding: 0.5rem 0.75rem;
+        border: none;
+        vertical-align: middle;
+    }
+
+    .o_activity_empty_cell {
+        padding: 0.5rem 0.75rem;
+        border: none;
+        vertical-align: middle;
+        color: var(--tbt-on-surface-variant, #5a5c5c);
+        opacity: 0.5;
+        transition: opacity 0.12s ease;
+
+        &:hover {
+            opacity: 1;
+            color: var(--tbt-brand-color, #242424);
+        }
+    }
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 5. FOOTER ROW
+// ════════════════════════════════════════════════════════════════════════════
+
+    .o_activity_view_table_footer {
+        background: var(--tbt-surface-low, #f1f2f4);
+        border-top: none;
+
+        td {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--tbt-on-surface-variant, #5a5c5c);
+            padding: 0.75rem 1rem;
+        }
+    }
+
+} // end .o_activity_view_table
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 6. ACTIVITY BUBBLES  (.o_activity_button)
+//    The clickable bubble inside each summary cell
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_activity_button {
+    border-radius: 6px;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: box-shadow 0.12s ease, transform 0.12s ease;
+
+    &:hover {
+        box-shadow: 0 0 60px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), 0.06);
+        transform: translateY(-1px);
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 7. FILTER PILL BUTTONS  (planned / today / overdue)
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_activity_filter_planned,
+.o_activity_filter_today,
+.o_activity_filter_overdue {
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 0.15em 0.65em;
+    border: none;
+}
+
+.o_activity_filter_planned {
+    background: var(--tbt-brand-color-soft, #edf1ff);
+    color: var(--tbt-brand-color, #242424);
+}
+
+.o_activity_filter_today {
+    background: #d9f4df;
+    color: #005815;
+}
+
+.o_activity_filter_overdue {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 8. ACTIVITY PILL ROWS  (.o_activity_record)
+//    Used on form chatter + activity timeline list items
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_activity_record {
+    border-radius: 8px;
+    border: 1px solid rgba(171, 173, 173, .15);  // ghost border (15% opacity — §4)
+    background: var(--tbt-surface-card, #ffffff);
+    box-shadow: none;
+    transition: box-shadow 0.12s ease;
+
+    &:hover {
+        box-shadow: 0 0 60px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .06);
+    }
+}

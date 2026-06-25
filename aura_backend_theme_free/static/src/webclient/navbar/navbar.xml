@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Aura Backend Theme - Community Edition - NavBar template
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  Replaces the stock Odoo header.o_navbar with a two-panel layout:
+
+    SIDEBAR (fixed left, 260px)       TOPBAR (fixed top)
+      - Logo + company name             - Search
+      - "All Apps" launcher button      - Systray icons
+      - Sub-nav tree (current app)
+      - Footer: Settings / Logout
+
+    Content area pushed right by sidebar width.
+
+  Sections are numbered to match navbar.js setup() comments.
+  All class names use tbt_ prefix - rename freely.
+-->
+<templates xml:space="preserve">
+
+  <t t-name="aura_backend_theme_free.NavBar"
+     t-inherit="web.NavBar"
+     t-inherit-mode="extension">
+
+    <xpath expr="//header[hasclass('o_navbar')]" position="replace">
+      <header class="o_navbar tbt_navbar" t-ref="root">
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             SECTION 1 — FIXED TOP BAR
+             (search centre, systray right, hamburger left on mobile)
+             ══════════════════════════════════════════════════════════════ -->
+        <div class="o_main_navbar tbt_topbar">
+
+          <!-- 1.1 Hamburger (mobile only) -->
+          <button class="tbt_hamburger d-lg-none" type="button"
+                  t-on-click="toggleMobileSidebar" aria-label="Open menu">
+            <i class="fa fa-bars" aria-hidden="true"/>
+          </button>
+
+          <div class="tbt_topbar_context" t-if="getTopbarAppName()">
+            <span class="tbt_topbar_app_name" t-out="getTopbarAppName()"/>
+          </div>
+
+          <!-- 1.2 Systray icons -->
+          <div class="o_menu_systray tbt_systray" role="menu">
+            <t t-foreach="systrayItems" t-as="item" t-key="item.key">
+              <div t-att-data-index="item.index"/>
+              <ErrorHandler onError="error => this.handleItemError(error, item)">
+                <t t-component="item.Component" t-props="item.props"/>
+              </ErrorHandler>
+            </t>
+          </div>
+
+        </div><!-- /.tbt_topbar -->
+
+        <!-- Top submenu strip: current app sections under the header -->
+        <div class="tbt_submenu_bar"
+             t-ref="topSubmenu"
+             t-if="currentAppSections.length and !isAppWithoutSubnav()">
+          <div class="tbt_submenu_scroll" role="navigation" aria-label="Submenu navigation">
+            <t t-foreach="currentAppSections" t-as="section" t-key="section.id">
+              <t t-if="section.childrenTree and section.childrenTree.length">
+                <button class="tbt_submenu_section_btn"
+                        t-att-class="{ 'is-open': isTopSectionOpen(section.id) }"
+                        type="button"
+                        t-on-click="(ev) => this.toggleTopSection(section, ev)">
+                  <span t-out="section.name"/>
+                  <i class="fa"
+                     t-att-class="isTopSectionOpen(section.id) ? 'fa-chevron-up' : 'fa-chevron-down'"
+                     aria-hidden="true"/>
+                </button>
+              </t>
+              <t t-else="">
+                <a class="tbt_submenu_section_btn is-leaf"
+                   t-att-href="getMenuItemHref(section)"
+                   t-att-data-menu-xmlid="section.xmlid"
+                   t-on-click.prevent="() => this.onTopSectionLeafClick(section)">
+                  <span t-out="section.name"/>
+                </a>
+              </t>
+            </t>
+          </div>
+
+          <t t-set="openSection" t-value="getOpenTopSection()"/>
+          <div class="tbt_submenu_panel"
+               t-if="openSection and openSection.childrenTree and openSection.childrenTree.length"
+               t-att-style="'left:' + topSubmenuState.panelLeft + 'px'">
+            <div class="tbt_submenu_panel_list">
+              <t t-foreach="openSection.childrenTree" t-as="child" t-key="child.id">
+                <t t-if="child.childrenTree and child.childrenTree.length">
+                  <button class="tbt_submenu_panel_item tbt_submenu_panel_group"
+                          t-att-class="{ 'is-open': isSubItemOpen(child.id) }"
+                          type="button"
+                          t-att-data-menu-xmlid="child.xmlid"
+                          t-on-click="() => this.toggleSubItem(child)">
+                    <span t-out="child.name"/>
+                    <i class="fa"
+                       t-att-class="isSubItemOpen(child.id) ? 'fa-chevron-up' : 'fa-chevron-down'"
+                       aria-hidden="true"/>
+                  </button>
+                  <div class="tbt_submenu_panel_children" t-if="isSubItemOpen(child.id)">
+                    <a class="tbt_submenu_panel_item tbt_submenu_panel_child"
+                       t-foreach="child.childrenTree" t-as="grandchild" t-key="grandchild.id"
+                       t-att-href="getMenuItemHref(grandchild)"
+                       t-att-data-menu-xmlid="grandchild.xmlid"
+                       t-on-click.prevent="() => this.onTopSubmenuItemSelection(grandchild)">
+                      <span t-out="grandchild.name"/>
+                    </a>
+                  </div>
+                </t>
+                <t t-else="">
+                  <a class="tbt_submenu_panel_item"
+                     t-att-href="getMenuItemHref(child)"
+                     t-att-data-menu-xmlid="child.xmlid"
+                     t-on-click.prevent="() => this.onTopSubmenuItemSelection(child)">
+                    <span t-out="child.name"/>
+                  </a>
+                </t>
+              </t>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile backdrop (closes drawer on tap) -->
+        <div class="tbt_mobile_backdrop"
+             t-if="mobileSidebarState.isOpen"
+             t-on-click="closeMobileSidebar"/>
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             SECTION 2 — FIXED LEFT SIDEBAR
+             ══════════════════════════════════════════════════════════════ -->
+        <div class="tbt_sidebar"
+             t-att-class="{ 'tbt_sidebar_mobile_open': mobileSidebarState.isOpen }">
+
+          <!-- 2.1 Brand header (logo + company name) -->
+          <div class="tbt_brand" t-on-click="onLogoClick" role="button"
+               tabindex="0" aria-label="Go to dashboard">
+            <div class="tbt_brand_logo">
+              <img t-att-src="getCompanyLogo()" alt="Company logo"/>
+            </div>
+            <div class="tbt_brand_text">
+              <span class="tbt_brand_name"
+                    t-esc="currentCompany and currentCompany.name or 'Dashboard'"
+                    t-att-title="currentCompany and currentCompany.name or ''"/>
+            </div>
+          </div>
+
+          <!-- Mobile: close sidebar button -->
+          <button class="tbt_sidebar_close d-lg-none" type="button"
+                  t-on-click="closeMobileSidebar" aria-label="Close sidebar">
+            <i class="fa fa-times" aria-hidden="true"/>
+          </button>
+
+          <!-- 2.2 Main app menu list -->
+          <nav class="tbt_mainmenu" t-ref="sidebarScroll" aria-label="Main menu">
+            <a t-foreach="getApps()" t-as="app" t-key="app.id"
+               class="tbt_mainmenu_item"
+               t-att-class="{ 'is-active': currentApp and currentApp.id === app.id }"
+               t-att-href="getMenuItemHref(app)"
+               t-att-data-menu-xmlid="app.xmlid"
+               t-on-click.prevent="() => this.onNavBarDropdownItemSelection(app)">
+              <span class="tbt_mainmenu_icon" aria-hidden="true">
+                <img t-att-src="getAppIcon(app)" alt=""/>
+              </span>
+              <span class="tbt_mainmenu_label" t-out="app.name"/>
+            </a>
+          </nav>
+
+          <!-- 2.3 Sidebar footer: quick links + profile -->
+          <div class="tbt_sidebar_footer">
+
+            <!-- Apps store link -->
+            <button class="tbt_footer_link"
+                    type="button"
+                    t-on-click="openAppsMenu"
+                    t-att-class="{ 'is-active': currentApp and getAppsApp() and currentApp.id === getAppsApp().id }">
+              <i class="fa fa-puzzle-piece" aria-hidden="true"/>
+              <span>Apps</span>
+            </button>
+
+            <!-- Settings link -->
+            <button class="tbt_footer_link"
+                    type="button"
+                    t-on-click="openSettingsMenu"
+                    t-att-class="{ 'is-active': currentApp and getSettingsApp() and currentApp.id === getSettingsApp().id }">
+              <i class="fa fa-cog" aria-hidden="true"/>
+              <span>Settings</span>
+            </button>
+
+            <!-- Profile link -->
+            <!-- <button class="tbt_footer_link tbt_profile_link"
+                    type="button"
+                    t-on-click="openMyProfile">
+              <span class="tbt_profile_avatar" aria-hidden="true">
+                <img t-att-src="getUserAvatarUrl()" alt="Profile"/>
+              </span>
+              <span>Profile</span>
+            </button> -->
+
+          </div><!-- /.tbt_sidebar_footer -->
+        </div><!-- /.tbt_sidebar -->
+
+      </header>
+    </xpath>
+  </t>
+
+</templates>

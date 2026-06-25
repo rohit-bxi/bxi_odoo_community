@@ -1,0 +1,895 @@
+///
+/// Aura Backend Theme - Community Edition — Miscellaneous
+///
+/// Covers everything not claimed by navbar.scss, views.scss or buttons.scss:
+///   • App home menu (apps grid)
+///   • Sidebar / app drawer
+///   • Tags / many2many_tags
+///   • Statusbar arrows
+///   • Chatter & activities
+///   • Scrollbar overrides
+///   • Utility helpers
+///   • Dark-mode readiness hooks
+///
+
+// ════════════════════════════════════════════════════════════════════════════
+// 1. APP HOME MENU (the grid that appears when you click the home icon)
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_home_menu {
+    position: relative;
+    min-height: 100%;
+    padding: 1.2rem 1.2rem 1.6rem;
+    background:
+        radial-gradient(1250px 640px at -10% -22%, rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .2), transparent 60%),
+        radial-gradient(920px 460px at 112% -12%, rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .14), transparent 62%),
+        linear-gradient(180deg, #f8fafe 0%, #eef2f7 100%);
+
+    // Atmospheric layer to avoid a flat dashboard background.
+    &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+            linear-gradient(rgba(255, 255, 255, .3) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, .3) 1px, transparent 1px);
+        background-size: 30px 30px;
+        mask-image: linear-gradient(180deg, rgba(0, 0, 0, .42), transparent 88%);
+        -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, .42), transparent 88%);
+    }
+
+    &::after {
+        content: "";
+        position: absolute;
+        left: 1.2rem;
+        right: 1.2rem;
+        top: 0.85rem;
+        height: 64px;
+        border-radius: 18px;
+        pointer-events: none;
+        background: linear-gradient(90deg, rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .18) 0%, rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .06) 50%, rgba(255, 255, 255, .08) 100%);
+        box-shadow: inset 0 0 0 1px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .14);
+    }
+
+    .o_apps {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
+        gap: 1rem;
+        max-width: 1480px;
+        margin: 0 auto;
+        padding-top: 0.4rem;
+        align-content: start;
+    }
+
+    .o_app {
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        min-height: 164px;
+        padding: 1.1rem 0.85rem 0.9rem;
+        border-radius: 18px;
+        border: 1px solid rgba(171, 173, 173, .18);
+        background: linear-gradient(180deg, rgba(255, 255, 255, .94) 0%, rgba(250, 251, 253, .95) 100%);
+        box-shadow: 0 18px 36px -30px rgba(12, 15, 15, .55), 0 0 0 1px rgba(255, 255, 255, .45) inset;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+
+        &::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .9), rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .5));
+            opacity: 0;
+            transition: opacity 0.18s ease;
+        }
+
+        &:hover,
+        &:focus-visible {
+            transform: translateY(-4px) scale(1.01);
+            border-color: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .4);
+            background: linear-gradient(180deg, rgba(255, 255, 255, .98) 0%, rgba(255, 255, 255, .94) 100%);
+            box-shadow:
+                0 22px 40px -30px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .5),
+                0 0 0 1px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .12);
+            outline: none;
+
+            &::before {
+                opacity: 1;
+            }
+        }
+
+        &.focus {
+            border-color: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .42);
+            background: linear-gradient(180deg, rgba(255, 255, 255, .98) 0%, rgba(255, 255, 255, .94) 100%);
+            box-shadow:
+                0 0 0 2px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .12),
+                0 20px 38px -28px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .42);
+
+            &::before {
+                opacity: 1;
+            }
+        }
+
+        .o_app_icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 20px;
+            padding: 0.42rem;
+            margin-bottom: 0.8rem;
+            background: linear-gradient(180deg, #ffffff 0%, #f7f9fd 100%);
+            box-shadow: 0 14px 28px -24px rgba(12, 15, 15, .6), 0 0 0 1px rgba(171, 173, 173, .18) inset;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+            overflow: hidden;
+        }
+
+        &:hover .o_app_icon,
+        &:focus-visible .o_app_icon,
+        &.focus .o_app_icon {
+            transform: scale(1.05);
+            box-shadow:
+                0 16px 32px -20px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .5),
+                0 0 0 1px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .12);
+        }
+
+        .o_app_name {
+            margin-top: 0;
+            font-size: 0.86rem;
+            font-weight: 700;
+            line-height: 1.3;
+            color: #2f353a;
+            max-width: 98%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+    }
+
+    @media (max-width: 991.98px) {
+        padding: 1rem 0.9rem 1.25rem;
+
+        &::after {
+            left: 0.9rem;
+            right: 0.9rem;
+        }
+
+        .o_apps {
+            grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+            gap: 0.82rem;
+        }
+
+        .o_app {
+            min-height: 142px;
+            padding: 0.95rem 0.72rem 0.82rem;
+
+            .o_app_icon {
+                width: 62px;
+                height: 62px;
+                border-radius: 17px;
+            }
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        padding: 0.85rem 0.72rem 1.1rem;
+
+        &::after {
+            left: 0.72rem;
+            right: 0.72rem;
+            height: 56px;
+            border-radius: 14px;
+        }
+
+        .o_apps {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.62rem;
+        }
+
+        .o_app {
+            min-height: 126px;
+            padding: 0.8rem 0.62rem 0.68rem;
+
+            .o_app_name {
+                font-size: 0.79rem;
+            }
+        }
+    }
+}
+
+// Search bar in home menu
+.o_home_menu_searchbar {
+    position: relative;
+    z-index: 2;
+    max-width: 960px;
+    margin: 0.25rem auto 1rem;
+
+    .o_searchview {
+        background: rgba(255, 255, 255, .92);
+        border: 1px solid rgba(171, 173, 173, .2);
+        outline: none;
+        border-radius: 14px;
+        box-shadow: 0 16px 30px -30px rgba(12, 15, 15, .72);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+
+        &:focus-within {
+            border-color: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .42);
+            background: #ffffff;
+            box-shadow:
+                0 0 0 3px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .14),
+                0 20px 36px -30px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .56);
+        }
+
+        .o_searchview_input {
+            font-size: 0.96rem;
+            font-weight: 500;
+            color: #2c2f31;
+
+            &::placeholder {
+                color: #7f8994;
+            }
+        }
+    }
+}
+
+
+// Built-in apps dashboard menu (desktop dropdown + mobile sidebar)
+.tbt_dashboard_menu {
+    .tbt_dashboard_toggle {
+        height: 36px;
+        padding: 0 0.75rem;
+        border: 1px solid rgba(171, 173, 173, .2);
+        border-radius: 10px;
+        background: linear-gradient(180deg, #ffffff 0%, #f6f8fb 100%);
+        color: #2f353a;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.82rem;
+        font-weight: 700;
+        transition: border-color 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease;
+
+        &:hover {
+            border-color: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .32);
+            box-shadow: 0 10px 24px -22px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .5);
+            transform: translateY(-1px);
+        }
+    }
+
+    .dropdown-menu {
+        min-width: 320px;
+        max-width: 360px;
+        border-radius: 16px;
+        border: 1px solid rgba(171, 173, 173, .2);
+        background: linear-gradient(180deg, rgba(255, 255, 255, .98) 0%, rgba(250, 251, 253, .98) 100%);
+        box-shadow: 0 24px 42px -34px rgba(12, 15, 15, .75), 0 0 0 1px rgba(255, 255, 255, .3) inset;
+        padding: 0.45rem;
+    }
+
+    .tbt_dashboard_dropdown {
+        display: flex;
+        flex-direction: column;
+        gap: 0.34rem;
+    }
+
+    .tbt_dashboard_overview {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+        gap: 0.38rem;
+        padding: 0.2rem 0.1rem 0.1rem;
+    }
+
+    .tbt_dashboard_profile,
+    .tbt_dashboard_landing {
+        border-radius: 12px;
+        border: 1px solid rgba(171, 173, 173, .18);
+        background: linear-gradient(180deg, rgba(255, 255, 255, .94) 0%, rgba(246, 248, 251, .98) 100%);
+        padding: 0.55rem 0.62rem;
+    }
+
+    .tbt_dashboard_profile {
+        display: flex;
+        align-items: center;
+        gap: 0.52rem;
+    }
+
+    .tbt_dashboard_avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        border: 1px solid rgba(171, 173, 173, .22);
+        object-fit: cover;
+        background: #ffffff;
+    }
+
+    .tbt_dashboard_profile_meta {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.02rem;
+    }
+
+    .tbt_dashboard_profile_name {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #2f353a;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .tbt_dashboard_profile_login {
+        font-size: 0.68rem;
+        color: #7f8994;
+        line-height: 1.2;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .tbt_dashboard_landing {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+    }
+
+    .tbt_dashboard_landing_title {
+        font-size: 0.64rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #7f8994;
+        font-weight: 700;
+    }
+
+    .tbt_dashboard_landing_value {
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: #2f353a;
+        line-height: 1.25;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .tbt_dashboard_landing_hint {
+        font-size: 0.68rem;
+        color: #7f8994;
+        line-height: 1.35;
+    }
+
+    .tbt_dashboard_dropdown_head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        padding: 0.4rem 0.5rem 0.35rem;
+    }
+
+    .tbt_dashboard_title {
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #2f353a;
+    }
+
+    .tbt_dashboard_hint {
+        font-size: 0.7rem;
+        color: #7f8994;
+    }
+
+    .tbt_dashboard_apps {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.32rem;
+    }
+
+    .tbt_dashboard_quick_actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.32rem;
+        margin-top: 0.1rem;
+    }
+
+    .tbt_dashboard_quick_link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        border: 1px solid rgba(171, 173, 173, .2);
+        min-height: 32px;
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-decoration: none;
+        color: #4b5260;
+        background: rgba(255, 255, 255, .75);
+        transition: border-color 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+
+        &:hover,
+        &:focus-visible {
+            border-color: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .3);
+            background: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .1);
+            color: var(--tbt-brand-color-dark, #002388);
+            outline: none;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .tbt_dashboard_overview {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .tbt_dashboard_app {
+        border-radius: 11px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: #2f353a;
+        font-size: 0.82rem;
+        font-weight: 600;
+        line-height: 1.3;
+        padding: 0.5rem 0.55rem;
+        transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+
+        &:hover,
+        &.focus,
+        &:focus-visible {
+            background: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .1);
+            border-color: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .3);
+            color: var(--tbt-brand-color-dark, #002388);
+            outline: none;
+        }
+    }
+}
+
+.tbt_dashboard_sidebar {
+    .tbt_dashboard_mobile_app {
+        border-radius: 10px;
+        border: 1px solid transparent;
+        margin: 0.12rem 0.4rem;
+        padding-left: 0.55rem !important;
+        padding-right: 0.55rem !important;
+        transition: background-color 0.12s ease, border-color 0.12s ease;
+
+        &:hover {
+            background: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .1);
+            border-color: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .3);
+        }
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 2. TAGS (many2many tags, statusbar tags)
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_tag {
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2em 0.7em;
+    line-height: 1.5;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    border: none;
+    transition: opacity 0.12s ease;
+
+    &:hover {
+        opacity: 0.85;
+    }
+
+    .o_delete {
+        opacity: 0.6;
+        font-size: 0.65em;
+        cursor: pointer;
+        transition: opacity 0.1s ease;
+
+        &:hover {
+            opacity: 1;
+        }
+    }
+}
+
+// Coloured tag variants  (Odoo generates inline bg/color styles —
+// we only touch the shape here)
+.badge.o_tag {
+    border-radius: 999px;
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 3. SEARCH BAR (control panel search)
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_searchview {
+    background: #ebedf1;
+    border: none;
+    outline: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    transition: outline-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+
+    &:focus-within {
+        outline-color: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .55);
+        background: #ffffff;
+        box-shadow: 0 0 0 2px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .14);
+    }
+
+    .o_searchview_input {
+        font-size: 0.875rem;
+        color: #2c2f31;
+
+        &::placeholder {
+            color: #7b8792;
+        }
+    }
+
+    // Facets (active filter pills inside the search bar)
+    .o_searchview_facet {
+        background: var(--tbt-brand-color-soft, #edf1ff);
+        border-radius: 6px;
+        border: 1px solid rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .2);
+        color: var(--tbt-brand-color, #242424);
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.1em 0.5em;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3em;
+
+        .o_facet_remove {
+            color: var(--tbt-brand-color-emphasis, #0846ed);
+            opacity: 0.6;
+            cursor: pointer;
+            font-size: 0.75em;
+
+            &:hover {
+                opacity: 1;
+            }
+        }
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 4. GLOBAL LOADING INDICATOR
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_loading_indicator {
+    --tbt-loading-spinner-color: var(--tbt-loading-text-dynamic, #ffffff);
+    display: var(--tbt-loading-display-dynamic, inline-flex) !important;
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
+    gap: 0.55rem;
+    right: 0.85rem;
+    bottom: 0.85rem;
+    left: auto;
+    top: auto;
+    transform: none;
+    min-width: 112px;
+    padding: 0.55rem 0.75rem !important;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, .18);
+    background: var(--tbt-brand-color, #242424) !important;
+    color: var(--tbt-loading-text-dynamic, #ffffff) !important;
+    font-size: 0.56rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    box-shadow: 0 14px 36px -26px rgba(12, 15, 15, .55);
+    z-index: 2005;
+
+    &::before {
+        content: "";
+        width: 2.35rem;
+        height: 2.35rem;
+        border-radius: 50%;
+        border: 4px solid color-mix(in srgb, var(--tbt-loading-spinner-color) 30%, transparent);
+        border-top-color: var(--tbt-loading-spinner-color);
+        animation: tbt-loading-spin 1s linear infinite;
+        flex-shrink: 0;
+    }
+}
+
+html.tbt-loading-active::before {
+    content: none;
+}
+
+html.tbt-loading-style-arc .o_loading_indicator::before {
+    border-width: 4px;
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--tbt-loading-spinner-color) 24%, transparent);
+    border-top-color: var(--tbt-loading-spinner-color);
+    animation: tbt-loading-spin .95s linear infinite;
+}
+
+html.tbt-loading-style-dual_arc .o_loading_indicator::before {
+    border: none;
+    background: conic-gradient(
+        from 0deg,
+        var(--tbt-loading-spinner-color) 0 18%,
+        transparent 18% 48%,
+        var(--tbt-loading-spinner-color) 48% 66%,
+        transparent 66% 100%
+    );
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 0);
+    mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 0);
+    animation: tbt-loading-spin .9s linear infinite;
+}
+
+html.tbt-loading-style-spinner .o_loading_indicator::before {
+    border: none;
+    border-radius: 50%;
+    background: repeating-conic-gradient(
+        from 0deg,
+        var(--tbt-loading-spinner-color) 0deg 16deg,
+        transparent 16deg 45deg
+    );
+    -webkit-mask: radial-gradient(farthest-side, transparent 58%, #000 59%);
+    mask: radial-gradient(farthest-side, transparent 58%, #000 59%);
+    animation: tbt-loading-spin 1.05s linear infinite;
+}
+
+html.tbt-loading-style-sun .o_loading_indicator::before {
+    width: 2.35rem;
+    height: 2.35rem;
+    border: none;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at center, transparent 40%, var(--tbt-loading-spinner-color) 41% 48%, transparent 49%),
+        repeating-conic-gradient(
+            from 0deg,
+            var(--tbt-loading-spinner-color) 0deg 8deg,
+            transparent 8deg 30deg
+        );
+    animation: tbt-loading-spin 1.3s linear infinite;
+}
+
+html.tbt-loading-style-dots .o_loading_indicator::before {
+    border: none;
+    border-radius: 50%;
+    background: repeating-conic-gradient(
+        from 0deg,
+        var(--tbt-loading-spinner-color) 0deg 12deg,
+        transparent 12deg 36deg
+    );
+    -webkit-mask: radial-gradient(farthest-side, transparent 64%, #000 65%);
+    mask: radial-gradient(farthest-side, transparent 64%, #000 65%);
+    animation: tbt-loading-spin 1s linear infinite;
+}
+
+html.tbt-loading-style-quad .o_loading_indicator::before {
+    width: 1.02rem;
+    height: 1.02rem;
+    border: none;
+    border-radius: 50%;
+    background: var(--tbt-loading-spinner-color);
+    box-shadow:
+        1.25rem 0 0 color-mix(in srgb, var(--tbt-loading-spinner-color) 45%, transparent),
+        0 1.25rem 0 color-mix(in srgb, var(--tbt-loading-spinner-color) 55%, transparent),
+        1.25rem 1.25rem 0 color-mix(in srgb, var(--tbt-loading-spinner-color) 70%, transparent);
+    animation: tbt-loading-quad .8s ease-in-out infinite alternate;
+}
+
+@keyframes tbt-loading-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes tbt-loading-quad {
+    from {
+        transform: scale(1);
+        opacity: .75;
+    }
+    to {
+        transform: scale(1.18);
+        opacity: 1;
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 4. TOASTS & NOTIFICATIONS
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_notification_manager {
+    .o_notification {
+        border-radius: 10px;
+        border: none;
+        box-shadow: 0 0 60px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), 0.06);
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding: 0.85rem 1rem;
+
+        &.o_notification_info {
+            background: var(--tbt-brand-color-softer, #e9eeff);
+            color: var(--tbt-brand-color-emphasis, #0846ed);
+        }
+
+        &.o_notification_success {
+            background: #d9f4df;
+            color: #005815;
+        }
+
+        &.o_notification_warning {
+            background: #fde7d1;
+            color: #724100;
+        }
+
+        &.o_notification_danger {
+            background: #fadddf;
+            color: #9f1720;
+        }
+
+        .o_notification_close {
+            color: #5d6670;
+
+            &:hover {
+                color: #2c2f31;
+            }
+        }
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 5. CHATTER & ACTIVITIES
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_ChatterContainer {
+    background: #f1f2f4;
+}
+
+.o_Activity {
+    border-radius: 8px;
+    border: none;
+    background: #ffffff;
+    box-shadow: none;
+    transition: box-shadow 0.12s ease;
+
+    &:hover {
+        box-shadow: 0 0 60px rgba(var(--tbt-brand-color-rgb, 24, 55, 254), 0.06);
+    }
+}
+
+// Activity type icon circles
+.o_activity_icon {
+    border-radius: 50%;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 6. SCROLLBAR (Webkit)
+// ════════════════════════════════════════════════════════════════════════════
+
+// Slim, on-brand scrollbar for Chrome/Edge/Safari
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .42);
+    border-radius: 999px;
+
+    &:hover {
+        background: var(--tbt-brand-color, #242424);
+    }
+}
+
+// Firefox
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .42) transparent;
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 7. KEYBOARD SHORTCUTS (kbd element)
+// ════════════════════════════════════════════════════════════════════════════
+
+kbd {
+    background: #f1f2f4;
+    border: 1px solid rgba(171, 173, 173, .2);
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+    color: #555b70;
+    font-size: 0.75em;
+    font-weight: 600;
+    padding: 0.15em 0.45em;
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 8. UTILITY HELPERS (scoped to this theme)
+// ════════════════════════════════════════════════════════════════════════════
+
+// Quick surface card, reusable anywhere
+.tbt-card {
+    background: #ffffff;
+    border-radius: 10px;
+    border: none;
+    box-shadow: none;
+    padding: 1.25rem;
+}
+
+// Section label (e.g. above a group of fields)
+.tbt-section-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #5a5c5c;
+    margin-bottom: 0.5rem;
+}
+
+// Highlight ring (used around focused/selected items)
+.tbt-ring-focus {
+    outline: 1px solid rgba(var(--tbt-brand-color-rgb, 24, 55, 254), .55);
+    outline-offset: 2px;
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 9. SELECTION CHECKBOX (list view / kanban multi-select)
+// ════════════════════════════════════════════════════════════════════════════
+
+.o_list_view,
+.o_kanban_view {
+    input[type="checkbox"] {
+        accent-color: var(--tbt-brand-color, #242424);
+        width: 1rem;
+        height: 1rem;
+        cursor: pointer;
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// 10. OPTIONAL DARK-MODE READINESS (scaffold only — enable in a sub-module)
+// ════════════════════════════════════════════════════════════════════════════
+//
+// To activate dark mode, create:
+//   aura_backend_theme_free/static/src/scss/dark_mode.dark.scss
+// and add it to web.assets_web_dark in __manifest__.py.
+//
+// Example overrides to put there:
+//
+//   :root {
+//     color-scheme: dark;
+//   }
+//   body.bg-100 {
+//     background: linear-gradient(135deg, #0f0e1a 0%, #1e1b4b 100%) !important;
+//   }
+//   .o_web_client {
+//     background: #0f172a;
+//     color: #e2e8f0;
+//   }
+//   .o_form_sheet, .o_list_view, .o_kanban_record {
+//     background: #1e293b;
+//     border-color: #334155;
+//   }

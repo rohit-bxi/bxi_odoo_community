@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="aura_backend_theme_free.SettingsPage" t-inherit="web.SettingsPage" t-inherit-mode="extension">
+        <xpath expr="//span[hasclass('icon')]" position="attributes">
+            <attribute name="t-attf-style">-webkit-mask-image: url('{{this.getModuleIconUrl(module)}}'); mask-image: url('{{this.getModuleIconUrl(module)}}');</attribute>
+        </xpath>
+    </t>
+</templates>

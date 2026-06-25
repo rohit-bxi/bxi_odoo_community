@@ -1,0 +1,160 @@
+.o-mail-Discuss.tbt_discuss_root {
+    border-top: 0 !important;
+    border-radius: 14px;
+    padding: 0.5rem;
+    gap: 0.5rem;
+
+    .o-mail-DiscussSidebar-resizablePanelContainer {
+        border-radius: 12px !important;
+    }
+
+    .o_resizable_panel {
+        min-width: 282px;
+    }
+
+    .o-mail-DiscussContent.tbt_discuss_content {
+        border-radius: 12px;
+
+        .o-mail-DiscussContent-header {
+            border-bottom: 0 !important;
+            margin: 0.35rem 0.45rem 0;
+            border-radius: 10px;
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
+
+            .o-mail-DiscussContent-threadName {
+                font-size: 1.25rem;
+                font-weight: 600;
+                letter-spacing: -0.01em;
+                border: 0;
+            }
+
+            .o-mail-ActionList-button {
+                border-radius: 6px !important;
+                border: 0 !important;
+            }
+        }
+
+        .o-mail-DiscussContent-main {
+            margin: 0.35rem 0.45rem 0.45rem;
+            border-radius: 10px;
+        }
+
+        .o-mail-DateSection {
+            .o-discuss-separator {
+                opacity: 0.35;
+            }
+
+            span {
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                font-weight: 600;
+                font-size: 0.6875rem;
+            }
+        }
+
+        .o-mail-Message {
+            margin-inline: 0.25rem;
+        }
+
+        .o-mail-Message-bubble {
+            border: 0 !important;
+        }
+
+        .o-mail-Message-content {
+            .o-discuss-text-body {
+                border-radius: 8px;
+            }
+        }
+    }
+
+    .o-mail-Composer {
+        padding: 0.4rem 0.75rem 0.9rem !important;
+
+        .o-mail-Composer-avatar {
+            border-radius: 8px !important;
+            flex-shrink: 0;
+        }
+
+        .o-mail-Composer-inputContainer.tbt_discuss_composer {
+            border: 0 !important;
+            border-radius: 100px;
+            align-items: center;
+            box-shadow:
+                0 0 0 1.5px rgba(0, 0, 0, 0.09),
+                0 2px 8px rgba(12, 15, 15, 0.06),
+                0 10px 24px -12px rgba(12, 15, 15, 0.18);
+            transition: box-shadow 0.2s ease;
+
+            &:focus-within {
+                box-shadow:
+                    0 0 0 2.5px rgba(var(--tbt-brand-color-rgb, 85, 91, 112), 0.25),
+                    0 4px 16px -3px rgba(12, 15, 15, 0.10);
+            }
+
+            > .o-mail-Composer-actions {
+                padding: 4px 4px 4px 6px;
+                border-right: 1px solid rgba(0, 0, 0, 0.07);
+                align-self: stretch;
+                display: flex;
+                align-items: center;
+            }
+
+            > .o-mail-Composer-quickActions {
+                padding: 4px 6px 4px 4px;
+                border-left: 1px solid rgba(0, 0, 0, 0.07);
+                align-self: stretch;
+                display: flex;
+                align-items: center;
+            }
+        }
+
+        .o-mail-Composer-input {
+            line-height: 1.6;
+            min-height: 38px;
+            background: transparent !important;
+            padding-block: 9px;
+        }
+
+        .o-mail-ActionList-button,
+        .o-mail-Composer .btn {
+            border-radius: 50% !important;
+            border: 0 !important;
+            background: transparent !important;
+            width: 32px !important;
+            height: 32px !important;
+            padding: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: background 0.15s ease !important;
+        }
+
+        .o-mail-ActionList-button[name='send-message']:not(:disabled) {
+            transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease !important;
+
+            &:hover {
+                transform: scale(1.07) translateY(-1px);
+            }
+        }
+
+        .o-mail-ActionList-button[name='send-message']:disabled {
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+    }
+
+    @media (max-width: 1199.98px) {
+        border-radius: 10px;
+        padding: 0.35rem;
+
+        .o-mail-DiscussSidebar-resizablePanelContainer {
+            border-radius: 9px;
+        }
+
+        .o-mail-DiscussContent.tbt_discuss_content,
+        .o-mail-DiscussContent .o-mail-DiscussContent-main {
+            border-radius: 9px;
+        }
+    }
+}

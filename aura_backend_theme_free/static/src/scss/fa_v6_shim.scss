@@ -1,0 +1,41 @@
+///
+/// FA4 → FA6 font-family shim
+///
+/// Odoo 19 bundles Font Awesome 4 (font-family: "FontAwesome").
+/// We load FA6 Free + the official v4-shims from the module's local
+/// static/lib/fontawesome-free/6.7.2 files. The v4-shims CSS remaps every FA4 class name
+/// (fa-times, fa-star-o, fa-trash-o …) to its FA6 equivalent automatically.
+///
+/// The only thing left to do here is override the FA4 base-class rules so
+/// that bare `.fa` elements (without an explicit icon shim rule) also render
+/// with the FA6 font instead of the missing FA4 "FontAwesome" webfont.
+///
+
+// ─── Base font-family override ────────────────────────────────────────────────
+//
+// FA4 sets:  .fa:before { font-family: FontAwesome; }
+// FA6 sets:  .fa-solid:before / .fas:before { font-family: "Font Awesome 6 Free"; font-weight: 900; }
+//
+// The v4-shims CSS already adds per-icon rules with the correct font-family
+// and font-weight.  This block is a safety net for any element that only
+// carries the `.fa` base class without a matching shim rule.
+
+.fa,
+.fas,
+.far,
+.fab {
+    &::before {
+        font-family: "Font Awesome 6 Free" !important;
+    }
+}
+
+// Solid-weight icons (the default for most FA4 icons)
+.fa::before,
+.fas::before {
+    font-weight: 900 !important;
+}
+
+// Regular-weight icons (the outline/"-o" variants after v4-shims remaps them)
+.far::before {
+    font-weight: 400 !important;
+}

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="aura_backend_theme_free.ControlPanelListTheme"
+       t-inherit="web.ControlPanel"
+       t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_control_panel')]" position="attributes">
+            <attribute name="class" add="tbt_cp_root" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('o_control_panel_actions')]" position="attributes">
+            <attribute name="class" add="tbt_cp_actions" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('o_control_panel_navigation')]" position="attributes">
+            <attribute name="class" add="tbt_cp_nav" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('o_cp_pager')]" position="attributes">
+            <attribute name="class" add="tbt_cp_pager_wrap" separator=" "/>
+        </xpath>
+    </t>
+
+    <t t-name="aura_backend_theme_free.PagerTheme"
+       t-inherit="web.Pager"
+       t-inherit-mode="extension">
+        <xpath expr="//nav[hasclass('o_pager')]" position="attributes">
+            <attribute name="class" add="tbt_pager" separator=" "/>
+        </xpath>
+
+        <xpath expr="//span[hasclass('btn-group')]" position="after">
+            <t t-set="limitValue" t-value="props.limit || 1"/>
+            <t t-set="currentPage" t-value="Math.floor((props.offset || 0) / limitValue) + 1"/>
+            <t t-set="totalPages" t-value="Math.max(1, Math.ceil(props.total / limitValue))"/>
+            <t t-set="nextPage" t-value="Math.min(totalPages, currentPage + 1)"/>
+            <t t-if="!env.isSmall and totalPages &gt; 1">
+                <div class="tbt_pager_pages d-inline-flex align-items-center" aria-hidden="true">
+                    <span class="tbt_pager_page is-active" t-esc="currentPage"/>
+                    <span class="tbt_pager_page" t-if="nextPage !== currentPage" t-esc="nextPage"/>
+                    <span class="tbt_pager_dots" t-if="totalPages &gt; (nextPage + 1)">...</span>
+                    <span class="tbt_pager_page" t-if="totalPages &gt; nextPage" t-esc="totalPages"/>
+                </div>
+            </t>
+        </xpath>
+    </t>
+
+</templates>

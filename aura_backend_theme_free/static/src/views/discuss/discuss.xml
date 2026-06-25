@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="aura_backend_theme_free.DiscussRootTheme"
+       t-inherit="mail.Discuss"
+       t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o-mail-Discuss')]" position="attributes">
+            <attribute name="class" add="tbt_discuss_root" separator=" "/>
+        </xpath>
+    </t>
+
+    <t t-name="aura_backend_theme_free.DiscussSidebarTheme"
+       t-inherit="mail.DiscussSidebar"
+       t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o-mail-DiscussSidebar')]" position="attributes">
+            <attribute name="class" add="tbt_discuss_sidebar" separator=" "/>
+        </xpath>
+    </t>
+
+    <t t-name="aura_backend_theme_free.DiscussContentTheme"
+       t-inherit="mail.DiscussContent"
+       t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o-mail-DiscussContent')]" position="attributes">
+            <attribute name="class" add="tbt_discuss_content" separator=" "/>
+        </xpath>
+    </t>
+
+    <t t-name="aura_backend_theme_free.DiscussComposerTheme"
+       t-inherit="mail.Composer"
+       t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o-mail-Composer-inputContainer')]" position="attributes">
+            <attribute name="class" add="tbt_discuss_composer" separator=" "/>
+        </xpath>
+    </t>
+
+</templates>
