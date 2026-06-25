@@ -1,0 +1,1 @@
+# bxi_odoo_community
