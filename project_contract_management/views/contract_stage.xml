@@ -1,0 +1,53 @@
+<odoo>
+
+    <!-- TREE VIEW -->
+    <record id="view_contract_stage_tree" model="ir.ui.view">
+        <field name="name">contract.stage.tree</field>
+        <field name="model">project.contract.stage</field>
+        <field name="arch" type="xml">
+            <list string="Contract Stages">
+
+                <field name="sequence"/>
+                <field name="name"/>
+                <field name="probability"/>
+                <field name="fold"/>
+
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+    <record id="view_contract_stage_form" model="ir.ui.view">
+        <field name="name">contract.stage.form</field>
+        <field name="model">project.contract.stage</field>
+        <field name="arch" type="xml">
+            <form string="Contract Stage">
+                <sheet>
+
+                    <group>
+                        <group string="Basic Info">
+                            <field name="name" placeholder="e.g. Draft / Negotiation / Signed"/>
+                            <field name="sequence" help="Lower value = appears first in pipeline"/>
+                        </group>
+
+                        <group string="Pipeline Behavior">
+                            <field name="probability"
+                                   help="Chance of closing this contract at this stage (0-100%)"/>
+                            <field name="fold"
+                                   help="If enabled, this stage will be folded in kanban view"/>
+                        </group>
+                    </group>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_contract_stage" model="ir.actions.act_window">
+        <field name="name">Contract Stages</field>
+        <field name="res_model">project.contract.stage</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

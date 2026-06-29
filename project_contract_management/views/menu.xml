@@ -1,0 +1,26 @@
+<odoo>
+    <menuitem id="menu_contract_root"
+              name="Contract Management"
+              sequence="10"
+              web_icon="project_contract_management,static/description/icon.png"
+              />
+
+
+    <menuitem id="menu_contract"
+              name="Contracts"
+              parent="menu_contract_root"
+              action="action_contract"/>
+
+    <!-- CONFIGURATION MENU -->
+    <menuitem id="menu_contract_config"
+              name="Configuration"
+              parent="menu_contract_root"
+              sequence="50"/>
+
+    <!-- STAGE MENU -->
+    <menuitem id="menu_contract_stage"
+              name="Stages"
+              parent="menu_contract_config"
+              action="action_contract_stage"
+              sequence="10"/>
+</odoo>
