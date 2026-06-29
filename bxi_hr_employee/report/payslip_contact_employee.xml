@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="contact_payslip_letter_a4" model="report.paperformat">
+            <field name="name">Contract Payslip Letter A4</field>
+            <field name="default" eval="False"/>
+            <field name="format">A4</field>
+            <field name="orientation">Portrait</field>
+            <field name="margin_top">5</field>
+            <field name="margin_bottom">1</field>
+            <field name="margin_left">5</field>
+            <field name="margin_right">5</field>
+            <field name="header_spacing">10</field>
+        </record>
+    <record id="action_contract_payslip_report" model="ir.actions.report">
+        <field name="name">Contract Payslip</field>
+        <field name="model">hr.employee</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_hr_employee.contract_payslip_report</field>
+        <field name="report_file">bxi_hr_employee.contract_payslip_report</field>
+        <field name="print_report_name">'Contract Payslip - %s' % (object.name)</field>
+        <field name="paperformat_id" ref="contact_payslip_letter_a4" />
+    </record>
+
+    <template id="contract_payslip_report">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="company" t-value="o.template_company_id" />
+                <t t-call="custom_template.bxi_foundation_layout">
+                    <div class="page">
+    <h2 style="text-align:center; margin-bottom:15px;">
+        CONTRACTOR PAYSLIP
+    </h2>
+
+    <!-- Header Box -->
+    <table style="width:100%; border-collapse:collapse; border:1px solid black;">
+        <tr>
+            <td colspan="4"
+                style="background:#2f5597;
+                       color:white;
+                       text-align:center;
+                       font-size:18px;
+                       font-weight:bold;
+                       padding:12px;
+                       border:1px solid black;">
+                Payslip for the Month of
+               <t t-if="o.month_year">
+                <span t-esc="o.month_year.strftime('%B %Y')"/>
+                <br/>
+            </t>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="border:1px solid black; padding:6px;"><b>Employee No/Name</b></td>
+            <td style="border:1px solid black; padding:6px;">
+                <span t-esc="o.employee_id.employee_code"/> /
+                <span t-esc="o.employee_id.name"/>
+            </td>
+            <td style="border:1px solid black; padding:6px;"><b>Bank Name &amp; Account No</b></td>
+            <td style="border:1px solid black; padding:6px;">
+                <span t-esc="o.employee_id.bank_account_ids[:1].bank_id.name"/>
+                <br/>
+                <span t-esc="o.employee_id.bank_account_ids[:1].acc_number"/>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="border:1px solid black; padding:6px;"><b>Designation</b></td>
+            <td style="border:1px solid black; padding:6px;">
+                <span t-esc="o.employee_id.job_id.name"/>
+            </td>
+            <td style="border:1px solid black; padding:6px;"><b>Location</b></td>
+            <td style="border:1px solid black; padding:6px;">
+                <span t-esc="o.employee_id.work_location_id.name"/>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="border:1px solid black; padding:6px;"><b>DOJ</b></td>
+            <td style="border:1px solid black; padding:6px;">
+                <span t-esc="o.employee_id.emp_date_of_joining"/>
+            </td>
+            <td style="border:1px solid black; padding:6px;"><b>Department</b></td>
+            <td style="border:1px solid black; padding:6px;">
+                <span t-esc="o.employee_id.department_id.name"/>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="border:1px solid black; padding:6px;"><b>PAN Number</b></td>
+            <td style="border:1px solid black; padding:6px;">
+                <span t-esc="o.employee_id.l10n_in_pan"/>
+            </td>
+            <td style="border:1px solid black; padding:6px;"><b>Band</b></td>
+            <td style="border:1px solid black; padding:6px;">
+                <span t-esc="o.employee_id.role_band"/>
+            </td>
+        </tr>
+    </table>
+
+    <br/>
+<br/>
+
+<table style="width:100%; border-collapse:collapse; border:1px solid black;">
+    <tr style="background:#d9e2f3;">
+        <td colspan="3"
+            style="background:#2f5597;color:white; border:1px solid black; padding:8px; font-weight:bold; text-align:center;">
+            CONTRACT DETAILS
+        </td>
+    </tr>
+
+    <tr style="background:#f2f2f2;">
+        <td style="border:1px solid black; padding:6px; font-weight:bold; text-align:center;">
+            Standard
+        </td>
+        <td style="border:1px solid black; padding:6px; font-weight:bold; text-align:center;">
+            Quantity
+        </td>
+        <td style="border:1px solid black; padding:6px; font-weight:bold; text-align:center;">
+            Rate(INR)
+        </td>
+    </tr>
+
+    <tr>
+        <td style="border:1px solid black; padding:6px;">
+            Consultation
+        </td>
+        <td style="border:1px solid black; padding:6px; text-align:center;">
+            <span t-field="o.meeting_qty"/>
+        </td>
+        <td style="border:1px solid black; padding:6px; text-align:right;">
+            <span t-field="o.meeting_rate"/>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="border:1px solid black; padding:6px;">
+            Content Writing
+        </td>
+        <td style="border:1px solid black; padding:6px; text-align:center;">
+            <span t-field="o.script_qty"/>
+        </td>
+        <td style="border:1px solid black; padding:6px; text-align:right;">
+            <span t-field="o.script_rate"/>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="border:1px solid black; padding:6px;">
+            Video Production
+        </td>
+        <td style="border:1px solid black; padding:6px; text-align:center;">
+            <span t-field="o.video_qty"/>
+        </td>
+        <td style="border:1px solid black; padding:6px; text-align:right;">
+            <span t-field="o.video_rate"/>
+        </td>
+    </tr>
+
+    <tr style="background:#f2f2f2;">
+        <td colspan="2"
+            style="border:1px solid black; padding:8px; text-align:right; font-weight:bold;">
+            Total Amount
+        </td>
+        <td style="border:1px solid black; padding:8px; text-align:right; font-weight:bold;">
+            <span t-field="o.total_amount"/>
+        </td>
+    </tr>
+</table>
+
+    <br/><br/>
+
+    <!-- Footer Note -->
+    <div style="font-size:8px; color:#555; line-height:12px;">
+        <p style="margin:0;">
+            *This is a computer-generated payslip and does not require a signature or company seal.
+        </p>
+    </div>
+</div>
+</t>
+</t>
+</t> </template>
+</odoo>

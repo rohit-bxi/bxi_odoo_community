@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================= -->
+    <!-- RH CRON - DAILY -->
+    <!-- ========================================= -->
+    <record id="ir_cron_allocate_rh" model="ir.cron">
+        <field name="name">RH Allocation Cron</field>
+        <field name="model_id" ref="hr.model_hr_employee"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_allocate_rh()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+
+    <!-- ========================================= -->
+    <!-- EL CRON - DAILY (SELF CHECKS FOR 1ST) -->
+    <!-- ========================================= -->
+    <record id="ir_cron_allocate_el" model="ir.cron">
+        <field name="name">EL Allocation Cron</field>
+        <field name="model_id" ref="hr.model_hr_employee"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_allocate_el()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+
+</odoo>

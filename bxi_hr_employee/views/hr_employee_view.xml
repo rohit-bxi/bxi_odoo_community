@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_employee_form_inherit_employee_code" model="ir.ui.view">
+        <field name="name">hr.employee.form.inherit.employee.code</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='parent_id']" position="after">
+                <field name="employee_code" />
+                <field name="pa_name" />
+                <field name="psa" />
+                <field name="role_band" />
+                <field name="disp" />
+                <field name="aadhar_card" />
+                <field name="probation_period" />
+                <field name="trainee_category" />
+                <field name="onsite_offshore" />
+                <field name="emp_category" />
+                <field name="emp_skill_category" />
+
+            </xpath>
+            <xpath expr="//field[@name='resource_calendar_id']" position="after">
+                <label for="nps_contribution" />
+                <div class="o_row">
+                    <field name="nps_contribution" class="oe_inline" />
+                    <span class="text-muted">/ month</span>
+                </div>
+                <button name="action_calculate_l10n_in_tds_new_regime"
+                    type="object"
+                    string="Calculate TDS"
+                    class="btn btn-primary"
+                    style="margin-left:10px;" />
+            </xpath>
+            <xpath expr="//field[@name='parent_id']" position="before">
+                <field name="manager_emp_code" />
+            </xpath>
+            <xpath expr="//field[@name='bank_account_ids']" position="after">
+                <field name="medical_insurance_no" />
+                <field name="bank_name" />
+                <field name="bank_ifsc" />
+                <field name="bank_account_number" />
+                <field name="bank_document" />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_employee_form_inherit_contract_payroll" model="ir.ui.view">
+        <field name="name">hr.employee.form.contract.payroll</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form" />
+        <field name="arch" type="xml">
+
+            <xpath expr="//page[@name='hr_settings']" position="after">
+
+    <page string="Contract Payroll" invisible="employee_type != 'contractor'">
+
+        <group string="Contract Payment Details">
+
+            <group>
+                <field name="template_company_id"/>
+                <field name="month_year"/>
+                <field name="meeting_qty"/>
+                <field name="meeting_rate"/>
+                <field name="script_qty"/>
+                <field name="script_rate"/>
+                <field name="video_qty"/>
+                <field name="video_rate"/>
+                <field name="total_amount" readonly="1"/>
+            </group>
+
+        </group>
+
+            <button name="action_download_contract_payslip"
+                    string="Download Contract Payslip"
+                    type="object"
+                    class="btn-primary"/>
+
+    </page>
+
+</xpath>
+
+        </field>
+    </record>
+</odoo>

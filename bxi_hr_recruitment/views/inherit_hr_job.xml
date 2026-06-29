@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+    <record id="hr_job_form_inherit_location" model="ir.ui.view">
+        <field name="name">hr.job.form.location</field>
+        <field name="model">hr.job</field>
+
+        <field name="inherit_id" ref="hr.view_hr_job_form"/>
+                <field name="arch" type="xml">
+
+            <!-- Add Job Location after Expected Degree -->
+            <xpath expr='//div[@name="recruitment_target"]'
+                   position="after">
+                <field name="location_type"/>
+                  <field name="location_ids"
+                           widget="many2many_tags"
+                           invisible="location_type == 'all'"/>
+                <field name="employee_category"/>
+                    <field name="min_experience"/>
+                    <field name="max_experience"/>
+                <field name="salary"/>
+                <field name="requisition_id"/>
+                <field name="billed_unbilled"/>
+                <field name="job_category"/>
+                <field name="target_date"/>
+                <field name="status"/>
+                <field name="job_company_id" widget="many2one"/>
+            </xpath>
+        </field>
+    </record>
+    </data>
+
+</odoo>
+
+

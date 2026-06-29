@@ -1,0 +1,504 @@
+<odoo>
+    <record id="action_report_appraisal_letter" model="ir.actions.report">
+        <field name="name">Appraisal Letter</field>
+        <field name="model">hr.employee.appraisal</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_hr_performance_bonus.report_appraisal_letter_template</field>
+        <field name="report_file">bxi_hr_performance_bonus.report_appraisal_letter_template</field>
+        <field name="print_report_name">
+            'Appraisal Letter - %s' % (object.employee_id.name)
+        </field>
+        <field name="paperformat_id" ref="paperformat_bonus_letter_a4" />
+    </record>
+
+    <template id="report_appraisal_letter_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+
+                <t t-set="company" t-value="o.template_company_id" />
+
+                <t t-if="o.template_company_id and o.template_company_id.id == 1">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_performance_bonus._report_appraisal_letter_template" />
+                    </t>
+                </t>
+
+                <t t-elif="o.template_company_id and o.template_company_id.id == 2">
+                    <t t-call="custom_template.bxi_n01_layout">
+                        <t t-call="bxi_hr_performance_bonus._report_appraisal_letter_template" />
+                    </t>
+                </t>
+
+                <t t-elif="o.template_company_id and o.template_company_id.id == 3">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_performance_bonus._report_appraisal_letter_template" />
+                    </t>
+                </t>
+
+                <t t-elif="o.template_company_id and o.template_company_id.id == 4">
+                    <t t-call="custom_template.bxi_n01_layout">
+                        <t t-call="bxi_hr_performance_bonus._report_appraisal_letter_template" />
+                    </t>
+                </t>
+
+                <t t-elif="o.template_company_id and o.template_company_id.id == 5">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_performance_bonus._report_appraisal_letter_template" />
+                    </t>
+                </t>
+
+                <t t-else="">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_performance_bonus._bonus_letter_content" />
+                    </t>
+                </t>
+
+            </t>
+        </t>
+    </template>
+
+    <template id="_report_appraisal_letter_template">
+        <div class="page" style="padding:40px; font-size:14px; font-family:Arial, sans-serif;">
+            <t t-if="o.letter_type == 'appraisal_promotion_letter'">
+                <h2 style="text-align:center;">
+                    Appraisal and Promotion Letter
+                </h2>
+            </t>
+            <t t-elif="o.letter_type == 'appraisal_letter'">
+                <h2 style="text-align:center;">
+                    Appraisal Letter
+                </h2>
+            </t>
+            <br />
+            <table style="width:100%; border-collapse:collapse;">
+                <tr>
+                    <td>
+                        <strong>Release Date:</strong>
+                        <span t-field="o.release_date" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong>Employee Name:</strong>
+                        <span t-field="o.employee_id.name" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong>Effective Date:</strong>
+                        <span t-field="o.effective_date" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong>Emp. Code:</strong>
+                        <span t-field="o.employee_code" />
+                    </td>
+                </tr>
+            </table>
+
+            <br />
+            <br />
+
+            <p> Dear <strong>
+                    <span t-field="o.employee_id.name" />
+                </strong>, </p>
+
+            <p>
+                <strong>Congratulations!</strong>
+            </p>
+
+            <p style="text-align:justify;">
+                We take this opportunity to congratulate you, and express our appreciation
+                for your valuable contribution in achieving company objectives. We are
+                confident that you will continue the good work in the same spirit of
+                commitment and sincerity and grow with our organization.
+            </p>
+
+            <p style="text-align:justify;"
+                t-if="o.letter_type in ['appraisal_promotion_letter', 'appraisal_letter']">
+                Consequent to the review of your performance, we take great pleasure to inform you
+                that as part of Performance appraisal, your salary structure has been revised with
+                effect from <strong>
+                    <span t-field="o.effective_date" />
+                </strong>. The details of
+                your revised salary structure have been provided under Annexure-I of this letter. </p>
+
+            <p style="text-align:justify;"
+                t-if="o.letter_type in ['appraisal_promotion_letter', 'promotion_letter']">
+                <t t-if="o.letter_type == 'promotion_letter'"> Additionally, We are delighted to
+                    announce your promotion to the role of <strong>
+                        <t t-if="o.promoted_job_id">
+                            <span t-field="o.promoted_job_id.name" />
+                        </t>
+                        <t t-else="">
+                            <span t-field="o.promotion_job_id.name" />
+                        </t>
+                    </strong>
+                    <t
+                        t-if="o.promoted_department_id"> in the <strong>
+                            <span t-field="o.promoted_department_id.name" />
+                        </strong>
+                    department </t>
+                    <t t-if="o.promoted_position"> as <strong>
+                            <span t-field="o.promoted_position" />
+                        </strong>
+                    </t>
+                    with effect from <strong>
+                        <span t-field="o.effective_date" />
+                    </strong>. </t>
+                <t t-else=""> Additionally, we are delighted to announce your promotion to the role
+                    of <strong>
+                        <t t-if="o.promoted_job_id">
+                            <span t-field="o.promoted_job_id.name" />
+                        </t>
+                        <t t-else="">
+                            <span t-field="o.promotion_job_id.name" />
+                        </t>
+                    </strong>
+                    <t
+                        t-if="o.promoted_department_id"> in the <strong>
+                            <span t-field="o.promoted_department_id.name" />
+                        </strong>
+                    department </t>
+                    <t t-if="o.promoted_position"> as <strong>
+                            <span t-field="o.promoted_position" />
+                        </strong>
+                    </t>
+                    . </t>
+            </p>
+            <p>
+                Please note that the content of this letter being personal and confidential
+                should not be divulged with others.
+            </p>
+
+            <p>
+                All other terms and conditions of your employment remain unchanged. We look
+                forward to a mutually beneficial association and your active participation
+                as a key contributor in BXITech’s journey towards our shared goals and a
+                rewarding future ahead!
+            </p>
+
+            <br />
+            <br />
+            <br />
+            <table style="width:100%;">
+                <tr>
+                    <td style="width:50%;">
+                        <strong>Sincerely,</strong>
+                        <br />
+                        <br />
+                    </td>
+                </tr>
+            </table>
+
+            <table style="width:100%;">
+                <tr>
+                    <td style="width:50%;">
+                        <strong>Pallavi Paliwal</strong>
+                        <br /> Partner &amp; MD </td>
+
+                    <td style="width:50%; text-align:right;">
+                        <strong>Nazia Khan</strong>
+                        <br /> Director-Human Resources </td>
+                </tr>
+            </table>
+        </div>
+        <t>
+            <div class="page"
+                style="page-break-before: always; padding:40px; font-family:Arial, sans-serif;">
+                <div style="text-align:center; margin-bottom:20px;">
+                    <h2 style="color:#1b75bb;">Annexure I</h2>
+                </div>
+
+                <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px;">
+                            <strong>Band</strong>
+                        </td>
+                        <td style="border:1px solid #000; padding:8px;">
+                            <span t-field="o.band" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px;">
+                            <strong>Skill Category*</strong>
+                        </td>
+                        <td style="border:1px solid #000; padding:8px;">
+                            <span t-field="o.employee_id.emp_skill_category" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px;">
+                            <strong>Department</strong>
+                        </td>
+                        <td style="border:1px solid #000; padding:8px;">
+                            <span t-field="o.department_id.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px;">
+                            <strong>Category</strong>
+                        </td>
+                        <td style="border:1px solid #000; padding:8px;">
+                            <span t-field="o.employee_id.emp_category" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px;">
+                            <strong>City</strong>
+                        </td>
+                        <td style="border:1px solid #000; padding:8px;">
+                            <span t-field="o.employee_id.work_location_id" />
+                        </td>
+                    </tr>
+                </table>
+
+                <br />
+
+                <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
+                    <tr style="background:#b7dff5;">
+                        <th colspan="2" style="border:1px solid #000; padding:8px;">
+                            Monthly Components (INR)
+                        </th>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px;">Basic Salary</td>
+                        <td style="border:1px solid #000; padding:8px; text-align:right;">
+                            <span t-esc="o.basic_salary"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px;">Flexible Allowance</td>
+                        <td style="border:1px solid #000; padding:8px; text-align:right;">
+                            <span t-field="o.flexible_allowance" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px; font-weight:bold;">TOTAL
+                            Monthly (A)</td>
+                        <td
+                            style="border:1px solid #000; padding:8px; text-align:right; font-weight:bold;">
+                            <span t-field="o.monthly_total" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px; font-weight:bold;">TOTAL
+                            Monthly Components: Annualized (B)</td>
+                        <td
+                            style="border:1px solid #000; padding:8px; text-align:right; font-weight:bold;">
+                            <span t-field="o.annual_fixed" />
+                        </td>
+                    </tr>
+                </table>
+
+                <br />
+
+                <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
+                    <tr style="background:#b7dff5;">
+                        <th colspan="2" style="border:1px solid #000; padding:8px;">
+                            Retirals &amp; Other Benefits
+                        </th>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px;">Provident Fund</td>
+                        <td style="border:1px solid #000; padding:8px; text-align:right;">
+                            <span t-field="o.pf" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px;">Medical Insurance</td>
+                        <td style="border:1px solid #000; padding:8px; text-align:right;">
+                            <span t-field="o.insurance" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px;">NPS</td>
+                        <td style="border:1px solid #000; padding:8px; text-align:right;">
+                            <span t-field="o.nps" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px; font-weight:bold;">TOTAL
+                            Retirals (C)</td>
+                        <td
+                            style="border:1px solid #000; padding:8px; text-align:right; font-weight:bold;">
+                            <span t-field="o.retiral_total" />
+                        </td>
+                    </tr>
+                </table>
+
+                <br />
+
+                <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
+                    <tr style="background:#b7dff5;">
+                        <th colspan="2" style="border:1px solid #000; padding:8px;">
+                            Variable Components (INR)
+                        </th>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px;">Performance Bonus</td>
+                        <td style="border:1px solid #000; padding:8px; text-align:right;">
+                            <span t-field="o.performance_bonus" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px;">Organization Performance
+                            Bonus</td>
+                        <td style="border:1px solid #000; padding:8px; text-align:right;">
+                            <span t-field="o.org_bonus" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border:1px solid #000; padding:8px; font-weight:bold;">TOTAL
+                            Variable Components (D)</td>
+                        <td
+                            style="border:1px solid #000; padding:8px; text-align:right; font-weight:bold;">
+                            <span t-field="o.variable_total" />
+                        </td>
+                    </tr>
+                    <tr style="background:#b7dff5;">
+                        <td style="border:1px solid #000; padding:8px; font-weight:bold;">COST TO
+                            COMPANY (B+C+D)</td>
+                        <td
+                            style="border:1px solid #000; padding:8px; text-align:right; font-weight:bold;">
+                            <span t-field="o.ctc_total" />
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="page"
+                style="page-break-before:always; padding:15px 20px; font-family:Arial, sans-serif; font-size:9px; line-height:14px;">
+                <div style="text-align:center; margin-bottom:10px;">
+                    <h2 style="font-weight:bold; margin:0; font-size:16px;">
+                        Component Guidelines
+                    </h2>
+                </div>
+
+                <p style="font-size:11px;text-align:justify;">
+                    We have been working towards providing our employees a distinct advantage by
+                    designing a salary structure that is easy to comprehend and significantly
+                    beneficial with respect to monetary aspects and cash flow. The key feature
+                    of our compensation structure is to balance employee needs, statutory
+                    requirements, and organizational expectations in a just and fair manner.
+                </p>
+
+                <p style="font-size:11px;text-align:justify;">
+                    To facilitate understanding, your annual compensation has been categorized under
+                    the following broad heads:
+                </p>
+
+                <br />
+
+                <table
+                    style="width:100%; border-collapse:collapse; border:1px solid #000; table-layout:fixed; font-size:12px;">
+                    <thead>
+                        <tr style="background:#0070c0; color:white;">
+                            <th style="border:1px solid #000; padding:8px; width:15%;">Components</th>
+                            <th style="border:1px solid #000; padding:8px; width:28%;">Descriptions</th>
+                            <th style="border:1px solid #000; padding:8px; width:22%;">Taxability</th>
+                            <th style="border:1px solid #000; padding:8px; width:35%;">Rules of
+                                Claiming</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border:1px solid #000; padding:8px;">Basic Salary</td>
+                            <td style="border:1px solid #000; padding:8px;">
+                                Standard across the organization; impacts other components such as
+                                PF, Gratuity, etc., and must be balanced.
+                            </td>
+                            <td style="border:1px solid #000; padding:8px;">Fully Taxable</td>
+                            <td style="border:1px solid #000; padding:8px;">
+                                During the service, PF accretions can be withdrawn for certain
+                                specific requirements as per provisions of the EPF and Miscellaneous
+                                Provisions Act 1952.PF for BXITECH is maintained in-house by an
+                                exempted trust under the name of EPF Trust.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="border:1px solid #000; padding:8px;">Employer’s Contribution
+                                to Provident Fund</td>
+                            <td style="border:1px solid #000; padding:8px;">
+                                12% of Basic contributed by employer; 8.33% (or INR 1250) goes to
+                                EPS; pension available post-retirement except for opt-outs.
+                            </td>
+                            <td style="border:1px solid #000; padding:8px;">
+                                Employer's contribution to Provident During the service, PF
+                                accretions Fund to the extent of 12% of Basic Salary is tax free.
+                                Employees' contribution to PF is eligible for tax benefit under
+                                Section 80C subject to an overall ceiling of INR 150,000/-
+                            </td>
+                            <td style="border:1px solid #000; padding:8px;">Auto</td>
+                        </tr>
+                        <tr>
+                            <td style="border:1px solid #000; padding:8px;">Gratuity</td>
+                            <td style="border:1px solid #000; padding:8px;">
+                                Employer pays 15 days Basic per year of service after 5 years, max
+                                INR 20 Lakh.
+                            </td>
+                            <td style="border:1px solid #000; padding:8px;">
+                                Gratuity amount paid to the employee is exempted from tax for up to
+                                INR 20 Lakh from all previous / existing employers. Any amount paid
+                                above this is subject to tax. The tax exemption is subject to the
+                                employee giving a declaration that he/she has not received gratuity
+                                above the maximum permissible amount in the previous employments
+                            </td>
+                            <td style="border:1px solid #000; padding:8px;">
+                                Gratuity is receivable by an employee only when he / she leaves the
+                                service after completion of a continuous service of at least 5
+                                years.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="border:1px solid #000; padding:8px;">Performance Bonus (PB)</td>
+                            <td style="border:1px solid #000; padding:8px;">
+                                Year-end bonus, calculated based on KPIs and company performance;
+                                payout varies from 0–100%+ of total potential.
+                            </td>
+                            <td style="border:1px solid #000; padding:8px;">Fully Taxable</td>
+                            <td style="border:1px solid #000; padding:8px;">
+                                The quantum of payout will be based on the current year's bonus plan
+                                guidelines. The amount mentioned in your letter is the total earning
+                                potential; the payout could vary from 0% to 100% or more. This will
+                                be calculated based on your individual contributions against the Key
+                                Performance Parameters (OGSM) as well as the company's performance.
+                                Bonus will be paid 60 days after the completion of the review cycle.
+                                Bonus (of any kind) is not earned unless the employee is on rolls of
+                                BXITECH on the Bonus Pay Day (except where governed by local
+                                statutory norms).
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <br />
+                <br />
+
+                <p style="font-size:11px;text-align:justify;">
+                    <strong>Additional Notes:</strong> Gratuity payable as per rules. - Year-end
+                    Performance Bonus is not payable on a prorated basis if the employee leaves
+                    before completion of the performance review cycle. Employees need to be active
+                    in the system for 60 days post review period to be eligible for bonus payout.
+                    Please refer to the Bonus Policy for more details. - For details on any of the
+                    above, please refer “Guidelines on your compensation structure”. - Personal tax
+                    liability arising out of compensation will be borne solely by the employee. Your
+                    compensation details are personal and strictly confidential. This should not be
+                    shared with anyone other than your reporting manager and HR. </p>
+
+                <p style="font-size:11px;text-align:justify;">
+                    Your compensation details are strictly confidential. Any breach will be treated
+                    as misconduct and necessary disciplinary action will be taken. As in the past,
+                    BXITech strives to create a unique employee experience and design an optimal
+                    compensation and benefits package suited to employee needs. We thank you for
+                    being an integral part of this journey towards excellence and growth and hope
+                    our association continues for years to come. We look forward for you being an
+                    integral part of this arduous yet fulfilling journey towards excellence and
+                    growth and hope our relationship will go a long way!
+                </p>
+            </div>
+        </t>
+    </template>
+
+</odoo>
