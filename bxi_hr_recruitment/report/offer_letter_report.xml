@@ -1,0 +1,25 @@
+<odoo>
+    <record id="paperformat_offer_letter_letter_a4" model="report.paperformat">
+            <field name="name">Employee Bonus Letter A4</field>
+            <field name="default" eval="False"/>
+            <field name="format">A4</field>
+            <field name="orientation">Portrait</field>
+            <field name="margin_top">7</field>
+            <field name="margin_bottom">25</field>
+            <field name="margin_left">5</field>
+            <field name="margin_right">5</field>
+            <field name="header_spacing">5</field>
+        </record>
+
+    <record id="action_report_offer_letter" model="ir.actions.report">
+        <field name="name">Offer Letter</field>
+        <field name="model">hr.applicant</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_hr_recruitment.report_offer_letter</field>
+        <field name="report_file">bxi_hr_recruitment.report_offer_letter</field>
+        <field name="binding_model_id" ref="hr_recruitment.model_hr_applicant"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Offer Letter - %s' % (object.partner_name)</field>
+        <field name="paperformat_id" ref="paperformat_offer_letter_letter_a4" />
+    </record>
+</odoo>

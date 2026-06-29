@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hr_applicant_experience,hr.applicant.experience,model_hr_applicant_experience,,1,1,1,1
+access_hr_location,hr.location,model_hr_location,base.group_user,1,1,1,1
+access_hr_applicant_company,hr.applicant.company,model_hr_applicant_company,base.group_user,1,1,1,1

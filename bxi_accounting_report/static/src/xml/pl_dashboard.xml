@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="bxi_accounting_report.PLTemplate" owl="1">
+
+<div style="
+    height: 93vh;
+    overflow: auto;
+    background: white;
+    padding: 10px;
+">
+<style>
+.header-dark {background:#0b3c4c; color:white;}
+.header-blue {background:#6fa8dc;}
+.portfolio {background:#7bdcb5; font-weight:bold;}
+.light {background:#f5f5c6;}
+
+thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+.wrap-cell {
+    width: 220px;
+    max-width: 220px;
+    white-space: normal;
+    word-break: break-all;
+}
+
+table { border-collapse: collapse; }
+td, th {
+    border:1px solid black;
+    padding:4px;
+    font-size:12px;
+}
+</style>
+
+<table style="width:max-content; min-width:100%;">
+
+<!-- HEADER -->
+<tr class="header-dark">
+    <th rowspan="3">Client Partner</th>
+    <th rowspan="3">GEO - Country - Industry</th>
+    <th rowspan="3">Customer Name</th>
+    <th rowspan="3">Work Order</th>
+    <th rowspan="3">Tenure(month)</th>
+    <th rowspan="3">Booking Value (<t t-esc="state.currency.symbol"/>)</th>
+    <th rowspan="3">Billing Value (<t t-esc="state.currency.symbol"/>)</th>
+
+    <t t-foreach="state.quarters" t-as="q" t-key="'h1_' + q">
+        <th colspan="2" class="header-blue">
+            <t t-esc="getQuarterLabel(q)"/>
+        </th>
+    </t>
+</tr>
+
+<tr>
+    <t t-foreach="state.quarters" t-as="q" t-key="'h2_' + q">
+        <th colspan="2" style="text-align:center;">Revenue</th>
+    </t>
+</tr>
+
+<tr>
+    <t t-foreach="state.quarters" t-as="q" t-key="'h3_' + q">
+        <th>Projected</th>
+        <th>Actual</th>
+    </t>
+</tr>
+
+<!-- DATA -->
+<t t-foreach="state.customers || []"
+   t-as="cust"
+   t-key="'cust_' + cust.customer">
+
+    <!-- CUSTOMER HEADER -->
+    <tr style="background:#d4f4dd;">
+        <td><b><t t-esc="cust.customer"/></b></td>
+        <td colspan="6"></td>
+
+        <t t-foreach="state.quarters || []"
+           t-as="q"
+           t-key="'head_' + cust.customer + '_' + q">
+            <td></td>
+            <td></td>
+        </t>
+    </tr>
+
+    <!-- SALESPERSON ROW -->
+    <t t-foreach="cust.salespersons"
+       t-as="sp"
+       t-key="'sp_' + cust.customer + '_' + sp.salesperson">
+
+        <tr>
+            <td><t t-esc="sp.salesperson"/></td>
+            <td><t t-esc="cust.country or ''"/></td>
+            <td class="wrap-cell">
+                <t t-esc="cust.customer"/>
+            </td>
+            <td class="wrap-cell">
+                <t t-esc="sp.products"/>
+            </td>   
+            <td></td>
+            <td>0</td>
+            <td><t t-esc="sp.billing"/></td>
+
+            <t t-foreach="state.quarters || []"
+               t-as="q"
+               t-key="'q_' + cust.customer + '_' + sp.salesperson + '_' + q">
+
+                <td class="light">
+                    <t t-esc="sp.quarters_projected[q] || 0"/>
+                </td>
+                <td class="light">
+                    <t t-esc="sp.quarters_actual[q] || 0"/>
+                </td>
+
+            </t>
+        </tr>
+
+    </t>
+
+    <!-- PORTFOLIO TOTAL -->
+    <tr class="portfolio">
+        <td colspan="5"><b>Portfolio Total</b></td>
+        <td>0</td>
+        <td><t t-esc="cust.total_billing"/></td>
+
+        <t t-foreach="state.quarters || []"
+           t-as="q"
+           t-key="'tot_' + cust.customer + '_' + q">
+
+            <td><t t-esc="cust.quarters_projected[q] || 0"/></td>
+            <td><t t-esc="cust.quarters_actual[q] || 0"/></td>
+
+        </t>
+    </tr>
+
+</t>
+
+<!-- ================= EXPENSE ================= -->
+<tr class="portfolio">
+    <td colspan="3"><b>Expenses</b></td>
+    <td>People (<t t-esc="state.currency.symbol"/>)</td>
+    <td colspan="3">
+        <t t-esc="state.expenses.people || 0"/>
+    </td>
+
+    <t t-foreach="state.quarters" t-as="q" t-key="'e1_' + q">
+        <td></td><td></td>
+    </t>
+</tr>
+
+<tr>
+    <td colspan="3"></td>
+    <td>Tools (<t t-esc="state.currency.symbol"/>)</td>
+    <td colspan="3">
+        <t t-esc="state.expenses.tools || 0"/>
+    </td>
+
+    <t t-foreach="state.quarters" t-as="q" t-key="'e2_' + q">
+        <td></td><td></td>
+    </t>
+</tr>
+
+<tr>
+    <td colspan="3"></td>
+    <td>Travel (<t t-esc="state.currency.symbol"/>)</td>
+    <td colspan="3">
+        <t t-esc="state.expenses.travel || 0"/>
+    </td>
+
+    <t t-foreach="state.quarters" t-as="q" t-key="'e3_' + q">
+        <td></td><td></td>
+    </t>
+</tr>
+
+<tr>
+    <td colspan="3"></td>
+    <td>Misc (<t t-esc="state.currency.symbol"/>)</td>
+    <td colspan="3">
+        <t t-esc="state.expenses.misc || 0"/>
+    </td>
+
+    <t t-foreach="state.quarters" t-as="q" t-key="'e4_' + q">
+        <td></td><td></td>
+    </t>
+</tr>
+
+</table>
+</div>
+</t>
+</templates>

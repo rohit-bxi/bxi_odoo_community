@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_job_list" model="ir.ui.view">
+        <field name="name">hr.recruitment.tree</field>
+        <field name="model">hr.job</field>
+        <field name="inherit_id" ref="hr_recruitment.hr_job_view_tree_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='no_of_employee']" position="after">
+                 <field name="requisition_id"/>
+           </xpath>
+        </field>
+    </record>
+
+    <record id="view_hr_applicant_form_inherit_proposal" model="ir.ui.view">
+        <field name="name">hr.applicant.form.proposal.clean</field>
+        <field name="model">hr.applicant</field>
+        <field name="inherit_id" ref="hr_recruitment.hr_applicant_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='user_id']" position="replace">
+                <field name='hr_user_id'/>
+            </xpath>
+            <xpath expr="//field[@name='email_from']" position="after">
+                 <field name="cover_letter"/>
+                <field name="resume_file" filename="resume_filename"/>
+                <field name="job_title"/>
+            </xpath>
+
+            <xpath expr="//notebook" position="inside">
+
+                <!-- ===================== -->
+                <!-- INTERVIEW FEEDBACK -->
+                <!-- ===================== -->
+                <page string="Interview Feedback" invisible="stage_level &lt; 1">
+                    <field name="stage_level" invisible="1"/>
+
+                    <group string="Remarks">
+                        <group string="First Interviewer Details">
+                            <field name="first_interview_id"
+                                   placeholder="First Interviewer..."
+                                   invisible="stage_level &lt; 1"/>
+                            <field name="first_interview_remark"
+                                   placeholder="First Interview feedback..."
+                                   invisible="stage_level &lt; 1"/>
+                        </group>
+                        <group string="Second Interviewer Details">
+                            <field name="second_interview_id"
+                                   placeholder="Second Interviewer..."
+                                   invisible="stage_level &lt; 2"/>
+                            <field name="second_interview_remark"
+                                   placeholder="Second Interview feedback..."
+                                   invisible="stage_level &lt; 2"/>
+                        </group>
+                        <group string="Final Interviewer Details">
+                            <field name="final_interview_id"
+                                   placeholder="Final Interviewer..."
+                                   invisible="stage_level &lt; 3"/>
+                            <field name="final_interview_remark"
+                                   placeholder="Final Interview feedback..."
+                                   invisible="stage_level &lt; 3"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="Salary Calculation" invisible="stage_level &lt; 4">
+
+                    <group string="Calculator Type">
+                        <field name="revenue_type" widget="radio" options="{'horizontal': true}"/>
+                    </group>
+
+                    <group string="Employee Info" col="2">
+                        <field name="band"/>
+                    </group>
+
+                    <group string="Monthly Components" col="2">
+                        <field name="basic_salary"/>
+                        <field name="flexible_allowance"/>
+                        <field name="monthly_total" readonly="1"/>
+                        <field name="annual_fixed" readonly="1"/>
+                    </group>
+
+                    <group string="Retirals and Benefits" col="2">
+                        <field name="pf"/>
+                        <field name="insurance"/>
+                        <field name="nps"/>
+                        <field name="retiral_total" readonly="1"/>
+                    </group>
+
+                    <group string="Variable Components" col="2">
+                        <field name="performance_bonus" readonly="revenue_type in ['nonrevenue']"/>
+                        <field name="performance_bonus_percentage" readonly="revenue_type in ['simple', 'nonrevenue']"/>
+                        <field name="org_bonus" readonly="revenue_type == 'nonrevenue'"/>
+                        <field name="org_bonus_percentage" readonly="revenue_type == 'simple'"/>
+                        <field name="variable_total" readonly="1" />
+                    </group>
+
+                    <group string="Final CTC">
+                        <field name="ctc_total" readonly="1" class="oe_highlight"/>
+                    </group>
+
+                </page>
+                <!-- ===================== -->
+                <!-- PROPOSAL / OFFER -->
+                <!-- ===================== -->
+                <page string="Proposal" invisible="stage_level &lt; 4">
+
+                    <!-- OFFER LETTER ACTIONS -->
+                    <group string="Offer Letter Actions" class="oe_button_box">
+
+                        <field name="offer_letter_attachment_id" invisible="1"/>
+
+                        <button name="action_send_application_form"
+                                type="object"
+                                string="Send Application Form"
+                                class="btn-primary"/>
+
+                        <button name="action_generate_offer_letter"
+                                type="object"
+                                string="Generate Offer Letter"
+                                class="btn-primary"/>
+<!--                                invisible="offer_letter_attachment_id"/>-->
+
+                        <button name="action_view_offer_letter"
+                                type="object"
+                                string="View Offer Letter"
+                                class="btn-secondary"
+                                invisible="not offer_letter_attachment_id"/>
+                    </group>
+
+                    <!-- ===================== -->
+                    <!-- PERSONAL DETAILS -->
+                    <!-- ===================== -->
+                    <group string="Personal Information">
+                        <group>
+                            <field name="partner_name"/>
+                            <field name="contact_number"/>
+                            <field name="email_from"/>
+                            <field name="cover_letter"/>
+                            <field name="resume_file" filename="resume_filename"/>
+                            <field name="photograph" widget="many2many_binary"/>
+                        </group>
+
+                        <group>
+                            <field name="father_name"/>
+                            <field name="mother_name"/>
+                            <field name="aadhar_number"/>
+                            <field name="pan_number"/>
+                        </group>
+                    </group>
+
+                    <!-- ADDRESS -->
+                    <group string="Address and Joining">
+                        <field name="full_address"/>
+                        <field name="location_ids"/>
+                        <field name="joining_date"/>
+                    </group>
+
+                    <!-- ===================== -->
+                    <!-- DOCUMENTS -->
+                    <!-- ===================== -->
+                    <group string="Educational Qualification">
+                        <field name="doc_10th_id" widget="many2many_binary"/>
+                        <field name="doc_12th_id" widget="many2many_binary"/>
+                        <field name="doc_graduation_id" widget="many2many_binary"/>
+                        <field name="doc_master_id" widget="many2many_binary"/>
+                        <field name="any_certificate" widget="many2many_binary"/>
+                    </group>
+
+                    <!-- ===================== -->
+                    <!-- EXPERIENCE -->
+                    <!-- ===================== -->
+                    <group string="Work Experience">
+
+                        <field name="experience_ids"
+                               context="{'default_applicant_id': id}"
+                               mode="list,form"
+                               nolabel="1">
+
+                            <list string="Experience">
+                                <field name="company_name"/>
+                                <field name="years"/>
+                            </list>
+
+                            <form string="Experience Details">
+                                <sheet>
+                                    <group>
+                                        <field name="applicant_id" invisible="1"/>
+                                        <field name="company_name"/>
+                                        <field name="years"/>
+                                    </group>
+
+                                    <group string="Documents" col="2">
+                                        <field name="joining_letter"
+                                               filename="joining_letter_filename"/>
+                                        <field name="experience_certificate"
+                                               filename="experience_certificate_filename"/>
+
+                                        <field name="relieving_letter"
+                                               filename="relieving_letter_filename"/>
+
+                                        <field name="other_certificate"
+                                               filename="apprsail_letter_filename"/>
+                                        <field name="bank_statement_id" widget="many2many_binary"/>
+                                        <field name="salary_slip_id" widget="many2many_binary"/>
+                                    </group>
+                                </sheet>
+                            </form>
+
+                        </field>
+                    </group>
+
+                </page>
+                <page string="Offer Approval" invisible="stage_level &lt; 4">
+
+                    <group string="Offer Letter Details">
+
+                        <field name="reporting_manager_id"/>
+                        <field name="hr_user_id"/>
+                        <field name="sign_request_id" readonly="1"/>
+
+                    </group>
+
+                </page>
+
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,2112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="report_offer_letter">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="company" t-value="o.template_company_id" />
+                <t t-if="o.template_company_id and o.template_company_id.id == 1">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_recruitment._report_offer_letter" />
+                    </t>
+                </t>
+
+                <t t-elif="o.template_company_id and o.template_company_id.id == 2">
+                    <t t-call="custom_template.bxi_n01_layout">
+                        <t t-call="bxi_hr_recruitment._report_offer_letter" />
+                    </t>
+                </t>
+
+                <t t-elif="o.template_company_id and o.template_company_id.id == 3">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_recruitment._report_offer_letter" />
+                    </t>
+                </t>
+
+                <t t-elif="o.template_company_id and o.template_company_id.id == 4">
+                    <t t-call="custom_template.bxi_n01_layout">
+                        <t t-call="bxi_hr_recruitment._report_offer_letter" />
+                    </t>
+                </t>
+
+                <t t-elif="o.template_company_id and o.template_company_id.id == 5">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_recruitment._report_offer_letter" />
+                    </t>
+                </t>
+
+                <t t-else="">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_recruitment._report_offer_letter" />
+                    </t>
+                </t>
+
+            </t>
+        </t>
+    </template>
+    <template id="_report_offer_letter">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <!-- ===================== PAGE 1 ===================== -->
+                <div class="page" style="min-height:950px;padding:15px 20px; font-family:Arial, sans-serif; font-size:18px; line-height:1.8;">   
+                    <div class="offer-title"
+                        style="text-align: center; font-weight: bold; font-size: 28px; color: #1e90ff;">
+                        OFFER LETTER
+                    </div>
+                    <!-- Offer Release Date -->
+                    <t t-set="datetime" t-value="datetime" />
+
+                    <p class="offer-meta" style="margin-top: 20px;">
+                        <strong>Offer Release Date:</strong>
+                        <t t-esc="datetime.datetime.now().strftime('%b %d, %Y')" />
+                    </p>
+
+                    <!-- Candidate Details -->
+                    <table style="width: 100%;">
+                        <tr>
+                            <!-- LEFT: Candidate Details -->
+                            <td style="text-align: left; vertical-align: top;">
+                                <t t-esc="o.partner_name" />
+                                <br />
+                                <t t-esc="o.full_address" />
+                            </td>
+
+                            <!-- RIGHT: Document ID -->
+                            <td style="text-align: right; vertical-align: top;">
+                                <strong>Document ID - </strong>
+                                <t t-esc="o.offer_letter_id" />
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Greeting -->
+                    <p style="margin-top: 20px;"> Dear <strong>
+                            <t t-esc="o.partner_name" />
+                        </strong>, </p>
+                    <!-- Paragraph 1 -->
+                    <p> Congratulations! With reference to your application and subsequent interview
+                        with us for a career in our organization, we are pleased to inform you that
+                        you have been selected for employment in <span class="company-highlight">
+                            <t t-esc="company.name" />
+                        </span>. (Herein
+                        referred as "<span class="company-highlight">
+                            <t t-esc="company.name" />
+                        </span>" or "Company")
+                        we are pleased to inform you that you have been selected for employment in
+                        our organization as <strong>
+                            <t t-esc="o.job_id.name" />
+                        </strong>. 
+                        Your designated Job Title will be <t t-esc="o.job_title"/>. You will
+                        be reporting directly to <strong>
+                            <t t-esc="o.reporting_manager_id.name" />
+                        </strong>
+                        . </p>
+
+                    <!-- Paragraph 2 -->
+                    <p>
+                        In the coming year, keep aspiring for change and be known for your thoughts
+                        and your work;
+                        be the catalyst that this fast-changing world needs; keep sharpening your
+                        skills and
+                        investing in yourself; and last but not the least - keep your work and life
+                        in perfect
+                        balance, because that is the prerequisite for success.
+                    </p>
+
+                    <!-- Paragraph 3 -->
+                    <p> We take this opportunity to thank &amp; appreciate your decision to join <span
+                            class="company-highlight">
+                            <t t-esc="company.name" />
+                        </span>. You are
+                        requested to join us on or before <strong>
+                            <t t-esc="o.joining_date.strftime('%Y-%m-%d') if o.joining_date else ''" />
+                        </strong>
+                        . </p>
+
+                    <!-- Paragraph 4 -->
+                    <p>
+                        You will be on probation for a period of 6 months from the date of your
+                        joining.
+                        Your compensation would be as outlined in a separate document (Annexure I)
+                        "Salary Structure".
+                        The general terms and conditions governing your employment are outlined in
+                        Annexure III.
+                    </p>
+                </div>
+
+                <!-- ===================== PAGE 2 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <!-- Paragraph 5 -->
+                    <p> You would be required to furnish digital copies of the documents and other
+                        listed information in Annexure IV, before your joining date. Please note
+                        that the submission of all the documents is mandatory to facilitate joining,
+                        background verification / validation and appointment process at <span
+                            class="company-highlight">
+                            <t t-esc="company.name" />
+                        </span>. Annexure II
+                        provides details on the various compensation components and selected
+                        benefits that we offer you as a part of the <span class="company-highlight">
+                            <t t-esc="company.name" />
+                        </span> family. </p>
+
+                    <!-- Paragraph 6 -->
+                    <p> This offer will be valid subject to successful clearance of your
+                        pre-employment background verification check conducted by <span
+                            class="company-highlight">
+                            <t t-esc="company.name" />
+                        </span>. Your written
+                        consent and requisite copies of documents is necessary to complete the
+                        pre-employment check. You are requested to complete the submission of
+                        requisite documents for pre-employment background check within two business
+                        days from the date of acceptance of our offer of employment. </p>
+
+                    <p>
+                        Your cooperation is solicited in this regard to enable us complete the
+                        necessary
+                        pre-employment check on time and enable you on-board us.
+                    </p>
+
+                    <!-- Paragraph 7 -->
+                    <p>
+                        Any change in the date of joining needs to be communicated to the concerned
+                        recruiter at
+                        least one week in advance.
+                    </p>
+
+                    <!-- Paragraph 8 -->
+                    <p>
+                        Looking ahead, we see exciting times - we look up to you to provide impetus
+                        in accomplishing
+                        our mutual endeavor of being the best in the business of IT Services.
+                        Welcome to our
+                        Organization! We look forward to a mutually fruitful association.
+                    </p>
+
+                    <!-- Signature -->
+                    <div class="signature">
+                        <p>
+                            <strong>For <t t-esc="company.name" /></strong>, </p>
+                    </div>
+
+                    <!-- Legal Note -->
+                    <p class="legal-text">
+                        This is system generated Letter/Contract. Agreeing to the Offer and its
+                        terms and
+                        conditions in the workflow is as good as signing of physical contract/letter
+                        on mutual
+                        agreement between us. It has all legal binding as per the law, if mutual
+                        trust is breached
+                        at any point of time.
+                    </p>
+
+                </div>
+                <!-- ===================== PAGE 3 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <h3 style="text-align:center; font-size:22px; margin-bottom:20px;">
+                        ANNEXURE I
+</h3>
+
+                    <table style="width:100%; border-collapse:collapse; font-size:14px;" border="1">
+
+                        <!-- MAIN HEADER -->
+                        <tr style="background:#d9e6f2;">
+                            <td colspan="4" style="text-align:center; padding:8px;">
+                                <strong>COMPENSATION PLAN</strong>
+                            </td>
+                        </tr>
+
+                        <!-- BASIC INFO -->
+                        <tr>
+                            <td style="padding:8px;">
+                                <strong>Band</strong>
+                            </td>
+                            <td style="padding:8px;">
+                                <t t-esc="o.band or ''" />
+                            </td>
+                            <td style="padding:8px;">
+                                <strong>Skill Category*</strong>
+                            </td>
+                            <td style="padding:8px;">Developing, designing</td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:8px;">
+                                <strong>Entity</strong>
+                            </td>
+                            <td style="padding:8px;">Information Technology</td>
+                            <td style="padding:8px;">
+                                <strong>Category</strong>
+                            </td>
+                            <td style="padding:8px;">Software</td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:8px;">
+                                <strong>City</strong>
+                            </td>
+                            <td colspan="3" style="padding:8px;">
+                                <t t-esc="o.location_ids.name or ''" />
+                            </td>
+                        </tr>
+
+                        <!-- MONTHLY COMPONENTS -->
+                        <tr style="background:#d9e6f2;">
+                            <td colspan="4" style="text-align:center; padding:8px;">
+                                <strong>Monthly Components (in INR)</strong>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="3" style="padding:8px;">Basic Salary</td>
+                            <td style="padding:8px;">
+                                <t t-esc="o.basic_salary" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="3" style="padding:8px;">Flexible Allowance</td>
+                            <td style="padding:8px;">
+                                <t t-esc="o.flexible_allowance" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="3" style="padding:8px;">
+                                <strong>TOTAL: Monthly</strong>
+                            </td>
+                            <td style="padding:8px;">
+                                <strong>
+                                    <t t-esc="o.monthly_total" />
+                                </strong>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="3" style="padding:8px;">
+                                <strong>TOTAL: Monthly Components Annualized</strong>
+                            </td>
+                            <td style="padding:8px;">
+                                <strong>
+                                    <t t-esc="o.annual_fixed" />
+                                </strong>
+                            </td>
+                        </tr>
+
+                        <!-- RETIRALS -->
+                        <tr style="background:#d9e6f2;">
+                            <td colspan="3" style="padding:8px;">
+                                <strong>Retirals &amp; Other Benefits (in INR)</strong>
+                            </td>
+                            <td></td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="3" style="padding:8px;">Provident Fund</td>
+                            <td style="padding:8px;">
+                                <t t-esc="o.pf" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="3" style="padding:8px;">Medical Insurance Premium/ESIC</td>
+                            <td style="padding:8px;">
+                                <t t-esc="o.insurance" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="3" style="padding:8px;">NPS</td>
+                            <td style="padding:8px;">
+                                <t t-esc="o.nps" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="3" style="padding:8px;">
+                                <strong>TOTAL: Retirals</strong>
+                            </td>
+                            <td style="padding:8px;">
+                                <strong>
+                                    <t t-esc="o.retiral_total" />
+                                </strong>
+                            </td>
+                        </tr>
+
+                        <!-- VARIABLE -->
+                        <tr>
+                            <td colspan="3" style="padding:8px;">
+                                Organization Performance Bonus (in Rs.)
+                            </td>
+                            <td style="padding:8px;">
+                                <t t-esc="o.org_bonus" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="3" style="padding:8px;">
+                                <strong>TOTAL: Variable Components</strong>
+                            </td>
+                            <td style="padding:8px;">
+                                <strong>
+                                    <t t-esc="o.variable_total" />
+                                </strong>
+                            </td>
+                        </tr>
+
+                        <!-- CTC -->
+                        <tr style="background:#d9e6f2;">
+                            <td colspan="3" style="padding:8px;">
+                                <strong>COST TO COMPANY</strong>
+                            </td>
+                            <td style="padding:8px;">
+                                <strong>
+                                    <t t-esc="o.ctc_total" />
+                                </strong>
+                            </td>
+                        </tr>
+
+                        <!-- SOCIAL SECURITY -->
+                        <tr>
+                            <td colspan="3" style="padding:8px;">
+                                <strong>** Social Security Scheme &amp; Health Benefits [As per
+                                    Scheme]</strong>
+                            </td>
+                            <td style="padding:8px;">
+                                <strong>Max Sub limit (per annum) INR</strong>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="3" style="padding:8px;">
+                                Hospitalization cost reimbursement limit
+                            </td>
+                            <td style="padding:8px;">500000</td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="3" style="padding:8px;">Group Personal Accident</td>
+                            <td style="padding:8px;">2000000</td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="3" style="padding:8px;">Group Term Life</td>
+                            <td style="padding:8px;">2000000</td>
+                        </tr>
+
+                    </table>
+                </div>
+                <!-- ===================== PAGE 4 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <h3 style="text-align:center;">ANNEXURE II</h3>
+
+                    <p style="font-weight:bold; text-decoration: underline;">
+                        EXPLANATION OF COMPENSATION STRUCTURE AND EMPLOYEE BENEFITS
+                    </p>
+
+                    <p>
+                        To facilitate an easy understanding of your compensation structure (Cost to
+                        Company, CTC),
+                        the various components have been categorized under the following broad
+                        heads:
+                    </p>
+
+                    <p> 1. Basic Salary <br /> 2. Flexible Allowance <br /> 3. Variable Pay <br />
+                        4. Retirals &amp; Insurance Benefit </p>
+
+                    <p>
+                        The details for each component falling under these heads are explained as
+                        following:
+                    </p>
+
+                    <p>
+                        <strong>1. BASIC SALARY</strong>
+                    </p>
+
+                    <p>
+                        The Basic Salary is standard across organization and brought to a certain
+                        value of the CTC.
+                        Basic salary has an impact on various other components such as the PF
+                        contribution, Gratuity
+                        etc.
+                        and hence has to be balanced so as not to substantially reduce the employee
+                        take home
+                        salary.
+                    </p>
+
+                    <p>
+                        <strong>2. FLEXIBLE ALLOWANCE</strong>
+                    </p>
+
+                    <p> Flexible allowance enables you to design your own compensation structure by
+                        providing an access to various benefits provided in <strong>BXI Tech</strong>.
+                        You can declare and distribute Flexible allowance amount across the various
+                        components, adhering to the defined entitlements by logging onto the
+                        Flexible Compensation Portal. Any undeclared amount will be paid along with
+                        the monthly salary as Flexible Allowance. </p>
+
+                </div>
+                <!-- ===================== PAGE 5 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <p>
+                        The components forming part of Flexible compensation plan are listed below:
+                    </p>
+
+                    <p> a. <strong>House Rent Allowance (HRA):</strong> House Rent Allowance caters
+                        to the rental expenses of the employee's accommodation. The HRA can be
+                        declared maximum up to 50% of the Basic Salary and is paid monthly. You can
+                        declare either Company Leased Accommodation or House Rent Allowance for your
+                        compensation structure. </p>
+
+                    <p> b. <strong>Company Leased Accommodation (CLA):</strong> Company Leased
+                        Accommodation is to facilitate for you to find accommodation of their choice
+                        within the defined Company Leased Accommodation limits. </p>
+
+                    <p> c. <strong>Leave Travel Assistance (LTA):</strong> Leave Travel allowance
+                        enables you to claim your holiday travel expenses. Declaration in LTA is
+                        allowed up to the maximum entitlement applicable as per your band
+                        eligibility. The procedure for claim will be as per the existing LTA rules.
+                        By default, LTA would be treated as reimbursement. </p>
+
+                    <p> d. <strong>NPS Employer Contribution:</strong> A voluntary contribution
+                        pension system administered and regulated by the Pension Fund Regulatory and
+                        Development Authority (PFRDA). Declaration in NPS Employer Contribution is
+                        allowed from 0% to 10% of Annual Basic Salary. You will need to follow PRAN
+                        generation process in NPS portal, post which declaration can be made in
+                        Flexible compensation portal. </p>
+
+                    <p> e. <strong>Fuel and Car Maintenance charges reimbursements:</strong> You are
+                        entitled to reimbursement of fuel expenses and maintenance charges (w.r.t.
+                        repairs, spare parts, annual vehicle insurance etc.,) on your car up to per
+                        the maximum entitlements as per your band eligibility. For claiming this,
+                        you will have to submit original bills on a monthly basis or as and when you
+                        wish to get this amount reimbursed. By default, Fuel and Vehicle Maintenance
+                        would be treated as reimbursement. </p>
+
+                </div>
+                <!-- ===================== PAGE 6 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <p> f. <strong>Car Lease Rental Reimbursement:</strong> We have an attractive
+                        Car Lease Scheme, according to which you can avail the following facilities: </p>
+
+                    <p style="margin-left:20px;"> You can select the model of the car within the
+                        limit prescribed in the scheme <br /> A Third-Party vendor will help you
+                        with the processing of the papers and other formalities <br /> The lease
+                        value up to maximum limit as per your band wise entitlements in Flexible
+                        Compensation portal will be contributed towards the EMI </p>
+
+                    <p>
+                        By default, car lease rental will be paid as part of monthly salary and
+                        treated as a taxable
+                        component,
+                        unless lease value is finalized.
+                    </p>
+
+                    <p> g. <strong>Food Wallet:</strong> Food Wallet is a voluntary benefit and is
+                        applicable for payments related to food and non-alcoholic beverages only.
+                        Once enrolled, the benefit should be availed within <strong>BXI Tech</strong>
+                        Cafeterias or food joints outside BXI Tech campus which serves only food and
+                        non-alcoholic beverages. This Food Wallet cannot be used in any other outlet
+                        other than designated food outlet. </p>
+
+                    <p> h. <strong>Superannuation:</strong> Superannuation is a welfare scheme aimed
+                        to provide you social security post-retirement from your service.
+                        Contribution to Superannuation Fund can be made up to 15% of your basic
+                        salary with an upper ceiling of INR 1.50 Lacs. </p>
+
+                    <p>
+                        <strong>3. VARIABLE PAY</strong>
+                    </p>
+
+                    <p> The scope of "Variable Pay" in your compensation structure will be governed
+                        based on your "employee group" in <strong>BXI Tech</strong>. </p>
+
+                </div>
+
+                <!-- ===================== PAGE 7 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <p> a. <strong>Performance Bonus (PB):</strong> Performance Bonus (PB) is
+                        payable in accordance with the Company Bonus Policy (sales / delivery /
+                        functional support) as applicable at that time. The quantum of pay-out will
+                        be subject to the current year Bonus Policy and will be calculated based on
+                        your individual contributions against your Key Performance Parameters (KPP)
+                        as well as the company performance. </p>
+
+                    <p>
+                        PB is payable at the end of the performance review cycle. To be eligible for
+                        the bonus
+                        pay-out, you need to be active on the rolls
+                        of the company at the time of reward distribution as per Performance review
+                        and Reward
+                        cycle.
+                    </p>
+
+                    <p>
+                        <strong>4. RETIRALS &amp; INSURANCE BENEFIT</strong>
+                    </p>
+
+                    <p>
+                        You and your dependents will be covered under Social Security as per the law
+                        and Insurance
+                        Benefits policy offered by the company.
+                        The amount mentioned under 'Insurance and Medical Benefits' in your
+                        compensation structure
+                        is applicable towards various insurances
+                        (Medical Insurance, Term Life Insurance, Personal Accident Insurance).
+                    </p>
+
+                    <p> a. <strong>Medical Insurance:</strong> Some of the salient features of the
+                        Group Health Medical Insurance policy are as follows: </p>
+
+                    <p style="margin-left:20px;"> The policy covers Hospitalization expenses and
+                        Maternity expenses. <br /> By default, employees (who are not covered under
+                        the ESI Act, 1948) will be mandatorily covered under the benefit. The
+                        premium payable depends on the dependents declared. <br /> Company reserves
+                        the right to amend the benefit plan and shall keep all employees
+                        informed/updated. </p>
+
+                    <p> You may refer <strong>Medical Insurance policy</strong> for further details. </p>
+
+                </div>
+
+                <!-- ===================== PAGE 8 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <p> b. <strong>Coverage under ESI:</strong> The employee will be covered under
+                        Employee State Insurance Scheme in accordance with the applicable norms and
+                        amendments made from time to time or any further amendment which may come
+                        into force during the employment tenure under Employees' State Insurance
+                        Act, 1948. </p>
+
+                    <p>
+                        Employee &amp; employer contributions will be as per prescribed ESI Rules.
+                        Employees covered
+                        under ESI would not be covered
+                        by default under BXI Tech medical insurance benefit. Option to enroll under
+                        medical
+                        insurance is available; however, in such a case,
+                        the additional cost of annual medical premium will be borne by the employee
+                        as per terms and
+                        conditions mentioned under Medical Insurance policy.
+                    </p>
+
+                    <p>
+                        The employee &amp; employer contribution will be payable as per current
+                        prescribed rates
+                        under
+                        ESI Rules.
+                    </p>
+
+                    <p> 3. <strong>Employer contribution to Provident Fund:</strong> As per
+                        statutory requirements, an employee has to contribute 12% of the basic
+                        salary towards Provident Fund (PF). BXI Tech contributes matching amount to
+                        PF. </p>
+
+                    <p>
+                        Out of employer contribution, 8.33% of monthly basic or INR 1,250/-
+                        whichever is lower is
+                        remitted to PF authorities towards Employees' Pension Scheme (EPS).
+                        All employees are thereby eligible to draw pension after superannuation,
+                        except those who
+                        have opted out of EPS as per Form-11 declaration.
+                    </p>
+
+                    <p>
+                        The percentage and amount are in compliance with the current PF Act and are
+                        subject to
+                        change as per amendment in the Act.
+                    </p>
+
+                    <p> 4. <strong>Gratuity:</strong> As per statutory requirements, it is the
+                        employer's statutory liability to pay 15 days' Basic salary (15/26 of
+                        monthly Basic) for every completed year of service to each employee on exit,
+                        for any reason after five years of continuous service, subject to a maximum
+                        limit of INR 20.00 lakhs. </p>
+
+                </div>
+
+
+                <!-- ===================== PAGE 9 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <p> 5. <strong>Term Life Insurance (including EDLI):</strong> You will be
+                        covered under Term Life Insurance which provides a safety net to the family
+                        in case of death of the employee due to any reason. The applicable amount is
+                        mentioned in your offer letter. </p>
+
+                    <p> 6. <strong>Disability Insurance:</strong> You are also covered against any
+                        permanent or partial disability that may arise due to an accident. The
+                        amount payable by the insurer for a disability shall depend on the nature of
+                        the disability. </p>
+
+                    <p>
+                        The amount mentioned in your offer letter is the maximum amount payable by
+                        the insurer as
+                        per the nature of disability.
+                        You may refer to the 'Personal Accident Insurance' policy for further
+                        details.
+                    </p>
+
+                    <p>
+                        <strong>ANNEXURE III</strong>
+                    </p>
+
+                    <p>
+                        <strong>Welcome aboard...</strong>
+                    </p>
+
+                    <p>
+                        It is often said that an organization can grow only if it empowers its
+                        employees to grow. At
+                        BXI Tech, we consciously realize this fact
+                        and have developed a five-fold path for individual enlightenment that not
+                        only covers basic
+                        monetary benefits but also takes care of
+                        professional growth by providing empowerment, knowledge, recognition,
+                        transformation and
+                        support.
+                    </p>
+
+                    <p>
+                        The following terms and conditions refer to our offer of employment to you
+                        and are to be
+                        read in conjunction with the offer letter attached.
+                    </p>
+
+                    <p>
+                        <strong>GENERAL TERMS AND CONDITIONS OF EMPLOYMENT</strong>
+                    </p>
+
+                    <p> 1. <strong>Location:</strong> Your joining location will be <t
+                            t-esc="o.location_ids.name" />. </p>
+
+                    <p> 2. <strong>Medical Check-up:</strong> Your employment may be subject to you
+                        being declared medically fit by a registered medical practitioner. The
+                        Company may request the same as and when required, as per Company Policies
+                        or client requirements. </p>
+
+                </div>
+                <!-- ===================== PAGE 10 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <p>
+                        The fitness testing (and accompanying results) will not lead to any
+                        subjective,
+                        discriminatory or unethical actions.
+                    </p>
+
+                    <p> 3. <strong>Probation:</strong> You will be on probation for a period of 6
+                        months from the date of your joining. Unless notified in writing, you will
+                        be deemed as "confirmed" on completion of your probation period. </p>
+
+                    <p> 4. <strong>Performance and Compensation Reviews:</strong> Your performance
+                        appraisal and compensation review will be governed by the Company's policy
+                        being in force from time to time. </p>
+
+                    <p> 5. <strong>Notice Period / Separation:</strong> Your employment with the
+                        Company can be terminated by either party by giving three months' advance
+                        notice. </p>
+
+                    <p>
+                        If the Company terminates employment and decides to relieve you before
+                        completion of the
+                        notice period,
+                        the "Basic" component of salary for the balance notice period will be paid
+                        to you.
+                    </p>
+
+                    <p>
+                        If you request early relieving, you will be liable to pay the Company the
+                        "Basic" component
+                        of salary
+                        for the balance notice period. Acceptance of early relieving is at the sole
+                        discretion of
+                        the Company.
+                    </p>
+
+                    <p>
+                        The 90 days' notice period may be extended if mutually agreed. On
+                        termination, you must
+                        complete all exit formalities,
+                        sign required documents, and return all Company property. Full and final
+                        settlement will be
+                        processed only after completion
+                        of separation procedures.
+                    </p>
+
+                    <p> 6. <strong>Agreements:</strong> You may be required to e-sign necessary
+                        agreements with the Company or client and complete all formalities at the
+                        time of joining and during the tenure of employment. </p>
+
+                </div>
+                <!-- ===================== PAGE 11 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <p>
+                        You may also be required to sign other Agreements with the Company, as the
+                        Company may
+                        decide from time to time,
+                        in order to secure the interests of the Company as also to ensure your
+                        performance and
+                        adherence to all terms,
+                        conditions, rules and regulations of the Company.
+                    </p>
+
+                    <p> 7. <strong>Employment of Relatives:</strong> At the time of joining, you
+                        must declare your family members / relatives working in a direct or indirect
+                        supervisory / subordinate relationship or as third-party resources in the
+                        same work unit (Respective L3 Organization Unit Level). This is required to
+                        avoid any conflict of interest. </p>
+
+                    <p>
+                        During employment, if any of your direct relatives are offered employment by
+                        BXI Tech or any
+                        of its subsidiary, group,
+                        or affiliate companies, you must voluntarily declare the same when the offer
+                        is made.
+                    </p>
+
+                    <p>
+                        Direct relatives include parents, spouse, brothers, sisters, and children of
+                        the employee.
+                    </p>
+
+                    <p> 8. <strong>Background and Reference Check:</strong> The Company will
+                        undertake background verification / validation including education, previous
+                        employment(s), criminal verification, database and web searches, address
+                        verification, and claims made in resumes/CVs through a third-party agency as
+                        and when required. </p>
+
+                    <p>
+                        You will be required to submit copies of documents listed in Annexure IV to
+                        facilitate
+                        joining and background verification.
+                    </p>
+
+                    <p>
+                        The Company may also undertake reference checks through at least two
+                        professional references
+                        submitted during selection.
+                    </p>
+
+                    <p>
+                        In case the prospective employee fails to submit required documents for
+                        background
+                        verification, they will not be considered for hiring.
+                    </p>
+
+                    <p>
+                        If the prospective employee fails the background verification process, the
+                        employment offer
+                        may be withdrawn.
+                    </p>
+
+                </div>
+                <!-- ===================== PAGE 12 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <h5>BACKGROUND VERIFICATION</h5>
+
+                    <p>
+                        Appropriate actions including withdrawal of offer of employment will be
+                        taken based on the
+                        recommendations
+                        given by the background verification team and in line with BXI Tech
+                        policies.
+                    </p>
+
+                    <h5>9. WORKING HOURS</h5>
+
+                    <p>
+                        You will be governed by the normal working hours as existing in the company.
+                        You may be
+                        required to work in shifts
+                        and/or extended working hours, as permitted by law, based on business
+                        requirements. These
+                        are subject to change from time to time.
+                    </p>
+
+                    <h5>10. MOBILITY</h5>
+
+                    <p>
+                        The Company may require you to perform duties and undertake assignments in
+                        any part of India
+                        or abroad,
+                        either at Company premises or client/customer locations. You may also be
+                        transferred to any
+                        office or branch
+                        of the Company anywhere in India or abroad.
+                    </p>
+
+                    <p>
+                        During deputation to client/customer premises, you shall abide by the
+                        applicable terms and
+                        conditions of such premises.
+                    </p>
+
+                    <h5>11. DEPUTATION / TRANSFER</h5>
+
+                    <p>
+                        The Company may depute you to any Group Company or transfer your services to
+                        any Group
+                        Company.
+                        On such transfer, the current employment terms will cease and new terms of
+                        the transferee
+                        Company will apply.
+                    </p>
+
+                    <p>
+                        However, continuity of service will be maintained.
+                    </p>
+
+                    <h5>12. RETIREMENT</h5>
+
+                    <p>
+                        You will retire from service on attaining superannuation at the age of 58
+                        years.
+                    </p>
+
+                    <h5>13. OTHER BENEFITS</h5>
+
+                    <p>
+                        You shall be eligible for other benefits including leaves, perquisites, etc.
+                        in accordance
+                        with prevailing Company policies.
+                        The Company reserves the right to modify these benefits as and when required
+                        and you will be
+                        informed accordingly.
+                    </p>
+
+                </div>
+                <!-- ===================== PAGE 13 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <h5>14. CORRECTNESS OF DETAILS FURNISHED</h5>
+
+                    <p>
+                        You have been appointed on the presumption that the particulars furnished in
+                        your
+                        application and resume are correct.
+                    </p>
+
+                    <p>
+                        In the event that the said particulars are found to be incorrect, or if you
+                        have concealed
+                        or withheld any relevant facts,
+                        your appointment with the Company shall stand terminated/cancelled without
+                        any notice.
+                    </p>
+
+                    <h5>15. DATA PROTECTION</h5>
+
+                    <p>
+                        a. The Employee consents to the holding and processing of personal data
+                        provided to the
+                        Employer for all purposes
+                        of administration and management of employment and/or the Company's
+                        business.
+                    </p>
+
+                    <p>
+                        b. The Employee agrees to personal data being collected, transferred,
+                        stored, and processed
+                        by the Company in India
+                        and any other countries where the Company, its Group Companies, and clients
+                        have offices, in
+                        accordance with applicable laws.
+                    </p>
+
+                    <p>
+                        c. The Employee agrees that the Company may share such data with advisors,
+                        agencies such as
+                        pension providers,
+                        medical and insurance providers, payroll administrators, background
+                        verification agencies,
+                        and regulatory authorities.
+                    </p>
+
+                    <p>
+                        d. During employment, the Employee has the right to amend or update personal
+                        information.
+                        The Company will take reasonable measures to safeguard personal data
+                        provided by the
+                        Employee,
+                        except in cases where disclosure is legally required.
+                    </p>
+
+                    <p>
+                        e. The Employee acknowledges that the Employer may be required to disclose
+                        personal data
+                        even after employment ends
+                        to group companies or statutory authorities as required by law.
+                    </p>
+
+                </div>
+                <!-- ===================== PAGE 14 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <!-- POINT 16 CONTENT -->
+                    <p>
+                        <strong>16. Other Rules and Regulations of the Company:</strong> Your
+                        appointment will be governed by the policies, rules, regulations, practices,
+                        processes and procedures as applicable to you and the changes therein from
+                        time to time. </p>
+
+                    <p>
+                        Further, during the period of your employment with the Company, you will be
+                        required to
+                        inter alia comply with the
+                        Company's Code of Business Ethics &amp; Conduct, Anti Bribery &amp;
+                        Anti-Corruption,
+                        Business Gift and Entertainment Policy
+                        and failure to do so shall entitle the Company to take appropriate
+                        disciplinary action which
+                        may lead to and include
+                        termination of your employment.
+                    </p>
+
+                    <p>
+                        You agree not to undertake employment whether full time or part time, as
+                        Director/Partner/member/employee of any other
+                        organization or entity engaged in any form of business activity without the
+                        consent of the
+                        Company. Such consent may be
+                        given subject to terms and conditions as deemed fit and may be withdrawn at
+                        the discretion
+                        of the Company.
+                    </p>
+
+                    <!-- ANNEXURE TITLE -->
+                    <h3 style="text-align:center; margin-top:20px;">Annexure IV</h3>
+
+                    <!-- ANNEXURE DESCRIPTION -->
+                    <p style="text-align:center; font-weight:bold; margin-top:10px;">
+                        LIST OF DOCUMENTS / INFORMATION TO BE SUBMITTED ONLINE TO FACILITATE
+                        PRE-EMPLOYMENT
+                        BGV (BACKGROUND VERIFICATION / VALIDATION) AND APPOINTMENT PROCESS IN BXI
+                        Tech
+                    </p>
+
+                    <!-- TABLE -->
+                    <table style="width:100%; border-collapse: collapse; margin-top:15px;"
+                        border="1">
+                        <thead>
+                            <tr>
+                                <th style="padding:8px; text-align:center;">S.No.</th>
+                                <th style="padding:8px; text-align:center;">
+                                    Particulars (To be submitted to the Recruiter / Online on the
+                                    BGV link)
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            <tr>
+                                <td style="padding:8px; text-align:center;">1</td>
+                                <td style="padding:8px;">
+                                    Highest Qualification - Degree Certificate, All Years Mark
+                                    Sheets.
+                                    Provisional Degree Certificate required for courses completed in
+                                    the last 6
+                                    months.
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px; text-align:center;">2</td>
+                                <td style="padding:8px;">
+                                    Permanent/Current Address Proof - Passport, Ration Card, Voter
+                                    ID, Driving
+                                    License,
+                                    Rental Agreement or Lease Agreement etc.
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px; text-align:center;">3</td>
+                                <td style="padding:8px;">
+                                    Previous Employer - Relieving and Experience Letter, latest
+                                    salary slips &amp;
+                                    offer letter
+                                    with Employee ID Number.
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px; text-align:center;">4</td>
+                                <td style="padding:8px;">
+                                    Consent to be given on candidate information form for BGV
+                                    initiation and LOA
+                                    (Letter of Authorization).
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px; text-align:center;">5</td>
+                                <td style="padding:8px;">
+                                    Identity Verification - Copy of valid Passport and PAN Card
+                                    required.
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+
+                </div>
+                <!-- ===================== PAGE 15 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <!-- ADDITIONAL DOCUMENTS -->
+                    <p style="font-weight:bold; margin-top:10px;">
+                        Additional Documents (To be submitted on request - Only if required)
+                    </p>
+
+                    <ol style="margin-left:20px; padding-left:10px;">
+                        <li style="margin-bottom:8px;">
+                            Highest Qualification - Admit card, college and university official's
+                            (Registrar and Director) detail
+                        </li>
+
+                        <li style="margin-bottom:8px;">
+                            Previous Employer - Direct HR Contact, PF account details, bank
+                            statement showing
+                            salary transfer and Form 16, If company is active, employer's active
+                            address.
+                        </li>
+                    </ol>
+
+                    <!-- THINGS TO REMEMBER -->
+                    <p style="font-weight:bold; margin-top:15px;">
+                        Things to Remember
+                    </p>
+
+                    <ol style="margin-left:20px; padding-left:10px;">
+                        <li style="margin-bottom:6px;">
+                            The information provided in Resume and background verification form must
+                            be same.
+                        </li>
+
+                        <li style="margin-bottom:6px;">
+                            Information provided in background verification form must be accurate.
+                        </li>
+
+                        <li style="margin-bottom:6px;">
+                            Period of stay mentioned in the background verification form should be
+                            correct
+                            and in continuation (without any GAP).
+                        </li>
+
+                        <li style="margin-bottom:6px;">
+                            Any Gap in Employment or Education must be informed explicitly to the
+                            recruiter.
+                        </li>
+                    </ol>
+
+                </div>
+                <!-- ===================== PAGE 16 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <!-- TOP NOTE -->
+                    <p>
+                        Additional document can be requested to clear background verification
+                        therefore to avoid
+                        delay
+                        it is advisable to submit these documents along with the mandatory
+                        documents.
+                    </p>
+
+                    <!-- HEADING -->
+                    <p
+                        style="text-align:center; font-weight:bold; text-decoration: underline; margin-top:10px;">
+                        List of Documents required for joining (Must be mandatorily uploaded on
+                        Discover BXI Tech
+                        Portal)
+                    </p>
+
+                    <!-- TABLE -->
+                    <table style="width:100%; border-collapse: collapse; margin-top:15px;"
+                        border="1">
+                        <thead>
+                            <tr>
+                                <th style="padding:8px; text-align:center;">S.No.</th>
+                                <th style="padding:8px; text-align:center;">Document Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            <tr>
+                                <td style="padding:8px; text-align:center;">1</td>
+                                <td style="padding:8px;">
+                                    Latest Offer/Appointment Letter with Cost to Company (CTC and
+                                    ALL ANNEXURES)
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px; text-align:center;">2</td>
+                                <td style="padding:8px;">
+                                    Extension Letter (if the Date of Joining in the offer letter is
+                                    past dated)
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px; text-align:center;">3</td>
+                                <td style="padding:8px;">
+                                    Passport - Name &amp; DOB page as proof
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px; text-align:center;">4</td>
+                                <td style="padding:8px;"> 10<sup>th</sup> Mark Sheet, only if
+                                    Passport is not available </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px; text-align:center;">5</td>
+                                <td style="padding:8px;">
+                                    PAN Card as ID Proof (Only if Passport is not available)
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px; text-align:center;">6</td>
+                                <td style="padding:8px;">
+                                    Passport Size Photographs (Only with white background)
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+
+                    <!-- IMPORTANT INSTRUCTIONS -->
+                    <p style="font-weight:bold; margin-top:20px; text-decoration: underline;">
+                        Important Instructions
+                    </p>
+
+                    <ul style="margin-left:20px;">
+                        <li style="margin-bottom:6px;">
+                            Please ensure that the copies uploaded are clearly scanned &amp; all
+                            details are
+                            visible.
+                        </li>
+
+                        <li style="margin-bottom:6px;">
+                            Please avoid clicking pictures of documents and uploading.
+                        </li>
+
+                        <li style="margin-bottom:6px;">
+                            Employee must enter/submit correct/accurate Aadhar number on joining
+                            portal so that
+                            BXI Tech onboarding team can ensure the right information is passed on
+                            for EPF
+                            (Employee Provident Fund) / EPS (Employee Pension Scheme) / UAN
+                            (Universal Account
+                            Number)
+                            account creation/porting etc.
+                        </li>
+
+                        <li style="margin-bottom:6px;">
+                            BXI Tech will only validate the accuracy of the Aadhar Card details for
+                            EPF/EPS/UAN and
+                            shall not store or use Aadhar card information for any other purposes.
+                        </li>
+
+                        <li style="margin-bottom:6px;">
+                            Please keep your PF account number (immediate previous employment), UAN
+                            information
+                            handy
+                            as these details are required at the time of filling details on the
+                            portal.
+                        </li>
+                    </ul>
+
+                </div>
+                <!-- ===================== PAGE 17 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <!-- CONTINUED BULLETS -->
+                    <ul style="margin-left:20px;">
+                        <li style="margin-bottom:6px;">
+                            Induction Timings will be circulated to you separately.
+                        </li>
+
+                        <li style="margin-bottom:6px;">
+                            <strong>
+                                Please ensure your BGV Status is Green before the Date of Joining.
+                                Check with your
+                                Recruiter on the progress/status.
+                            </strong>
+                        </li>
+
+                        <li style="margin-bottom:6px;">
+                            <strong>
+                                All storage media devices e.g. personal laptop, pen drives etc. are
+                                not allowed
+                                inside the campus.
+                            </strong>
+                        </li>
+                    </ul>
+
+                    <!-- ANNEXURE V -->
+                    <h3 style="text-align:center; margin-top:30px;">
+                        ANNEXURE V
+                    </h3>
+
+                    <!-- DESCRIPTION -->
+                    <p style="margin-top:15px;">
+                        You will need to report to BXI Tech to complete the joining formalities on
+                        the date of
+                        Joining,
+                        please connect with your recruiter for further details/exceptions.
+                    </p>
+
+                    <!-- LOCATION TITLE -->
+                    <p style="font-weight:bold; margin-top:15px;">
+                        Location of BXI Tech Onboarding Team for joining formalities:
+                    </p>
+
+                    <!-- TABLE -->
+                    <table style="width:100%; border-collapse: collapse; margin-top:10px;"
+                        border="1">
+                        <thead>
+                            <tr>
+                                <th style="padding:8px; text-align:center;">S. No.</th>
+                                <th style="padding:8px; text-align:center;">Location</th>
+                                <th style="padding:8px; text-align:center;">Address</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            <tr>
+                                <td style="padding:8px; text-align:center;">1</td>
+                                <td style="padding:8px;">NOIDA</td>
+                                <td style="padding:8px;">
+                                    601/602, Tower A, Plot No 2, Cyberthum, Sector-140A,
+                                    Noida Expressway, Sector 137 road, Greater Noida 201305
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px; text-align:center;">2</td>
+                                <td style="padding:8px;">UDAIPUR</td>
+                                <td style="padding:8px;">
+                                    365, road A, Ambamata Scheme, Udaipur, Rajasthan 313001
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+
+                    <!-- FINAL NOTE -->
+                    <ul style="margin-top:15px; margin-left:20px;">
+                        <li style="margin-bottom:6px;">
+                            <strong>Travel Expenses:</strong> You will be reimbursed travel expense
+                            by NA for Self on actuals from Jaipur to Noida for joining the
+                            organization. The reimbursement will be made as per the Company policy
+                            on submission of the tickets and/or boarding passes. </li>
+
+                        <li style="margin-bottom:6px;">
+                            In event of your voluntary separation from BXI Tech before completion of
+                            24 months from
+                            your date of joining,
+                            this entire amount will be recovered. All applicable taxes on this
+                            amount will be borne
+                            by the employee.
+                        </li>
+                    </ul>
+
+                </div>
+                <!-- ===================== PAGE 18 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <!-- RELOCATION EXPENSE -->
+                    <p>
+                        <strong>Relocation Expenses:</strong> You will be reimbursed relocation
+                        expenses for transfer of household goods from your current location up to a
+                        maximum amount of Rs. 45,000, subject to submission of actual bills and
+                        receipts. </p>
+
+                    <p>
+                        In the event of your voluntary separation from BXI Tech before completion of
+                        12 months
+                        from your date of joining, this entire amount will be recovered. All
+                        applicable taxes on
+                        this amount will be borne by the employee.
+                    </p>
+
+                    <p>
+                        Company-provided accommodation can be availed for yourself and immediate
+                        family
+                        for the initial 15 days or any further extension if required, subject to
+                        approvals and
+                        processes defined in the Company policy. The cost of the same will be borne
+                        by the Company.
+                    </p>
+
+                    <!-- DECLARATION -->
+                    <p>
+                        This offer and Appointment letter along with all enclosures and Annexures
+                        are complete in
+                        all respects.
+                        It is clearly understood and agreed that there is no other commitment or
+                        understanding apart
+                        from this.
+                    </p>
+
+                    <p>
+                        If there are any components mentioned in the letter which are other than
+                        regular CTC,
+                        they must be claimed within 6 months of joining or as specified under the
+                        relevant Company
+                        policies.
+                    </p>
+
+                    <p>
+                        <strong>For BXI Tech.,</strong>
+                    </p>
+
+                    <!-- ANNEXURE V -->
+                    <h3 style="text-align:center; margin-top:20px;">
+                        ANNEXURE V
+                    </h3>
+
+                    <p>
+                        This Annexure contains the Employee Undertakings which set forth certain
+                        employee
+                        obligations
+                        with respect to the protection of confidential information and legitimate
+                        business interests
+                        of the Company.
+                    </p>
+
+                    <p>
+                        As a condition of my employment and/or continued employment with the Company
+                        and my receipt
+                        of compensation, I agree to the following:
+                    </p>
+
+                    <!-- CONFIDENTIAL INFO -->
+                    <p>
+                        <strong>1. Confidential Information</strong>
+                    </p>
+
+                    <p>
+                        I shall not use, communicate, or disclose, except for the benefit of the
+                        Company,
+                        any Confidential Information relating to the Company, its corporate parent,
+                        or any of their
+                        affiliates.
+                    </p>
+
+                </div>
+                <!-- ===================== PAGE 19 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <!-- CONTINUATION: CONFIDENTIAL INFORMATION -->
+                    <p>
+                        Subsidiaries or affiliates (collectively "Company Parties"), to which I have
+                        been privy to
+                        by virtue
+                        of being an employee of the Company.
+                    </p>
+
+                    <p>
+                        I understand that "Confidential Information" for this purpose shall mean and
+                        include all
+                        information,
+                        regardless of the form whether oral, written, stored in a computer database
+                        or otherwise,
+                        which in any
+                        way relates to markets, customers (including but not limited to customers of
+                        any of the
+                        Company Parties
+                        with whom I interacted or became acquainted while associated with the
+                        Company), products,
+                        patents,
+                        inventions, know-how, software, procedures, methods, designs, strategies,
+                        plans, assets,
+                        liabilities,
+                        revenues, pricing lists, customer information, profits, organization,
+                        employees, agents,
+                        distributors,
+                        or business in general of any of the Company Parties.
+                    </p>
+
+                    <p>
+                        I understand that Confidential Information and trade secrets do not include
+                        any of the items
+                        mentioned above
+                        which have become publicly known and made generally available through no
+                        wrongful act of
+                        mine or others who were
+                        under confidentiality obligations.
+                    </p>
+
+                    <p>
+                        I hereby agree to maintain the secrecy and confidentiality of such
+                        Confidential Information.
+                    </p>
+
+                    <!-- FORMER EMPLOYER -->
+                    <p>
+                        <strong>2. Former Employer Information</strong>
+                    </p>
+
+                    <p>
+                        I agree that I will not, during my employment with the Company, improperly
+                        use or disclose
+                        any proprietary
+                        information or trade secrets of any former or concurrent employer or any
+                        other person or
+                        entity.
+                    </p>
+
+                    <p>
+                        Further, I will not bring into the Company premises any proprietary
+                        information or trade
+                        secret of any such
+                        employer, person, or entity unless consented to in writing by such employer,
+                        person, or
+                        entity.
+                    </p>
+
+                    <!-- THIRD PARTY -->
+                    <p>
+                        <strong>3. Third Party Information</strong>
+                    </p>
+
+                    <p>
+                        I recognize that the Company has received and in the future will receive
+                        from third parties
+                        their confidential
+                        or proprietary information subject to a duty to maintain confidentiality and
+                        to use such
+                        information only for
+                        limited purposes.
+                    </p>
+
+                    <p>
+                        I agree to maintain the confidentiality of such third-party information and
+                        to use it only
+                        as permitted by the Company.
+                    </p>
+
+                </div>
+                <!-- ===================== PAGE 20 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <!-- CONTINUATION: THIRD PARTY INFO -->
+                    <p>
+                        Hold all such confidential or proprietary information in the strictest
+                        confidence and agree
+                        not to disclose it
+                        to any person, corporation, or entity. I also agree not to use such
+                        information except as
+                        necessary in carrying
+                        out my work for the Company consistent with the Company's agreement with
+                        such third party.
+                    </p>
+
+                    <!-- INVENTIONS -->
+                    <p>
+                        <strong>2. Inventions</strong>
+                    </p>
+
+                    <!-- a. PRIOR INVENTIONS -->
+                    <p>
+                        <strong>a. Inventions Retained and Licensed</strong>
+                    </p>
+
+                    <p>
+                        I have shared and declared a list describing all inventions, original works
+                        of authorship,
+                        developments,
+                        improvements, and trade secrets which were made by me prior to my employment
+                        with the
+                        Company
+                        (collectively referred to as "Prior Inventions"), which belong to me, which
+                        relate to the
+                        Company's proposed
+                        business, products, or research and development, and which are not assigned
+                        to the Company
+                        hereunder.
+                    </p>
+
+                    <p>
+                        If no such list is attached, I represent that there are no such Prior
+                        Inventions.
+                    </p>
+
+                    <p>
+                        If in the course of my employment with the Company I incorporate into a
+                        Company product,
+                        process, or machine
+                        a Prior Invention owned by me or in which I have an interest, the Company is
+                        hereby granted
+                        a nonexclusive,
+                        royalty-free, irrevocable, perpetual, worldwide license to make, have made,
+                        modify, use, and
+                        sell such
+                        Prior Invention as part of or in connection with such product, process, or
+                        machine.
+                    </p>
+
+                    <!-- b. ASSIGNMENT -->
+                    <p>
+                        <strong>b. Assignment of Inventions</strong>
+                    </p>
+
+                    <p>
+                        I agree that I will promptly make full written disclosure to the Company,
+                        which will hold in
+                        trust for the sole
+                        right and benefit of the Company, and hereby assign to the Company, or its
+                        designee, all my
+                        right, title,
+                        and interest in and to any and all inventions, original works of authorship,
+                        developments,
+                        concepts,
+                        improvements, or trade secrets.
+                    </p>
+
+                    <p>
+                        This includes whether or not patentable or registrable under copyright or
+                        similar laws,
+                        which I may solely
+                        or jointly conceive, develop, or reduce to practice, or cause to be
+                        conceived or developed.
+                    </p>
+
+                </div>
+                <!-- ===================== PAGE 21 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <!-- CONTINUATION: ASSIGNMENT -->
+                    <p>
+                        Reduced to practice during the period of my employment with the Company
+                        (collectively referred to as "Inventions"), except as provided in
+                        sub-section (e) below.
+                    </p>
+
+                    <p>
+                        I further acknowledge that all original works of authorship created by me
+                        (solely or jointly
+                        with others)
+                        within the scope of and during the period of my employment with the Company,
+                        and which are
+                        protectable
+                        by copyright, are considered "works made for hire" as defined under
+                        applicable copyright
+                        laws.
+                    </p>
+
+                    <!-- c. RECORDS -->
+                    <p>
+                        <strong>c. Maintenance of Records</strong>
+                    </p>
+
+                    <p>
+                        I agree to keep and maintain adequate and current written records of all
+                        Inventions made by
+                        me
+                        (solely or jointly with others) during the term of my employment with the
+                        Company.
+                    </p>
+
+                    <p>
+                        The records will be maintained in the form of notes, sketches, drawings, or
+                        any other format
+                        as specified by the Company, and shall remain available to the Company at
+                        all times.
+                    </p>
+
+                    <p>
+                        Such records shall always remain the sole property of the Company.
+                    </p>
+
+                    <!-- d. PATENT -->
+                    <p>
+                        <strong>d. Patent and Copyright Registrations</strong>
+                    </p>
+
+                    <p>
+                        I agree to assist the Company, or its designee, at the Company's expense, in
+                        every proper
+                        way
+                        to secure the Company's rights in the Inventions and any related copyrights,
+                        patents,
+                        mask work rights, or other intellectual property rights in any country.
+                    </p>
+
+                    <p>
+                        This includes disclosing all necessary information and executing all
+                        applications,
+                        specifications, oaths, assignments, and other instruments required to obtain
+                        such rights
+                        and assign them fully to the Company, its successors, assigns, or nominees.
+                    </p>
+
+                    <p>
+                        I further agree that my obligation to execute such documents shall continue
+                        even after
+                        termination of my employment with the Company.
+                    </p>
+
+                    <p>
+                        If the Company is unable to secure any rights due to my unavailability or
+                        incapacity,
+                        I hereby designate and appoint the Company as my attorney-in-fact to act on
+                        my behalf
+                        to execute such documents and take necessary actions to protect such rights.
+                    </p>
+
+                </div>
+                <!-- ===================== PAGE 22 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <!-- CONTINUATION: PATENT CLAUSE -->
+                    <p>
+                        Incapacity or for any other reason to fail to secure my signature to apply
+                        for or to pursue
+                        any application
+                        for local or foreign patents or copyright registrations covering Inventions
+                        or original
+                        works of authorship
+                        assigned to the Company.
+                    </p>
+
+                    <p>
+                        I hereby irrevocably designate and appoint the Company and its duly
+                        authorized officers and
+                        agents as my
+                        agent and attorney-in-fact, to act on my behalf to execute and file such
+                        applications and to
+                        perform all
+                        lawful acts necessary to further the prosecution and issuance of patents or
+                        copyright
+                        registrations,
+                        with the same legal force and effect as if executed by me.
+                    </p>
+
+                    <!-- e. EXCEPTION -->
+                    <p>
+                        <strong>e. Exception to Assignments</strong>
+                    </p>
+
+                    <p>
+                        I understand that the provisions requiring assignment of Inventions to the
+                        Company do not
+                        apply to any
+                        invention for which no Company equipment, supplies, facilities, or trade
+                        secret information
+                        was used
+                        and which was developed entirely on my own time.
+                    </p>
+
+                    <p>
+                        However, this exception does not apply if:
+                    </p>
+
+                    <ul style="margin-left:20px;">
+                        <li style="margin-bottom:6px;">
+                            (i) At the time the Invention was conceived or reduced to practice, it
+                            related directly
+                            to the business
+                            of the Company or to its actual or anticipated research and development.
+                        </li>
+
+                        <li style="margin-bottom:6px;">
+                            (ii) The Invention resulted from any work performed by me for the
+                            Company.
+                        </li>
+                    </ul>
+
+                    <p>
+                        I further understand that applicable laws may restrict assignment of such
+                        Inventions. I will
+                        promptly inform
+                        the Company in writing of any inventions that meet the criteria of this
+                        exception.
+                    </p>
+
+                    <!-- SECTION 3 -->
+                    <p>
+                        <strong>3. Returning Company Documents</strong>
+                    </p>
+
+                    <p>
+                        I agree that upon leaving the employment of the Company, I will deliver to
+                        the Company and
+                        will not retain,
+                        recreate, or distribute any Company property.
+                    </p>
+
+                    <p>
+                        This includes all devices, records, data, notes, reports, proposals, lists,
+                        correspondence,
+                        specifications,
+                        drawings, blueprints, sketches, materials, software, databases, equipment,
+                        and any other
+                        documents or
+                        property, including copies or reproductions, developed by me during my
+                        employment.
+                    </p>
+
+                </div>
+                <!-- ===================== PAGE 23 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <!-- CONTINUATION: RETURNING DOCUMENTS -->
+                    <p>
+                        Pursuant to my employment with the Company or otherwise belonging to the
+                        Company,
+                        its successors or assigns.
+                    </p>
+
+                    <!-- 4 -->
+                    <p>
+                        <strong>4. Notification to New Employer</strong>
+                    </p>
+
+                    <p>
+                        If I leave the employment of the Company, I hereby grant consent to the
+                        Company
+                        to notify my new employer about my rights and obligations under this
+                        agreement.
+                    </p>
+
+                    <!-- 5 -->
+                    <p>
+                        <strong>5. Non-Solicitation</strong>
+                    </p>
+
+                    <p>
+                        For a period of six (6) months after termination of my employment or
+                        cessation
+                        of my association with the Company for any reason whatsoever, I shall not
+                        directly
+                        or indirectly solicit, or cause or authorize to be solicited, for employment
+                        any
+                        employee of the Company.
+                    </p>
+
+                    <p>
+                        I shall also not employ or engage any such employee on my own behalf or on
+                        behalf
+                        of any third party.
+                    </p>
+
+                    <p>
+                        I further agree not to use or disclose to any third party any information
+                        obtained
+                        during my employment concerning the names and addresses of past or present
+                        employees
+                        of the Company.
+                    </p>
+
+                    <!-- 6 -->
+                    <p>
+                        <strong>6. Non-Competition</strong>
+                    </p>
+
+                    <p>
+                        During the six (6) months immediately following termination of my employment
+                        with
+                        the Company, and unless expressly authorized in writing, I shall not
+                        directly or
+                        indirectly perform any similar services for any competing organization.
+                    </p>
+
+                    <p>
+                        This includes any current or former customer and/or prospect of the Company
+                        with
+                        whom I have worked during the past twelve (12) months.
+                    </p>
+
+                    <p>
+                        For the purposes of these non-compete provisions, "Similar Services" means
+                        services
+                        which meet any of the following criteria:
+                    </p>
+
+                </div>
+                <!-- ===================== PAGE 24 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <!-- SIMILAR SERVICES DEFINITION -->
+                    <ul style="margin-left:20px;">
+                        <li style="margin-bottom:6px;">
+                            Work in competing business/products (e.g., Digital Business, Security,
+                            Customer
+                            Experience, Marketing, etc.)
+                            or sector (e.g., Financial Services) in which I worked for the Company;
+                        </li>
+
+                        <li style="margin-bottom:6px;">
+                            Where the nature of work remains the same (e.g., selling ITBS services,
+                            Product
+                            Architect) and involves
+                            the same end clients or prospects; and
+                        </li>
+
+                        <li style="margin-bottom:6px;">
+                            Is performed in the same geography or market where I provided services
+                            for the Company.
+                        </li>
+                    </ul>
+
+                    <p>
+                        The Company reserves the right to unilaterally waive this restriction in
+                        full or in part at
+                        its discretion.
+                        The Employee hereby acknowledges and agrees to the same.
+                    </p>
+
+                    <p>
+                        In case the Company initiates separation by way of involuntary termination
+                        or redundancy,
+                        this non-compete clause shall not apply.
+                    </p>
+
+                    <!-- 7 -->
+                    <p style="font-weight:bold; color:#000000;">
+                        7. General Provisions Regarding Covenants
+                    </p>
+
+                    <p>
+                        <strong>Extension of Covenants:</strong> If I breach any of my obligations
+                        under this Annexure, I understand and agree that the time periods of the
+                        obligations breached shall be extended by the duration of such breach. </p>
+
+                    <p>
+                        <strong>Read, Understood and Fair:</strong> I confirm that I have carefully
+                        read and understood the provisions of this Annexure and agree that all
+                        restrictions set forth are fair, reasonable, and necessary for the
+                        protection of the Company's interests and goodwill. </p>
+
+                    <!-- 8 -->
+                    <p style="font-weight:bold; color:#000000;">
+                        8. Protection of Systems &amp; Environment
+                    </p>
+
+                    <p>
+                        I agree that during the term of my employment or association with the
+                        Company,
+                        I shall render services in an ethical and professional manner and in
+                        accordance
+                        with all work-related policies of the Company, including but not limited to
+                        E-mail &amp; Internet Usage Policy, Information Security Policy, and any
+                        modifications
+                        made from time to time.
+                    </p>
+
+                    <p>
+                        As part of my job responsibilities, I may be required to access or use
+                        Company systems,
+                        data, or infrastructure. I undertake to use such resources responsibly and
+                        strictly for
+                        official purposes in compliance with Company guidelines.
+                    </p>
+
+                </div>
+                <!-- ===================== PAGE 25 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">
+                    <!-- CONTINUATION: PROTECTION OF SYSTEMS -->
+                    <p>
+                        Customer's work and computer environment and, as such, I undertake not to
+                        incorporate into
+                        the Company's or any customer deliverables any software, computer code,
+                        network component,
+                        data, or other electronically stored information containing any security
+                        risk.
+                    </p>
+
+                    <p>
+                        This includes, without limitation, any security device, malicious program
+                        routine, code,
+                        or instructions (including those provided by third parties), or any
+                        undisclosed feature such
+                        as:
+                    </p>
+
+                    <ul style="margin-left:20px;">
+                        <li>Time bomb</li>
+                        <li>Virus</li>
+                        <li>Software lock / drop-dead device</li>
+                        <li>Digital Rights Management tools (including DRM rootkits)</li>
+                        <li>Malicious logic, worm, Trojan horse, or trap door</li>
+                    </ul>
+
+                    <p>
+                        Or any other routine, device, or code capable of accessing, modifying,
+                        deleting, damaging,
+                        disabling, interfering with, or otherwise harming any software, systems,
+                        networks,
+                        deliverables,
+                        or data.
+                    </p>
+
+                    <p>
+                        I understand that any violation of this clause may expose the Company to
+                        significant losses,
+                        including claims from customers, and the Company shall be entitled to
+                        recover all such
+                        damages from me.
+                    </p>
+
+                    <!-- 9 -->
+                    <p style="font-weight:bold; color:#000000;">
+                        9. Remedies
+                    </p>
+
+                    <p>
+                        By virtue of my duties and responsibilities, I understand that any breach of
+                        this Annexure
+                        may result in irreparable damage to the Company.
+                    </p>
+
+                    <p>
+                        I acknowledge that these terms are necessary to protect the Company's
+                        interests.
+                        Therefore, in addition to all other remedies available under law, the
+                        Company shall be
+                        entitled to:
+                    </p>
+
+                    <ul style="margin-left:20px;">
+                        <li>Specific performance</li>
+                        <li>Temporary restraining orders</li>
+                        <li>Permanent injunctions</li>
+                    </ul>
+
+                    <p>
+                        These remedies may be enforced without the requirement of posting any bond,
+                        to prevent or stop any breach of this Agreement.
+                    </p>
+
+                    <!-- 10 -->
+                    <p style="font-weight:bold; color:#000000;">
+                        10. Representations
+                    </p>
+
+                </div>
+                <!-- ===================== PAGE 26 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.8;">                    <!--
+                    10 CONTINUED -->
+                    <p>
+                        I represent that my performance of all the terms of my employment agreement
+                        and this
+                        Annexure
+                        will not breach any confidentiality agreements entered into prior to my
+                        employment with the
+                        Company.
+                    </p>
+
+                    <p>
+                        I confirm that I have not entered into, and will not enter into, any oral or
+                        written
+                        agreement
+                        that conflicts with the provisions of the undertakings mentioned in this
+                        Annexure.
+                    </p>
+
+                    <!-- 11 -->
+                    <p style="font-weight:bold; color:#000000;">
+                        11. Integration
+                    </p>
+
+                    <p>
+                        I understand and agree that this Annexure forms an integral part of my
+                        employment agreement
+                        with the Company. The general provisions of the Agreement, including but not
+                        limited to
+                        reformation and severability, shall apply while interpreting this Annexure.
+                    </p>
+
+                    <!-- FINAL DECLARATION -->
+                    <p>
+                        This Offer and Appointment Letter, along with all enclosures and annexures,
+                        is complete in
+                        all respects.
+                        It is clearly understood and agreed that there is no other commitment or
+                        understanding apart
+                        from this document.
+                    </p>
+
+                    <p>
+                        Any components mentioned in this letter which are other than regular CTC
+                        must be claimed
+                        within
+                        6 months of joining or as specified under the relevant Company policies.
+                    </p>
+
+                    <!-- SIGNATURE SECTION -->
+                    <p style="margin-top:30px;"> For <strong>BXI Tech</strong>, </p>
+                    <br/>
+
+                    <p style="margin-top:40px;">
+                        <strong>Pallavi Paliwal</strong>
+                            <br />
+                            <span style="font-weight:bold;">Chief
+                        People Officer</span>
+                            <br /> Signature: ________________________ </p>
+
+                    <!-- CLOSING NOTE -->
+                    <p style="margin-top:30px;">
+                        We look forward to you being an integral part of this challenging yet
+                        fulfilling journey
+                        towards
+                        excellence and growth, and we hope our relationship will go a long way!
+                    </p>
+                </div>
+                <!-- ===================== PAGE 27 ===================== -->
+                <div class="page"
+                    style="page-break-before:always;padding:15px 20px;font-family:Arial, sans-serif;font-size:18px;line-height:1.2;">
+                    <!-- BORDER CONTAINER -->
+                    <div
+                        style="border: 2px solid #000000;padding: 25px;margin: 40px 20px;min-height: 100px;">
+                        <!-- HEADING -->
+                        <p
+                            style="text-align:center; font-weight:bold; font-size:18px; color:#000000;">
+                            DISCLAIMER
+                        </p>
+
+                        <!-- CONTENT -->
+                        <p style="margin-top:20px;">
+                            You will be liable to pay all applicable taxes on your income as per the
+                            local laws.
+                            You will also be responsible for filing your personal Income Tax
+                            returns.
+                        </p>
+
+                        <p>
+                            You acknowledge that the Company is not in any way influencing, guiding,
+                            or suggesting
+                            on aspects of taxation or tax-saving measures in any form, and that the
+                            same is an
+                            individual's decision and personal choice.
+                        </p>
+
+                        <p>
+                            Please note that all components mentioned above may or may not be a part
+                            of your
+                            compensation structure. BXI Tech reserves the right to alter, append, or
+                            withdraw
+                            the benefits extended either in part or in full based on management's
+                            discretion.
+                        </p>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

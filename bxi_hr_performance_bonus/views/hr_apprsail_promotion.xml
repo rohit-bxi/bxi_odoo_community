@@ -1,0 +1,145 @@
+<odoo>
+
+    <record id="view_hr_employee_appraisal_tree" model="ir.ui.view">
+        <field name="name">hr.employee.appraisal.tree</field>
+        <field name="model">hr.employee.appraisal</field>
+        <field name="arch" type="xml">
+            <list string="Employee Appraisal">
+                <field name="employee_id" />
+                <field name="employee_code" />
+                <field name="release_date" />
+                <field name="effective_date" />
+                <field name="promotion_job_id" />
+                <field name="state" />
+            </list>
+        </field>
+    </record>
+    <record id="view_hr_employee_appraisal_form" model="ir.ui.view">
+        <field name="name">hr.employee.appraisal.form</field>
+        <field name="model">hr.employee.appraisal</field>
+        <field name="arch" type="xml">
+            <form string="Employee Appraisal">
+                <header>
+                    <button name="action_open_letter_wizard"
+                            type="object"
+                            string="Letter Action"
+                            class="oe_highlight"/>
+                    <field name="state"
+                           widget="statusbar"
+                           statusbar_visible="draft,released,cancelled"/>
+                </header>
+                <sheet>
+                    <group string="Employee Details">
+                        <group>
+                            <field name="employee_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}" readonly="state == 'released'"/>
+                            <field name="employee_code" readonly="1"/>
+                            <field name="company_id" readonly="1" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
+                            <field name="release_date" readonly="state == 'released'"/>
+                            <field name="effective_date" readonly="state == 'released'"/>
+                        </group>
+                        <group>
+                            <field name="department_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}" readonly="state == 'released'"/>
+                            <field name="band" readonly="state == 'released'"/>
+                            <field name="letter_type" readonly="state == 'released'"/>
+                            <field name="appraisal_percentage" 
+                                invisible="letter_type not in ['appraisal_promotion_letter','appraisal_letter']"
+                                required="letter_type in ['appraisal_promotion_letter','appraisal_letter']"
+                                readonly="state == 'released'"/>
+                            <field name="template_company_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}" required="1" readonly="state == 'released'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Bonus Details" invisible="letter_type != 'bonus_letter'">
+                            <group string="Bonus Details">
+                                <field name="bonus_amount" required="letter_type == 'bonus_letter'" readonly="state == 'released'"/>
+                                <field name="payout_month" required="letter_type == 'bonus_letter'" readonly="state == 'released'"/>
+                            </group>
+                        </page>
+                        <page string="Promotion" invisible="letter_type not in ['appraisal_promotion_letter','promotion_letter']">
+                            <group string="Promotion">
+                                <field name="promoted_department_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}" required="letter_type in ['appraisal_promotion_letter','promotion_letter']" readonly="state == 'released'"/>
+                                <field name="promoted_job_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}" required="letter_type in ['appraisal_promotion_letter','promotion_letter']" readonly="state == 'released'"/>
+                                <field name="promoted_position" required="letter_type in ['appraisal_promotion_letter','promotion_letter']" readonly="state == 'released'"/>
+                                <field name="promotion_job_id" readonly="state == 'released'"/>
+                            </group>
+                        </page>
+                        <page string="Appraisal Details" invisible="letter_type not in ['appraisal_promotion_letter','appraisal_letter','promotion_letter']">
+                            <group string="Calculator Type">
+                                <field name="revenue_type" widget="radio" options="{'horizontal': true}" readonly="state == 'released'"/>
+                            </group>
+                             <group string="Current Base Info" col="2">
+                                <field name="current_band" readonly="1"/>
+                            </group>
+                            <div class="row">
+                                <div class="col-md-6 border-end">
+                                    <div class="oe_title">
+                                        <h2>Current Contract Information</h2>
+                                    </div>
+                                    
+                                    <group string="Current Monthly Components" col="2">
+                                        <field name="current_basic_salary"/>
+                                        <field name="current_flexible_allowance" readonly="1"/>
+                                        <field name="current_monthly_total" readonly="1" />
+                                        <field name="current_annual_fixed" readonly="1" />
+                                    </group>
+                                    
+                                    <group string="Current Retirals and Benefits" col="2">
+                                        <field name="current_pf"/>
+                                        <field name="current_insurance"/>
+                                        <field name="current_nps"/>
+                                        <field name="current_retiral_total" readonly="1" />
+                                    </group>
+                                    
+                                    <group string="Current Variable Components" col="2">
+                                        <field name="current_performance_bonus" readonly="revenue_type in ['nonrevenue']"/>
+                                        <field name="current_performance_bonus_percentage" readonly="revenue_type in ['simple', 'nonrevenue']"/>
+                                        <field name="current_org_bonus"/>
+                                        <field name="current_org_bonus_percentage" readonly="revenue_type == 'simple'"/>
+                                        <field name="current_variable_total" readonly="1" />
+                                    </group>
+                                    
+                                    <group string="Current Final CTC">
+                                        <field name="current_ctc_total" readonly="1"/>
+                                    </group>
+                                </div>
+
+                                <div class="col-md-6 border-end">
+                                    <div class="oe_title">
+                                        <h2>Proposed Appraisal Details</h2>
+                                    </div>
+                                                                       
+                                    <group string="Monthly Components" col="2">
+                                        <field name="basic_salary" readonly="state == 'released'"/>
+                                        <field name="flexible_allowance" readonly="state == 'released'"/>
+                                        <field name="monthly_total" readonly="1" />
+                                        <field name="annual_fixed" readonly="1" />
+                                    </group>
+                                    
+                                    <group string="Retirals and Benefits" col="2">
+                                        <field name="pf" readonly="state == 'released'"/>
+                                        <field name="insurance" readonly="state == 'released'"/>
+                                        <field name="nps" readonly="state == 'released'"/>
+                                        <field name="retiral_total" readonly="1" />
+                                    </group>
+                                    
+                                    <group string="Variable Components" col="2">
+                                        <field name="performance_bonus" readonly="revenue_type in ['nonrevenue']"/>
+                                        <field name="performance_bonus_percentage" readonly="revenue_type in ['simple', 'nonrevenue']"/>
+                                        <field name="org_bonus"/>
+                                        <field name="org_bonus_percentage" readonly="revenue_type == 'simple'"/>
+                                        <field name="variable_total" readonly="1" />
+                                    </group>
+                                    
+                                    <group string="Final CTC">
+                                        <field name="ctc_total" readonly="1" class="oe_highlight" />
+                                    </group>
+                                </div>
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+</odoo>

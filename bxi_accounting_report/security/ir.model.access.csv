@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+
+access_custom_pl_report,access_custom_pl_report,model_custom_pl_report,base.group_user,1,0,1,0
+access_pl_report,access_pl_report,model_custom_pl_report,,1,1,1,1
+access_pl_report_wizard,access_pl_report_wizard,model_pl_report_wizard,base.group_user,1,0,1,0
+access_pl_quarter_user,pl.quarter user,model_pl_quarter,base.group_user,1,1,1,1

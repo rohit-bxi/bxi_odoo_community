@@ -1,0 +1,40 @@
+<odoo>
+    <data>
+
+        <!--  ADD NEW STAGES -->
+
+        <record model="hr.recruitment.stage" id="stage_final_interview">
+            <field name="name">Final Interview</field>
+            <field name="sequence">4</field>
+        </record>
+
+        <record model="hr.recruitment.stage" id="stage_make_proposal">
+            <field name="name">Make Proposal</field>
+            <field name="sequence">5</field>
+        </record>
+
+        <!--  UPDATE EXISTING USING SEARCH -->
+
+        <function model="hr.recruitment.stage" name="write">
+            <value eval="[(ref('hr_recruitment.stage_job4'))]"/>
+            <value eval="{'sequence': 6}"/>
+        </function>
+
+        <function model="hr.recruitment.stage" name="write">
+            <value eval="[(ref('hr_recruitment.stage_job5'))]"/>
+            <value eval="{'sequence': 7}"/>
+        </function>
+
+    </data>
+</odoo>
+<!--<odoo>-->
+<!--    <data noupdate="1">-->
+
+<!--        &lt;!&ndash; Final Interview Stage &ndash;&gt;-->
+<!--        <record id="stage_job_final_interview" model="hr.recruitment.stage">-->
+<!--            <field name="name">Final Interview</field>-->
+<!--            <field name="sequence">4</field>-->
+<!--        </record>-->
+
+<!--    </data>-->
+<!--</odoo>-->
