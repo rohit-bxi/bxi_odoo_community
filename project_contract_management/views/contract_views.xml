@@ -1,0 +1,243 @@
+<odoo>
+
+    <record id="action_contract" model="ir.actions.act_window">
+        <field name="name">Contracts</field>
+        <field name="res_model">project.contract.management</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
+
+    <record id="view_contract_list" model="ir.ui.view">
+        <field name="name">contract.list</field>
+        <field name="model">project.contract.management</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="client_ids"/>
+                <field name="contract_amount"/>
+                <field name="stage_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_contract_kanban" model="ir.ui.view">
+        <field name="name">contract.kanban</field>
+        <field name="model">project.contract.management</field>
+        <field name="arch" type="xml">
+
+            <kanban default_group_by="stage_id"
+                    class="o_kanban_small_column o_kanban_dashboard">
+
+                <field name="stage_id"/>
+                <field name="name"/>
+                <field name="client_ids"/>
+                <field name="contract_amount"/>
+                <field name="currency_id"/>
+                <field name="contract_start_date"/>
+                <field name="contract_end_date"/>
+                <field name="progress_percent"/>
+                <field name="progress_color"/>
+                <field name="probability"/>
+
+                <templates>
+                    <t t-name="card">
+
+                        <div class="oe_kanban_card oe_kanban_global_click contract_card">
+
+                            <!-- LEFT COLOR STRIP -->
+                            <div class="stage_strip"
+                                 t-attf-class="stage_strip o_kanban_color_#{record.stage_id.raw_value}">
+                            </div>
+
+                            <div class="card_content">
+
+                                <!-- HEADER -->
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+
+                                    <div class="fw-bold text-dark">
+                                        <field name="name"/>
+                                    </div>
+
+                                    <span class="badge rounded-pill bg-primary">
+                                        <field name="probability"/>%
+                                    </span>
+
+                                </div>
+
+                                <!-- CLIENTS -->
+                                <div class="mb-2 small text-muted">
+                                    <i class="fa fa-users me-1" title="Clients"/>
+                                    <field name="client_ids" widget="many2many_tags"/>
+                                </div>
+
+                                <!-- AMOUNT -->
+                                <div class="mb-2 fw-semibold text-success">
+                                    <field name="contract_amount"
+                                           widget="monetary"
+                                           options="{'currency_field': 'currency_id'}"/>
+                                </div>
+
+                                <!-- DATES -->
+                                <div class="small text-muted mb-3">
+                                    <i class="fa fa-calendar me-1"/>
+                                    <field name="contract_start_date"/>
+                                    →
+                                    <field name="contract_end_date"/>
+                                </div>
+
+                                <!-- PROGRESS -->
+                                <div>
+
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span>Progress</span>
+                                        <span><field name="progress_percent"/>%</span>
+                                    </div>
+
+                                    <div class="progress contract_progress">
+                                        <div t-att-class="'progress-bar ' + record.progress_color.raw_value"
+                                             role="progressbar"
+                                             t-att-style="'width: %s%%' % record.progress_percent.raw_value">
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </t>
+                </templates>
+
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_contract_form" model="ir.ui.view">
+        <field name="name">contract.form</field>
+        <field name="model">project.contract.management</field>
+        <field name="arch" type="xml">
+            <form string="Contract">
+
+                <header>
+                    <field name="stage_id" widget="statusbar" options="{'clickable': True}"/>
+
+                    <button name="action_generate_quarters"
+                            type="object"
+                            string="Generate Quarters"
+                            class="btn-primary"
+                            icon="fa-calculator"/>
+                </header>
+
+                <sheet>
+
+                    <div class="oe_button_box" name="button_box">
+
+                        <button type="object"
+                                name="action_view_projects"
+                                class="oe_stat_button"
+                                icon="fa-folder-open">
+
+                            <field name="project_count" widget="statinfo" string="Projects"/>
+                        </button>
+
+                        <button type="object"
+                                name="action_view_clients"
+                                class="oe_stat_button"
+                                icon="fa-users">
+
+                            <field name="client_count" widget="statinfo" string="Clients"/>
+                        </button>
+
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Contract Name"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="lead_id"/>
+                            <field name="sale_order_ids" widget="many2many_tags"/>
+                        </group>
+                        <group string="Project and Client">
+                            <field name="project_ids" widget="many2many_tags"/>
+                            <field name="client_ids" widget="many2many_tags"/>
+                        </group>
+
+                        <group string="Contract Type">
+                            <field name="contract_type"/>
+                            <field name="billing_cycle"/>
+                            <field name="milestone_no" invisible="billing_cycle != 'milestone'"/>
+                        </group>
+                    </group>
+
+                    <group string="Contract Duration">
+                        <group>
+                            <field name="contract_start_date"/>
+                            <field name="contract_end_date"/>
+                        </group>
+                        <group>
+                            <field name="contract_tenure" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Financial Details">
+                        <group>
+                            <field name="contract_amount"/>
+                            <field name="currency_id"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+
+                        <page string="Attachments">
+                            <group>
+                                <field name="contract_attachment_ids"
+                                       widget="many2many_binary"
+                                       class="oe_inline"/>
+                            </group>
+                        </page>
+
+                        <page string="Quarterly Breakdown">
+
+                            <div class="alert alert-info" role="alert">
+                                Click the "Generate Quarters" button to auto-create quarterly breakdown.
+                            </div>
+
+                            <div class="mb-2">
+                                <button name="action_auto_split_remaining"
+                                        type="object"
+                                        string="Auto Balance"
+                                        class="btn btn-secondary"
+                                        icon="fa-balance-scale"/>
+                            </div>
+
+                            <field name="contract_quarter_ids">
+                                <list editable="bottom">
+                                    <field name="year"/>
+                                    <field name="quarter"/>
+                                    <field name="amount"/>
+                                    <field name="billed"/>
+                                </list>
+                            </field>
+
+                            <group>
+                                <field name="total_quarter_amount" readonly="1"/>
+
+                                <div class="text-danger" invisible="not exceed_warning">
+                                    ⚠ Total exceeds Contract Amount!
+                                </div>
+                            </group>
+
+                        </page>
+
+                    </notebook>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>
