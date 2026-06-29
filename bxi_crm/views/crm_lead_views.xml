@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="crm_lead_form_presales_poc" model="ir.ui.view">
+        <field name="name">crm.lead.form.presales.poc</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+
+        <field name="arch" type="xml">
+
+            <!-- Presales POC -->
+            <xpath expr="//field[@name='user_id']" position="after">
+                <field name="presales_poc_id"
+                       options="{'no_create_edit': False}"/>
+            </xpath>
+
+            <!-- Smart Button -->
+            <xpath expr="//div[contains(@class, 'oe_button_box')]" position="inside">
+
+                <button name="action_view_contracts"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-file-text-o">
+
+                    <field name="contract_count"
+                           widget="statinfo"
+                           string="Contracts"/>
+
+                </button>
+
+            </xpath>
+
+            <!-- Create Contract Button -->
+            <xpath expr="//header" position="inside">
+
+                <button name="action_create_contract"
+                        type="object"
+                        string="Create Contract"
+                        class="btn-primary"
+                        invisible="stage_id.is_won == False"/>
+
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>
