@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_travel_root" name="Travel Request" sequence="10"
+        web_icon="bxi_travel_request,static/description/icon.png"/>
+
+    <menuitem
+        id="menu_travel_request"
+        name="Travel Requests"
+        parent="menu_travel_root"
+        action="action_travel_request"
+        sequence="20"  
+    />
+    <template id="travel_request_link"
+        inherit_id="portal.portal_my_home"
+        name="Portal Home - Travel Request">
+        <xpath expr="//div[@id='portal_common_category']/t[1]" position="after">
+            <t
+                t-if="(request.env.user.has_group('base.group_portal') or request.env.user.has_group('base.group_user')) 
+         and not request.env.user.sudo().vender_custmer_access">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon" t-value="'bxi_travel_request/static/src/img/icon-travel-services.svg'"/>
+                    <t t-set="title">Submit Travel Request</t>
+                    <t t-set="text">View and update your Travel Request</t>
+                    <t t-set="url" t-value="'/my/travel-request'" />
+                    <t t-set="config_card" t-value="True" />
+                </t>
+            </t>
+        </xpath>
+    </template>
+</odoo>

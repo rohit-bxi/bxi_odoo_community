@@ -1,0 +1,115 @@
+<odoo>
+    <record id="email_template_hr" model="mail.template">
+        <field name="name">Expense Request - HR Approval</field>
+        <field name="model_id" ref="model_hr_expense" />
+        <field name="subject">HR Approval Required - {{ object.employee_id.name }}</field>
+        <field name="email_to">hr@bxitech.com</field>
+        <field name="body_html" type="html">
+            <div style="font-family: Arial; font-size:14px;">
+                <p>Dear HR Team,</p>
+                <p>A New Expense request has been submitted and requires your approval.</p>
+                <table border="1" cellpadding="8" style="border-collapse: collapse; width:100%;">
+                    <tr>
+                        <th>Employee</th>
+                        <td>
+                            <t t-esc="object.employee_id.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Description</th>
+                        <td>
+                            <t t-esc="object.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Category</th>
+                        <td>
+                            <t t-esc="object.product_id.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Date</th>
+                        <td>
+                            <t t-esc="object.date" />
+                        </td>
+                    </tr>
+                </table>
+                <br />
+                <t t-set="url"
+                    t-value="'/web#id=%s&amp;model=hr.expense&amp;view_type=form' % object.id" />
+                <a t-att-href="url"
+                    style="
+                            display:inline-block;
+                            background-color:#875a7b;
+                            color:white;
+                            padding:12px 20px;
+                            font-size:14px;
+                            font-weight:600;
+                            font-family:Arial, sans-serif;
+                            text-decoration:none;
+                            border-radius:6px;
+                            border:1px solid #0069d9;
+                    ">
+                    View Expense Request
+                </a>
+            </div>
+        </field>
+    </record>
+
+    <record id="email_template_finance" model="mail.template">
+        <field name="name">Expense Request - Finance Approval</field>
+        <field name="model_id" ref="model_hr_expense" />
+        <field name="subject">Finance Approval Required - {{ object.employee_id.name }}</field>
+        <field name="email_to">fso@bxiventure.com</field>
+        <field name="body_html" type="html">
+            <div style="font-family: Arial; font-size:14px;">
+                <p>Dear Finance Team,</p>
+                <p>The Expense request is approved by HR and requires financial approval.</p>
+                <table border="1" cellpadding="8" style="border-collapse: collapse; width:100%;">
+                    <tr>
+                        <th>Employee</th>
+                        <td>
+                            <t t-esc="object.employee_id.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Description</th>
+                        <td>
+                            <t t-esc="object.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Category</th>
+                        <td>
+                            <t t-esc="object.product_id.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Date</th>
+                        <td>
+                            <t t-esc="object.date" />
+                        </td>
+                    </tr>
+                </table>
+                <br />
+                <t t-set="url"
+                    t-value="'/web#id=%s&amp;model=hr.expense&amp;view_type=form' % object.id" />
+                <a t-att-href="url"
+                    style="
+                            display:inline-block;
+                            background-color:#875a7b;
+                            color:white;
+                            padding:12px 20px;
+                            font-size:14px;
+                            font-weight:600;
+                            font-family:Arial, sans-serif;
+                            text-decoration:none;
+                            border-radius:6px;
+                            border:1px solid #0069d9;
+                    ">
+                    View Expense Request
+                </a>
+            </div>
+        </field>
+    </record>
+</odoo>

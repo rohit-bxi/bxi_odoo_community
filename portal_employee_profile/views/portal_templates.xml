@@ -1,0 +1,300 @@
+<odoo>
+    <template id="portal_employee_profile" name="Employee Profile">
+        <t t-call="portal.portal_layout">
+            <div class="container portal-employee mt-4 mb-5">
+
+                <t t-if="employee">
+                    <form action="/my/employee-profile/update" method="post"
+                        enctype="multipart/form-data"
+                        class="card shadow-sm">
+
+                        <input type="hidden" name="csrf_token"
+                            t-att-value="request.csrf_token()" />
+
+                        <!-- HEADER -->
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">My Employee Profile</h4>
+                        </div>
+
+                        <div class="card-body">
+                            <h5 class="section-title">Personal Information</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label>Employee Name</label>
+                                    <input name="name" class="form-control"
+                                        t-att-value="employee.name"
+                                        required="1" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Personal Email</label>
+                                    <input name="private_email" class="form-control"
+                                        t-att-value="employee.private_email"
+                                        required="1"
+                                    />
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Phone Number</label>
+                                    <input name="private_phone" class="form-control"
+                                        t-att-value="employee.private_phone"
+                                        required="1"
+                                    />
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Birthday</label>
+                                    <input type="date" name="birthday" class="form-control"
+                                        t-att-value="employee.birthday" />
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label>Language</label>
+                                    <input class="form-control"
+                                        t-att-value="employee.lang"
+                                    />
+                                </div>
+                                <div class="col-md-6">
+                                        <label>Medical Insurance No</label>
+                                        <input name="medical_insurance_no" class="form-control"
+                                            t-att-value="employee.medical_insurance_no"
+                                        />
+                                    </div>
+                            </div>
+                            <h5 class="section-title mt-4">Professional Information</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label>Job Title</label>
+                                    <input name="job_title" class="form-control"
+                                        t-att-value="employee.job_title" readonly="1" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Work Email</label>
+                                    <input name="work_email" class="form-control"
+                                        t-att-value="employee.work_email"
+                                    />
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Employee Code</label>
+                                    <input name="employee_code" class="form-control"
+                                        t-att-value="employee.employee_code" readonly="1" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Role Band</label>
+                                    <input name="role_band" class="form-control"
+                                        t-att-value="employee.role_band" readonly="1"/>
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Department</label>
+                                    <input name="department_id" class="form-control"
+                                        t-att-value="employee.department_id.name" readonly="1" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Employee Category</label>
+                                    <input name="emp_category" class="form-control"
+                                        t-att-value="employee.emp_category" readonly="1" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Employee Skill Category</label>
+                                    <input name="emp_skill_category" class="form-control"
+                                        t-att-value="employee.emp_skill_category" readonly="1" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Manager</label>
+                                    <input name="parent_id" class="form-control"
+                                        t-att-value="employee.parent_id.name" readonly="1" />
+                                </div>
+                            </div>
+                            <h5 class="section-title mt-4">Bank Details</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label>Enter Bank Name</label>
+                                    <input name="bank_name" class="form-control"
+                                        t-att-value="employee.bank_name"/>
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Bank Account Number</label>
+                                    <input name="bank_account_number" class="form-control"
+                                        t-att-value="employee.bank_account_number" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label>IFSC Code</label>
+                                    <input name="bank_ifsc" class="form-control"
+                                        t-att-value="employee.bank_ifsc" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Cancelled Cheque / Passbook Front Page</label>
+                                    <input type="file" name="bank_document" class="form-control" />
+                                    <t t-if="employee.bank_document">
+                                        <a
+                                            t-att-href="'/web/content/hr.employee/%s/bank_document?download=true' % employee.id"
+                                            class="btn btn-sm btn-primary mt-2">
+                                            Download Uploaded File
+                                        </a>
+                                    </t>
+                                </div>
+                            </div>
+                            <h5 class="section-title mt-4">Emergency Contact</h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label>Contact Name</label>
+                                    <input name="emergency_contact" class="form-control"
+                                        t-att-value="employee.emergency_contact"
+                                        required="1" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label>Relationship</label>
+                                    <input name="l10n_in_relationship" class="form-control"
+                                        t-att-value="employee.l10n_in_relationship" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label>Phone</label>
+                                    <input name="emergency_phone" class="form-control"
+                                        t-att-value="employee.emergency_phone"
+                                        required="1"
+                                    />
+                                </div>
+                            </div>
+
+                            <h5 class="section-title mt-4">Citizenship</h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label>Nationality</label>
+                                    <select name="country_id" class="form-control">
+                                        <option value="">Select Nationality</option>
+                                        <t t-foreach="countries" t-as="c">
+                                            <option t-att-value="c.id"
+                                                t-att-selected="employee.country_id and c.id == employee.country_id.id">
+                                                <t t-esc="c.name" />
+                                            </option>
+                                        </t>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>Passport No</label>
+                                    <input name="passport_id" class="form-control"
+                                        t-att-value="employee.passport_id" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label>Non-Resident</label>
+                                    <br />
+                                    <input type="checkbox" name="is_non_resident"
+                                        t-att-checked="employee.is_non_resident"
+                                    />
+                                </div>
+                            </div>
+                            <h5 class="section-title mt-4">Family</h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label>Marital Status</label>
+                                    <select name="marital" class="form-control">
+                                        <t
+                                            t-foreach="employee.fields_get(['marital'])['marital']['selection']"
+                                            t-as="opt">
+                                            <option t-att-value="opt[0]"
+                                                t-att-selected="opt[0] == employee.marital">
+                                                <t t-esc="opt[1]" />
+                                            </option>
+                                        </t>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>Dependent Children</label>
+                                    <input type="number" name="children" class="form-control"
+                                        t-att-value="employee.children" />
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label>Disabled</label>
+                                    <br />
+                                    <input type="checkbox" name="disabled"
+                                        t-att-checked="employee.disabled" />
+                                </div>
+                            </div>
+                            <h5 class="section-title mt-4">Permanent Address</h5>
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label>Street</label>
+                                    <input name="private_street" class="form-control"
+                                        t-att-value="employee.private_street" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label>Street 2</label>
+                                    <input name="private_street2" class="form-control"
+                                        t-att-value="employee.private_street2" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label>City</label>
+                                    <input name="city" class="form-control"
+                                        t-att-value="employee.private_city"
+                                        required="1" />
+
+                                </div>
+                                <div class="col-md-3">
+                                    <label>Zip</label>
+                                    <input name="zip" class="form-control"
+                                        t-att-value="employee.private_zip" />
+                                </div>
+                            </div>
+
+                            <!-- Personal Information (Bottom Section) -->
+                            <div class="employee-personal-info mt-4">
+                                <h4>Personal Information</h4>
+                                <div class="row">
+                                    <!-- UAN -->
+                                    <div class="col-md-6 mb-3">
+                                        <label>UAN</label>
+                                        <input name="l10n_in_uan" type="text" class="form-control"
+                                            t-att-value="employee.l10n_in_uan"
+                                            required="1"
+                                        />
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label>ESIC Number</label>
+                                        <input name="l10n_in_esic_number" type="text"
+                                            class="form-control"
+                                            t-att-value="employee.l10n_in_esic_number"
+                                        />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label>Aadhar Number</label>
+                                        <input name="aadhar_card" class="form-control"
+                                            t-att-value="employee.aadhar_card"
+                                            required="1"
+                                        />
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label>PAN</label>
+                                        <input name="l10n_in_pan" type="text" class="form-control"
+                                            t-att-value="employee.l10n_in_pan"
+                                            required="1"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 text-end">
+                                <button type="submit" class="btn btn-success px-4">
+                                    Update Profile
+                                </button>
+                            </div>
+
+                        </div>
+                    </form>
+                </t>
+
+                <t t-if="not employee">
+                    <div class="alert alert-warning">
+                        No employee record linked to your account.
+                        Please contact HR.
+                    </div>
+                </t>
+                <!-- ====== SUCCESS ALERT SCRIPT ====== -->
+                <t t-if="request.params.get('profile_updated')">
+                    <script type="text/javascript">
+                        alert("Profile successfully updated!");
+                        window.location.href = '/my/home';
+                    </script>
+                </t>
+
+            </div>
+        </t>
+    </template>
+</odoo>

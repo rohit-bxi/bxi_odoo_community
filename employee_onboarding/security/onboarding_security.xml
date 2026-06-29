@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Multi-company record rule for Boarding Request Type -->
+    <record id="boarding_request_type_comp_rule" model="ir.rule">
+        <field name="name">Boarding Request Type: multi-company</field>
+        <field name="model_id" ref="model_boarding_request_type"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- Multi-company record rule for Employee Onboarding/Offboarding -->
+    <record id="employee_onboarding_offboarding_comp_rule" model="ir.rule">
+        <field name="name">Employee Onboarding Offboarding: multi-company</field>
+        <field name="model_id" ref="model_employee_onboarding_offboarding"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- Multi-company record rule for Employee Resignation -->
+    <record id="employee_resignation_comp_rule" model="ir.rule">
+        <field name="name">Employee Resignation: multi-company</field>
+        <field name="model_id" ref="model_employee_resignation"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+</odoo>

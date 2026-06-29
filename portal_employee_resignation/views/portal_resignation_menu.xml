@@ -1,0 +1,18 @@
+<odoo>
+    <template id="portal_my_resignation_link"
+        inherit_id="portal.portal_my_home"
+        name="Portal Home - Apply Resignation">
+        <xpath expr="//div[@id='portal_common_category']/t[1]" position="after">
+            <t t-if="(request.env.user.has_group('base.group_portal') or request.env.user.has_group('base.group_user'))
+             and not request.env.user.sudo().vender_custmer_access">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon" t-value="'/portal_employee_resignation/static/src/img/resignation-icon.svg'"/>
+                    <t t-set="title">Apply Resignation</t>
+                    <t t-set="text">Submit and track your resignation request</t>
+                    <t t-set="url" t-value="'/my/resignations'" />
+                    <t t-set="config_card" t-value="True" />
+                </t>
+            </t>
+        </xpath>
+    </template>
+</odoo>

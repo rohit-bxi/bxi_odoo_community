@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Root Menu -->
+    <menuitem
+        id="menu_employee_onboarding_root"
+        name="Employee Onboarding"
+        sequence="10"
+        web_icon="employee_onboarding,static/description/icon.png"/>
+
+    <!-- Onboarding / Offboarding -->
+    <menuitem
+        id="menu_employee_onboarding"
+        name="Onboarding / Offboarding"
+        parent="menu_employee_onboarding_root"
+        action="action_employee_onboarding_offboarding"
+        sequence="1"/>
+
+    <!-- Resignation -->
+    <menuitem
+        id="menu_employee_resignation"
+        name="Resignations"
+        parent="menu_employee_onboarding_root"
+        action="action_employee_resignation"
+        sequence="5"/>
+
+    <!-- Configuration -->
+    <menuitem
+        id="menu_employee_onboarding_config"
+        name="Configuration"
+        parent="menu_employee_onboarding_root"
+        sequence="99"/>
+
+    <!-- Configuration > Request Types -->
+    <menuitem
+        id="menu_boarding_request_type"
+        name="Request Types"
+        parent="menu_employee_onboarding_config"
+        action="action_boarding_request_type"
+        sequence="1"/>
+
+    <!-- Configuration > Teams -->
+    <menuitem
+        id="menu_request_type_team"
+        name="Teams"
+        parent="menu_employee_onboarding_config"
+        action="action_request_type_team"
+        sequence="2"/>
+
+</odoo>

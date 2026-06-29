@@ -1,0 +1,64 @@
+<odoo>
+
+    <record id="email_template_requisition_submit" model="mail.template">
+        <field name="name">Requisition Submission</field>
+        <field name="model_id" ref="model_employee_purchase_requisition" />
+        <field name="subject">New Requisition Submitted - {{ object.employee_id.name }}</field>
+        <field name="email_from">hrsupport@bxitech.com</field>
+        <field name="email_to">{{ object.employee_id.work_email }},FSO@bxiventures.com</field>
+        <field name="body_html" type="html">
+            <div style="font-family: Arial; font-size:14px;">
+                <p>Dear <b><t t-esc="object.employee_id.name"/></b>,</p>
+
+                <p>
+                    Your requisition 
+                    <b><t t-esc="object.name"/></b> 
+                    has been successfully submitted.
+                </p>
+
+                <ul>
+                    <li>Date: <t t-esc="object.requisition_date"/></li>
+                    <li>Deadline: <t t-esc="object.requisition_deadline"/></li>
+                    <li>
+                        Type: 
+                        <t t-esc="dict(object._fields['req_type'].selection).get(object.req_type)"/>
+                    </li>
+                </ul>
+                <p>Regards,<br/>HR Team</p>
+            </div>
+        </field>
+        <field name="reply_to">hrsupport@bxitech.com</field>
+    </record>
+
+    <record id="email_template_requisition_approved" model="mail.template">
+        <field name="name">Requisition Approved</field>
+        <field name="model_id" ref="model_employee_purchase_requisition"/>
+        <field name="email_from">hrsupport@bxitech.com</field>
+        <field name="subject">Requisition Approved - {{ object.employee_id.name }}</field>
+        <field name="email_to">{{ object.employee_id.work_email }},FSO@bxiventures.com</field>
+        <field name="body_html" type="html">
+            <div style="font-family: Arial; font-size:14px;">
+                <p>Dear <b><t t-esc="object.employee_id.name"/></b>,</p>
+
+                <p>
+                    Your requisition 
+                    <b><t t-esc="object.name"/></b> 
+                    has been 
+                    <b style="color:green;">Approved</b>.
+                </p>
+
+                <ul>
+                    <li>Date: <t t-esc="object.requisition_date"/></li>
+                    <li>Deadline: <t t-esc="object.requisition_deadline"/></li>
+                    <li>
+                        Type: 
+                        <t t-esc="dict(object._fields['req_type'].selection).get(object.req_type)"/>
+                    </li>
+                </ul>
+
+                <p>Regards,<br/>HR Team</p>
+            </div>
+        </field>
+        <field name="reply_to">hrsupport@bxitech.com</field>
+    </record>
+</odoo>

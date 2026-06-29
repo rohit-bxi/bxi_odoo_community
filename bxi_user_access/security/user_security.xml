@@ -1,0 +1,5 @@
+<odoo>
+    <record id="group_vendor_customer" model="res.groups">
+        <field name="name">Vendor / Customer Access</field>
+    </record>
+</odoo>

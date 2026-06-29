@@ -1,0 +1,14 @@
+<odoo>
+    <record id="view_users_form_inherit_vendor" model="ir.ui.view">
+    <field name="name">res.users.form.vendor.access</field>
+    <field name="model">res.users</field>
+    <field name="inherit_id" ref="base.view_users_form"/>
+    <field name="arch" type="xml">
+        <xpath expr="//field[@name='company_id']" position="after">
+            <group string="Vendor Access">
+                <field name="vender_custmer_access"/>
+            </group>
+        </xpath>
+    </field>
+</record>
+</odoo>

@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_helpdesk_ticket_category,helpdesk.ticket.category,helpdesk.model_helpdesk_ticket,,1,1,1,1
+access_helpdesk_category,helpdesk.category,model_helpdesk_category,,1,1,1,1
+access_helpdesk_sub_category,helpdesk.sub.category,model_helpdesk_sub_category,,1,1,1,1
+access_helpdesk_escalation_level,helpdesk.escalation.level,model_helpdesk_escalation_level,,1,1,1,1
+

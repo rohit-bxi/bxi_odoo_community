@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_icici_otp_wizard,access_icici_otp_wizard,model_icici_otp_wizard,base.group_user,1,1,1,1
+access_icici_reverse_wizard,access_icici_reverse_wizard,model_icici_reverse_wizard,base.group_user,1,1,1,1
