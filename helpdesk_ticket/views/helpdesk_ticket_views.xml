@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="helpdesk_ticket_form_inherit_category" model="ir.ui.view">
+        <field name="name">helpdesk.ticket.form.category</field>
+        <field name="model">helpdesk.ticket</field>
+        <field name="inherit_id" ref="helpdesk.helpdesk_ticket_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='email_cc']" position="after">
+                <field name="assigned_resolved_by"
+                       options="{
+                                   'no_create': True,
+                                   'no_create_edit': True,
+                                   'no_open': True
+                               }"/>
+                <field name="category_id"
+                       domain="[('team_id','=',team_id)]"
+                       options="{
+                                   'no_create': True,
+                                   'no_create_edit': True,
+                                   'no_open': True
+                               }"/>
+                <field name="sub_category_id"
+                       domain="[('category_id','=',category_id)]"
+                       options="{
+                                   'no_create': True,
+                                   'no_create_edit': True,
+                                   'no_open': True
+                               }"/>
+                <field name="escalation_level_id"
+                               options="{
+                                       'no_create': True,
+                                       'no_create_edit': True,
+                                       'no_open': True
+                                   }"
+                               domain="[('team_id', '=', team_id)]"/>
+                <field name="escalation_assignee_ids"
+                       widget="many2many_tags"
+                       options="{
+                               'no_create': True,
+                               'no_create_edit': True,
+                               'no_open': True
+                           }"
+                       />
+                <field name="child_ticket_ids"
+                       widget="many2many_tags"
+                       domain="[('id','!=',id)]"/>
+                <field name="additional_resolution_owner"
+                    options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
+            </xpath>
+            <xpath expr="//field[@name='partner_id']" position="attributes">
+                <attribute name="string">Client</attribute>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

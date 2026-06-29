@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <record id="material_category" model="ir.module.category">
+            <field name="name">Material Requisition</field>
+            <field name="sequence">10000</field>
+        </record>
+
+        <record model="res.groups.privilege" id="material_category_group">
+            <field name="name">Material Requisition</field>
+            <field name="sequence">1000000</field>
+            <field name="category_id" ref="employee_purchase_requisition.material_category"/>
+        </record>
+
+        <record id="material_category_user_group" model="res.groups">
+            <field name="name">User</field>
+            <field name="privilege_id" ref="material_category_group"/>
+        </record>
+
+        <record id="material_category_hr_group" model="res.groups">
+            <field name="name">HR</field>
+            <field name="privilege_id" ref="material_category_group"/>
+        </record>
+
+        <record id="material_category_finance_group" model="res.groups">
+            <field name="name">Finance</field>
+            <field name="privilege_id" ref="material_category_group"/>
+        </record>
+
+        <record id="material_category_admin_group" model="res.groups">
+            <field name="name">Administrator</field>
+             <field name="privilege_id" ref="material_category_group"/>
+            <field name="implied_ids" eval="[(4, ref('material_category_user_group'))]"/>
+        </record>
+
+    </data>
+</odoo>

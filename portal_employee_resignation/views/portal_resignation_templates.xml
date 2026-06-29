@@ -1,0 +1,195 @@
+<odoo>
+
+    <!-- ══════════════════════════════════════════════
+         Template: My Resignations (List View)
+         ══════════════════════════════════════════════ -->
+    <template id="portal_my_resignations_template" name="My Resignations">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <t t-call="portal.portal_searchbar">
+                    <t t-set="title">My Resignations</t>
+                </t>
+                <a href="/my/apply-resignation" class="btn btn-danger ms-3">
+                    + Apply Resignation
+                </a>
+            </div>
+
+            <!-- Success message after submission -->
+            <t t-if="request.params.get('submitted')">
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <strong>Resignation submitted successfully!</strong> HR will review your request shortly.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"/>
+                </div>
+            </t>
+
+            <t t-if="not resignations">
+                <div class="alert alert-info">
+                    You have not submitted any resignation request yet.
+                    <a href="/my/apply-resignation" class="alert-link">Apply now</a>.
+                </div>
+            </t>
+
+            <t t-if="resignations">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Reference</th>
+                                <th>Resignation Date</th>
+                                <th>Last Working Day</th>
+                                <th>Approved Last Working Day</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="resignations" t-as="res">
+                                <tr>
+                                    <td><t t-esc="res.name"/></td>
+                                    <td><t t-esc="res.resignation_date"/></td>
+                                    <td><t t-esc="res.last_working_day"/></td>
+                                    <td>
+                                        <t t-if="res.approved_last_working_day">
+                                            <t t-esc="res.approved_last_working_day"/>
+                                        </t>
+                                        <t t-else="">
+                                            <span class="text-muted">Pending</span>
+                                        </t>
+                                    </td>
+                                    <td>
+                                        <t t-if="res.reason == 'better_opportunity'">Better Opportunity / Career Growth</t>
+                                        <t t-elif="res.reason == 'personal'">Personal Reasons</t>
+                                        <t t-elif="res.reason == 'health'">Health Issues</t>
+                                        <t t-elif="res.reason == 'relocation'">Relocation / Family reasons</t>
+                                        <t t-elif="res.reason == 'education'">Higher Education</t>
+                                        <t t-else="">Other</t>
+                                    </td>
+                                    <td>
+                                        <span t-if="res.state == 'draft'" class="badge bg-secondary">Draft</span>
+                                        <span t-elif="res.state == 'submitted'" class="badge bg-warning text-dark">Submitted</span>
+                                        <span t-elif="res.state == 'approved'" class="badge bg-success">Approved</span>
+                                        <span t-elif="res.state == 'rejected'" class="badge bg-danger">Rejected</span>
+                                        <span t-elif="res.state == 'cancelled'" class="badge bg-dark">Cancelled</span>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- ══════════════════════════════════════════════
+         Template: Apply Resignation (Form)
+         ══════════════════════════════════════════════ -->
+    <template id="portal_apply_resignation_template" name="Apply Resignation">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-4" style="max-width: 760px;">
+                <h2 class="mb-1">Apply for Resignation</h2>
+                <p class="text-muted mb-4">Fill in the details below to submit your resignation request to HR.</p>
+
+                <!-- Error message -->
+                <t t-if="error">
+                    <div class="alert alert-danger">
+                        <t t-esc="error"/>
+                    </div>
+                </t>
+
+                <!-- Employee Profile Info (readonly display) -->
+                <t t-if="employee">
+                    <div class="card mb-4 border-0 bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title fw-semibold text-muted mb-3">Employee Details</h6>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Employee Name</small>
+                                    <strong><t t-esc="employee.name"/></strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Department</small>
+                                    <strong><t t-esc="employee.department_id.name or '—'"/></strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Job Position</small>
+                                    <strong><t t-esc="employee.job_id.name or '—'"/></strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Manager</small>
+                                    <strong><t t-esc="employee.parent_id.name or '—'"/></strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+                <t t-if="not employee">
+                    <div class="alert alert-warning">
+                        No employee profile is linked to your account. Please contact HR before submitting a resignation.
+                    </div>
+                </t>
+
+                <form method="post" action="/my/apply-resignation" id="resignation_form">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                    <div class="row g-3">
+                        <!-- Resignation Date -->
+                        <div class="col-md-6">
+                            <label for="resignation_date" class="form-label fw-semibold">
+                                Resignation Date <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" id="resignation_date" name="resignation_date"
+                                   class="form-control" required="1"/>
+                        </div>
+
+                        <!-- Last Working Day -->
+                        <div class="col-md-6">
+                            <label for="last_working_day" class="form-label fw-semibold">
+                                Requested Last Working Day <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" id="last_working_day" name="last_working_day"
+                                   class="form-control" required="1"/>
+                        </div>
+
+                        <!-- Reason -->
+                        <div class="col-12">
+                            <label for="reason" class="form-label fw-semibold">
+                                Reason for Resignation <span class="text-danger">*</span>
+                            </label>
+                            <select id="reason" name="reason" class="form-select" required="1">
+                                <option value="">— Select a reason —</option>
+                                <option value="better_opportunity">Better Opportunity / Career Growth</option>
+                                <option value="personal">Personal Reasons</option>
+                                <option value="health">Health Issues</option>
+                                <option value="relocation">Relocation / Family reasons</option>
+                                <option value="education">Higher Education</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <!-- Resignation Letter -->
+                        <div class="col-12">
+                            <label for="resignation_body" class="form-label fw-semibold">
+                                Resignation Letter / Additional Details
+                            </label>
+                            <textarea id="resignation_body" name="resignation_body"
+                                      class="form-control" rows="6"
+                                      placeholder="Dear HR Team, I would like to formally submit my resignation..."/>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-danger px-4"
+                                t-att-disabled="not employee and 'disabled' or None">
+                            Submit Resignation
+                        </button>
+                        <a href="/my/resignations" class="btn btn-outline-secondary px-4">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </t>
+    </template>
+
+</odoo>

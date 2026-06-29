@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Employee Purchase Requisition menu -->
+    <menuitem id="employee_purchase_requisition_menu_root"
+              name="Employee Purchase Requisition"
+              web_icon="employee_purchase_requisition,static/description/icon.png"/>
+              action="employee_purchase_requisition_action"/>
+    <menuitem id="employee_purchase_requisition_menu_create_purchase_requisition"
+              name="Purchase Requisition"
+              parent="employee_purchase_requisition_menu_root"
+              action="employee_purchase_requisition_action"/>
+
+    <template id="material_request_link"
+          inherit_id="portal.portal_my_home"
+          name="Portal Home - Material Request">
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
+            <t t-if="(request.env.user.has_group('employee_purchase_requisition.material_category_user_group') or request.env.user.has_group('employee_purchase_requisition.material_category_hr_group') or request.env.user.has_group('employee_purchase_requisition.material_category_finance_group') or request.env.user.has_group('employee_purchase_requisition.material_category_admin_group'))">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon"
+                       t-value="'/employee_purchase_requisition/static/src/img/icon-material-requisition.svg'"/>
+                    <t t-set="title">Material Requisition</t>
+                    <t t-set="text">View and manage your requisitions</t>
+                    <t t-set="url" t-value="'/my/material-requisition'"/>
+                    <t t-set="config_card" t-value="True"/>
+                </t>
+            </t>
+        </xpath>
+    </template>
+</odoo>

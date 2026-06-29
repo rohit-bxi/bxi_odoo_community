@@ -1,0 +1,146 @@
+<odoo>
+    <template id="portal_my_expenses_template" name="My Expenses">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True" />
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <t t-call="portal.portal_searchbar">
+                    <t t-set="title">My Expenses</t>
+                </t>
+                <a href="/my/submit-expenses" class="btn btn-success ms-3">
+                    + Add Expense
+                </a>
+            </div>
+            <t t-if="not expenses">
+                <p class="alert alert-warning">There are currently no expense available for this
+                    user.</p>
+            </t>
+            <t t-if="expenses" t-call="portal.portal_table">
+                <table class="table table-bordered" id="expense_table">
+                    <thead>
+                        <tr class="active">
+                            <th name="Employee">Employee</th>
+                            <th name="Description">Description</th>
+                            <th name="expenses_date">Expense Date</th>
+                            <th name="reimbursement_date">Reimbursement Date</th>
+                            <th name="product_category">Category</th>
+                            <th name="toltal_amount">Total</th>
+                            <th name="status">Status</th>
+                        </tr>
+                    </thead>
+                    <div class="container mt-4">
+                        <h2>My Expenses</h2>
+                        <tbody>
+                            <t t-foreach="expenses" t-as="exp">
+                                <tr>
+                                    <td>
+                                        <t t-esc="exp.employee_id.name" />
+                                    </td>
+                                    <td>
+                                        <t t-esc="exp.name" />
+                                    </td>
+                                    <td>
+                                        <t t-esc="exp.date" />
+                                    </td>
+                                    <td>
+                                        <t t-esc="exp.reimbursement_date"/>
+                                    </td>
+                                    <td>
+                                        <t t-esc="exp.product_id.display_name" />
+                                    </td>
+                                    <td>
+                                        <t t-esc="exp.total_amount" />
+                                    </td>
+                                    <td>
+                                        <span t-if="exp.state == 'draft'" class="badge bg-secondary">
+                                            Draft</span>
+                                        <span t-elif="exp.state == 'submitted'"
+                                            class="badge bg-info">Submitted</span>
+                                        <span t-elif="exp.state == 'approved'"
+                                            class="badge bg-primary">Approved</span>
+                                        <span t-elif="exp.state == 'paid'" class="badge bg-success">
+                                            Paid</span>
+                                        <span t-elif="exp.state == 'hr_approval'" class="badge bg-success">Hr Approval</span>
+                                        <span t-elif="exp.state == 'finance_approval'" class="badge bg-success">Finance Approval</span>
+                                        <span t-else="" class="badge bg-dark">
+                                            <t t-esc="exp.state" />
+                                        </span>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </div>
+                </table>
+            </t>
+        </t>
+    </template>
+
+    <template id="portal_submit_expense_template" name="Submit Expense">
+        <t t-call="portal.portal_layout">
+
+            <div class="container mt-4">
+                <h2>Add Expense</h2>
+
+                <form method="post" enctype="multipart/form-data" id="expense_form">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                    <table class="table table-bordered" id="expense_table">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Category / Product</th>
+                                <th>Date</th>
+                                <th>Reimbursement Date</th>
+                                <th>Amount</th>
+                                <th>Receipt</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expense_lines_container">
+                            <tr class="expense_line">
+                                <td>
+                                    <input type="text" name="name[]" class="form-control" required="True"/>
+                                </td>
+                                 <td>
+                                    <select name="product_id[]" class="form-control" required="True">
+                                        <option value="">Select Product</option>
+                                        <t t-foreach="products" t-as="p">
+                                            <option t-att-value="p.id">
+                                                <t t-esc="p.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
+                                </td>
+
+                                <td>
+                                    <input type="date" name="date[]" class="form-control" required="True"/>
+                                </td>
+                                <td>
+                                    <input type="text" name="reimbursement_date[]"
+                                           class="form-control reimbursement_date" readonly="readonly"/>
+                                </td>
+                                <td>
+                                    <input type="number" name="amount[]" class="form-control" required="True"/>
+                                </td>
+                                <td>
+                                    <input type="file" name="receipt[]" class="form-control"/>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-danger remove_line" style="display:none;">
+                                        Remove
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <button type="button" id="add_line_btn" class="btn btn-success mb-3">Add Expense</button>
+                    <br/>
+
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <a href="/my/employee-expenses" class="btn btn-secondary">Back</a>
+                </form>
+            </div>
+
+        </t>
+    </template>
+</odoo>

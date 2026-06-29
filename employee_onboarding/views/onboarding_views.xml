@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         Sequences
+         ════════════════════════════════════════════════════════════════ -->
+    <data noupdate="1">
+        <record id="seq_employee_onboarding" model="ir.sequence">
+            <field name="name">Employee Onboarding Sequence</field>
+            <field name="code">employee.onboarding.sequence</field>
+            <field name="prefix">ONB/%(year)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <record id="seq_employee_offboarding" model="ir.sequence">
+            <field name="name">Employee Offboarding Sequence</field>
+            <field name="code">employee.offboarding.sequence</field>
+            <field name="prefix">OFF/%(year)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         Boarding Request Type – Tree / Form / Action
+         ════════════════════════════════════════════════════════════════ -->
+    <record id="view_boarding_request_type_tree" model="ir.ui.view">
+        <field name="name">boarding.request.type.tree</field>
+        <field name="model">boarding.request.type</field>
+        <field name="arch" type="xml">
+            <list string="Request Types">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="company_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_boarding_request_type_form" model="ir.ui.view">
+        <field name="name">boarding.request.type.form</field>
+        <field name="model">boarding.request.type</field>
+        <field name="arch" type="xml">
+            <form string="Request Type">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Tasks">
+                            <field name="task_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="task"/>
+                                    <field name="performed_by"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_boarding_request_type" model="ir.actions.act_window">
+        <field name="name">Request Types</field>
+        <field name="res_model">boarding.request.type</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first request type (e.g. Onboarding, Offboarding)
+            </p>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         Onboarding / Offboarding – Tree View
+         ════════════════════════════════════════════════════════════════ -->
+    <record id="view_employee_onboarding_offboarding_tree" model="ir.ui.view">
+        <field name="name">employee.onboarding.offboarding.tree</field>
+        <field name="model">employee.onboarding.offboarding</field>
+        <field name="arch" type="xml">
+            <list string="Onboarding / Offboarding"
+                  decoration-info="state == 'draft'"
+                  decoration-warning="state == 'in_progress'"
+                  decoration-success="state == 'done'"
+                  decoration-danger="state == 'cancelled'">
+                <field name="name"/>
+                <field name="request_type_id"/>
+                <field name="employee_id"/>
+                <field name="employee_code"/>
+                <field name="department_id"/>
+                <field name="position_id"/>
+                <field name="manager_id"/>
+                <field name="request_date"/>
+                <field name="effective_date"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'in_progress'"
+                       decoration-success="state == 'done'"
+                       decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         Onboarding / Offboarding – Form View
+         ════════════════════════════════════════════════════════════════ -->
+    <record id="view_employee_onboarding_offboarding_form" model="ir.ui.view">
+        <field name="name">employee.onboarding.offboarding.form</field>
+        <field name="model">employee.onboarding.offboarding</field>
+        <field name="arch" type="xml">
+            <form string="Onboarding / Offboarding">
+                <header>
+                    <button name="action_in_progress"
+                            string="Start"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'draft'"/>
+                    <button name="action_done"
+                            string="Done"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'in_progress'"/>
+                    <button name="action_cancel"
+                            string="Cancel"
+                            type="object"
+                            invisible="state in ('done', 'cancelled')"/>
+                    <button name="action_reset_to_draft"
+                            string="Reset to Draft"
+                            type="object"
+                            invisible="state not in ('cancelled',)"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Request Details">
+                            <field name="request_type_id" readonly="state != 'draft'"
+                                   options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                            <field name="employee_code"/>
+                            <field name="request_date" readonly="state != 'draft'"/>
+                            <field name="effective_date"/>
+                        </group>
+                        <group string="Employee Information">
+                            <field name="department_id"/>
+                            <field name="position_id"/>
+                            <field name="manager_id"/>
+                            <field name="company_id"/>
+                        </group>
+                        <group string="Contact Details">
+                            <field name="work_email"/>
+                            <field name="work_phone"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Task Checklist">
+                            <field name="task_line_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="task"/>
+                                    <field name="performed_by"/>
+                                    <field name="status"/>
+                                    <field name="review"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Remarks">
+                            <field name="reason" placeholder="Enter reason or remarks..."/>
+                        </page>
+                        <page string="Notes">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         Onboarding / Offboarding – Search View
+         ════════════════════════════════════════════════════════════════ -->
+    <record id="view_employee_onboarding_offboarding_search" model="ir.ui.view">
+        <field name="name">employee.onboarding.offboarding.search</field>
+        <field name="model">employee.onboarding.offboarding</field>
+        <field name="arch" type="xml">
+            <search string="Onboarding / Offboarding">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="request_type_id"/>
+                <field name="department_id"/>
+                <field name="manager_id"/>
+                <separator/>
+                <filter name="filter_draft" string="Draft"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_in_progress" string="In Progress"
+                        domain="[('state', '=', 'in_progress')]"/>
+                <filter name="filter_done" string="Done"
+                        domain="[('state', '=', 'done')]"/>
+                <group>
+                    <filter name="group_by_request_type" string="Request Type"
+                            context="{'group_by': 'request_type_id'}"/>
+                    <filter name="group_by_department" string="Department"
+                            context="{'group_by': 'department_id'}"/>
+                    <filter name="group_by_state" string="Status"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_by_manager" string="Manager"
+                            context="{'group_by': 'manager_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         Onboarding / Offboarding – Action
+         ════════════════════════════════════════════════════════════════ -->
+    <record id="action_employee_onboarding_offboarding" model="ir.actions.act_window">
+        <field name="name">Onboarding / Offboarding</field>
+        <field name="res_model">employee.onboarding.offboarding</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_employee_onboarding_offboarding_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Onboarding / Offboarding request
+            </p>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         Request Type Team – Tree / Form / Search / Action
+         ════════════════════════════════════════════════════════════════ -->
+    <record id="view_request_type_team_tree" model="ir.ui.view">
+        <field name="name">request.type.team.list</field>
+        <field name="model">request.type.team</field>
+        <field name="arch" type="xml">
+            <list string="Teams">
+                <field name="name"/>
+                <field name="email"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_request_type_team_form" model="ir.ui.view">
+        <field name="name">request.type.team.form</field>
+        <field name="model">request.type.team</field>
+        <field name="arch" type="xml">
+            <form string="Team">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                        </group>
+                        <group>
+                            <field name="email"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_request_type_team_search" model="ir.ui.view">
+        <field name="name">request.type.team.search</field>
+        <field name="model">request.type.team</field>
+        <field name="arch" type="xml">
+            <search string="Teams">
+                <field name="name"/>
+                <field name="email"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_request_type_team" model="ir.actions.act_window">
+        <field name="name">Teams</field>
+        <field name="res_model">request.type.team</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_request_type_team_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first team (e.g. IT, HR) and set their notification email.
+            </p>
+        </field>
+    </record>
+
+</odoo>

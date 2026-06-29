@@ -1,0 +1,255 @@
+<odoo>
+
+    <!-- ================= LIST VIEW ================= -->
+    <template id="bxi_purchase_requisition_template" name="My Requisitions">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-5">
+
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="fw-bold">My Requisitions</h2>
+                    <a href="/my/submit-requisition" class="btn btn-success shadow-sm">
+                        + New Requisition
+                    </a>
+                </div>
+
+                <!-- Empty -->
+                <t t-if="not requests">
+                    <div class="alert alert-warning text-center shadow-sm">
+                        No requisitions found.
+                    </div>
+                </t>
+
+                <!-- Table -->
+                <t t-if="requests">
+                    <div class="card shadow-lg border-0 rounded-4">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Reference</th>
+                                        <th>Employee</th>
+                                        <th>Department</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    <t t-foreach="requests" t-as="req">
+                                        <tr>
+
+                                            <td class="fw-bold text-primary">
+                                                <t t-esc="req.name"/>
+                                            </td>
+
+                                            <td>
+                                                <t t-esc="req.employee_id.name"/>
+                                            </td>
+
+                                            <td>
+                                                <t t-esc="req.dept_id.name"/>
+                                            </td>
+
+                                            <td>
+                                                <t t-esc="req.requisition_date"/>
+                                            </td>
+
+                                            <!-- ✅ FIXED STATUS -->
+                                            <td>
+                                                <span t-if="req.state == 'new'" class="badge bg-secondary px-3 py-2">New</span>
+                                                <span t-elif="req.state == 'waiting_department_approval'" class="badge bg-info px-3 py-2">Dept Approval</span>
+                                                <span t-elif="req.state == 'waiting_head_approval'" class="badge bg-warning text-dark px-3 py-2">Head Approval</span>
+                                                <span t-elif="req.state == 'approved'" class="badge bg-primary px-3 py-2">Approved</span>
+                                                <span t-elif="req.state == 'purchase_order_created'" class="badge bg-success px-3 py-2">PO Created</span>
+                                                <span t-elif="req.state == 'received'" class="badge bg-success px-3 py-2">Received</span>
+                                                <span t-elif="req.state == 'cancelled'" class="badge bg-danger px-3 py-2">Cancelled</span>
+
+                                                <span t-else="" class="badge bg-dark px-3 py-2">
+                                                    <t t-esc="dict(req._fields['state'].selection).get(req.state)"/>
+                                                </span>
+                                            </td>
+
+                                        </tr>
+                                    </t>
+                                </tbody>
+
+                            </table>
+                        </div>
+                    </div>
+                </t>
+
+            </div>
+        </t>
+    </template>
+
+
+    <!-- ================= FORM ================= -->
+    <template id="material_requisition_form" name="Submit Material Requisition">
+        <t t-call="portal.portal_layout">
+
+            <div class="container mt-5">
+
+                <div class="card shadow-lg border-0 rounded-4">
+
+                    <!-- Header -->
+                    <div class="card-header bg-gradient bg-primary text-white rounded-top-4">
+                        <h4 class="mb-0">Submit Material Requisition</h4>
+                    </div>
+
+                    <div class="card-body p-4">
+
+                        <form id="req_form" action="/my/material-requisition/submit" method="post">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                            <!-- BASIC -->
+                            <h5 class="mb-3 text-primary">Basic Details</h5>
+
+                            <div class="row g-3">
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Requisition Date *</label>
+                                    <input type="date" name="requisition_date" class="form-control" required="required"/>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Deadline *</label>
+                                    <input type="date" name="requisition_deadline" class="form-control" required="required"/>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Type *</label>
+                                    <select name="req_type" id="req_type" class="form-select" required="required">
+                                        <option value="">Select Type</option>
+                                        <option value="internal">Internal</option>
+                                        <option value="customer">Customer</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6" id="customer_div" style="display:none;">
+                                    <label class="form-label">Customer *</label>
+                                    <select name="customer_id" id="customer_id" class="form-select">
+                                        <option value="">Select Customer</option>
+                                        <t t-foreach="customers" t-as="c">
+                                            <option t-att-value="c.id">
+                                                <t t-esc="c.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label">Reason *</label>
+                                    <textarea name="requisition_description" class="form-control" rows="3" required="required"></textarea>
+                                </div>
+
+                            </div>
+
+                            <!-- PRODUCTS -->
+                            <hr class="my-4"/>
+
+                            <h5 class="mb-3 text-primary">Product Details</h5>
+
+                            <div class="table-responsive">
+                                <table class="table table-bordered align-middle">
+
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Product</th>
+                                            <th width="150">Quantity</th>
+                                            <th width="80"></th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody id="product_body">
+                                        <tr>
+                                            <td>
+                                                <select name="product_id[]" class="form-select" required="required">
+                                                    <option value="">Select Product</option>
+                                                    <t t-foreach="products" t-as="p">
+                                                        <option t-att-value="p.id">
+                                                            <t t-esc="p.name"/>
+                                                        </option>
+                                                    </t>
+                                                </select>
+                                            </td>
+
+                                            <td>
+                                                <input type="number" name="quantity[]" class="form-control"
+                                                       min="1" required="required"/>
+                                            </td>
+
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-danger btn-sm remove_row">
+                                                    ✕
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+
+                                </table>
+                            </div>
+
+                            <button type="button" id="add_row" class="btn btn-outline-primary mt-2">
+                                + Add Product
+                            </button>
+
+                            <!-- SUBMIT -->
+                            <div class="text-end mt-4">
+                                <button type="submit" class="btn btn-success px-4 shadow-sm">
+                                    Submit Request
+                                </button>
+                            </div>
+
+                        </form>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- JS -->
+            <script>
+            <![CDATA[
+            document.addEventListener("DOMContentLoaded", function () {
+
+                let reqType = document.getElementById("req_type");
+                let customerDiv = document.getElementById("customer_div");
+                let customerField = document.getElementById("customer_id");
+
+                reqType.addEventListener("change", function () {
+                    if (this.value === "customer") {
+                        customerDiv.style.display = "block";
+                        customerField.setAttribute("required", "required");
+                    } else {
+                        customerDiv.style.display = "none";
+                        customerField.removeAttribute("required");
+                        customerField.value = "";
+                    }
+                });
+
+                document.getElementById("add_row").addEventListener("click", function () {
+                    let row = document.querySelector("#product_body tr").cloneNode(true);
+                    row.querySelectorAll("input").forEach(i => i.value = "");
+                    row.querySelectorAll("select").forEach(s => s.selectedIndex = 0);
+                    document.getElementById("product_body").appendChild(row);
+                });
+
+                document.addEventListener("click", function (e) {
+                    if (e.target.classList.contains("remove_row")) {
+                        let rows = document.querySelectorAll("#product_body tr");
+                        if (rows.length > 1) {
+                            e.target.closest("tr").remove();
+                        }
+                    }
+                });
+
+            });
+            ]]>
+            </script>
+
+        </t>
+    </template>
+
+</odoo>

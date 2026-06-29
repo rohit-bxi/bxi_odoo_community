@@ -1,0 +1,19 @@
+<odoo>
+    <template id="portal_my_employee_expense_link"
+        inherit_id="portal.portal_my_home"
+        name="Portal Home - Employee Expense">
+        <xpath expr="//div[@id='portal_common_category']/t[1]" position="after">
+<t
+                t-if="(request.env.user.has_group('base.group_portal') or request.env.user.has_group('base.group_user')) 
+         and not request.env.user.sudo().vender_custmer_access">     
+                    <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon" t-value="'/portal_employee_expense/static/src/img/cost-icon.svg'"/>
+                    <t t-set="title">Submit My Expenses</t>
+                    <t t-set="text">View and update your expenses details</t>
+                    <t t-set="url" t-value="'/my/employee-expenses'" />
+                    <t t-set="config_card" t-value="True" />
+                </t>
+            </t>
+        </xpath>
+    </template>
+</odoo>

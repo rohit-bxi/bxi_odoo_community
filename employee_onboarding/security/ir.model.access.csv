@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_employee_onboarding_offboarding,employee.onboarding.offboarding,model_employee_onboarding_offboarding,base.group_user,1,1,1,1
+access_boarding_request_type,boarding.request.type,model_boarding_request_type,base.group_user,1,1,1,1
+access_boarding_request_type_task,boarding.request.type.task,model_boarding_request_type_task,base.group_user,1,1,1,1
+access_employee_resignation,employee.resignation,model_employee_resignation,base.group_user,1,1,1,1
+access_request_type_team,request.type.team,model_request_type_team,base.group_user,1,1,1,1
+access_employee_onboarding_task,employee.onboarding.task,model_employee_onboarding_task,base.group_user,1,1,1,1

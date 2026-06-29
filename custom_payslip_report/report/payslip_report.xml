@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+  <record id="paperformat_custom_payslip_pdf_small" model="report.paperformat">
+    <field name="name">Custom Payslip PDF</field>
+    <field name="default" eval="False"/>
+    <field name="format">A4</field>
+    <field name="orientation">Portrait</field>
+    <field name="margin_top">5</field>
+    <field name="margin_bottom">5</field>
+    <field name="margin_left">5</field>
+    <field name="margin_right">5</field>
+  </record>
+
+    <record id="action_custom_payslip_pdf" model="ir.actions.report">
+      <field name="name">Custom Payslip PDF</field>
+      <field name="model">hr.payslip</field>
+      <field name="report_name">custom_payslip_report.payslip_custom_template</field>
+      <field name="report_type">qweb-pdf</field>
+      <field name="print_report_name">'Salary Slip - %s' % (object.employee_id.name)</field>
+      <field name="paperformat_id" ref="paperformat_custom_payslip_pdf_small"/>
+    </record>
+  </data>
+</odoo>

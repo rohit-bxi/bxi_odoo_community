@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit Employee Form View to add Smart Button -->
+    <record id="view_employee_form_inherit_onboarding" model="ir.ui.view">
+        <field name="name">hr.employee.form.inherit.onboarding</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_onboarding_requests"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-tasks"
+                        help="Onboarding &amp; Offboarding Requests">
+                    <field name="onboarding_count" widget="statinfo" string="Onboarding/Offboarding"/>
+                </button>
+                <button name="action_view_resignation_requests"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-sign-out"
+                        help="Resignation Requests">
+                    <field name="resignation_count" widget="statinfo" string="Resignations"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

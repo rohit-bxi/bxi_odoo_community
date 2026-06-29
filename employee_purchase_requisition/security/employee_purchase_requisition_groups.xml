@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Module Category -->
+    <record model="ir.module.category" id="employee_requisition">
+        <field name="name">Employee Purchase Requisition</field>
+        <field name="description">
+            User access level for Material Request module
+        </field>
+        <field name="sequence">20</field>
+    </record>
+
+    <!-- User groups -->
+    <record id="employee_requisition_user" model="res.groups">
+        <field name="name">Requisition Users</field>
+    </record>
+
+    <record id="employee_requisition_head" model="res.groups">
+        <field name="name">Department Head</field>
+        <field name="implied_ids"
+               eval="[(4, ref('employee_purchase_requisition.employee_requisition_user'))]"/>
+    </record>
+
+    <record id="employee_requisition_manager" model="res.groups">
+        <field name="name">Requisition Manager</field>
+        <field name="implied_ids"
+               eval="[(4, ref('employee_purchase_requisition.employee_requisition_head'))]"/>
+    </record>
+
+    <record id="employee_requisition_user_rule" model="ir.rule">
+        <field name="name">Employee Requisition Hierarchy Access</field>
+        <field name="model_id" ref="model_employee_purchase_requisition"/>
+        <field name="domain_force">
+            [
+                '|',
+                ('employee_id', '=', user.employee_id.id),
+                ('employee_id.parent_id.id', '=', user.employee_id.id)
+            ]
+        </field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+</odoo>

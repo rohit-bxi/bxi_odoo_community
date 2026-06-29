@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+  <record id="paperformat_custom_invoice_report_pdf_small" model="report.paperformat">
+    <field name="name">Custom Invoice PDF</field>
+    <field name="default" eval="False"/>
+    <field name="format">A4</field>
+    <field name="orientation">Portrait</field>
+    <field name="margin_top">5</field>
+    <field name="margin_bottom">5</field>
+    <field name="margin_left">5</field>
+    <field name="margin_right">5</field>
+  </record>
+
+    <record id="action_custom_invoice_report_pdf" model="ir.actions.report">
+      <field name="name">Custom Invoice PDF</field>
+      <field name="model">account.move</field>
+      <field name="report_name">custom_invoice_report.custom_invoice_template</field>
+      <field name="report_type">qweb-pdf</field>
+      <field name="print_report_name">'Invoice - %s' % (object.name)</field>
+      <field name="paperformat_id" ref="paperformat_custom_invoice_report_pdf_small"/>
+      <field name="is_invoice_report" eval="True"/>
+      <field name="binding_model_id" ref="account.model_account_move"/>
+      <field name="binding_type">report</field>
+    </record>
+  </data>
+</odoo>

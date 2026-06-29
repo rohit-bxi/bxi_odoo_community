@@ -1,0 +1,201 @@
+<odoo>
+    <record id="email_template_manager" model="mail.template">
+        <field name="name">Travel Request - Manager Approval</field>
+        <field name="model_id" ref="model_travel_request" />
+        <field name="subject">Travel Request Approval - {{ object.employee_id.name }}</field>
+        <field name="email_from">hrsupport@bxitech.com</field>
+        <field name="body_html" type="html">
+            <div style="font-family: Arial; font-size:14px;">
+                <p>Dear <b>
+                        <t t-esc="object.manager_id.name or 'Manager'" />
+                    </b>,</p>
+                <p>A new travel request has been submitted and requires your approval.</p>
+                <table border="1" cellpadding="8" style="border-collapse: collapse; width:100%;">
+                    <tr>
+                        <th>Employee</th>
+                        <td>
+                            <t t-esc="object.employee_id.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Purpose</th>
+                        <td>
+                            <t t-esc="object.travel_purpose" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>From</th>
+                        <td>
+                            <t t-esc="object.from_city" /> , <t t-esc="object.from_state.name or ''" />
+                            , <t t-esc="object.from_country.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>To</th>
+                        <td>
+                            <t t-esc="object.to_city" /> , <t t-esc="object.to_state.name or ''" />
+                            , <t t-esc="object.to_country.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Dates</th>
+                        <td>
+                            <t t-esc="object.departure_date" /> → <t t-esc="object.return_date" />
+                        </td>
+                    </tr>
+                </table>
+                <br />
+                <t t-set="url"
+                    t-value="'/web#id=%s&amp;model=travel.request&amp;view_type=form' % object.id" />
+                <a t-att-href="url"
+                    style="
+                            display:inline-block;
+                            background-color:#875a7b;
+                            color:white;
+                            padding:12px 20px;
+                            font-size:14px;
+                            font-weight:600;
+                            font-family:Arial, sans-serif;
+                            text-decoration:none;
+                            border-radius:6px;
+                            border:1px solid #0069d9;
+                    ">
+                    View Travel Request
+                </a>
+            </div>
+        </field>
+    </record>
+
+    <record id="email_template_hr" model="mail.template">
+        <field name="name">Travel Request - HR Approval</field>
+        <field name="model_id" ref="model_travel_request" />
+        <field name="subject">HR Approval Required - {{ object.employee_id.name }}</field>
+        <field name="email_from">hrsupport@bxitech.com</field>
+        <field name="email_to">hr@bxitech.com</field>
+        <field name="body_html" type="html">
+            <div style="font-family: Arial; font-size:14px;">
+                <p>Dear HR Team,</p>
+                <p>The travel request has been approved by the manager and is now pending HR
+                    approval.</p>
+                <table border="1" cellpadding="8" style="border-collapse: collapse; width:100%;">
+                    <tr>
+                        <th>Employee</th>
+                        <td>
+                            <t t-esc="object.employee_id.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Purpose</th>
+                        <td>
+                            <t t-esc="object.travel_purpose" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>From</th>
+                        <td>
+                            <t t-esc="object.from_city" /> , <t t-esc="object.from_state.name or ''" />
+                            , <t t-esc="object.from_country.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>To</th>
+                        <td>
+                            <t t-esc="object.to_city" /> , <t t-esc="object.to_state.name or ''" />
+                            , <t t-esc="object.to_country.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Dates</th>
+                        <td>
+                            <t t-esc="object.departure_date" /> → <t t-esc="object.return_date" />
+                        </td>
+                    </tr>
+                </table>
+                <br />
+                <t t-set="url"
+                    t-value="'/web#id=%s&amp;model=travel.request&amp;view_type=form' % object.id" />
+                <a t-att-href="url"
+                    style="
+                            display:inline-block;
+                            background-color:#875a7b;
+                            color:white;
+                            padding:12px 20px;
+                            font-size:14px;
+                            font-weight:600;
+                            font-family:Arial, sans-serif;
+                            text-decoration:none;
+                            border-radius:6px;
+                            border:1px solid #0069d9;
+                    ">
+                    View Travel Request
+                </a>
+            </div>
+        </field>
+    </record>
+
+    <record id="email_template_finance" model="mail.template">
+        <field name="name">Travel Request - Finance Approval</field>
+        <field name="model_id" ref="model_travel_request" />
+        <field name="subject">Finance Approval Required - {{ object.employee_id.name }}</field>
+        <field name="email_from">hrsupport@bxitech.com</field>
+        <field name="email_to">FSO@bxiventures.com</field>
+        <field name="body_html" type="html">
+            <div style="font-family: Arial; font-size:14px;">
+                <p>Dear Finance Team,</p>
+                <p>The request is approved by HR and requires financial approval.</p>
+                <table border="1" cellpadding="8" style="border-collapse: collapse; width:100%;">
+                    <tr>
+                        <th>Employee</th>
+                        <td>
+                            <t t-esc="object.employee_id.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Purpose</th>
+                        <td>
+                            <t t-esc="object.travel_purpose" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>From</th>
+                        <td>
+                            <t t-esc="object.from_city" /> , <t t-esc="object.from_state.name or ''" />
+                            , <t t-esc="object.from_country.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>To</th>
+                        <td>
+                            <t t-esc="object.to_city" /> , <t t-esc="object.to_state.name or ''" />
+                            , <t t-esc="object.to_country.name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Dates</th>
+                        <td>
+                            <t t-esc="object.departure_date" /> → <t t-esc="object.return_date" />
+                        </td>
+                    </tr>
+                </table>
+                <br />
+                <t t-set="url"
+                    t-value="'/web#id=%s&amp;model=travel.request&amp;view_type=form' % object.id" />
+                <a t-att-href="url"
+                    style="
+                            display:inline-block;
+                            background-color:#875a7b;
+                            color:white;
+                            padding:12px 20px;
+                            font-size:14px;
+                            font-weight:600;
+                            font-family:Arial, sans-serif;
+                            text-decoration:none;
+                            border-radius:6px;
+                            border:1px solid #0069d9;
+                    ">
+                    View Travel Request
+                </a>
+            </div>
+        </field>
+    </record>
+</odoo>
