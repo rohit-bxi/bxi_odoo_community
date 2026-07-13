@@ -131,7 +131,7 @@
                     </div>
                 </t>
 
-                <form method="post" action="/my/apply-resignation" id="resignation_form">
+                <form method="post" action="/my/apply-resignation" id="resignation_form" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
 
                     <div class="row g-3">
@@ -177,6 +177,14 @@
                             <textarea id="resignation_body" name="resignation_body"
                                       class="form-control" rows="6"
                                       placeholder="Dear HR Team, I would like to formally submit my resignation..."/>
+                        </div>
+
+                        <!-- Attachment -->
+                        <div class="col-12">
+                            <label for="attachments" class="form-label fw-semibold">
+                                Attachments / Supporting Documents
+                            </label>
+                            <input type="file" id="attachments" name="attachments" class="form-control" multiple="1"/>
                         </div>
                     </div>
 

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ══ Top-Level App Menu ════════════════════════════════════════════ -->
+    <menuitem id="menu_vendor_root"
+              name="Vendor Portal"
+              web_icon="bxi_vendor_portal,static/description/icon.png"
+              sequence="60"/>
+
+    <!-- ── Dashboard ───────────────────────────────────────────────────── -->
+    <menuitem id="menu_vendor_dashboard"
+              name="Dashboard"
+              parent="menu_vendor_root"
+              action="view_vendor_dashboard_client_action"
+              sequence="1"/>
+
+    <!-- ── Vendors ─────────────────────────────────────────────────────── -->
+    <menuitem id="menu_vendors_parent"
+              name="Vendors"
+              parent="menu_vendor_root"
+              sequence="10"/>
+    <menuitem id="menu_vendor_all"
+              name="All Vendors"
+              parent="menu_vendors_parent"
+              action="action_bxi_vendor"
+              sequence="1"/>
+    <menuitem id="menu_vendor_pending"
+              name="Pending Approvals"
+              parent="menu_vendors_parent"
+              action="action_bxi_vendor_pending"
+              sequence="2"/>
+    <menuitem id="menu_vendor_avl"
+              name="Approved Vendor List (AVL)"
+              parent="menu_vendors_parent"
+              action="action_bxi_vendor_avl"
+              sequence="3"/>
+    <menuitem id="menu_vendor_onboard"
+              name="Quick Onboard"
+              parent="menu_vendors_parent"
+              action="action_vendor_onboard_wizard"
+              sequence="4"/>
+
+    <!-- ── Documents ───────────────────────────────────────────────────── -->
+    <menuitem id="menu_documents_parent"
+              name="Documents"
+              parent="menu_vendor_root"
+              sequence="20"/>
+    <menuitem id="menu_vendor_docs_all"
+              name="All Documents"
+              parent="menu_documents_parent"
+              action="action_vendor_document"
+              sequence="1"/>
+    <menuitem id="menu_vendor_docs_expiring"
+              name="Expiring Soon"
+              parent="menu_documents_parent"
+              action="action_vendor_document_expiring"
+              sequence="2"/>
+
+    <!-- ── ASN ─────────────────────────────────────────────────────────── -->
+    <menuitem id="menu_asn_parent"
+              name="Shipments (ASN)"
+              parent="menu_vendor_root"
+              sequence="30"/>
+    <menuitem id="menu_vendor_asn_all"
+              name="All ASNs"
+              parent="menu_asn_parent"
+              action="action_vendor_asn"
+              sequence="1"/>
+    <menuitem id="menu_vendor_asn_delayed"
+              name="Delayed Shipments"
+              parent="menu_asn_parent"
+              action="action_vendor_asn_delayed"
+              sequence="2"/>
+
+    <!-- ── Performance ─────────────────────────────────────────────────── -->
+    <menuitem id="menu_performance_parent"
+              name="Performance"
+              parent="menu_vendor_root"
+              sequence="40"/>
+    <menuitem id="menu_vendor_ratings"
+              name="Vendor Ratings"
+              parent="menu_performance_parent"
+              action="action_vendor_rating"
+              sequence="1"/>
+
+    <!-- ── Configuration ───────────────────────────────────────────────── -->
+    <menuitem id="menu_vendor_config"
+              name="Configuration"
+              parent="menu_vendor_root"
+              sequence="90"
+              groups="bxi_vendor_portal.group_vendor_admin"/>
+    <menuitem id="menu_vendor_categories"
+              name="Vendor Categories"
+              parent="menu_vendor_config"
+              action="action_vendor_category"
+              sequence="1"/>
+</odoo>

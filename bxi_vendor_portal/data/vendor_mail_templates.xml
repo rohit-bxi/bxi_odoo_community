@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vendor Submitted for Approval -->
+    <record id="email_template_vendor_submitted" model="mail.template">
+        <field name="name">Vendor: Submitted for Approval</field>
+        <field name="model_id" ref="bxi_vendor_portal.model_bxi_vendor"/>
+        <field name="subject">Vendor Registration — {{ object.vendor_code or object.name }} — Pending Approval</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="body_html"><![CDATA[
+<p>Dear Team,</p>
+<p>Vendor <strong>{{ object.name }}</strong> (Code: <strong>{{ object.vendor_code }}</strong>) has been submitted for the approval workflow.</p>
+<ul>
+    <li><b>Category:</b> {{ object.category_id.name or 'N/A' }}</li>
+    <li><b>Type:</b> {{ object.vendor_type }}</li>
+    <li><b>GSTIN:</b> {{ object.gstin or 'Not Provided' }}</li>
+    <li><b>PAN:</b> {{ object.pan or 'Not Provided' }}</li>
+</ul>
+<p>Please review and take action at the earliest.</p>
+<p>Regards,<br/>BXI Vendor Management System</p>
+        ]]></field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+
+    <!-- Vendor Approved -->
+    <record id="email_template_vendor_approved" model="mail.template">
+        <field name="name">Vendor: Approved</field>
+        <field name="model_id" ref="bxi_vendor_portal.model_bxi_vendor"/>
+        <field name="subject">✅ Vendor Approved — {{ object.vendor_code }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="body_html"><![CDATA[
+<p>Dear {{ object.name }},</p>
+<p>Congratulations! Your vendor registration has been <strong>approved</strong>.</p>
+<ul>
+    <li><b>Vendor Code:</b> {{ object.vendor_code }}</li>
+    <li><b>Status:</b> Approved</li>
+    <li><b>Registration Date:</b> {{ object.registration_date }}</li>
+</ul>
+<p>You can now be engaged for purchase orders and services.</p>
+<p>Regards,<br/>BXI Procurement Team</p>
+        ]]></field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+
+    <!-- Vendor Rejected -->
+    <record id="email_template_vendor_rejected" model="mail.template">
+        <field name="name">Vendor: Rejected</field>
+        <field name="model_id" ref="bxi_vendor_portal.model_bxi_vendor"/>
+        <field name="subject">❌ Vendor Registration Rejected — {{ object.name }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="body_html"><![CDATA[
+<p>Dear {{ object.name }},</p>
+<p>We regret to inform you that your vendor registration has been <strong>rejected</strong>.</p>
+<p><b>Reason:</b> {{ object.block_reason or 'Not specified' }}</p>
+<p>Please contact our procurement team if you have any questions.</p>
+<p>Regards,<br/>BXI Procurement Team</p>
+        ]]></field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+</odoo>

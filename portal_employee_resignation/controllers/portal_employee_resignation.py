@@ -3,6 +3,7 @@
 from odoo import http
 from odoo.http import request
 from datetime import datetime
+import base64
 
 
 class PortalEmployeeResignation(http.Controller):
@@ -90,6 +91,26 @@ class PortalEmployeeResignation(http.Controller):
         try:
             # Creates a record in employee.resignation (from employee_onboarding module)
             resignation = request.env['employee.resignation'].sudo().create(vals)
+
+            # Handle attachments
+            uploaded_files = request.httprequest.files.getlist('attachments')
+            attachment_ids = []
+            for file in uploaded_files:
+                if file.filename:
+                    file_content = file.read()
+                    attachment = request.env['ir.attachment'].sudo().create({
+                        'name': file.filename,
+                        'datas': base64.b64encode(file_content),
+                        'res_model': 'employee.resignation',
+                        'res_id': resignation.id,
+                    })
+                    attachment_ids.append(attachment.id)
+
+            if attachment_ids:
+                resignation.sudo().write({
+                    'attachment_ids': [(6, 0, attachment_ids)]
+                })
+
             # Immediately transition draft → submitted (mirrors the backend workflow button)
             resignation.sudo().action_submit()
         except Exception as e:

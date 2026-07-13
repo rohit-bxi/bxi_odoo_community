@@ -1,0 +1,585 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- ── Categories ───────────────────────────────────────────────────── -->
+    <record id="cat_raw_material" model="bxi.vendor.category">
+        <field name="name">Raw Material</field>
+        <field name="code">RM</field>
+    </record>
+    <record id="cat_packaging" model="bxi.vendor.category">
+        <field name="name">Packaging Material</field>
+        <field name="code">PM</field>
+    </record>
+    <record id="cat_it" model="bxi.vendor.category">
+        <field name="name">IT &amp; Technology</field>
+        <field name="code">IT</field>
+    </record>
+    <record id="cat_logistics" model="bxi.vendor.category">
+        <field name="name">Logistics &amp; Transport</field>
+        <field name="code">LT</field>
+    </record>
+    <record id="cat_services" model="bxi.vendor.category">
+        <field name="name">Professional Services</field>
+        <field name="code">PS</field>
+    </record>
+    <record id="cat_facility" model="bxi.vendor.category">
+        <field name="name">Facility &amp; Maintenance</field>
+        <field name="code">FM</field>
+    </record>
+
+    <!-- ── Demo Vendors ─────────────────────────────────────────────────── -->
+    <record id="vendor_001" model="bxi.vendor">
+        <field name="name">Tata Steel Limited</field>
+        <field name="vendor_code">VND/2026/00001</field>
+        <field name="vendor_type">goods</field>
+        <field name="company_type">public</field>
+        <field name="category_id" ref="cat_raw_material"/>
+        <field name="email">procurement@tatasteel.com</field>
+        <field name="phone">+91 22 6665 7000</field>
+        <field name="city">Mumbai</field>
+        <field name="gstin">27AAACT2727Q1ZW</field>
+        <field name="pan">AAACT2727Q</field>
+        <field name="gst_treatment">regular</field>
+        <field name="msme_registered" eval="False"/>
+        <field name="bank_name">State Bank of India</field>
+        <field name="bank_account_number">10234567890</field>
+        <field name="bank_ifsc">SBIN0000300</field>
+        <field name="is_avl" eval="True"/>
+        <field name="avl_date" eval="'2026-01-01'"/>
+        <field name="avl_expiry" eval="'2026-12-31'"/>
+        <field name="state">active</field>
+        <field name="tds_applicable" eval="True"/>
+        <field name="tds_rate">2.0</field>
+    </record>
+
+    <record id="vendor_002" model="bxi.vendor">
+        <field name="name">Reliance Industries Ltd</field>
+        <field name="vendor_code">VND/2026/00002</field>
+        <field name="vendor_type">goods</field>
+        <field name="company_type">public</field>
+        <field name="category_id" ref="cat_raw_material"/>
+        <field name="email">vendor@ril.com</field>
+        <field name="phone">+91 22 4477 0000</field>
+        <field name="city">Mumbai</field>
+        <field name="gstin">27AAACD8002Q1ZM</field>
+        <field name="pan">AAACD8002Q</field>
+        <field name="gst_treatment">regular</field>
+        <field name="msme_registered" eval="False"/>
+        <field name="bank_name">HDFC Bank</field>
+        <field name="bank_account_number">20345678901</field>
+        <field name="bank_ifsc">HDFC0000001</field>
+        <field name="is_avl" eval="True"/>
+        <field name="avl_date" eval="'2026-01-15'"/>
+        <field name="avl_expiry" eval="'2027-01-14'"/>
+        <field name="state">active</field>
+        <field name="tds_applicable" eval="True"/>
+        <field name="tds_rate">2.0</field>
+    </record>
+
+    <record id="vendor_003" model="bxi.vendor">
+        <field name="name">InfoSys BPM Services</field>
+        <field name="vendor_code">VND/2026/00003</field>
+        <field name="vendor_type">service</field>
+        <field name="company_type">public</field>
+        <field name="category_id" ref="cat_it"/>
+        <field name="email">bpm@infosys.com</field>
+        <field name="phone">+91 80 2852 0261</field>
+        <field name="city">Bengaluru</field>
+        <field name="gstin">29AABCI1234A1ZA</field>
+        <field name="pan">AABCI1234A</field>
+        <field name="gst_treatment">regular</field>
+        <field name="msme_registered" eval="False"/>
+        <field name="bank_name">ICICI Bank</field>
+        <field name="bank_account_number">00231234567</field>
+        <field name="bank_ifsc">ICIC0000001</field>
+        <field name="is_avl" eval="True"/>
+        <field name="avl_date" eval="'2026-02-01'"/>
+        <field name="avl_expiry" eval="'2027-01-31'"/>
+        <field name="state">active</field>
+        <field name="tds_applicable" eval="True"/>
+        <field name="tds_rate">10.0</field>
+    </record>
+
+    <record id="vendor_004" model="bxi.vendor">
+        <field name="name">Blue Dart Express Ltd</field>
+        <field name="vendor_code">VND/2026/00004</field>
+        <field name="vendor_type">service</field>
+        <field name="company_type">public</field>
+        <field name="category_id" ref="cat_logistics"/>
+        <field name="email">corporate@bluedart.com</field>
+        <field name="phone">+91 22 2839 2888</field>
+        <field name="city">Mumbai</field>
+        <field name="gstin">27AABCB3984F1ZB</field>
+        <field name="pan">AABCB3984F</field>
+        <field name="gst_treatment">regular</field>
+        <field name="msme_registered" eval="False"/>
+        <field name="bank_name">Axis Bank</field>
+        <field name="bank_account_number">91234560001</field>
+        <field name="bank_ifsc">UTIB0000001</field>
+        <field name="is_avl" eval="True"/>
+        <field name="avl_date" eval="'2026-01-01'"/>
+        <field name="avl_expiry" eval="'2026-12-31'"/>
+        <field name="state">active</field>
+    </record>
+
+    <record id="vendor_005" model="bxi.vendor">
+        <field name="name">Anand Polymers Pvt Ltd</field>
+        <field name="vendor_code">VND/2026/00005</field>
+        <field name="vendor_type">goods</field>
+        <field name="company_type">company</field>
+        <field name="category_id" ref="cat_packaging"/>
+        <field name="email">sales@anandpolymers.in</field>
+        <field name="phone">+91 79 4002 1000</field>
+        <field name="city">Ahmedabad</field>
+        <field name="gstin">24AADCA1234B1ZC</field>
+        <field name="pan">AADCA1234B</field>
+        <field name="gst_treatment">regular</field>
+        <field name="msme_registered" eval="True"/>
+        <field name="msme_number">UDYAM-GJ-01-0012345</field>
+        <field name="msme_category">small</field>
+        <field name="bank_name">Bank of Baroda</field>
+        <field name="bank_account_number">33445566778</field>
+        <field name="bank_ifsc">BARB0AHMKHA</field>
+        <field name="is_avl" eval="True"/>
+        <field name="avl_date" eval="'2026-03-01'"/>
+        <field name="avl_expiry" eval="'2027-02-28'"/>
+        <field name="state">active</field>
+    </record>
+
+    <record id="vendor_006" model="bxi.vendor">
+        <field name="name">Sharma Electricals Works</field>
+        <field name="vendor_code">VND/2026/00006</field>
+        <field name="vendor_type">works</field>
+        <field name="company_type">partnership</field>
+        <field name="category_id" ref="cat_facility"/>
+        <field name="email">sharmael@gmail.com</field>
+        <field name="phone">+91 11 2345 6789</field>
+        <field name="city">New Delhi</field>
+        <field name="gstin">07ABCPS1234D1ZE</field>
+        <field name="pan">ABCPS1234D</field>
+        <field name="gst_treatment">regular</field>
+        <field name="msme_registered" eval="True"/>
+        <field name="msme_number">UDYAM-DL-03-0056789</field>
+        <field name="msme_category">micro</field>
+        <field name="bank_name">Punjab National Bank</field>
+        <field name="bank_account_number">4455667788</field>
+        <field name="bank_ifsc">PUNB0001200</field>
+        <field name="is_avl" eval="False"/>
+        <field name="state">approved</field>
+    </record>
+
+    <record id="vendor_007" model="bxi.vendor">
+        <field name="name">Wipro Infrastructure Engineering</field>
+        <field name="vendor_code">VND/2026/00007</field>
+        <field name="vendor_type">service</field>
+        <field name="company_type">public</field>
+        <field name="category_id" ref="cat_it"/>
+        <field name="email">wie@wipro.com</field>
+        <field name="phone">+91 80 2844 0011</field>
+        <field name="city">Bengaluru</field>
+        <field name="gstin">29AAACW3462F1ZC</field>
+        <field name="pan">AAACW3462F</field>
+        <field name="gst_treatment">regular</field>
+        <field name="msme_registered" eval="False"/>
+        <field name="bank_name">HDFC Bank</field>
+        <field name="bank_account_number">50100012345678</field>
+        <field name="bank_ifsc">HDFC0001234</field>
+        <field name="is_avl" eval="True"/>
+        <field name="avl_date" eval="'2026-04-01'"/>
+        <field name="avl_expiry" eval="'2027-03-31'"/>
+        <field name="state">active</field>
+        <field name="tds_applicable" eval="True"/>
+        <field name="tds_rate">10.0</field>
+    </record>
+
+    <record id="vendor_008" model="bxi.vendor">
+        <field name="name">Ashok Leyland Spare Parts</field>
+        <field name="vendor_code">VND/2026/00008</field>
+        <field name="vendor_type">goods</field>
+        <field name="company_type">public</field>
+        <field name="category_id" ref="cat_raw_material"/>
+        <field name="email">spares@ashokleyland.com</field>
+        <field name="phone">+91 44 2220 6000</field>
+        <field name="city">Chennai</field>
+        <field name="gstin">33AAACA7927R1ZA</field>
+        <field name="pan">AAACA7927R</field>
+        <field name="gst_treatment">regular</field>
+        <field name="msme_registered" eval="False"/>
+        <field name="bank_name">Canara Bank</field>
+        <field name="bank_account_number">0987654321</field>
+        <field name="bank_ifsc">CNRB0001234</field>
+        <field name="is_avl" eval="True"/>
+        <field name="avl_date" eval="'2026-01-01'"/>
+        <field name="avl_expiry" eval="'2026-12-31'"/>
+        <field name="state">active</field>
+    </record>
+
+    <record id="vendor_009" model="bxi.vendor">
+        <field name="name">Greenfield Packaging Solutions</field>
+        <field name="vendor_code">VND/2026/00009</field>
+        <field name="vendor_type">goods</field>
+        <field name="company_type">company</field>
+        <field name="category_id" ref="cat_packaging"/>
+        <field name="email">info@greenfieldpack.in</field>
+        <field name="phone">+91 20 2567 8900</field>
+        <field name="city">Pune</field>
+        <field name="gstin">27AADCG1111A1ZP</field>
+        <field name="pan">AADCG1111A</field>
+        <field name="gst_treatment">regular</field>
+        <field name="msme_registered" eval="True"/>
+        <field name="msme_number">UDYAM-MH-05-0098765</field>
+        <field name="msme_category">small</field>
+        <field name="bank_name">Kotak Mahindra Bank</field>
+        <field name="bank_account_number">7788990011</field>
+        <field name="bank_ifsc">KKBK0001111</field>
+        <field name="is_avl" eval="False"/>
+        <field name="state">submitted</field>
+    </record>
+
+    <record id="vendor_010" model="bxi.vendor">
+        <field name="name">DTDC Courier &amp; Cargo Ltd</field>
+        <field name="vendor_code">VND/2026/00010</field>
+        <field name="vendor_type">service</field>
+        <field name="company_type">company</field>
+        <field name="category_id" ref="cat_logistics"/>
+        <field name="email">corporate@dtdc.in</field>
+        <field name="phone">+91 80 2535 5535</field>
+        <field name="city">Bengaluru</field>
+        <field name="gstin">29AABCD1234E1ZD</field>
+        <field name="pan">AABCD1234E</field>
+        <field name="gst_treatment">regular</field>
+        <field name="msme_registered" eval="False"/>
+        <field name="bank_name">State Bank of India</field>
+        <field name="bank_account_number">55667788990</field>
+        <field name="bank_ifsc">SBIN0001234</field>
+        <field name="is_avl" eval="True"/>
+        <field name="avl_date" eval="'2026-05-01'"/>
+        <field name="avl_expiry" eval="'2027-04-30'"/>
+        <field name="state">active</field>
+    </record>
+
+    <record id="vendor_011" model="bxi.vendor">
+        <field name="name">Mehta Facility Management</field>
+        <field name="vendor_code">VND/2026/00011</field>
+        <field name="vendor_type">service</field>
+        <field name="company_type">company</field>
+        <field name="category_id" ref="cat_facility"/>
+        <field name="email">ops@mehtafm.co.in</field>
+        <field name="phone">+91 22 6677 8899</field>
+        <field name="city">Mumbai</field>
+        <field name="gstin">27AADCM5678B1ZF</field>
+        <field name="pan">AADCM5678B</field>
+        <field name="gst_treatment">regular</field>
+        <field name="msme_registered" eval="True"/>
+        <field name="msme_number">UDYAM-MH-01-0112233</field>
+        <field name="msme_category">medium</field>
+        <field name="bank_name">Union Bank of India</field>
+        <field name="bank_account_number">119900334455</field>
+        <field name="bank_ifsc">UBIN0543210</field>
+        <field name="is_avl" eval="False"/>
+        <field name="state">l1_approved</field>
+    </record>
+
+    <record id="vendor_012" model="bxi.vendor">
+        <field name="name">Zenith Technologies Pvt Ltd</field>
+        <field name="vendor_code">VND/2026/00012</field>
+        <field name="vendor_type">service</field>
+        <field name="company_type">company</field>
+        <field name="category_id" ref="cat_it"/>
+        <field name="email">hello@zenithtech.io</field>
+        <field name="phone">+91 40 6677 4433</field>
+        <field name="city">Hyderabad</field>
+        <field name="gstin">36AADCZ9999C1ZT</field>
+        <field name="pan">AADCZ9999C</field>
+        <field name="gst_treatment">regular</field>
+        <field name="msme_registered" eval="True"/>
+        <field name="msme_number">UDYAM-TS-02-0054321</field>
+        <field name="msme_category">small</field>
+        <field name="bank_name">ICICI Bank</field>
+        <field name="bank_account_number">002312456789</field>
+        <field name="bank_ifsc">ICIC0000040</field>
+        <field name="is_avl" eval="False"/>
+        <field name="state">draft</field>
+    </record>
+
+    <record id="vendor_013" model="bxi.vendor">
+        <field name="name">Sundaram Clayton Ltd</field>
+        <field name="vendor_code">VND/2026/00013</field>
+        <field name="vendor_type">goods</field>
+        <field name="company_type">public</field>
+        <field name="category_id" ref="cat_raw_material"/>
+        <field name="email">procurement@sundaramclayton.com</field>
+        <field name="phone">+91 44 2827 2233</field>
+        <field name="city">Chennai</field>
+        <field name="gstin">33AADCS2222D1ZS</field>
+        <field name="pan">AADCS2222D</field>
+        <field name="gst_treatment">regular</field>
+        <field name="msme_registered" eval="False"/>
+        <field name="bank_name">HDFC Bank</field>
+        <field name="bank_account_number">50200012345</field>
+        <field name="bank_ifsc">HDFC0000012</field>
+        <field name="is_avl" eval="True"/>
+        <field name="avl_date" eval="'2026-06-01'"/>
+        <field name="avl_expiry" eval="'2027-05-31'"/>
+        <field name="state">active</field>
+    </record>
+
+    <record id="vendor_014" model="bxi.vendor">
+        <field name="name">Vinayak Transport Corporation</field>
+        <field name="vendor_code">VND/2026/00014</field>
+        <field name="vendor_type">service</field>
+        <field name="company_type">partnership</field>
+        <field name="category_id" ref="cat_logistics"/>
+        <field name="email">vinayaktransport@yahoo.com</field>
+        <field name="phone">+91 141 2345 0099</field>
+        <field name="city">Jaipur</field>
+        <field name="gstin">08AADCV7777E1ZV</field>
+        <field name="pan">AADCV7777E</field>
+        <field name="gst_treatment">regular</field>
+        <field name="msme_registered" eval="True"/>
+        <field name="msme_number">UDYAM-RJ-04-0078901</field>
+        <field name="msme_category">micro</field>
+        <field name="bank_name">Bank of Rajasthan</field>
+        <field name="bank_account_number">234456789011</field>
+        <field name="bank_ifsc">BARB0JAIPKE</field>
+        <field name="is_avl" eval="False"/>
+        <field name="state">blocked</field>
+        <field name="block_reason">Non-compliance with GST filings for 3 consecutive months.</field>
+    </record>
+
+    <record id="vendor_015" model="bxi.vendor">
+        <field name="name">Nakoda Polymers Industries</field>
+        <field name="vendor_code">VND/2026/00015</field>
+        <field name="vendor_type">goods</field>
+        <field name="company_type">company</field>
+        <field name="category_id" ref="cat_packaging"/>
+        <field name="email">sales@nakodapolymers.com</field>
+        <field name="phone">+91 261 2345 6780</field>
+        <field name="city">Surat</field>
+        <field name="gstin">24AADCN4444F1ZN</field>
+        <field name="pan">AADCN4444F</field>
+        <field name="gst_treatment">regular</field>
+        <field name="msme_registered" eval="True"/>
+        <field name="msme_number">UDYAM-GJ-09-0022334</field>
+        <field name="msme_category">medium</field>
+        <field name="bank_name">Axis Bank</field>
+        <field name="bank_account_number">91234500009</field>
+        <field name="bank_ifsc">UTIB0000099</field>
+        <field name="is_avl" eval="True"/>
+        <field name="avl_date" eval="'2026-07-01'"/>
+        <field name="avl_expiry" eval="'2027-06-30'"/>
+        <field name="state">active</field>
+    </record>
+
+    <!-- ── Performance Ratings for Active Vendors ──────────────────────── -->
+    <record id="rating_v001" model="bxi.vendor.rating">
+        <field name="vendor_id" ref="vendor_001"/>
+        <field name="period_start" eval="'2026-04-01'"/>
+        <field name="period_end" eval="'2026-06-30'"/>
+        <field name="period_type">quarterly</field>
+        <field name="otd_score">94.5</field>
+        <field name="quality_score">97.2</field>
+        <field name="lead_time_score">92.0</field>
+        <field name="compliance_score">100.0</field>
+        <field name="responsiveness_score">88.0</field>
+    </record>
+    <record id="rating_v002" model="bxi.vendor.rating">
+        <field name="vendor_id" ref="vendor_002"/>
+        <field name="period_start" eval="'2026-04-01'"/>
+        <field name="period_end" eval="'2026-06-30'"/>
+        <field name="period_type">quarterly</field>
+        <field name="otd_score">89.0</field>
+        <field name="quality_score">91.5</field>
+        <field name="lead_time_score">85.0</field>
+        <field name="compliance_score">95.0</field>
+        <field name="responsiveness_score">82.0</field>
+    </record>
+    <record id="rating_v003" model="bxi.vendor.rating">
+        <field name="vendor_id" ref="vendor_003"/>
+        <field name="period_start" eval="'2026-04-01'"/>
+        <field name="period_end" eval="'2026-06-30'"/>
+        <field name="period_type">quarterly</field>
+        <field name="otd_score">98.0</field>
+        <field name="quality_score">99.0</field>
+        <field name="lead_time_score">97.0</field>
+        <field name="compliance_score">100.0</field>
+        <field name="responsiveness_score">96.0</field>
+    </record>
+    <record id="rating_v004" model="bxi.vendor.rating">
+        <field name="vendor_id" ref="vendor_004"/>
+        <field name="period_start" eval="'2026-04-01'"/>
+        <field name="period_end" eval="'2026-06-30'"/>
+        <field name="period_type">quarterly</field>
+        <field name="otd_score">82.0</field>
+        <field name="quality_score">78.5</field>
+        <field name="lead_time_score">80.0</field>
+        <field name="compliance_score">90.0</field>
+        <field name="responsiveness_score">75.0</field>
+    </record>
+    <record id="rating_v005" model="bxi.vendor.rating">
+        <field name="vendor_id" ref="vendor_005"/>
+        <field name="period_start" eval="'2026-04-01'"/>
+        <field name="period_end" eval="'2026-06-30'"/>
+        <field name="period_type">quarterly</field>
+        <field name="otd_score">76.0</field>
+        <field name="quality_score">80.0</field>
+        <field name="lead_time_score">72.0</field>
+        <field name="compliance_score">85.0</field>
+        <field name="responsiveness_score">70.0</field>
+    </record>
+
+    <!-- ── Vendor Documents ── -->
+    <record id="doc_v001_gst" model="bxi.vendor.document">
+        <field name="vendor_id" ref="vendor_001"/>
+        <field name="document_type">gst_certificate</field>
+        <field name="document_name">GST Registration Certificate</field>
+        <field name="reference_number">27AAACT2727Q1ZW</field>
+        <field name="issue_date" eval="'2020-01-01'"/>
+        <field name="expiry_date" eval="'2030-01-01'"/>
+        <field name="verification_state">verified</field>
+        <field name="verified_by" ref="base.user_admin"/>
+        <field name="verified_on" eval="'2026-01-02'"/>
+    </record>
+    <record id="doc_v001_pan" model="bxi.vendor.document">
+        <field name="vendor_id" ref="vendor_001"/>
+        <field name="document_type">pan_card</field>
+        <field name="document_name">PAN Card</field>
+        <field name="reference_number">AAACT2727Q</field>
+        <field name="verification_state">verified</field>
+        <field name="verified_by" ref="base.user_admin"/>
+        <field name="verified_on" eval="'2026-01-02'"/>
+    </record>
+    <record id="doc_v001_cheque" model="bxi.vendor.document">
+        <field name="vendor_id" ref="vendor_001"/>
+        <field name="document_type">cancelled_cheque</field>
+        <field name="document_name">Cancelled Cheque - SBI</field>
+        <field name="verification_state">verified</field>
+        <field name="verified_by" ref="base.user_admin"/>
+        <field name="verified_on" eval="'2026-01-02'"/>
+    </record>
+
+    <record id="doc_v002_gst" model="bxi.vendor.document">
+        <field name="vendor_id" ref="vendor_002"/>
+        <field name="document_type">gst_certificate</field>
+        <field name="document_name">GST Registration Certificate</field>
+        <field name="reference_number">27AAACD8002Q1ZM</field>
+        <field name="issue_date" eval="'2021-05-15'"/>
+        <field name="expiry_date" eval="'2026-05-14'"/> <!-- Expired! -->
+        <field name="verification_state">verified</field>
+        <field name="verified_by" ref="base.user_admin"/>
+        <field name="verified_on" eval="'2026-01-16'"/>
+    </record>
+    <record id="doc_v002_pan" model="bxi.vendor.document">
+        <field name="vendor_id" ref="vendor_002"/>
+        <field name="document_type">pan_card</field>
+        <field name="document_name">PAN Card</field>
+        <field name="reference_number">AAACD8002Q</field>
+        <field name="verification_state">verified</field>
+        <field name="verified_by" ref="base.user_admin"/>
+        <field name="verified_on" eval="'2026-01-16'"/>
+    </record>
+
+    <record id="doc_v003_gst" model="bxi.vendor.document">
+        <field name="vendor_id" ref="vendor_003"/>
+        <field name="document_type">gst_certificate</field>
+        <field name="document_name">GST Registration Certificate</field>
+        <field name="reference_number">29AABCI1234A1ZA</field>
+        <field name="issue_date" eval="'2022-02-01'"/>
+        <field name="expiry_date" eval="'2026-07-20'"/> <!-- Expiring soon! -->
+        <field name="verification_state">verified</field>
+        <field name="verified_by" ref="base.user_admin"/>
+        <field name="verified_on" eval="'2026-02-02'"/>
+    </record>
+
+    <!-- ── Vendor Approvals ── -->
+    <record id="app_v001_l1" model="bxi.vendor.approval">
+        <field name="vendor_id" ref="vendor_001"/>
+        <field name="level">l1</field>
+        <field name="state">approved</field>
+        <field name="approved_by" ref="base.user_admin"/>
+        <field name="approved_on" eval="'2026-01-01'"/>
+        <field name="remarks">Basic onboarding details check out.</field>
+    </record>
+    <record id="app_v001_l2" model="bxi.vendor.approval">
+        <field name="vendor_id" ref="vendor_001"/>
+        <field name="level">l2</field>
+        <field name="state">approved</field>
+        <field name="approved_by" ref="base.user_admin"/>
+        <field name="approved_on" eval="'2026-01-02'"/>
+        <field name="remarks">GSTIN and bank details verified with cancelled cheque.</field>
+    </record>
+    <record id="app_v001_l3" model="bxi.vendor.approval">
+        <field name="vendor_id" ref="vendor_001"/>
+        <field name="level">l3</field>
+        <field name="state">approved</field>
+        <field name="approved_by" ref="base.user_admin"/>
+        <field name="approved_on" eval="'2026-01-02'"/>
+        <field name="remarks">Final signoff for AVL list activation.</field>
+    </record>
+
+    <record id="app_v008_l1" model="bxi.vendor.approval">
+        <field name="vendor_id" ref="vendor_008"/> <!-- Submitted vendor -->
+        <field name="level">l1</field>
+        <field name="state">pending</field>
+        <field name="remarks">Awaiting manager verification.</field>
+    </record>
+
+    <!-- ── Advance Shipment Notifications (ASNs) ── -->
+    <record id="asn_v001_01" model="bxi.vendor.asn">
+        <field name="vendor_id" ref="vendor_001"/>
+        <field name="asn_number">ASN/2026/00001</field>
+        <field name="transporter_name">Safexpress Logistics</field>
+        <field name="vehicle_number">MH-04-GP-1234</field>
+        <field name="lr_number">LR-99881122</field>
+        <field name="lr_date" eval="'2026-06-25'"/>
+        <field name="dispatch_date" eval="'2026-06-25'"/>
+        <field name="expected_delivery_date" eval="'2026-06-28'"/>
+        <field name="actual_delivery_date" eval="'2026-06-28'"/>
+        <field name="state">delivered</field>
+        <field name="notes">All items received in good condition.</field>
+    </record>
+    
+    <record id="asn_line_v001_01_a" model="bxi.vendor.asn.line">
+        <field name="asn_id" ref="asn_v001_01"/>
+        <field name="product_id" search="[('default_code', '=', '05D711C')]" model="product.product"/>
+        <field name="qty">50.0</field>
+        <field name="grn_qty">50.0</field>
+    </record>
+
+    <record id="asn_v001_02" model="bxi.vendor.asn">
+        <field name="vendor_id" ref="vendor_001"/>
+        <field name="asn_number">ASN/2026/00002</field>
+        <field name="transporter_name">TCI Freight</field>
+        <field name="vehicle_number">MH-43-BB-9988</field>
+        <field name="lr_number">LR-22334455</field>
+        <field name="lr_date" eval="'2026-06-29'"/>
+        <field name="dispatch_date" eval="'2026-06-29'"/>
+        <field name="expected_delivery_date" eval="'2026-07-02'"/>
+        <field name="state">dispatched</field>
+        <field name="notes">Shipment in transit.</field>
+    </record>
+
+    <record id="asn_line_v001_02_a" model="bxi.vendor.asn.line">
+        <field name="asn_id" ref="asn_v001_02"/>
+        <field name="product_id" search="[('default_code', '=', '1DJ8J84')]" model="product.product"/>
+        <field name="qty">100.0</field>
+    </record>
+
+    <record id="asn_v002_01" model="bxi.vendor.asn">
+        <field name="vendor_id" ref="vendor_002"/>
+        <field name="asn_number">ASN/2026/00003</field>
+        <field name="transporter_name">Gati Logistics</field>
+        <field name="vehicle_number">GJ-01-ZZ-5544</field>
+        <field name="lr_number">LR-77665544</field>
+        <field name="lr_date" eval="'2026-06-20'"/>
+        <field name="dispatch_date" eval="'2026-06-20'"/>
+        <field name="expected_delivery_date" eval="'2026-06-23'"/> <!-- Delayed! -->
+        <field name="state">dispatched</field>
+        <field name="notes">Delayed due to heavy rains.</field>
+    </record>
+
+    <record id="asn_line_v002_01_a" model="bxi.vendor.asn.line">
+        <field name="asn_id" ref="asn_v002_01"/>
+        <field name="product_id" search="[('default_code', '=', '1DPVL84')]" model="product.product"/>
+        <field name="qty">25.0</field>
+    </record>
+</odoo>

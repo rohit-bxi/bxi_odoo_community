@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ── Form View ──────────────────────────────────────────────────────── -->
+    <record id="view_vendor_asn_form" model="ir.ui.view">
+        <field name="name">bxi.vendor.asn.form</field>
+        <field name="model">bxi.vendor.asn</field>
+        <field name="arch" type="xml">
+            <form string="Advance Shipment Notification">
+                <header>
+                    <button name="action_confirm" string="Confirm ASN"
+                            type="object" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_dispatch" string="Mark Dispatched"
+                            type="object" class="btn-warning"
+                            invisible="state != 'confirmed'"/>
+                    <button name="action_deliver" string="Mark Delivered"
+                            type="object" class="btn-success"
+                            invisible="state != 'dispatched'"/>
+                    <button name="action_cancel" string="Cancel"
+                            type="object" class="btn-danger"
+                            invisible="state in ('delivered','cancelled')"/>
+                    <button name="action_reset_draft" string="Reset to Draft"
+                            type="object"
+                            invisible="state not in ('confirmed','cancelled')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,confirmed,dispatched,delivered"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="button" icon="fa-cubes">
+                            <field string="Total Qty" name="total_qty" widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" type="button" icon="fa-money">
+                            <field string="Total Value (₹)" name="total_value" widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" type="button" icon="fa-clock-o">
+                            <field string="Lead Days" name="delivery_lead_days" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="asn_number" readonly="1"/></h1>
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="not is_delayed">
+                        ⚠️ This shipment is <strong>delayed</strong> past the expected delivery date.
+                    </div>
+                    <group>
+                        <group string="Vendor &amp; PO">
+                            <field name="vendor_id" options="{'no_create': True}"/>
+                            <field name="purchase_order_id" domain="[('partner_id','=',partner_id)]"/>
+                            <field name="po_date" readonly="1"/>
+                            <field name="is_partial"/>
+                        </group>
+                        <group string="Shipment Details">
+                            <field name="transporter_name"/>
+                            <field name="vehicle_number"/>
+                            <field name="lr_number"/>
+                            <field name="lr_date"/>
+                            <field name="barcode"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Dates">
+                            <field name="dispatch_date"/>
+                            <field name="expected_delivery_date"/>
+                            <field name="actual_delivery_date"/>
+                        </group>
+                        <group string="Status">
+                            <field name="is_delayed" readonly="1"/>
+                            <field name="delivery_lead_days" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Line Items" name="lines">
+                            <field name="asn_lines" widget="one2many">
+                                <list editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="description"/>
+                                    <field name="po_line_id"
+                                           domain="[('order_id','=',parent.purchase_order_id)]"/>
+                                    <field name="po_qty" readonly="1"/>
+                                    <field name="qty"/>
+                                    <field name="uom_id" readonly="1"/>
+                                    <field name="unit_price"/>
+                                    <field name="grn_qty"/>
+                                    <field name="variance_qty" readonly="1"/>
+                                    <field name="batch_lot"/>
+                                    <field name="expiry_date"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Remarks" name="notes">
+                            <field name="notes" placeholder="Special instructions, packing notes, etc."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── List View ──────────────────────────────────────────────────────── -->
+    <record id="view_vendor_asn_list" model="ir.ui.view">
+        <field name="name">bxi.vendor.asn.list</field>
+        <field name="model">bxi.vendor.asn</field>
+        <field name="arch" type="xml">
+            <list string="ASN Register"
+                  decoration-danger="is_delayed"
+                  decoration-success="state == 'delivered'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="asn_number"/>
+                <field name="vendor_id"/>
+                <field name="purchase_order_id"/>
+                <field name="dispatch_date"/>
+                <field name="expected_delivery_date"/>
+                <field name="actual_delivery_date"/>
+                <field name="delivery_lead_days" string="Lead Days"/>
+                <field name="is_delayed" string="Delayed" widget="boolean"/>
+                <field name="total_qty" string="Total Qty"/>
+                <field name="total_value" string="Value (₹)"/>
+                <field name="state" widget="badge"
+                       decoration-primary="state == 'confirmed'"
+                       decoration-warning="state == 'dispatched'"
+                       decoration-success="state == 'delivered'"
+                       decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── Search View ─────────────────────────────────────────────────────── -->
+    <record id="view_vendor_asn_search" model="ir.ui.view">
+        <field name="name">bxi.vendor.asn.search</field>
+        <field name="model">bxi.vendor.asn</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="asn_number"/>
+                <field name="vendor_id"/>
+                <field name="purchase_order_id"/>
+                <field name="lr_number"/>
+                <separator/>
+                <filter string="Draft" name="draft" domain="[('state','=','draft')]"/>
+                <filter string="Confirmed" name="confirmed" domain="[('state','=','confirmed')]"/>
+                <filter string="In Transit" name="dispatched" domain="[('state','=','dispatched')]"/>
+                <filter string="Delivered" name="delivered" domain="[('state','=','delivered')]"/>
+                <filter string="Delayed" name="delayed" domain="[('is_delayed','=',True)]"/>
+                <group>
+                    <filter string="Vendor" name="grp_vendor" context="{'group_by':'vendor_id'}"/>
+                    <filter string="Status" name="grp_state" context="{'group_by':'state'}"/>
+                    <filter string="Dispatch Month" name="grp_dispatch" context="{'group_by':'dispatch_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ── Action ──────────────────────────────────────────────────────────── -->
+    <record id="action_vendor_asn" model="ir.actions.act_window">
+        <field name="name">Advance Shipment Notifications</field>
+        <field name="res_model">bxi.vendor.asn</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_vendor_asn_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No ASNs yet. Create the first shipment notification!</p>
+        </field>
+    </record>
+
+    <record id="action_vendor_asn_delayed" model="ir.actions.act_window">
+        <field name="name">Delayed Shipments</field>
+        <field name="res_model">bxi.vendor.asn</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_delayed','=',True)]</field>
+    </record>
+</odoo>

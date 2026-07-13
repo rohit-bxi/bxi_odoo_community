@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         Import Wizard – Form View
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_ev_import_wizard_form" model="ir.ui.view">
+        <field name="name">ev.import.wizard.form</field>
+        <field name="model">ev.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import Fleet / Telemetry .dat Files">
+
+                <!-- Upload State -->
+                <sheet invisible="state == 'result'">
+                    <div class="alert alert-info" role="alert" style="margin-bottom: 16px;">
+                        <strong>📁 EV Fleet &amp; Telemetry Data Import</strong><br/>
+                        Upload one or both <code>.dat</code> files below. The system will auto-detect the delimiter
+                        and map columns automatically. Supported columns for each file type are shown in the help text.
+                    </div>
+
+                    <group>
+                        <group string="Fleet Master File" colspan="1">
+                            <field name="fleet_file" widget="binary" filename="fleet_filename"
+                                   help="Upload the fleet master .dat file. Expected columns: device_id, license_plate, brand, model, year, odometer, vin, driver, color"/>
+                            <field name="fleet_filename" invisible="1"/>
+                        </group>
+                        <group string="Device / Telemetry KPI File" colspan="1">
+                            <field name="device_file" widget="binary" filename="device_filename"
+                                   help="Upload the telemetry/KPI .dat file. Expected columns: device_id, date, odometer, trip_distance, soh, degradation_rate, energy_efficiency, soc_start, soc_end, charge_type, cycle_stress_score, avg_temperature, max_temperature, temperature_stress_score"/>
+                            <field name="device_filename" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Import Settings">
+                        <field name="delimiter" help="Select the delimiter used in your .dat files. 'Auto Detect' checks the first 500 characters."/>
+                    </group>
+
+                    <group string="File Preview" invisible="not fleet_preview and not device_preview">
+                        <field name="fleet_preview" widget="text" string="Fleet File (first 4 lines)"
+                               invisible="not fleet_preview" readonly="1"/>
+                        <field name="device_preview" widget="text" string="Device File (first 4 lines)"
+                               invisible="not device_preview" readonly="1"/>
+                    </group>
+                </sheet>
+
+                <!-- Result State -->
+                <sheet invisible="state == 'upload'">
+                    <div class="alert alert-success" role="alert" style="margin-bottom: 16px;" invisible="not import_result">
+                        <strong>✅ Import Complete</strong>
+                    </div>
+                    <group string="Import Summary">
+                        <field name="import_result" widget="text" readonly="1" string="Result"/>
+                        <field name="batch_id" readonly="1"/>
+                    </group>
+                </sheet>
+
+                <footer>
+                    <!-- Upload state footer -->
+                    <button name="action_preview" string="Preview File(s)" type="object"
+                            invisible="state == 'result'"
+                            invisible2="not fleet_file and not device_file"
+                            class="btn-secondary"
+                            help="Click to preview the first 4 rows of the uploaded files"/>
+                    <button name="action_import" string="Import Now" type="object"
+                            invisible="state == 'result'"
+                            class="btn-primary"/>
+                    <button string="Close" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         Import Batch – List View
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_ev_import_batch_list" model="ir.ui.view">
+        <field name="name">ev.import.batch.list</field>
+        <field name="model">ev.import.batch</field>
+        <field name="arch" type="xml">
+            <list string="Import Batches" decoration-success="status == 'success'"
+                  decoration-warning="status == 'partial'" decoration-danger="status == 'failed'">
+                <field name="name"/>
+                <field name="import_date"/>
+                <field name="imported_by"/>
+                <field name="fleet_filename"/>
+                <field name="device_filename"/>
+                <field name="vehicles_created"/>
+                <field name="vehicles_updated"/>
+                <field name="devices_created"/>
+                <field name="logs_created"/>
+                <field name="status" widget="badge"
+                       decoration-success="status == 'success'"
+                       decoration-warning="status == 'partial'"
+                       decoration-danger="status == 'failed'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         Import Batch – Form View
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_ev_import_batch_form" model="ir.ui.view">
+        <field name="name">ev.import.batch.form</field>
+        <field name="model">ev.import.batch</field>
+        <field name="arch" type="xml">
+            <form string="Import Batch">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="import_date"/>
+                            <field name="imported_by"/>
+                            <field name="status" widget="badge"/>
+                        </group>
+                        <group>
+                            <field name="fleet_filename"/>
+                            <field name="device_filename"/>
+                        </group>
+                    </group>
+                    <group string="Results">
+                        <group>
+                            <field name="vehicles_created"/>
+                            <field name="vehicles_updated"/>
+                        </group>
+                        <group>
+                            <field name="devices_created"/>
+                            <field name="logs_created"/>
+                        </group>
+                    </group>
+                    <group string="Notes / Errors">
+                        <field name="notes" widget="text" nolabel="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Imported Telemetry Logs">
+                            <field name="battery_log_ids" invisible="1"/>
+                            <field name="telemetry_log_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="device_id"/>
+                                    <field name="timestamp"/>
+                                    <field name="latitude" digits="[10,6]"/>
+                                    <field name="longitude" digits="[10,6]"/>
+                                    <field name="speed"/>
+                                    <field name="gps_status"/>
+                                    <field name="ignition" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Imported Battery Logs">
+                            <field name="battery_log_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="vehicle_id"/>
+                                    <field name="date"/>
+                                    <field name="soh"/>
+                                    <field name="energy_efficiency"/>
+                                    <field name="charge_type"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         Actions
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="action_ev_import_wizard" model="ir.actions.act_window">
+        <field name="name">Import Fleet / Device Data</field>
+        <field name="res_model">ev.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="action_ev_import_batch" model="ir.actions.act_window">
+        <field name="name">Import History</field>
+        <field name="res_model">ev.import.batch</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         Menus (added under EV Battery Management root)
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <menuitem id="menu_ev_import_data"
+              name="Import Fleet / Device Data"
+              parent="ev_battery_dashboard.menu_ev_battery_root"
+              action="action_ev_import_wizard"
+              sequence="30"/>
+
+    <menuitem id="menu_ev_import_history"
+              name="Import History"
+              parent="ev_battery_dashboard.menu_ev_battery_root"
+              action="action_ev_import_batch"
+              sequence="40"/>
+
+</odoo>

@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ev_battery_log,ev.battery.log,model_ev_battery_log,base.group_user,1,1,1,1
+access_ev_device,ev.device,model_ev_device,base.group_user,1,1,1,1
+access_ev_import_batch,ev.import.batch,model_ev_import_batch,base.group_user,1,1,1,0
+access_ev_import_wizard,ev.import.wizard,model_ev_import_wizard,base.group_user,1,1,1,1
+access_ev_telemetry_log,ev.telemetry.log,model_ev_telemetry_log,base.group_user,1,1,1,1

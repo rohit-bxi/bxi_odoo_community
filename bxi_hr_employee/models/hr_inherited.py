@@ -15,10 +15,10 @@ class HrEmployee(models.Model):
     emp_skill_category = fields.Char(string="EMP Skill Category")
     manager_emp_code = fields.Char(string="Manager EMP Code")
     medical_insurance_no = fields.Char(string="Medical Insurance No.")
-    bank_ifsc = fields.Char(string="IFSC Code")
+    bank_ifsc = fields.Char(string="IFSC Code", compute="_compute_bank_details", inverse="_inverse_bank_details", store=True)
     bank_document = fields.Binary(string="Cancelled Cheque/Passbook Front Page")  
-    bank_account_number = fields.Char(string="Bank Acoount Number")
-    bank_name = fields.Char(string="Bank Name")
+    bank_account_number = fields.Char(string="Bank Acoount Number", compute="_compute_bank_details", inverse="_inverse_bank_details", store=True)
+    bank_name = fields.Char(string="Bank Name", compute="_compute_bank_details", inverse="_inverse_bank_details", store=True)
     nps_contribution = fields.Monetary(
         string="NPS Contribution",
         help="Employee NPS contribution amount",
@@ -152,3 +152,70 @@ class HrEmployee(models.Model):
         return self.env.ref(
             'bxi_hr_employee.action_contract_payslip_report'
         ).report_action(self)
+
+    @api.depends('bank_account_ids', 'bank_account_ids.acc_number', 'bank_account_ids.bank_id.name', 'bank_account_ids.bank_id.bic')
+    def _compute_bank_details(self):
+        for rec in self:
+            bank_account = rec.bank_account_ids.filtered(lambda a: a.acc_number)[:1]
+            if bank_account:
+                rec.bank_account_number = bank_account.acc_number
+                rec.bank_name = bank_account.bank_id.name if bank_account.bank_id else False
+                rec.bank_ifsc = bank_account.bank_id.bic if bank_account.bank_id else False
+            else:
+                rec.bank_account_number = False
+                rec.bank_name = False
+                rec.bank_ifsc = False
+
+    def _inverse_bank_details(self):
+        for rec in self:
+            if not rec.bank_account_number:
+                continue
+
+            partner = rec.work_contact_id or rec.user_id.partner_id
+            if not partner:
+                partner = self.env['res.partner'].sudo().create({
+                    'name': rec.name,
+                    'email': rec.work_email or rec.private_email or '',
+                    'phone': rec.work_phone or rec.private_phone or '',
+                })
+                rec.work_contact_id = partner.id
+
+            bank = False
+            if rec.bank_name:
+                domain = [('name', '=ilike', rec.bank_name)]
+                if rec.bank_ifsc:
+                    domain = ['|', ('name', '=ilike', rec.bank_name), ('bic', '=ilike', rec.bank_ifsc)]
+                bank = self.env['res.bank'].sudo().search(domain, limit=1)
+                if not bank:
+                    bank = self.env['res.bank'].sudo().create({
+                        'name': rec.bank_name,
+                        'bic': rec.bank_ifsc or '',
+                    })
+                elif rec.bank_ifsc and not bank.bic:
+                    bank.bic = rec.bank_ifsc
+
+            bank_account = rec.bank_account_ids.filtered(lambda a: a.partner_id == partner)[:1]
+            if not bank_account:
+                bank_account = self.env['res.partner.bank'].sudo().search([
+                    ('partner_id', '=', partner.id),
+                    ('acc_number', '=', rec.bank_account_number)
+                ], limit=1)
+
+            if bank_account:
+                vals = {
+                    'acc_number': rec.bank_account_number,
+                }
+                if bank:
+                    vals['bank_id'] = bank.id
+                bank_account.sudo().write(vals)
+            else:
+                vals = {
+                    'acc_number': rec.bank_account_number,
+                    'partner_id': partner.id,
+                }
+                if bank:
+                    vals['bank_id'] = bank.id
+                bank_account = self.env['res.partner.bank'].sudo().create(vals)
+
+            if bank_account not in rec.bank_account_ids:
+                rec.write({'bank_account_ids': [(4, bank_account.id)]})

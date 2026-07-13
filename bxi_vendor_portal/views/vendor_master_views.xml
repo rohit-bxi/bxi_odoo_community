@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ── Form View ──────────────────────────────────────────────────────── -->
+    <record id="view_bxi_vendor_form" model="ir.ui.view">
+        <field name="name">bxi.vendor.form</field>
+        <field name="model">bxi.vendor</field>
+        <field name="arch" type="xml">
+            <form string="Vendor Master">
+                <header>
+                    <button name="action_submit_for_approval" string="Submit for Approval"
+                            type="object" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_l1_approve" string="L1 Approve"
+                            type="object" class="btn-success"
+                            invisible="state != 'submitted'"
+                            groups="bxi_vendor_portal.group_vendor_approver"/>
+                    <button name="action_l2_approve" string="L2 Approve"
+                            type="object" class="btn-success"
+                            invisible="state != 'l1_approved'"
+                            groups="bxi_vendor_portal.group_vendor_approver"/>
+                    <button name="action_final_approve" string="Final Approve (L3)"
+                            type="object" class="btn-success"
+                            invisible="state != 'l2_approved'"
+                            groups="bxi_vendor_portal.group_vendor_approver"/>
+                    <button name="action_reject" string="Reject"
+                            type="object" class="btn-danger"
+                            invisible="state in ('draft','approved','active','inactive','blocked','rejected')"
+                            groups="bxi_vendor_portal.group_vendor_approver"/>
+                    <button name="action_activate" string="Activate"
+                            type="object" class="btn-success"
+                            invisible="state not in ('approved','inactive')"/>
+                    <button name="action_deactivate" string="Deactivate"
+                            type="object"
+                            invisible="state != 'active'"/>
+                    <button name="action_block" string="Block Vendor"
+                            type="object" class="btn-danger"
+                            invisible="state in ('blocked','rejected','draft')"
+                            groups="bxi_vendor_portal.group_vendor_manager"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted,l1_approved,l2_approved,approved,active"/>
+                </header>
+                <sheet>
+                    <!-- KPI Smart Buttons -->
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object"
+                                name="action_view_documents" icon="fa-file-text-o">
+                            <field string="Documents" name="document_count" widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" type="object"
+                                name="action_view_asns" icon="fa-truck">
+                            <field string="ASNs" name="asn_count" widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" type="object"
+                                name="action_view_purchase_orders" icon="fa-shopping-cart">
+                            <field string="Purchase Orders" name="po_count" widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" type="button" icon="fa-star">
+                            <field string="Rating Score" name="rating_score" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1><field name="name" placeholder="Vendor Name"/></h1>
+                        <div>
+                            <field name="vendor_code" class="oe_inline text-muted" readonly="1"/>
+                            <span class="mx-2 text-muted">|</span>
+                            <field name="vendor_type" class="oe_inline"/>
+                        </div>
+                    </div>
+
+                    <!-- AVL Banner -->
+                    <div class="alert alert-success" role="alert"
+                         invisible="not is_avl">
+                        ✅ This vendor is on the <strong>Approved Vendor List (AVL)</strong>.
+                        Expiry: <field name="avl_expiry" class="oe_inline"/>
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state != 'blocked'">
+                        🚫 <strong>BLOCKED:</strong> <field name="block_reason" class="oe_inline"/>
+                    </div>
+
+                    <notebook>
+                        <!-- Tab 1: General Info -->
+                        <page string="General Information" name="general">
+                            <group>
+                                <group string="Classification">
+                                    <field name="company_type"/>
+                                    <field name="category_id"/>
+                                    <field name="registration_date"/>
+                                    <field name="partner_id" readonly="1"/>
+                                </group>
+                                <group string="Contact">
+                                    <field name="email" widget="email"/>
+                                    <field name="phone" widget="phone"/>
+                                    <field name="mobile" widget="phone"/>
+                                    <field name="website" widget="url"/>
+                                </group>
+                            </group>
+                            <group string="Address">
+                                <group>
+                                    <field name="street"/>
+                                    <field name="street2"/>
+                                    <field name="city"/>
+                                </group>
+                                <group>
+                                    <field name="state_id"/>
+                                    <field name="zip"/>
+                                    <field name="country_id"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- Tab 2: Tax & Compliance -->
+                        <page string="Tax &amp; Compliance" name="compliance">
+                            <group>
+                                <group string="GST Details">
+                                    <field name="gstin"/>
+                                    <field name="gst_treatment"/>
+                                    <field name="pan"/>
+                                </group>
+                                <group string="MSME">
+                                    <field name="msme_registered"/>
+                                    <field name="msme_number"
+                                           invisible="not msme_registered"/>
+                                    <field name="msme_category"
+                                           invisible="not msme_registered"/>
+                                </group>
+                            </group>
+                            <group string="TDS Configuration">
+                                <group>
+                                    <field name="tds_applicable"/>
+                                    <field name="tds_section"
+                                           invisible="not tds_applicable"/>
+                                    <field name="tds_rate"
+                                           invisible="not tds_applicable"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- Tab 3: Bank Details -->
+                        <page string="Bank Details" name="bank">
+                            <group>
+                                <group>
+                                    <field name="bank_name"/>
+                                    <field name="bank_account_number"/>
+                                    <field name="bank_ifsc"/>
+                                </group>
+                                <group>
+                                    <field name="bank_branch"/>
+                                    <field name="bank_account_type"/>
+                                </group>
+                            </group>
+                            <group string="Payment Terms">
+                                <group>
+                                    <field name="payment_term_id"/>
+                                    <field name="currency_id"/>
+                                    <field name="credit_limit"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- Tab 4: AVL -->
+                        <page string="AVL Management" name="avl">
+                            <group>
+                                <group>
+                                    <field name="is_avl"/>
+                                    <field name="avl_date" invisible="not is_avl"/>
+                                    <field name="avl_expiry" invisible="not is_avl"/>
+                                </group>
+                                <group>
+                                    <field name="avl_remarks" invisible="not is_avl"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- Tab 5: Documents -->
+                        <page string="Documents" name="documents">
+                            <field name="document_ids">
+                                <list editable="bottom">
+                                    <field name="document_type"/>
+                                    <field name="document_name"/>
+                                    <field name="reference_number"/>
+                                    <field name="expiry_date"/>
+                                    <field name="verification_state" widget="badge"
+                                           decoration-success="verification_state == 'verified'"
+                                           decoration-warning="verification_state == 'pending'"
+                                           decoration-danger="verification_state in ('rejected','expired')"/>
+                                    <field name="days_to_expiry" string="Days Left"/>
+                                    <button name="action_verify" type="object" string="Verify"
+                                            class="btn-sm btn-success"
+                                            invisible="verification_state == 'verified'"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- Tab 6: Approval History -->
+                        <page string="Approval History" name="approvals">
+                            <field name="approval_ids" readonly="1">
+                                <list>
+                                    <field name="level"/>
+                                    <field name="state" widget="badge"
+                                           decoration-success="state == 'approved'"
+                                           decoration-warning="state == 'pending'"
+                                           decoration-danger="state == 'rejected'"/>
+                                    <field name="approved_by"/>
+                                    <field name="approved_on"/>
+                                    <field name="remarks"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- Tab 7: Performance -->
+                        <page string="Performance Ratings" name="ratings">
+                            <field name="performance_rating_ids">
+                                <list>
+                                    <field name="period_start"/>
+                                    <field name="period_end"/>
+                                    <field name="period_type"/>
+                                    <field name="otd_score" string="OTD %"/>
+                                    <field name="quality_score" string="Quality %"/>
+                                    <field name="lead_time_score" string="Lead Time %"/>
+                                    <field name="overall_score" string="Overall Score"/>
+                                    <field name="rating_label" string="Grade"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- Tab 8: Notes -->
+                        <page string="Internal Notes" name="notes">
+                            <field name="internal_notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── List View ──────────────────────────────────────────────────────── -->
+    <record id="view_bxi_vendor_list" model="ir.ui.view">
+        <field name="name">bxi.vendor.list</field>
+        <field name="model">bxi.vendor</field>
+        <field name="arch" type="xml">
+            <list string="Vendors" decoration-muted="state == 'inactive'"
+                  decoration-danger="state == 'blocked'"
+                  decoration-success="state == 'active'">
+                <field name="vendor_code" string="Code"/>
+                <field name="name" string="Vendor Name"/>
+                <field name="vendor_type" string="Type"/>
+                <field name="category_id" string="Category"/>
+                <field name="city"/>
+                <field name="gstin" string="GSTIN"/>
+                <field name="is_avl" string="AVL" widget="boolean_toggle"/>
+                <field name="rating_score" string="Score"/>
+                <field name="document_count" string="Docs"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'active'"
+                       decoration-primary="state == 'approved'"
+                       decoration-warning="state in ('submitted','l1_approved','l2_approved')"
+                       decoration-danger="state in ('blocked','rejected')"
+                       decoration-muted="state in ('draft','inactive')"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── Kanban View ─────────────────────────────────────────────────────── -->
+    <record id="view_bxi_vendor_kanban" model="ir.ui.view">
+        <field name="name">bxi.vendor.kanban</field>
+        <field name="model">bxi.vendor</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile" default_group_by="state">
+                <field name="name"/>
+                <field name="vendor_code"/>
+                <field name="state"/>
+                <field name="category_id"/>
+                <field name="city"/>
+                <field name="rating_score"/>
+                <field name="is_avl"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between">
+                            <strong><field name="name"/></strong>
+                            <span class="badge rounded-pill text-bg-secondary">
+                                <field name="vendor_code"/>
+                            </span>
+                        </div>
+                        <div class="text-muted small mt-1">
+                            <field name="category_id"/> — <field name="city"/>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2">
+                            <field name="state" widget="badge"/>
+                            <span t-if="record.is_avl.raw_value" class="badge text-bg-success">✓ AVL</span>
+                            <span class="badge text-bg-info">⭐ <field name="rating_score"/></span>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ── Search View ─────────────────────────────────────────────────────── -->
+    <record id="view_bxi_vendor_search" model="ir.ui.view">
+        <field name="name">bxi.vendor.search</field>
+        <field name="model">bxi.vendor</field>
+        <field name="arch" type="xml">
+            <search string="Search Vendors">
+                <field name="name"/>
+                <field name="vendor_code"/>
+                <field name="gstin"/>
+                <field name="pan"/>
+                <field name="category_id"/>
+                <field name="city"/>
+                <separator/>
+                <filter string="Active" name="active" domain="[('state','=','active')]"/>
+                <filter string="Approved" name="approved" domain="[('state','=','approved')]"/>
+                <filter string="Pending Approval" name="pending" domain="[('state','in',['submitted','l1_approved','l2_approved'])]"/>
+                <filter string="Blocked" name="blocked" domain="[('state','=','blocked')]"/>
+                <filter string="On AVL" name="avl" domain="[('is_avl','=',True)]"/>
+                <filter string="MSME Vendors" name="msme" domain="[('msme_registered','=',True)]"/>
+                <separator/>
+                <filter string="Goods Suppliers" name="goods" domain="[('vendor_type','=','goods')]"/>
+                <filter string="Service Providers" name="services" domain="[('vendor_type','=','service')]"/>
+                <group>
+                    <filter string="Status" name="grp_state" context="{'group_by':'state'}"/>
+                    <filter string="Category" name="grp_category" context="{'group_by':'category_id'}"/>
+                    <filter string="Vendor Type" name="grp_type" context="{'group_by':'vendor_type'}"/>
+                    <filter string="City" name="grp_city" context="{'group_by':'city'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ── Action ──────────────────────────────────────────────────────────── -->
+    <record id="action_bxi_vendor" model="ir.actions.act_window">
+        <field name="name">Vendors</field>
+        <field name="res_model">bxi.vendor</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_bxi_vendor_search"/>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No vendors found. Create your first vendor!
+            </p>
+        </field>
+    </record>
+
+    <record id="action_bxi_vendor_pending" model="ir.actions.act_window">
+        <field name="name">Pending Approvals</field>
+        <field name="res_model">bxi.vendor</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state','in',['submitted','l1_approved','l2_approved'])]</field>
+        <field name="search_view_id" ref="view_bxi_vendor_search"/>
+    </record>
+
+    <record id="action_bxi_vendor_avl" model="ir.actions.act_window">
+        <field name="name">Approved Vendor List (AVL)</field>
+        <field name="res_model">bxi.vendor</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('is_avl','=',True)]</field>
+        <field name="search_view_id" ref="view_bxi_vendor_search"/>
+    </record>
+</odoo>

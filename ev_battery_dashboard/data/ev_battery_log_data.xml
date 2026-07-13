@@ -1,0 +1,516 @@
+<odoo>
+    <data noupdate="1">
+
+        <!-- ══════════════════════════════════════════════════════════════════════
+             Sequences
+        ═══════════════════════════════════════════════════════════════════════ -->
+        <record id="sequence_ev_battery_log" model="ir.sequence">
+            <field name="name">EV Battery Log Sequence</field>
+            <field name="code">ev.battery.log.sequence</field>
+            <field name="prefix">EVB/LOG/</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <record id="sequence_ev_import_batch" model="ir.sequence">
+            <field name="name">EV Import Batch Sequence</field>
+            <field name="code">ev.import.batch.sequence</field>
+            <field name="prefix">IMP/EV/</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- ══════════════════════════════════════════════════════════════════════
+             EV Brands
+        ═══════════════════════════════════════════════════════════════════════ -->
+        <record id="brand_tesla" model="fleet.vehicle.model.brand">
+            <field name="name">Tesla</field>
+        </record>
+        <record id="brand_nissan" model="fleet.vehicle.model.brand">
+            <field name="name">Nissan</field>
+        </record>
+        <record id="brand_byd" model="fleet.vehicle.model.brand">
+            <field name="name">BYD</field>
+        </record>
+        <record id="brand_tata" model="fleet.vehicle.model.brand">
+            <field name="name">Tata</field>
+        </record>
+        <record id="brand_kia" model="fleet.vehicle.model.brand">
+            <field name="name">Kia</field>
+        </record>
+        <record id="brand_mahindra" model="fleet.vehicle.model.brand">
+            <field name="name">Mahindra</field>
+        </record>
+        <record id="brand_hyundai" model="fleet.vehicle.model.brand">
+            <field name="name">Hyundai</field>
+        </record>
+        <record id="brand_bmw" model="fleet.vehicle.model.brand">
+            <field name="name">BMW</field>
+        </record>
+        <record id="brand_mg" model="fleet.vehicle.model.brand">
+            <field name="name">MG</field>
+        </record>
+
+        <!-- ══════════════════════════════════════════════════════════════════════
+             EV Vehicle Models
+        ═══════════════════════════════════════════════════════════════════════ -->
+        <record id="model_tesla_model_s" model="fleet.vehicle.model">
+            <field name="name">Model S</field>
+            <field name="brand_id" ref="brand_tesla"/>
+            <field name="vehicle_type">car</field>
+        </record>
+        <record id="model_tesla_model_3" model="fleet.vehicle.model">
+            <field name="name">Model 3</field>
+            <field name="brand_id" ref="brand_tesla"/>
+            <field name="vehicle_type">car</field>
+        </record>
+        <record id="model_nissan_leaf" model="fleet.vehicle.model">
+            <field name="name">Leaf</field>
+            <field name="brand_id" ref="brand_nissan"/>
+            <field name="vehicle_type">car</field>
+        </record>
+        <record id="model_byd_atto3" model="fleet.vehicle.model">
+            <field name="name">Atto 3</field>
+            <field name="brand_id" ref="brand_byd"/>
+            <field name="vehicle_type">car</field>
+        </record>
+        <record id="model_tata_nexon" model="fleet.vehicle.model">
+            <field name="name">Nexon EV</field>
+            <field name="brand_id" ref="brand_tata"/>
+            <field name="vehicle_type">car</field>
+        </record>
+        <record id="model_kia_ev6" model="fleet.vehicle.model">
+            <field name="name">EV6</field>
+            <field name="brand_id" ref="brand_kia"/>
+            <field name="vehicle_type">car</field>
+        </record>
+        <record id="model_mahindra_xev9e" model="fleet.vehicle.model">
+            <field name="name">XEV 9e</field>
+            <field name="brand_id" ref="brand_mahindra"/>
+            <field name="vehicle_type">car</field>
+        </record>
+        <record id="model_hyundai_ioniq5" model="fleet.vehicle.model">
+            <field name="name">Ioniq 5</field>
+            <field name="brand_id" ref="brand_hyundai"/>
+            <field name="vehicle_type">car</field>
+        </record>
+        <record id="model_bmw_ix3" model="fleet.vehicle.model">
+            <field name="name">iX3</field>
+            <field name="brand_id" ref="brand_bmw"/>
+            <field name="vehicle_type">car</field>
+        </record>
+        <record id="model_mg_zsev" model="fleet.vehicle.model">
+            <field name="name">ZS EV</field>
+            <field name="brand_id" ref="brand_mg"/>
+            <field name="vehicle_type">car</field>
+        </record>
+
+        <!-- ══════════════════════════════════════════════════════════════════════
+             EV Fleet Vehicles (10 complete records)
+        ═══════════════════════════════════════════════════════════════════════ -->
+        <record id="vehicle_ev_01" model="fleet.vehicle">
+            <field name="license_plate">EV-TES-001</field>
+            <field name="model_id" ref="model_tesla_model_s"/>
+            <field name="model_year">2023</field>
+            <field name="odometer">12500.0</field>
+            <field name="color">Midnight Black</field>
+            <field name="vin_sn">5YJSA1E26MF100001</field>
+        </record>
+        <record id="vehicle_ev_02" model="fleet.vehicle">
+            <field name="license_plate">EV-TES-002</field>
+            <field name="model_id" ref="model_tesla_model_3"/>
+            <field name="model_year">2022</field>
+            <field name="odometer">28000.0</field>
+            <field name="color">Pearl White</field>
+            <field name="vin_sn">5YJ3E1EA1NF200002</field>
+        </record>
+        <record id="vehicle_ev_03" model="fleet.vehicle">
+            <field name="license_plate">EV-NIS-001</field>
+            <field name="model_id" ref="model_nissan_leaf"/>
+            <field name="model_year">2021</field>
+            <field name="odometer">42300.0</field>
+            <field name="color">Storm Blue</field>
+            <field name="vin_sn">1N4AZ1CP4MC300003</field>
+        </record>
+        <record id="vehicle_ev_04" model="fleet.vehicle">
+            <field name="license_plate">EV-BYD-001</field>
+            <field name="model_id" ref="model_byd_atto3"/>
+            <field name="model_year">2024</field>
+            <field name="odometer">8900.0</field>
+            <field name="color">Surf Blue</field>
+            <field name="vin_sn">LGXCE4C04P8400004</field>
+        </record>
+        <record id="vehicle_ev_05" model="fleet.vehicle">
+            <field name="license_plate">EV-TAT-001</field>
+            <field name="model_id" ref="model_tata_nexon"/>
+            <field name="model_year">2022</field>
+            <field name="odometer">31000.0</field>
+            <field name="color">Flame Red</field>
+            <field name="vin_sn">MAT607054NED00005</field>
+        </record>
+        <record id="vehicle_ev_06" model="fleet.vehicle">
+            <field name="license_plate">EV-KIA-001</field>
+            <field name="model_id" ref="model_kia_ev6"/>
+            <field name="model_year">2023</field>
+            <field name="odometer">19400.0</field>
+            <field name="color">Glacier White</field>
+            <field name="vin_sn">KNACC81CXP6600006</field>
+        </record>
+        <record id="vehicle_ev_07" model="fleet.vehicle">
+            <field name="license_plate">EV-MAH-001</field>
+            <field name="model_id" ref="model_mahindra_xev9e"/>
+            <field name="model_year">2024</field>
+            <field name="odometer">5200.0</field>
+            <field name="color">Deep Forest</field>
+            <field name="vin_sn">MAFXE9E04RB700007</field>
+        </record>
+        <record id="vehicle_ev_08" model="fleet.vehicle">
+            <field name="license_plate">EV-HYU-001</field>
+            <field name="model_id" ref="model_hyundai_ioniq5"/>
+            <field name="model_year">2023</field>
+            <field name="odometer">22100.0</field>
+            <field name="color">Gravity Gold</field>
+            <field name="vin_sn">KMHM4811XPU800008</field>
+        </record>
+        <record id="vehicle_ev_09" model="fleet.vehicle">
+            <field name="license_plate">EV-BMW-001</field>
+            <field name="model_id" ref="model_bmw_ix3"/>
+            <field name="model_year">2022</field>
+            <field name="odometer">35600.0</field>
+            <field name="color">Mineral White</field>
+            <field name="vin_sn">WBX5U110X0W900009</field>
+        </record>
+        <record id="vehicle_ev_10" model="fleet.vehicle">
+            <field name="license_plate">EV-MGI-001</field>
+            <field name="model_id" ref="model_mg_zsev"/>
+            <field name="model_year">2023</field>
+            <field name="odometer">15700.0</field>
+            <field name="color">Brighton Silver</field>
+            <field name="vin_sn">LSJYCDL16PE100010</field>
+        </record>
+
+        <!-- ══════════════════════════════════════════════════════════════════════
+             EV Telemetry Devices (10 units – one per vehicle)
+        ═══════════════════════════════════════════════════════════════════════ -->
+        <record id="device_ev_01" model="ev.device">
+            <field name="device_id_code">DEV-TES-001</field>
+            <field name="name">Tesla S Telematics Unit</field>
+            <field name="vehicle_id" ref="vehicle_ev_01"/>
+            <field name="device_type">bms</field>
+            <field name="firmware_version">v3.12.1</field>
+            <field name="imei">352099001761481</field>
+            <field name="status">active</field>
+        </record>
+        <record id="device_ev_02" model="ev.device">
+            <field name="device_id_code">DEV-TES-002</field>
+            <field name="name">Tesla 3 Telematics Unit</field>
+            <field name="vehicle_id" ref="vehicle_ev_02"/>
+            <field name="device_type">telematics</field>
+            <field name="firmware_version">v3.10.5</field>
+            <field name="imei">352099001761482</field>
+            <field name="status">active</field>
+        </record>
+        <record id="device_ev_03" model="ev.device">
+            <field name="device_id_code">DEV-NIS-001</field>
+            <field name="name">Nissan Leaf BMS Unit</field>
+            <field name="vehicle_id" ref="vehicle_ev_03"/>
+            <field name="device_type">bms</field>
+            <field name="firmware_version">v2.8.4</field>
+            <field name="imei">352099001761483</field>
+            <field name="status">active</field>
+        </record>
+        <record id="device_ev_04" model="ev.device">
+            <field name="device_id_code">DEV-BYD-001</field>
+            <field name="name">BYD Atto 3 Fleet Gateway</field>
+            <field name="vehicle_id" ref="vehicle_ev_04"/>
+            <field name="device_type">gateway</field>
+            <field name="firmware_version">v4.0.2</field>
+            <field name="imei">352099001761484</field>
+            <field name="status">active</field>
+        </record>
+        <record id="device_ev_05" model="ev.device">
+            <field name="device_id_code">DEV-TAT-001</field>
+            <field name="name">Tata Nexon OBD Adapter</field>
+            <field name="vehicle_id" ref="vehicle_ev_05"/>
+            <field name="device_type">obd</field>
+            <field name="firmware_version">v1.5.0</field>
+            <field name="imei">352099001761485</field>
+            <field name="status">active</field>
+        </record>
+        <record id="device_ev_06" model="ev.device">
+            <field name="device_id_code">DEV-KIA-001</field>
+            <field name="name">Kia EV6 Telematics</field>
+            <field name="vehicle_id" ref="vehicle_ev_06"/>
+            <field name="device_type">telematics</field>
+            <field name="firmware_version">v3.5.7</field>
+            <field name="imei">352099001761486</field>
+            <field name="status">active</field>
+        </record>
+        <record id="device_ev_07" model="ev.device">
+            <field name="device_id_code">DEV-MAH-001</field>
+            <field name="name">Mahindra XEV BMS</field>
+            <field name="vehicle_id" ref="vehicle_ev_07"/>
+            <field name="device_type">bms</field>
+            <field name="firmware_version">v4.2.0</field>
+            <field name="imei">352099001761487</field>
+            <field name="status">active</field>
+        </record>
+        <record id="device_ev_08" model="ev.device">
+            <field name="device_id_code">DEV-HYU-001</field>
+            <field name="name">Hyundai Ioniq Gateway</field>
+            <field name="vehicle_id" ref="vehicle_ev_08"/>
+            <field name="device_type">gateway</field>
+            <field name="firmware_version">v3.9.1</field>
+            <field name="imei">352099001761488</field>
+            <field name="status">active</field>
+        </record>
+        <record id="device_ev_09" model="ev.device">
+            <field name="device_id_code">DEV-BMW-001</field>
+            <field name="name">BMW iX3 Telematics Unit</field>
+            <field name="vehicle_id" ref="vehicle_ev_09"/>
+            <field name="device_type">telematics</field>
+            <field name="firmware_version">v2.15.3</field>
+            <field name="imei">352099001761489</field>
+            <field name="status">error</field>
+        </record>
+        <record id="device_ev_10" model="ev.device">
+            <field name="device_id_code">DEV-MGI-001</field>
+            <field name="name">MG ZS OBD Adapter</field>
+            <field name="vehicle_id" ref="vehicle_ev_10"/>
+            <field name="device_type">obd</field>
+            <field name="firmware_version">v1.8.2</field>
+            <field name="imei">352099001761490</field>
+            <field name="status">active</field>
+        </record>
+
+        <!-- ══════════════════════════════════════════════════════════════════════
+             25 EV Battery KPI Logs (spread across all 10 vehicles)
+             ~2-3 logs per vehicle across 2026 Q1-Q2
+        ═══════════════════════════════════════════════════════════════════════ -->
+
+        <!-- Vehicle 1: Tesla Model S (3 logs) -->
+        <record id="log_v01_01" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_01"/><field name="device_id" ref="device_ev_01"/>
+            <field name="date">2026-04-05</field><field name="odometer">10200.0</field><field name="trip_distance">180.0</field>
+            <field name="soh">99.2</field><field name="degradation_rate">0.08</field><field name="energy_efficiency">0.148</field>
+            <field name="soc_start">100.0</field><field name="soc_end">67.0</field>
+            <field name="charge_type">slow</field><field name="cycle_stress_score">12.0</field>
+            <field name="avg_temperature">24.0</field><field name="max_temperature">30.0</field><field name="temperature_stress_score">8.0</field>
+        </record>
+        <record id="log_v01_02" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_01"/><field name="device_id" ref="device_ev_01"/>
+            <field name="date">2026-05-10</field><field name="odometer">11400.0</field><field name="trip_distance">210.0</field>
+            <field name="soh">98.9</field><field name="degradation_rate">0.10</field><field name="energy_efficiency">0.152</field>
+            <field name="soc_start">98.0</field><field name="soc_end">60.0</field>
+            <field name="charge_type">fast</field><field name="cycle_stress_score">38.0</field>
+            <field name="avg_temperature">27.5</field><field name="max_temperature">35.0</field><field name="temperature_stress_score">22.0</field>
+        </record>
+        <record id="log_v01_03" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_01"/><field name="device_id" ref="device_ev_01"/>
+            <field name="date">2026-06-15</field><field name="odometer">12500.0</field><field name="trip_distance">195.0</field>
+            <field name="soh">98.6</field><field name="degradation_rate">0.12</field><field name="energy_efficiency">0.155</field>
+            <field name="soc_start">95.0</field><field name="soc_end">55.0</field>
+            <field name="charge_type">fast</field><field name="cycle_stress_score">45.0</field>
+            <field name="avg_temperature">30.0</field><field name="max_temperature">38.0</field><field name="temperature_stress_score">30.0</field>
+        </record>
+
+        <!-- Vehicle 2: Tesla Model 3 (3 logs) -->
+        <record id="log_v02_01" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_02"/><field name="device_id" ref="device_ev_02"/>
+            <field name="date">2026-03-12</field><field name="odometer">25500.0</field><field name="trip_distance">160.0</field>
+            <field name="soh">96.5</field><field name="degradation_rate">0.18</field><field name="energy_efficiency">0.162</field>
+            <field name="soc_start">100.0</field><field name="soc_end">58.0</field>
+            <field name="charge_type">slow</field><field name="cycle_stress_score">22.0</field>
+            <field name="avg_temperature">25.0</field><field name="max_temperature">32.0</field><field name="temperature_stress_score">15.0</field>
+        </record>
+        <record id="log_v02_02" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_02"/><field name="device_id" ref="device_ev_02"/>
+            <field name="date">2026-04-22</field><field name="odometer">26800.0</field><field name="trip_distance">200.0</field>
+            <field name="soh">96.1</field><field name="degradation_rate">0.20</field><field name="energy_efficiency">0.165</field>
+            <field name="soc_start">97.0</field><field name="soc_end">50.0</field>
+            <field name="charge_type">fast</field><field name="cycle_stress_score">52.0</field>
+            <field name="avg_temperature">28.0</field><field name="max_temperature">37.5</field><field name="temperature_stress_score">35.0</field>
+        </record>
+        <record id="log_v02_03" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_02"/><field name="device_id" ref="device_ev_02"/>
+            <field name="date">2026-06-10</field><field name="odometer">28000.0</field><field name="trip_distance">185.0</field>
+            <field name="soh">95.7</field><field name="degradation_rate">0.22</field><field name="energy_efficiency">0.168</field>
+            <field name="soc_start">94.0</field><field name="soc_end">48.0</field>
+            <field name="charge_type">fast</field><field name="cycle_stress_score">58.0</field>
+            <field name="avg_temperature">31.0</field><field name="max_temperature">40.0</field><field name="temperature_stress_score">40.0</field>
+        </record>
+
+        <!-- Vehicle 3: Nissan Leaf (3 logs – older vehicle, degrading) -->
+        <record id="log_v03_01" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_03"/><field name="device_id" ref="device_ev_03"/>
+            <field name="date">2026-02-08</field><field name="odometer">38500.0</field><field name="trip_distance">90.0</field>
+            <field name="soh">87.2</field><field name="degradation_rate">0.55</field><field name="energy_efficiency">0.195</field>
+            <field name="soc_start">88.0</field><field name="soc_end">45.0</field>
+            <field name="charge_type">slow</field><field name="cycle_stress_score">28.0</field>
+            <field name="avg_temperature">22.0</field><field name="max_temperature">30.0</field><field name="temperature_stress_score">18.0</field>
+        </record>
+        <record id="log_v03_02" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_03"/><field name="device_id" ref="device_ev_03"/>
+            <field name="date">2026-04-14</field><field name="odometer">40500.0</field><field name="trip_distance">110.0</field>
+            <field name="soh">86.5</field><field name="degradation_rate">0.58</field><field name="energy_efficiency">0.200</field>
+            <field name="soc_start">85.0</field><field name="soc_end">40.0</field>
+            <field name="charge_type">fast</field><field name="cycle_stress_score">62.0</field>
+            <field name="avg_temperature">29.0</field><field name="max_temperature">40.0</field><field name="temperature_stress_score">55.0</field>
+        </record>
+        <record id="log_v03_03" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_03"/><field name="device_id" ref="device_ev_03"/>
+            <field name="date">2026-06-20</field><field name="odometer">42300.0</field><field name="trip_distance">105.0</field>
+            <field name="soh">85.8</field><field name="degradation_rate">0.62</field><field name="energy_efficiency">0.205</field>
+            <field name="soc_start">82.0</field><field name="soc_end">38.0</field>
+            <field name="charge_type">slow</field><field name="cycle_stress_score">35.0</field>
+            <field name="avg_temperature">33.0</field><field name="max_temperature">44.0</field><field name="temperature_stress_score">62.0</field>
+        </record>
+
+        <!-- Vehicle 4: BYD Atto 3 (2 logs – new vehicle) -->
+        <record id="log_v04_01" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_04"/><field name="device_id" ref="device_ev_04"/>
+            <field name="date">2026-05-01</field><field name="odometer">5500.0</field><field name="trip_distance">220.0</field>
+            <field name="soh">99.8</field><field name="degradation_rate">0.05</field><field name="energy_efficiency">0.145</field>
+            <field name="soc_start">100.0</field><field name="soc_end">72.0</field>
+            <field name="charge_type">slow</field><field name="cycle_stress_score">8.0</field>
+            <field name="avg_temperature">26.0</field><field name="max_temperature">31.0</field><field name="temperature_stress_score">5.0</field>
+        </record>
+        <record id="log_v04_02" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_04"/><field name="device_id" ref="device_ev_04"/>
+            <field name="date">2026-06-18</field><field name="odometer">8900.0</field><field name="trip_distance">240.0</field>
+            <field name="soh">99.5</field><field name="degradation_rate">0.06</field><field name="energy_efficiency">0.147</field>
+            <field name="soc_start">100.0</field><field name="soc_end">70.0</field>
+            <field name="charge_type">slow</field><field name="cycle_stress_score">10.0</field>
+            <field name="avg_temperature">28.0</field><field name="max_temperature">34.0</field><field name="temperature_stress_score">8.0</field>
+        </record>
+
+        <!-- Vehicle 5: Tata Nexon EV (3 logs) -->
+        <record id="log_v05_01" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_05"/><field name="device_id" ref="device_ev_05"/>
+            <field name="date">2026-02-20</field><field name="odometer">26000.0</field><field name="trip_distance">130.0</field>
+            <field name="soh">90.5</field><field name="degradation_rate">0.40</field><field name="energy_efficiency">0.175</field>
+            <field name="soc_start">90.0</field><field name="soc_end">52.0</field>
+            <field name="charge_type">slow</field><field name="cycle_stress_score">30.0</field>
+            <field name="avg_temperature">30.0</field><field name="max_temperature">40.0</field><field name="temperature_stress_score">38.0</field>
+        </record>
+        <record id="log_v05_02" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_05"/><field name="device_id" ref="device_ev_05"/>
+            <field name="date">2026-04-28</field><field name="odometer">28500.0</field><field name="trip_distance">145.0</field>
+            <field name="soh">89.8</field><field name="degradation_rate">0.43</field><field name="energy_efficiency">0.180</field>
+            <field name="soc_start">88.0</field><field name="soc_end">48.0</field>
+            <field name="charge_type">fast</field><field name="cycle_stress_score">65.0</field>
+            <field name="avg_temperature">35.0</field><field name="max_temperature">46.0</field><field name="temperature_stress_score">65.0</field>
+        </record>
+        <record id="log_v05_03" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_05"/><field name="device_id" ref="device_ev_05"/>
+            <field name="date">2026-06-22</field><field name="odometer">31000.0</field><field name="trip_distance">150.0</field>
+            <field name="soh">89.1</field><field name="degradation_rate">0.46</field><field name="energy_efficiency">0.182</field>
+            <field name="soc_start">85.0</field><field name="soc_end">44.0</field>
+            <field name="charge_type">fast</field><field name="cycle_stress_score">70.0</field>
+            <field name="avg_temperature">36.0</field><field name="max_temperature">48.0</field><field name="temperature_stress_score">70.0</field>
+        </record>
+
+        <!-- Vehicle 6: Kia EV6 (2 logs) -->
+        <record id="log_v06_01" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_06"/><field name="device_id" ref="device_ev_06"/>
+            <field name="date">2026-03-05</field><field name="odometer">16200.0</field><field name="trip_distance">175.0</field>
+            <field name="soh">97.8</field><field name="degradation_rate">0.14</field><field name="energy_efficiency">0.156</field>
+            <field name="soc_start">100.0</field><field name="soc_end">62.0</field>
+            <field name="charge_type">fast</field><field name="cycle_stress_score">48.0</field>
+            <field name="avg_temperature">26.0</field><field name="max_temperature">34.0</field><field name="temperature_stress_score">24.0</field>
+        </record>
+        <record id="log_v06_02" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_06"/><field name="device_id" ref="device_ev_06"/>
+            <field name="date">2026-06-05</field><field name="odometer">19400.0</field><field name="trip_distance">190.0</field>
+            <field name="soh">97.2</field><field name="degradation_rate">0.16</field><field name="energy_efficiency">0.160</field>
+            <field name="soc_start">96.0</field><field name="soc_end">57.0</field>
+            <field name="charge_type">slow</field><field name="cycle_stress_score">25.0</field>
+            <field name="avg_temperature">29.0</field><field name="max_temperature">36.0</field><field name="temperature_stress_score">20.0</field>
+        </record>
+
+        <!-- Vehicle 7: Mahindra XEV 9e (2 logs – newest) -->
+        <record id="log_v07_01" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_07"/><field name="device_id" ref="device_ev_07"/>
+            <field name="date">2026-04-10</field><field name="odometer">3000.0</field><field name="trip_distance">250.0</field>
+            <field name="soh">100.0</field><field name="degradation_rate">0.02</field><field name="energy_efficiency">0.140</field>
+            <field name="soc_start">100.0</field><field name="soc_end">75.0</field>
+            <field name="charge_type">slow</field><field name="cycle_stress_score">5.0</field>
+            <field name="avg_temperature">25.0</field><field name="max_temperature">29.0</field><field name="temperature_stress_score">3.0</field>
+        </record>
+        <record id="log_v07_02" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_07"/><field name="device_id" ref="device_ev_07"/>
+            <field name="date">2026-06-12</field><field name="odometer">5200.0</field><field name="trip_distance">260.0</field>
+            <field name="soh">99.8</field><field name="degradation_rate">0.03</field><field name="energy_efficiency">0.142</field>
+            <field name="soc_start">100.0</field><field name="soc_end">73.0</field>
+            <field name="charge_type">slow</field><field name="cycle_stress_score">6.0</field>
+            <field name="avg_temperature">26.0</field><field name="max_temperature">31.0</field><field name="temperature_stress_score">4.0</field>
+        </record>
+
+        <!-- Vehicle 8: Hyundai Ioniq 5 (3 logs) -->
+        <record id="log_v08_01" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_08"/><field name="device_id" ref="device_ev_08"/>
+            <field name="date">2026-01-15</field><field name="odometer">18200.0</field><field name="trip_distance">210.0</field>
+            <field name="soh">95.5</field><field name="degradation_rate">0.25</field><field name="energy_efficiency">0.170</field>
+            <field name="soc_start">100.0</field><field name="soc_end">55.0</field>
+            <field name="charge_type">fast</field><field name="cycle_stress_score">55.0</field>
+            <field name="avg_temperature">20.0</field><field name="max_temperature">28.0</field><field name="temperature_stress_score">12.0</field>
+        </record>
+        <record id="log_v08_02" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_08"/><field name="device_id" ref="device_ev_08"/>
+            <field name="date">2026-04-08</field><field name="odometer">20500.0</field><field name="trip_distance">200.0</field>
+            <field name="soh">94.8</field><field name="degradation_rate">0.28</field><field name="energy_efficiency">0.174</field>
+            <field name="soc_start">98.0</field><field name="soc_end">52.0</field>
+            <field name="charge_type">fast</field><field name="cycle_stress_score">60.0</field>
+            <field name="avg_temperature">25.0</field><field name="max_temperature">34.0</field><field name="temperature_stress_score">28.0</field>
+        </record>
+        <record id="log_v08_03" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_08"/><field name="device_id" ref="device_ev_08"/>
+            <field name="date">2026-06-25</field><field name="odometer">22100.0</field><field name="trip_distance">195.0</field>
+            <field name="soh">94.2</field><field name="degradation_rate">0.30</field><field name="energy_efficiency">0.177</field>
+            <field name="soc_start">95.0</field><field name="soc_end">50.0</field>
+            <field name="charge_type">slow</field><field name="cycle_stress_score">32.0</field>
+            <field name="avg_temperature">32.0</field><field name="max_temperature">42.0</field><field name="temperature_stress_score">45.0</field>
+        </record>
+
+        <!-- Vehicle 9: BMW iX3 (2 logs – high odometer, degrading) -->
+        <record id="log_v09_01" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_09"/><field name="device_id" ref="device_ev_09"/>
+            <field name="date">2026-03-18</field><field name="odometer">33000.0</field><field name="trip_distance">280.0</field>
+            <field name="soh">82.0</field><field name="degradation_rate">0.70</field><field name="energy_efficiency">0.215</field>
+            <field name="soc_start">80.0</field><field name="soc_end">35.0</field>
+            <field name="charge_type">fast</field><field name="cycle_stress_score">75.0</field>
+            <field name="avg_temperature">38.0</field><field name="max_temperature">50.0</field><field name="temperature_stress_score">80.0</field>
+        </record>
+        <record id="log_v09_02" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_09"/><field name="device_id" ref="device_ev_09"/>
+            <field name="date">2026-06-08</field><field name="odometer">35600.0</field><field name="trip_distance">270.0</field>
+            <field name="soh">80.5</field><field name="degradation_rate">0.75</field><field name="energy_efficiency">0.222</field>
+            <field name="soc_start">78.0</field><field name="soc_end">32.0</field>
+            <field name="charge_type">fast</field><field name="cycle_stress_score">80.0</field>
+            <field name="avg_temperature">40.0</field><field name="max_temperature">53.0</field><field name="temperature_stress_score">85.0</field>
+        </record>
+
+        <!-- Vehicle 10: MG ZS EV (2 logs) -->
+        <record id="log_v10_01" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_10"/><field name="device_id" ref="device_ev_10"/>
+            <field name="date">2026-04-30</field><field name="odometer">13500.0</field><field name="trip_distance">160.0</field>
+            <field name="soh">96.0</field><field name="degradation_rate">0.20</field><field name="energy_efficiency">0.168</field>
+            <field name="soc_start">95.0</field><field name="soc_end">58.0</field>
+            <field name="charge_type">slow</field><field name="cycle_stress_score">24.0</field>
+            <field name="avg_temperature">27.0</field><field name="max_temperature">34.0</field><field name="temperature_stress_score">18.0</field>
+        </record>
+        <record id="log_v10_02" model="ev.battery.log">
+            <field name="vehicle_id" ref="vehicle_ev_10"/><field name="device_id" ref="device_ev_10"/>
+            <field name="date">2026-06-18</field><field name="odometer">15700.0</field><field name="trip_distance">172.0</field>
+            <field name="soh">95.5</field><field name="degradation_rate">0.22</field><field name="energy_efficiency">0.170</field>
+            <field name="soc_start">93.0</field><field name="soc_end">56.0</field>
+            <field name="charge_type">fast</field><field name="cycle_stress_score">50.0</field>
+            <field name="avg_temperature">30.0</field><field name="max_temperature">38.0</field><field name="temperature_stress_score">32.0</field>
+        </record>
+
+    </data>
+</odoo>

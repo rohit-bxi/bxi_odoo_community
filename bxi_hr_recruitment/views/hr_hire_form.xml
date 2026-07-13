@@ -19,6 +19,10 @@
             <xpath expr="//field[@name='user_id']" position="replace">
                 <field name='hr_user_id'/>
             </xpath>
+             <xpath expr="//field[@name='categ_ids']" position="after">
+                <field name='job_approach'/>
+                <field name="country"/>
+            </xpath>
             <xpath expr="//field[@name='email_from']" position="after">
                  <field name="cover_letter"/>
                 <field name="resume_file" filename="resume_filename"/>
@@ -214,8 +218,13 @@
 
                         <field name="reporting_manager_id"/>
                         <field name="hr_user_id"/>
-                        <field name="sign_request_id" readonly="1"/>
 
+                    </group>
+                    <group>
+                        <field name="cur_pre_hr_name"/>
+                        <field name="cur_pre_hr_contact"/>
+                        <field name="cur_pre_reporting_manager"/>
+                        <field name="cur_pre_reporting_manager_contact"/>
                     </group>
 
                 </page>

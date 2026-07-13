@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="vendor_block_wizard_form" model="ir.ui.view">
+        <field name="name">vendor.block.wizard.form</field>
+        <field name="model">vendor.block.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Confirm Action">
+                <sheet>
+                    <group>
+                        <field name="vendor_id" readonly="1"/>
+                        <field name="action_type" widget="radio"/>
+                        <field name="reason" placeholder="Provide detailed reason…"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button string="Confirm" type="object" name="action_confirm" class="btn-danger"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

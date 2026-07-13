@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vendor_document_list" model="ir.ui.view">
+        <field name="name">bxi.vendor.document.list</field>
+        <field name="model">bxi.vendor.document</field>
+        <field name="arch" type="xml">
+            <list string="Vendor Documents"
+                  decoration-danger="is_expired or verification_state == 'rejected'"
+                  decoration-warning="days_to_expiry &lt;= 30 and days_to_expiry &gt;= 0">
+                <field name="vendor_id"/>
+                <field name="document_type"/>
+                <field name="document_name"/>
+                <field name="reference_number"/>
+                <field name="expiry_date"/>
+                <field name="days_to_expiry" string="Days Left"/>
+                <field name="is_expired" string="Expired?" widget="boolean"/>
+                <field name="verification_state" widget="badge"
+                       decoration-success="verification_state == 'verified'"
+                       decoration-warning="verification_state == 'pending'"
+                       decoration-danger="verification_state in ('rejected','expired')"/>
+                <field name="verified_by"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vendor_document_form" model="ir.ui.view">
+        <field name="name">bxi.vendor.document.form</field>
+        <field name="model">bxi.vendor.document</field>
+        <field name="arch" type="xml">
+            <form string="Vendor Document">
+                <header>
+                    <button name="action_verify" string="Mark as Verified"
+                            type="object" class="btn-success"
+                            invisible="verification_state == 'verified'"/>
+                    <button name="action_reject" string="Reject"
+                            type="object" class="btn-danger"
+                            invisible="verification_state in ('rejected','expired')"/>
+                    <field name="verification_state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Document Info">
+                            <field name="vendor_id"/>
+                            <field name="document_type"/>
+                            <field name="document_name"/>
+                            <field name="reference_number"/>
+                        </group>
+                        <group string="Validity">
+                            <field name="issue_date"/>
+                            <field name="expiry_date"/>
+                            <field name="days_to_expiry"/>
+                            <field name="is_expired"/>
+                        </group>
+                    </group>
+                    <group string="Verification">
+                        <group>
+                            <field name="verified_by" readonly="1"/>
+                            <field name="verified_on" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="rejection_reason"
+                                   invisible="verification_state != 'rejected'"/>
+                        </group>
+                    </group>
+                    <group string="Uploaded Documents">
+                        <field name="attachment_id" widget="many2many_binary" nolabel="1"/>
+                    </group>
+                    <group string="Remarks">
+                        <field name="remarks" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_vendor_document_search" model="ir.ui.view">
+        <field name="name">bxi.vendor.document.search</field>
+        <field name="model">bxi.vendor.document</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="vendor_id"/>
+                <field name="document_type"/>
+                <separator/>
+                <filter string="Verified" name="verified" domain="[('verification_state','=','verified')]"/>
+                <filter string="Pending Review" name="pending" domain="[('verification_state','=','pending')]"/>
+                <filter string="Expiring within 30 days" name="expiring" domain="[('expiry_date', '&gt;=', context_today().strftime('%Y-%m-%d')), ('expiry_date', '&lt;=', (context_today() + relativedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                <filter string="Expired" name="expired" domain="[('is_expired','=',True)]"/>
+                <group>
+                    <filter string="Vendor" name="grp_vendor" context="{'group_by':'vendor_id'}"/>
+                    <filter string="Document Type" name="grp_type" context="{'group_by':'document_type'}"/>
+                    <filter string="Status" name="grp_status" context="{'group_by':'verification_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_vendor_document" model="ir.actions.act_window">
+        <field name="name">Vendor Documents</field>
+        <field name="res_model">bxi.vendor.document</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_vendor_document_search"/>
+    </record>
+
+    <record id="action_vendor_document_expiring" model="ir.actions.act_window">
+        <field name="name">Expiring Documents</field>
+        <field name="res_model">bxi.vendor.document</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('expiry_date', '&gt;=', context_today().strftime('%Y-%m-%d')), ('expiry_date', '&lt;=', (context_today() + relativedelta(days=30)).strftime('%Y-%m-%d'))]</field>
+    </record>
+</odoo>

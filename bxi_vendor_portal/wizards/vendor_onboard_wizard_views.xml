@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="vendor_onboard_wizard_form" model="ir.ui.view">
+        <field name="name">vendor.onboard.wizard.form</field>
+        <field name="model">vendor.onboard.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Quick Vendor Onboarding">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>🏢 New Vendor Registration</h1>
+                        <p class="text-muted">Fill in the key details to register a new vendor. You can complete remaining fields on the Vendor Master record.</p>
+                    </div>
+                    <group string="Basic Information">
+                        <group>
+                            <field name="name" placeholder="Company / Vendor Name"/>
+                            <field name="vendor_type"/>
+                            <field name="company_type"/>
+                            <field name="category_id"/>
+                        </group>
+                        <group>
+                            <field name="email" placeholder="primary@vendor.com"/>
+                            <field name="phone"/>
+                            <field name="city"/>
+                            <field name="state_id"/>
+                            <field name="country_id"/>
+                        </group>
+                    </group>
+                    <group string="Tax &amp; Compliance">
+                        <group>
+                            <field name="gstin" placeholder="15-character GSTIN"/>
+                            <field name="pan" placeholder="AAAAA9999A"/>
+                        </group>
+                        <group>
+                            <field name="msme_registered"/>
+                            <field name="msme_number" invisible="not msme_registered"/>
+                        </group>
+                    </group>
+                    <group string="Bank Details">
+                        <group>
+                            <field name="bank_name"/>
+                            <field name="bank_account_number"/>
+                            <field name="bank_ifsc" placeholder="e.g. SBIN0001234"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button string="Create Vendor" type="object" name="action_create_vendor" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_vendor_onboard_wizard" model="ir.actions.act_window">
+        <field name="name">Quick Onboard Vendor</field>
+        <field name="res_model">vendor.onboard.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
