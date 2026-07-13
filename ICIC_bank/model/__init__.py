@@ -1,2 +1,1 @@
-from . import custom_payslip
-from ..wizard import wizard
+from . import custom_payslip

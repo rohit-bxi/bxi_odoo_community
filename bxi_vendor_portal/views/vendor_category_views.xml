@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_vendor_category_list" model="ir.ui.view">
+        <field name="name">bxi.vendor.category.list</field>
+        <field name="model">bxi.vendor.category</field>
+        <field name="arch" type="xml">
+            <list string="Vendor Categories">
+                <field name="complete_name"/>
+                <field name="code"/>
+                <field name="description"/>
+                <field name="vendor_count" string="# Vendors"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vendor_category_form" model="ir.ui.view">
+        <field name="name">bxi.vendor.category.form</field>
+        <field name="model">bxi.vendor.category</field>
+        <field name="arch" type="xml">
+            <form string="Vendor Category">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="parent_id"/>
+                        </group>
+                        <group>
+                            <field name="active"/>
+                            <field name="vendor_count"/>
+                        </group>
+                    </group>
+                    <group string="Description">
+                        <field name="description" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_vendor_category" model="ir.actions.act_window">
+        <field name="name">Vendor Categories</field>
+        <field name="res_model">bxi.vendor.category</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

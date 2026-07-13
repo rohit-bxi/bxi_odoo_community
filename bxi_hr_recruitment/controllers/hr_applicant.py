@@ -1,3 +1,5 @@
+from dataclasses import fields
+
 from odoo import http
 from odoo.http import request
 import base64
@@ -49,16 +51,25 @@ class ApplicantCreation(http.Controller):
             phone = kwargs.get('partner_phone')
             job_id = kwargs.get('job_id')
             cover_letter=kwargs.get('cover_letter')
+            linkedin_profile = kwargs.get('linkedin_profile')
+            job_approach = kwargs.get('job_approach')
+            country = kwargs.get('country')
 
             resume_file = kwargs.get('resume_file')
 
             if not email:
                 return self._response("error", "Email is required")
 
-            existing_applicant = request.env['hr.applicant'].sudo().search([
-                ('email_from', '=ilike', email.strip()),
-                ('job_id', '=', job_id)
-            ], limit=1)
+            if not partner_name:
+                return self._response("error", "Applicant name is required")
+
+            domain = [('email_from', '=ilike', email.strip())]
+            if job_id:
+                domain.append(('job_id', '=', int(job_id)))
+
+            existing_applicant = request.env['hr.applicant'].sudo().search(
+                domain, limit=1
+            )
 
             if existing_applicant:
                 return self._response(
@@ -66,25 +77,29 @@ class ApplicantCreation(http.Controller):
                     "An applicant with this email address already exists."
                 )
 
-            if not partner_name:
-                return self._response("error", "Applicant name is required")
-
-            job = request.env['hr.job'].sudo().browse(job_id)
-
-            if not job.exists():
-                return self._response("error", "Invalid Job ID")
-
             applicant_vals = {
                 'partner_name': partner_name,
                 'email_from': email,
                 'partner_phone': phone,
-                'job_id': job_id,
-                'cover_letter': cover_letter
+                'cover_letter': cover_letter,
             }
 
-            # -----------------------------
-            #  ADD RESUME (IMPORTANT BLOCK)
-            # -----------------------------
+            # Set Job only if provided
+            if job_id:
+                job = request.env['hr.job'].sudo().browse(int(job_id))
+                if not job.exists():
+                    return self._response("error", "Invalid Job ID")
+                applicant_vals['job_id'] = job.id
+
+            if linkedin_profile:
+                applicant_vals['linkedin_profile'] = linkedin_profile.strip()
+
+            if job_approach:
+                applicant_vals['job_approach'] = job_approach.strip()
+
+            if country:
+                applicant_vals['country'] = country.strip()
+
             if resume_file:
                 applicant_vals.update({
                     'resume_file': resume_file,
@@ -155,6 +170,10 @@ class ApplicantCreation(http.Controller):
                 'pan_number': data.get('pan_number'),
                 'full_address': data.get('full_address'),
                 'joining_date': data.get('joining_date'),
+                'cur_pre_hr_name': data.get('cur_pre_hr_name'),
+                'cur_pre_hr_contact': data.get('cur_pre_hr_contact'),
+                'cur_pre_reporting_manager': data.get('cur_pre_reporting_manager'),
+                'cur_pre_reporting_manager_contact': data.get('cur_pre_reporting_manager_contact'),
             })
 
             def create_attachment(file_obj):
@@ -272,12 +291,38 @@ class ApplicantCreation(http.Controller):
                 'is_application_submitted': True
             })
 
-            return {
-                "status": "success",
-                "message": "Application submitted successfully",
-                "applicant_id": applicant.id
+            mail_values = {
+                'subject': 'Application Submitted Successfully',
+                'email_to': 'careers@bxitech.com',
+                'body_html': """
+                    <p>Hello Team,</p>
+                    <p>
+                        The applicant has successfully submitted all the required application details.
+                    </p>
+                    <p>
+                        The candidate has completed the application form and uploaded the required documents.
+                        You may now review the submitted information and proceed with the next stage of the recruitment process.
+                    </p>
+                    <p>
+                        <strong>Applicant Name:</strong> %s<br/>
+                        <strong>Email:</strong> %s<br/>
+                        <strong>Contact Number:</strong> %s
+                    </p>
+                    <br/>
+                    <p>Best Regards,<br/>HR Portal</p>
+                """ % (
+                    applicant.partner_name or '',
+                    applicant.email_from or '',
+                    applicant.contact_number or '',
+                )
             }
 
+            request.env['mail.mail'].sudo().create(mail_values).send()
+            return {
+                    "status": "success",
+                    "message": "Application submitted successfully",
+                    "applicant_id": applicant.id
+                }
         except Exception as e:
             return {
                 "status": "error",

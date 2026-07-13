@@ -1,0 +1,558 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="ev_battery_dashboard.DashboardTemplate" owl="1">
+    <div style="height: 100%; overflow: auto; background: #f1f5f9; padding: 24px; font-family: 'Outfit', 'Inter', system-ui, sans-serif;">
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             Dashboard Header
+        ═══════════════════════════════════════════════════════════════════ -->
+        <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3"
+             style="border-bottom: 1px solid #e2e8f0; padding-bottom: 16px;">
+            <div>
+                <h1 style="font-size: 26px; font-weight: 800; color: #0f172a; margin: 0; line-height: 1.2;">
+                    <span style="background: linear-gradient(135deg, #3b82f6, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                        ⚡ EV Fleet Battery Dashboard
+                    </span>
+                </h1>
+                <p style="color: #64748b; font-size: 13px; margin: 6px 0 0 0;">
+                    Real-time fleet battery health · cell analytics · thermal profiling · predictive degradation
+                </p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Vehicle Filter -->
+                <select id="vehicle_selector"
+                        class="form-select form-select-sm"
+                        style="width: 170px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 500;"
+                        t-on-change="onVehicleChange">
+                    <option value="">— All Vehicles —</option>
+                    <t t-foreach="state.vehicles" t-as="veh" t-key="veh.id">
+                        <option t-att-value="veh.id" t-att-selected="state.selected_vehicle_id == veh.id">
+                            <t t-esc="veh.name"/>
+                        </option>
+                    </t>
+                </select>
+
+                <!-- Date Range Filter -->
+                <select id="date_range_selector"
+                        class="form-select form-select-sm"
+                        style="width: 140px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 500;"
+                        t-on-change="onDateRangeChange">
+                    <option value="all" t-att-selected="state.selected_date_range == 'all'">— All Time —</option>
+                    <option value="7days" t-att-selected="state.selected_date_range == '7days'">Last 7 Days</option>
+                    <option value="30days" t-att-selected="state.selected_date_range == '30days'">Last 30 Days</option>
+                    <option value="90days" t-att-selected="state.selected_date_range == '90days'">Last 90 Days</option>
+                </select>
+
+                <!-- Charging Type Filter -->
+                <select id="charge_type_selector"
+                        class="form-select form-select-sm"
+                        style="width: 140px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 500;"
+                        t-on-change="onChargeTypeChange">
+                    <option value="all" t-att-selected="state.selected_charge_type == 'all'">— All Charge —</option>
+                    <option value="slow" t-att-selected="state.selected_charge_type == 'slow'">Slow AC</option>
+                    <option value="fast" t-att-selected="state.selected_charge_type == 'fast'">Fast DC</option>
+                    <option value="none" t-att-selected="state.selected_charge_type == 'none'">Discharge Only</option>
+                </select>
+
+                <!-- SOH Status Filter -->
+                <select id="soh_status_selector"
+                        class="form-select form-select-sm"
+                        style="width: 140px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 500;"
+                        t-on-change="onSohStatusChange">
+                    <option value="all" t-att-selected="state.selected_soh_status == 'all'">— All Health —</option>
+                    <option value="healthy" t-att-selected="state.selected_soh_status == 'healthy'">Healthy (≥90%)</option>
+                    <option value="warning" t-att-selected="state.selected_soh_status == 'warning'">Warning (80-90%)</option>
+                    <option value="critical" t-att-selected="state.selected_soh_status == 'critical'">Critical (&lt;80%)</option>
+                </select>
+
+                <!-- Import Button -->
+                <button class="btn btn-primary btn-sm d-flex align-items-center gap-1"
+                        style="border-radius: 8px; font-weight: 600; white-space: nowrap;"
+                        t-on-click="openImportWizard">
+                    <i class="fa fa-upload"/> Import .dat
+                </button>
+                <!-- Refresh Button -->
+                <button class="btn btn-outline-secondary btn-sm"
+                        style="border-radius: 8px;"
+                        t-on-click="refreshData" title="Refresh data">
+                    <i class="fa fa-refresh"/>
+                </button>
+            </div>
+
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             Tab Selection Menu
+        ═══════════════════════════════════════════════════════════════════ -->
+        <div class="d-flex gap-2 mb-4 p-1" style="background: #e2e8f0; border-radius: 12px; width: fit-content; border: 1px solid #cbd5e1;">
+            <button class="btn btn-sm" 
+                    t-att-style="state.active_tab == 'dashboard' ? 'background: #fff; color: #0f172a; font-weight: 700; border-radius: 9px; padding: 8px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: none;' : 'color: #475569; font-weight: 600; border-radius: 9px; padding: 8px 16px; border: none; background: transparent;'"
+                    t-on-click="() => this.changeTab('dashboard')">
+                📊 Fleet Performance
+            </button>
+            <button class="btn btn-sm" 
+                    t-att-style="state.active_tab == 'cell_health' ? 'background: #fff; color: #0f172a; font-weight: 700; border-radius: 9px; padding: 8px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: none;' : 'color: #475569; font-weight: 600; border-radius: 9px; padding: 8px 16px; border: none; background: transparent;'"
+                    t-on-click="() => this.changeTab('cell_health')">
+                🔋 Cell Health &amp; Eco Analytics
+            </button>
+            <button class="btn btn-sm" 
+                    t-att-style="state.active_tab == 'tracking' ? 'background: #fff; color: #0f172a; font-weight: 700; border-radius: 9px; padding: 8px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: none;' : 'color: #475569; font-weight: 600; border-radius: 9px; padding: 8px 16px; border: none; background: transparent;'"
+                    t-on-click="() => this.changeTab('tracking')">
+                📍 Fleet Live Tracking Map
+            </button>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             TAB 1: Fleet Performance Dashboard
+        ═══════════════════════════════════════════════════════════════════ -->
+        <t t-if="state.active_tab == 'dashboard'">
+            <!-- Fleet Overview Banner -->
+            <div class="row g-3 mb-4">
+                <!-- Total Fleet -->
+                <div class="col-6 col-md-2">
+                    <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 14px; padding: 18px; color: white; text-align: center;">
+                        <div style="font-size: 32px; font-weight: 800; line-height: 1;">
+                            <t t-esc="state.fleet_overview.total or 0"/>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; margin-top: 4px;">
+                            Total Vehicles
+                        </div>
+                    </div>
+                </div>
+                <!-- Healthy -->
+                <div class="col-6 col-md-2">
+                    <div style="background: linear-gradient(135deg, #10b981, #059669); border-radius: 14px; padding: 18px; color: white; text-align: center;">
+                        <div style="font-size: 32px; font-weight: 800; line-height: 1;">
+                            <t t-esc="state.fleet_overview.healthy or 0"/>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; margin-top: 4px;">
+                            ✅ Optimal (SOH ≥90%)
+                        </div>
+                    </div>
+                </div>
+                <!-- Warning -->
+                <div class="col-6 col-md-2">
+                    <div style="background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 14px; padding: 18px; color: white; text-align: center;">
+                        <div style="font-size: 32px; font-weight: 800; line-height: 1;">
+                            <t t-esc="state.fleet_overview.warning or 0"/>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; margin-top: 4px;">
+                            ⚠️ Attention Required
+                        </div>
+                    </div>
+                </div>
+                <!-- Critical -->
+                <div class="col-6 col-md-2">
+                    <div style="background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 14px; padding: 18px; color: white; text-align: center;">
+                        <div style="font-size: 32px; font-weight: 800; line-height: 1;">
+                            <t t-esc="state.fleet_overview.critical or 0"/>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; margin-top: 4px;">
+                            🔴 Maintenance Required
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total KM -->
+                <div class="col-6 col-md-2">
+                    <div style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius: 14px; padding: 18px; color: white; text-align: center;">
+                        <div style="font-size: 26px; font-weight: 800; line-height: 1;">
+                            <t t-esc="state.fleet_overview.total_km or 0"/>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; margin-top: 4px;">
+                            Total Fleet km
+                        </div>
+                    </div>
+                </div>
+                <!-- Total Logs -->
+                <div class="col-6 col-md-2">
+                    <div style="background: linear-gradient(135deg, #ec4899, #be185d); border-radius: 14px; padding: 18px; color: white; text-align: center;">
+                        <div style="font-size: 32px; font-weight: 800; line-height: 1;">
+                            <t t-esc="state.fleet_overview.total_logs or 0"/>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; margin-top: 4px;">
+                            KPI Log Entries
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5 Core KPI Metric Cards -->
+            <div class="row g-3 mb-4">
+                <!-- KPI 1: SOH & Degradation -->
+                <div class="col-md-4">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; overflow: hidden; height: 100%;">
+                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, #3b82f6, #60a5fa);"/>
+                        <div class="text-muted" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;">1. Battery SOH &amp; Degradation</div>
+                        <div class="d-flex justify-content-between align-items-end mt-3">
+                            <div>
+                                <span style="font-size: 36px; font-weight: 800; color: #0f172a;"><t t-esc="state.kpis.avg_soh or 0"/>%</span>
+                                <span style="color: #64748b; font-size: 12px; font-weight: 500; display: block; margin-top: 2px;">Fleet Avg SOH</span>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="font-size: 22px; font-weight: 700; color: #ef4444;"><t t-esc="state.kpis.avg_degradation or 0"/>%</span>
+                                <span style="color: #64748b; font-size: 11px; display: block; margin-top: 2px;">Degradation / 10k km</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- KPI 2: Energy Efficiency -->
+                <div class="col-md-2">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; overflow: hidden; height: 100%;">
+                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, #10b981, #34d399);"/>
+                        <div class="text-muted" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;">2. Efficiency</div>
+                        <div class="mt-3">
+                            <span style="font-size: 36px; font-weight: 800; color: #0f172a;"><t t-esc="state.kpis.avg_efficiency or 0"/></span>
+                            <span style="color: #64748b; font-size: 12px; display: block; margin-top: 2px;">kWh / km</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- KPI 3: SOC Drop per Trip -->
+                <div class="col-md-2">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; overflow: hidden; height: 100%;">
+                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, #a855f7, #c084fc);"/>
+                        <div class="text-muted" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;">3. SOC Drop</div>
+                        <div class="mt-3">
+                            <span style="font-size: 36px; font-weight: 800; color: #0f172a;"><t t-esc="state.kpis.avg_soc_drop or 0"/>%</span>
+                            <span style="color: #64748b; font-size: 12px; display: block; margin-top: 2px;">Avg Drop / Trip</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- KPI 4: Cycle Stress -->
+                <div class="col-md-2">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; overflow: hidden; height: 100%;">
+                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, #f59e0b, #fbbf24);"/>
+                        <div class="text-muted" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;">4. Cycle Stress</div>
+                        <div class="mt-3">
+                            <span style="font-size: 36px; font-weight: 800; color: #0f172a;"><t t-esc="state.kpis.avg_cycle_stress or 0"/></span>
+                            <span style="color: #64748b; font-size: 12px; display: block; margin-top: 2px;">Score (0–100)</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- KPI 5: Temperature Stress -->
+                <div class="col-md-2">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; overflow: hidden; height: 100%;">
+                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, #ec4899, #f472b6);"/>
+                        <div class="text-muted" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;">5. Temp Stress</div>
+                        <div class="mt-3">
+                            <span style="font-size: 36px; font-weight: 800; color: #0f172a;"><t t-esc="state.kpis.avg_temp_stress or 0"/></span>
+                            <span style="color: #64748b; font-size: 12px; display: block; margin-top: 2px;">Heat Stress Score</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Grid (2×2) -->
+            <div class="row g-4 mb-4">
+                <!-- SOH & Degradation Line Chart -->
+                <div class="col-md-6">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); height: 370px;">
+                        <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">SOH Decay &amp; Degradation Trend</h3>
+                        <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">State of Health over time vs degradation rate</p>
+                        <div style="height: calc(100% - 58px); width: 100%;">
+                            <canvas t-ref="sohChart"/>
+                        </div>
+                    </div>
+                </div>
+                <!-- Energy Efficiency Bar Chart -->
+                <div class="col-md-6">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); height: 370px;">
+                        <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Energy Consumption Efficiency</h3>
+                        <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">kWh/km per log · green=good, amber=avg, red=high</p>
+                        <div style="height: calc(100% - 58px); width: 100%;">
+                            <canvas t-ref="efficiencyChart"/>
+                        </div>
+                    </div>
+                </div>
+                <!-- Temperature Stress Chart -->
+                <div class="col-md-6">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); height: 370px;">
+                        <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Battery Thermal Operating Profile</h3>
+                        <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Average vs peak temperature across logs</p>
+                        <div style="height: calc(100% - 58px); width: 100%;">
+                            <canvas t-ref="tempChart"/>
+                        </div>
+                    </div>
+                </div>
+                <!-- Charging Profile Doughnut -->
+                <div class="col-md-6">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); height: 370px;">
+                        <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Charging Types Profile (Cycle Stress Behavior)</h3>
+                        <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Split of DC fast, AC slow, and discharge-only sessions</p>
+                        <div style="height: calc(100% - 58px); width: 100%;">
+                            <canvas t-ref="chargeChart"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             TAB 2: Cell Health & Eco Analytics
+        ═══════════════════════════════════════════════════════════════════ -->
+        <t t-if="state.active_tab == 'cell_health'">
+            <!-- Advanced KPI Cards -->
+            <div class="row g-3 mb-4">
+                <!-- Advanced KPI 1: Regen Braking -->
+                <div class="col-md-3">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; overflow: hidden; height: 100%;">
+                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, #10b981, #059669);"/>
+                        <div class="text-muted" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;">⚡ Regen Energy Efficiency</div>
+                        <div class="mt-3">
+                            <span style="font-size: 36px; font-weight: 800; color: #0f172a;"><t t-esc="state.kpis.avg_regen or 0"/>%</span>
+                            <span style="color: #64748b; font-size: 12px; display: block; margin-top: 2px;">Traction Energy Recovered</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Advanced KPI 2: Cell Imbalance -->
+                <div class="col-md-3">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; overflow: hidden; height: 100%;">
+                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, #ef4444, #b91c1c);"/>
+                        <div class="text-muted" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;">⚠️ Cell Voltage Imbalance</div>
+                        <div class="mt-3">
+                            <span style="font-size: 36px; font-weight: 800; color: #0f172a;"><t t-esc="state.kpis.avg_imbalance or 0"/> mV</span>
+                            <span style="color: #64748b; font-size: 12px; display: block; margin-top: 2px;">Maximum Cell-to-Cell Delta</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Advanced KPI 3: Internal Resistance -->
+                <div class="col-md-3">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; overflow: hidden; height: 100%;">
+                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, #8b5cf6, #5b21b6);"/>
+                        <div class="text-muted" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;">⚡ Pack Internal Resistance</div>
+                        <div class="mt-3">
+                            <span style="font-size: 36px; font-weight: 800; color: #0f172a;"><t t-esc="state.kpis.avg_resistance or 0"/> mΩ</span>
+                            <span style="color: #64748b; font-size: 12px; display: block; margin-top: 2px;">Avg Resistance (per cell-pack)</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Advanced KPI 4: CO2 Saved -->
+                <div class="col-md-3">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; overflow: hidden; height: 100%;">
+                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, #0ea5e9, #0369a1);"/>
+                        <div class="text-muted" style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;">🌿 Carbon Emission Savings</div>
+                        <div class="mt-3">
+                            <span style="font-size: 32px; font-weight: 800; color: #0f172a;"><t t-esc="state.kpis.total_co2 or 0"/> kg</span>
+                            <span style="color: #64748b; font-size: 12px; display: block; margin-top: 2px;">Total CO2 emissions avoided</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Charts Grid (3 charts) -->
+            <div class="row g-4 mb-4">
+                <!-- Cell Imbalance Timeline -->
+                <div class="col-md-4">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); height: 350px;">
+                        <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Cell Voltage Delta Mismatch</h3>
+                        <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Voltage mismatch delta (mV) per log entry</p>
+                        <div style="height: calc(100% - 58px); width: 100%;">
+                            <canvas t-ref="imbalanceChart"/>
+                        </div>
+                    </div>
+                </div>
+                <!-- Regen Recovery rate -->
+                <div class="col-md-4">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); height: 350px;">
+                        <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Regenerative Braking Recovery %</h3>
+                        <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Percentage of total energy recovered from braking</p>
+                        <div style="height: calc(100% - 58px); width: 100%;">
+                            <canvas t-ref="regenChart"/>
+                        </div>
+                    </div>
+                </div>
+                <!-- Internal Resistance -->
+                <div class="col-md-4">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); height: 350px;">
+                        <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Pack Internal Resistance (mΩ)</h3>
+                        <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Total internal resistance timeline trend</p>
+                        <div style="height: calc(100% - 58px); width: 100%;">
+                            <canvas t-ref="resistanceChart"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             TAB 3: Live Tracking Map Console
+        ═══════════════════════════════════════════════════════════════════ -->
+        <t t-if="state.active_tab == 'tracking'">
+            <div class="row g-4 mb-4">
+                <!-- Map Column -->
+                <div t-attf-class="{{ state.map_data and state.map_data.is_route and state.map_data.last_trip_details ? 'col-lg-8 col-12' : 'col-12' }}">
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h3 style="font-size: 17px; font-weight: 700; color: #0f172a; margin: 0;">📍 GPS Fleet Location &amp; Route Mapping</h3>
+                                <p style="font-size: 12px; color: #94a3b8; margin: 4px 0 0 0;">
+                                    <t t-if="state.map_data and state.map_data.is_route">Historical path and driving route for selected vehicle</t>
+                                    <t t-else="">Last reported real-time GPS coordinates of active fleet vehicles</t>
+                                </p>
+                            </div>
+                        </div>
+                        <div t-ref="mapContainer" style="height: 480px; width: 100%; border-radius: 12px; background: #e5e7eb; border: 1px solid #cbd5e1; z-index: 1;"></div>
+                    </div>
+                </div>
+
+                <!-- Last Trip Details Sidebar Panel -->
+                <t t-if="state.map_data and state.map_data.is_route and state.map_data.last_trip_details">
+                    <div class="col-lg-4 col-12">
+                        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); height: 100%; display: flex; flex-direction: column;">
+                            <h3 style="font-size: 17px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">🏁 Last Trip Analytics</h3>
+                            <p style="font-size: 12px; color: #94a3b8; margin-bottom: 20px;">Detailed metrics for the last detected driving session</p>
+                            
+                            <!-- Trip metrics grid -->
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <div style="background: #f8fafc; border-radius: 10px; padding: 12px; border: 1px solid #f1f5f9;">
+                                        <div style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Distance</div>
+                                        <div style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 4px;"><t t-esc="state.map_data.last_trip_details.distance_km"/> km</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div style="background: #f8fafc; border-radius: 10px; padding: 12px; border: 1px solid #f1f5f9;">
+                                        <div style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Duration</div>
+                                        <div style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 4px;"><t t-esc="state.map_data.last_trip_details.duration_mins"/> mins</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div style="background: #f8fafc; border-radius: 10px; padding: 12px; border: 1px solid #f1f5f9;">
+                                        <div style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Avg Speed</div>
+                                        <div style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 4px;"><t t-esc="state.map_data.last_trip_details.avg_speed"/> km/h</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div style="background: #f8fafc; border-radius: 10px; padding: 12px; border: 1px solid #f1f5f9;">
+                                        <div style="font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Max Speed</div>
+                                        <div style="font-size: 18px; font-weight: 800; color: #ef4444; margin-top: 4px;"><t t-esc="state.map_data.last_trip_details.max_speed"/> km/h</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">
+                                <strong>Start:</strong> <t t-esc="state.map_data.last_trip_details.start_time"/><br/>
+                                <strong>End:</strong> <t t-esc="state.map_data.last_trip_details.end_time"/>
+                            </div>
+
+                            <hr style="border-top: 1px solid #e2e8f0; margin: 12px 0;"/>
+
+                            <h4 style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">🛑 Trip Events &amp; Stops (<t t-esc="state.map_data.last_trip_details.stops_count"/>)</h4>
+                            
+                            <!-- Timeline scrollable list -->
+                            <div style="overflow-y: auto; flex-grow: 1; max-height: 200px; padding-right: 4px;">
+                                <t t-foreach="state.map_data.stops" t-as="stop" t-key="stop.time">
+                                    <div class="d-flex gap-3 mb-3 position-relative">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <div t-attf-style="width: 12px; height: 12px; border-radius: 50%; background: {{ stop.type == 'ignition_off' ? '#ef4444' : '#f59e0b' }}; border: 2px solid #fff; box-shadow: 0 0 0 2px {{ stop.type == 'ignition_off' ? '#fecaca' : '#fef3c7' }}; z-index: 2;"/>
+                                            <div style="width: 2px; flex-grow: 1; background: #e2e8f0; margin-top: 4px;"/>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 12px; font-weight: 700; color: #0f172a;">
+                                                <t t-if="stop.type == 'ignition_off'">🔌 Device / Ignition OFF</t>
+                                                <t t-else="">🛑 Vehicle Stopped</t>
+                                            </div>
+                                            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                                                Time: <t t-esc="stop.time"/> · Duration: <span style="font-weight: 600; color: #0f172a;"><t t-esc="stop.duration"/> mins</span>
+                                            </div>
+                                            <div style="font-size: 11px; color: #94a3b8; font-style: italic; margin-top: 4px;">
+                                                <t t-esc="stop.description"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                                <t t-if="!state.map_data.stops.length">
+                                    <div class="text-center text-muted py-4" style="font-size: 12px;">
+                                        No stops or ignition events detected during this trip.
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </t>
+
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             Vehicle Summary Table (Always Visible for reference)
+        ═══════════════════════════════════════════════════════════════════ -->
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h3 style="font-size: 17px; font-weight: 700; color: #0f172a; margin: 0;">EV Fleet Battery Health Summary</h3>
+                    <p style="font-size: 12px; color: #94a3b8; margin: 4px 0 0 0;">Per-vehicle KPI summary from latest logs</p>
+                </div>
+                <button class="btn btn-sm btn-outline-primary" style="border-radius: 8px; font-weight: 600;" t-on-click="openImportWizard">
+                    <i class="fa fa-upload me-1"/> Import Data
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" style="margin-bottom: 0; font-size: 13px;">
+                    <thead style="background: #f8fafc;">
+                        <tr style="font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.3px;">
+                            <th>Vehicle</th>
+                            <th>License Plate</th>
+                            <th class="text-center">Latest SOH</th>
+                            <th class="text-center">Avg Degradation</th>
+                            <th class="text-center">Avg Efficiency</th>
+                            <th class="text-center">Cycle Stress</th>
+                            <th class="text-center">Temp Stress</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="state.vehicle_summary" t-as="row" t-key="row.id">
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td>
+                                    <div style="font-weight: 600; color: #0f172a;"><t t-esc="row.name"/></div>
+                                    <div style="font-size: 11px; color: #94a3b8;"><t t-esc="row.model"/></div>
+                                </td>
+                                <td>
+                                    <code style="font-size: 12px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 3px 8px; border-radius: 6px;">
+                                        <t t-esc="row.license_plate"/>
+                                    </code>
+                                </td>
+                                <td class="text-center">
+                                    <span t-attf-style="font-weight: 700; font-size: 15px; color: {{ row.latest_soh >= 92 ? '#10b981' : row.latest_soh >= 80 ? '#f59e0b' : '#ef4444' }}">
+                                        <t t-esc="row.latest_soh"/>%
+                                    </span>
+                                </td>
+                                <td class="text-center" style="color: #64748b;"><t t-esc="row.avg_degradation"/>% / 10k km</td>
+                                <td class="text-center" style="font-weight: 600; color: #0f172a;"><t t-esc="row.avg_efficiency"/> kWh/km</td>
+                                <td class="text-center">
+                                    <span t-attf-style="font-weight: 600; color: {{ row.avg_cycle_stress > 60 ? '#ef4444' : row.avg_cycle_stress > 35 ? '#f59e0b' : '#10b981' }}">
+                                        <t t-esc="row.avg_cycle_stress"/>
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span t-attf-style="font-weight: 600; color: {{ row.avg_temp_stress > 60 ? '#ef4444' : row.avg_temp_stress > 35 ? '#f59e0b' : '#10b981' }}">
+                                        <t t-esc="row.avg_temp_stress"/>
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span t-attf-class="badge bg-{{ row.status_class }}"
+                                          style="padding: 5px 12px; border-radius: 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.3px;">
+                                        <t t-esc="row.status"/>
+                                    </span>
+                                </td>
+                            </tr>
+                        </t>
+                        <t t-if="!state.vehicle_summary.length">
+                            <tr>
+                                <td colspan="8" class="text-center text-muted" style="padding: 32px;">
+                                    <i class="fa fa-database fa-2x mb-2 d-block" style="opacity: 0.3;"/>
+                                    No fleet vehicle data found. Use <strong>Import .dat</strong> to load fleet data.
+                                </td>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</t>
+
+</templates>

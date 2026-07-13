@@ -12,5 +12,5 @@ class PresalesPOC(models.Model):
     )
 
     employee_id = fields.Many2one('hr.employee',
-        string="Email",
+        string="Employee",
     )

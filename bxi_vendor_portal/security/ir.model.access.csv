@@ -1,0 +1,24 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_vendor_category_user,bxi.vendor.category user,model_bxi_vendor_category,bxi_vendor_portal.group_vendor_user,1,0,0,0
+access_bxi_vendor_category_manager,bxi.vendor.category manager,model_bxi_vendor_category,bxi_vendor_portal.group_vendor_manager,1,1,1,0
+access_bxi_vendor_category_admin,bxi.vendor.category admin,model_bxi_vendor_category,bxi_vendor_portal.group_vendor_admin,1,1,1,1
+access_bxi_vendor_user,bxi.vendor user,model_bxi_vendor,bxi_vendor_portal.group_vendor_user,1,0,0,0
+access_bxi_vendor_manager,bxi.vendor manager,model_bxi_vendor,bxi_vendor_portal.group_vendor_manager,1,1,1,0
+access_bxi_vendor_admin,bxi.vendor admin,model_bxi_vendor,bxi_vendor_portal.group_vendor_admin,1,1,1,1
+access_bxi_vendor_document_user,bxi.vendor.document user,model_bxi_vendor_document,bxi_vendor_portal.group_vendor_user,1,0,0,0
+access_bxi_vendor_document_manager,bxi.vendor.document manager,model_bxi_vendor_document,bxi_vendor_portal.group_vendor_manager,1,1,1,0
+access_bxi_vendor_document_admin,bxi.vendor.document admin,model_bxi_vendor_document,bxi_vendor_portal.group_vendor_admin,1,1,1,1
+access_bxi_vendor_approval_user,bxi.vendor.approval user,model_bxi_vendor_approval,bxi_vendor_portal.group_vendor_user,1,0,0,0
+access_bxi_vendor_approval_approver,bxi.vendor.approval approver,model_bxi_vendor_approval,bxi_vendor_portal.group_vendor_approver,1,1,1,0
+access_bxi_vendor_approval_admin,bxi.vendor.approval admin,model_bxi_vendor_approval,bxi_vendor_portal.group_vendor_admin,1,1,1,1
+access_bxi_vendor_asn_user,bxi.vendor.asn user,model_bxi_vendor_asn,bxi_vendor_portal.group_vendor_user,1,0,0,0
+access_bxi_vendor_asn_manager,bxi.vendor.asn manager,model_bxi_vendor_asn,bxi_vendor_portal.group_vendor_manager,1,1,1,0
+access_bxi_vendor_asn_admin,bxi.vendor.asn admin,model_bxi_vendor_asn,bxi_vendor_portal.group_vendor_admin,1,1,1,1
+access_bxi_vendor_asn_line_user,bxi.vendor.asn.line user,model_bxi_vendor_asn_line,bxi_vendor_portal.group_vendor_user,1,0,0,0
+access_bxi_vendor_asn_line_manager,bxi.vendor.asn.line manager,model_bxi_vendor_asn_line,bxi_vendor_portal.group_vendor_manager,1,1,1,0
+access_bxi_vendor_asn_line_admin,bxi.vendor.asn.line admin,model_bxi_vendor_asn_line,bxi_vendor_portal.group_vendor_admin,1,1,1,1
+access_bxi_vendor_rating_user,bxi.vendor.rating user,model_bxi_vendor_rating,bxi_vendor_portal.group_vendor_user,1,0,0,0
+access_bxi_vendor_rating_manager,bxi.vendor.rating manager,model_bxi_vendor_rating,bxi_vendor_portal.group_vendor_manager,1,1,1,0
+access_bxi_vendor_rating_admin,bxi.vendor.rating admin,model_bxi_vendor_rating,bxi_vendor_portal.group_vendor_admin,1,1,1,1
+access_vendor_block_wizard_user,vendor.block.wizard user,model_vendor_block_wizard,bxi_vendor_portal.group_vendor_approver,1,1,1,1
+access_vendor_onboard_wizard_user,vendor.onboard.wizard user,model_vendor_onboard_wizard,bxi_vendor_portal.group_vendor_manager,1,1,1,1

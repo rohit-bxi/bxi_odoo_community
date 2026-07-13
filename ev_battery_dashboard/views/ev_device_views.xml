@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         EV Device – List View
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_ev_device_list" model="ir.ui.view">
+        <field name="name">ev.device.list</field>
+        <field name="model">ev.device</field>
+        <field name="arch" type="xml">
+            <list string="EV Devices" decoration-danger="status == 'error'"
+                  decoration-muted="status == 'inactive'">
+                <field name="device_id_code"/>
+                <field name="name"/>
+                <field name="vehicle_id"/>
+                <field name="device_type" widget="badge"/>
+                <field name="firmware_version"/>
+                <field name="imei"/>
+                <field name="last_sync"/>
+                <field name="log_count" string="Logs"/>
+                <field name="status" widget="badge"
+                       decoration-success="status == 'active'"
+                       decoration-danger="status == 'error'"
+                       decoration-muted="status == 'inactive'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         EV Device – Form View
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_ev_device_form" model="ir.ui.view">
+        <field name="name">ev.device.form</field>
+        <field name="model">ev.device</field>
+        <field name="arch" type="xml">
+            <form string="EV Device">
+                <header>
+                    <field name="status" widget="statusbar" statusbar_visible="active,inactive,error"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_logs" type="object"
+                                class="oe_stat_button" icon="fa-battery-three-quarters">
+                            <field name="log_count" widget="statinfo" string="Battery Logs"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" string="Device Name"/>
+                        <h1><field name="name" placeholder="e.g. Tesla S BMS Unit"/></h1>
+                    </div>
+                    <group>
+                        <group string="Device Identity">
+                            <field name="device_id_code"/>
+                            <field name="device_type"/>
+                            <field name="firmware_version"/>
+                            <field name="imei"/>
+                        </group>
+                        <group string="Linked Vehicle">
+                            <field name="vehicle_id"/>
+                            <field name="install_date"/>
+                            <field name="last_sync"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" widget="text" nolabel="1" placeholder="Any remarks or configuration notes..."/>
+                    </group>
+                    <notebook>
+                        <page string="Battery Logs">
+                            <field name="battery_log_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="soh" widget="progressbar"
+                                           decoration-danger="soh &lt; 85"
+                                           decoration-warning="soh &lt; 92"/>
+                                    <field name="energy_efficiency"/>
+                                    <field name="charge_type"/>
+                                    <field name="temperature_stress_score"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         EV Device – Search View
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="view_ev_device_search" model="ir.ui.view">
+        <field name="name">ev.device.search</field>
+        <field name="model">ev.device</field>
+        <field name="arch" type="xml">
+            <search string="Search Devices">
+                <field name="device_id_code"/>
+                <field name="name"/>
+                <field name="vehicle_id"/>
+                <filter string="Active" name="filter_active" domain="[('status', '=', 'active')]"/>
+                <filter string="Error / Fault" name="filter_error" domain="[('status', '=', 'error')]"/>
+                <separator/>
+                <group>
+                    <filter string="Device Type" name="group_by_type" context="{'group_by': 'device_type'}"/>
+                    <filter string="Status" name="group_by_status" context="{'group_by': 'status'}"/>
+                    <filter string="Vehicle" name="group_by_vehicle" context="{'group_by': 'vehicle_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         Action
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <record id="action_ev_device" model="ir.actions.act_window">
+        <field name="name">EV Devices</field>
+        <field name="res_model">ev.device</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_ev_device_search"/>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         Menu
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <menuitem id="menu_ev_device"
+              name="Telemetry Devices"
+              parent="ev_battery_dashboard.menu_ev_battery_root"
+              action="action_ev_device"
+              sequence="25"/>
+
+</odoo>

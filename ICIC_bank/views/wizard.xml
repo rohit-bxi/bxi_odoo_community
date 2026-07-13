@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
     <record id="view_icici_otp_wizard_form" model="ir.ui.view">
         <field name="name">icici.otp.wizard.form</field>
         <field name="model">icici.otp.wizard</field>
         <field name="arch" type="xml">
             <form string="ICICI OTP Verification">
                 <group>
-                    <field name="otp" password="True"/>
-                    <field name="payment_date"/>
+                    <field name="otp" password="True" required="1" placeholder="Enter OTP received from ICICI" default_focus="1"/>
+                    <field name="payment_date" required="1"/>
                 </group>
                 <footer>
                     <button
@@ -17,7 +16,7 @@
                         type="object"
                         class="btn-primary"
                     />
-                    <button string="Cancel" special="cancel"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
                 </footer>
             </form>
         </field>
@@ -29,20 +28,21 @@
         <field name="arch" type="xml">
             <form string="Reverse Payment">
                 <group>
-                   <field name="file_seq_num"
-       placeholder="Enter ICICI File Sequence Number"/>
+                    <field name="payslip_id" readonly="1"/>
+                    <field name="file_seq_num" required="1" placeholder="Enter ICICI File Sequence Number"/>
                 </group>
-
                 <footer>
                     <button
                         name="action_reverse"
-                        string="Reverse"
+                        string="Reverse Payment"
                         type="object"
-                        class="btn-primary"/>
-
+                        class="btn-primary"
+                    />
                     <button
                         string="Cancel"
-                        special="cancel"/>
+                        special="cancel"
+                        class="btn-secondary"
+                    />
                 </footer>
             </form>
         </field>

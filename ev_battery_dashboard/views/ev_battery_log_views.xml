@@ -1,0 +1,174 @@
+<odoo>
+    <!-- EV Battery Log Form View -->
+    <record id="view_ev_battery_log_form" model="ir.ui.view">
+        <field name="name">ev.battery.log.form</field>
+        <field name="model">ev.battery.log</field>
+        <field name="arch" type="xml">
+            <form string="EV Battery KPI Log">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group string="Vehicle &amp; Device">
+                            <field name="vehicle_id"/>
+                            <field name="device_id"/>
+                            <field name="date"/>
+                            <field name="odometer"/>
+                            <field name="trip_distance"/>
+                        </group>
+                        <group string="Import Info">
+                            <field name="import_batch_id"/>
+                            <field name="raw_import_source"/>
+                        </group>
+                    </group>
+                    <group string="1. Battery SOH &amp; Degradation Rate">
+                        <group>
+                            <field name="soh"/>
+                            <field name="degradation_rate"/>
+                        </group>
+                    </group>
+                    <group string="2. Energy Efficiency">
+                        <group>
+                            <field name="energy_efficiency"/>
+                        </group>
+                    </group>
+                    <group string="3. SOC Drop per Trip">
+                        <group>
+                            <field name="soc_start"/>
+                            <field name="soc_end"/>
+                            <field name="soc_drop"/>
+                        </group>
+                    </group>
+                    <group string="4. Charging Behaviour &amp; Cycle Stress">
+                        <group>
+                            <field name="charge_type"/>
+                            <field name="cycle_stress_score"/>
+                        </group>
+                    </group>
+                    <group string="5. Battery Temperature Stress">
+                        <group>
+                            <field name="avg_temperature"/>
+                            <field name="max_temperature"/>
+                            <field name="temperature_stress_score"/>
+                        </group>
+                    </group>
+                    <group string="6. Advanced Cell Health &amp; Eco Analytics">
+                        <group>
+                            <field name="regen_efficiency"/>
+                            <field name="cell_imbalance"/>
+                        </group>
+                        <group>
+                            <field name="internal_resistance"/>
+                            <field name="co2_savings"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+
+    </record>
+
+    <!-- EV Battery Log List View -->
+    <record id="view_ev_battery_log_list" model="ir.ui.view">
+        <field name="name">ev.battery.log.list</field>
+        <field name="model">ev.battery.log</field>
+        <field name="arch" type="xml">
+            <list string="EV Battery Logs">
+                <field name="name"/>
+                <field name="vehicle_id"/>
+                <field name="date"/>
+                <field name="soh" decoration-danger="soh &lt; 85" decoration-warning="soh &gt;= 85 and soh &lt; 92" decoration-success="soh &gt;= 92" widget="badge"/>
+                <field name="degradation_rate"/>
+                <field name="energy_efficiency"/>
+                <field name="soc_drop"/>
+                <field name="charge_type"/>
+                <field name="cycle_stress_score" decoration-danger="cycle_stress_score &gt; 60" decoration-success="cycle_stress_score &lt;= 35" widget="badge"/>
+                <field name="avg_temperature"/>
+                <field name="temperature_stress_score" decoration-danger="temperature_stress_score &gt; 60" decoration-success="temperature_stress_score &lt;= 35" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- EV Battery Log Search View -->
+    <record id="view_ev_battery_log_search" model="ir.ui.view">
+        <field name="name">ev.battery.log.search</field>
+        <field name="model">ev.battery.log</field>
+        <field name="arch" type="xml">
+            <search string="Search EV Battery Logs">
+                <field name="name"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- EV Battery Log Graph View -->
+    <record id="view_ev_battery_log_graph" model="ir.ui.view">
+        <field name="name">ev.battery.log.graph</field>
+        <field name="model">ev.battery.log</field>
+        <field name="arch" type="xml">
+            <graph string="EV Battery Analysis" sample="1">
+                <field name="vehicle_id"/>
+                <field name="soh" type="measure"/>
+                <field name="energy_efficiency" type="measure"/>
+                <field name="temperature_stress_score" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- EV Battery Log Pivot View -->
+    <record id="view_ev_battery_log_pivot" model="ir.ui.view">
+        <field name="name">ev.battery.log.pivot</field>
+        <field name="model">ev.battery.log</field>
+        <field name="arch" type="xml">
+            <pivot string="EV Battery Analysis" sample="1">
+                <field name="vehicle_id" type="row"/>
+                <field name="date" type="col"/>
+                <field name="soh" type="measure"/>
+                <field name="degradation_rate" type="measure"/>
+                <field name="energy_efficiency" type="measure"/>
+                <field name="soc_drop" type="measure"/>
+                <field name="temperature_stress_score" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Window Action: Standard EV Battery Logs -->
+    <record id="action_ev_battery_log" model="ir.actions.act_window">
+        <field name="name">Battery KPI Logs</field>
+        <field name="res_model">ev.battery.log</field>
+        <field name="view_mode">list,form,graph,pivot</field>
+        <field name="search_view_id" ref="view_ev_battery_log_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Record your first EV battery log!
+            </p>
+            <p>
+                Log SOH, efficiency, SOC drops, cycling stress, and temperatures.
+            </p>
+        </field>
+    </record>
+
+    <!-- Client Action: EV Battery Custom Dashboard -->
+    <record id="action_ev_battery_dashboard" model="ir.actions.client">
+        <field name="name">EV Battery Dashboard</field>
+        <field name="tag">ev_battery_dashboard_tag</field>
+    </record>
+
+    <!-- Menu Structure -->
+    <menuitem id="menu_ev_battery_root"
+              name="EV Battery Management"
+              web_icon="ev_battery_dashboard,static/description/icon.png"
+              sequence="20"/>
+
+    <menuitem id="menu_ev_battery_dashboard"
+              name="Dashboard"
+              parent="menu_ev_battery_root"
+              action="action_ev_battery_dashboard"
+              sequence="10"/>
+
+    <menuitem id="menu_ev_battery_logs"
+              name="Battery Logs"
+              parent="menu_ev_battery_root"
+              action="action_ev_battery_log"
+              sequence="20"/>
+</odoo>

@@ -211,26 +211,26 @@
                             <h5 class="section-title mt-4">Permanent Address</h5>
                             <div class="row g-3">
                                 <div class="col-md-3">
-                                    <label>Street</label>
+                                    <label>House/Building No</label>
                                     <input name="private_street" class="form-control"
-                                        t-att-value="employee.private_street" />
+                                        t-att-value="employee.private_street" placeholder="House No., Flat, Street Name" required="1"/>
                                 </div>
                                 <div class="col-md-3">
-                                    <label>Street 2</label>
+                                    <label>Street/Landmark Name</label>
                                     <input name="private_street2" class="form-control"
-                                        t-att-value="employee.private_street2" />
+                                        t-att-value="employee.private_street2" placeholder="Apartment, Suite, Unit, Landmark" required="1"/>
                                 </div>
                                 <div class="col-md-3">
                                     <label>City</label>
                                     <input name="city" class="form-control"
                                         t-att-value="employee.private_city"
-                                        required="1" />
+                                        required="1" placeholder="City"/>
 
                                 </div>
                                 <div class="col-md-3">
                                     <label>Zip</label>
                                     <input name="zip" class="form-control"
-                                        t-att-value="employee.private_zip" />
+                                        t-att-value="employee.private_zip" placeholder="Zip Code" required="1"/>
                                 </div>
                             </div>
 

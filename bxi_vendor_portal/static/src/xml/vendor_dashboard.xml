@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+
+<t t-name="bxi_vendor_portal.VendorDashboard">
+    <div class="vd_root o_action" style="height: 100%; overflow-y: auto; background: #0f0f1a;">
+        <!-- ── Header ───────────────────────────────────────────────── -->
+        <div class="vd_header">
+            <div class="vd_header_left">
+                <div class="vd_logo">🏢</div>
+                <div>
+                    <h1 class="vd_title">Vendor Analytics Dashboard</h1>
+                    <p class="vd_subtitle">BXI Vendor Management Portal — Live Insights</p>
+                </div>
+            </div>
+            <div class="vd_header_right">
+                <div class="vd_refresh_badge">
+                    <span class="vd_dot"></span> Live
+                </div>
+            </div>
+        </div>
+
+        <!-- ── KPI Strip ─────────────────────────────────────────────── -->
+        <div class="vd_kpi_strip">
+            <div class="vd_kpi_card vd_kpi_total" t-on-click="() => this.openVendors({})">
+                <div class="vd_kpi_icon">👥</div>
+                <div class="vd_kpi_body">
+                    <div class="vd_kpi_value"><t t-esc="data.total_vendors"/></div>
+                    <div class="vd_kpi_label">Total Vendors</div>
+                </div>
+            </div>
+            <div class="vd_kpi_card vd_kpi_active" t-on-click="() => this.openVendors({state: 'active'})">
+                <div class="vd_kpi_icon">✅</div>
+                <div class="vd_kpi_body">
+                    <div class="vd_kpi_value"><t t-esc="data.by_state.active"/></div>
+                    <div class="vd_kpi_label">Active</div>
+                </div>
+            </div>
+            <div class="vd_kpi_card vd_kpi_pending" t-on-click="() => this.openVendors({pending: true})">
+                <div class="vd_kpi_icon">⏳</div>
+                <div class="vd_kpi_body">
+                    <div class="vd_kpi_value"><t t-esc="data.by_state.pending"/></div>
+                    <div class="vd_kpi_label">Pending Approval</div>
+                </div>
+            </div>
+            <div class="vd_kpi_card vd_kpi_avl" t-on-click="() => this.openVendors({avl: true})">
+                <div class="vd_kpi_icon">📋</div>
+                <div class="vd_kpi_body">
+                    <div class="vd_kpi_value"><t t-esc="data.avl_vendors"/></div>
+                    <div class="vd_kpi_label">On AVL</div>
+                </div>
+            </div>
+            <div class="vd_kpi_card vd_kpi_blocked" t-on-click="() => this.openVendors({state: 'blocked'})">
+                <div class="vd_kpi_icon">🚫</div>
+                <div class="vd_kpi_body">
+                    <div class="vd_kpi_value"><t t-esc="data.by_state.blocked"/></div>
+                    <div class="vd_kpi_label">Blocked</div>
+                </div>
+            </div>
+            <div class="vd_kpi_card vd_kpi_asn" t-on-click="() => this.openAsns({})">
+                <div class="vd_kpi_icon">🚚</div>
+                <div class="vd_kpi_body">
+                    <div class="vd_kpi_value"><t t-esc="data.total_asns"/></div>
+                    <div class="vd_kpi_label">Total ASNs</div>
+                </div>
+            </div>
+            <div class="vd_kpi_card vd_kpi_expiry" t-on-click="() => this.openExpiringDocs()">
+                <div class="vd_kpi_icon">📅</div>
+                <div class="vd_kpi_body">
+                    <div class="vd_kpi_value"><t t-esc="data.expiring_documents"/></div>
+                    <div class="vd_kpi_label">Docs Expiring (30d)</div>
+                </div>
+            </div>
+            <div class="vd_kpi_card vd_kpi_expired" t-on-click="() => this.openExpiredDocs()">
+                <div class="vd_kpi_icon">⚠️</div>
+                <div class="vd_kpi_body">
+                    <div class="vd_kpi_value"><t t-esc="data.expired_documents"/></div>
+                    <div class="vd_kpi_label">Expired Documents</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Main Grid ─────────────────────────────────────────────── -->
+        <div class="vd_grid">
+
+            <!-- Vendor Status Donut -->
+            <div class="vd_panel vd_panel_chart">
+                <div class="vd_panel_header">
+                    <h3>Vendor Status Distribution</h3>
+                </div>
+                <div class="vd_panel_body">
+                    <canvas id="vendorStatusChart" height="260"></canvas>
+                </div>
+            </div>
+
+            <!-- Pending Approvals by Level -->
+            <div class="vd_panel vd_panel_approvals">
+                <div class="vd_panel_header">
+                    <h3>⏳ Pending Approvals</h3>
+                </div>
+                <div class="vd_panel_body">
+                    <div class="vd_approval_row" t-on-click="() => this.openVendors({pending: true})">
+                        <div class="vd_approval_level vd_l1">L1</div>
+                        <div class="vd_approval_label">Department Manager</div>
+                        <div class="vd_approval_bar_wrap">
+                            <div class="vd_approval_bar" t-attf-style="width:#{Math.min((data.pending_approvals.l1 / (data.total_vendors || 1)) * 100, 100)}%"></div>
+                        </div>
+                        <div class="vd_approval_count"><t t-esc="data.pending_approvals.l1"/></div>
+                    </div>
+                    <div class="vd_approval_row" t-on-click="() => this.openVendors({pending: true})">
+                        <div class="vd_approval_level vd_l2">L2</div>
+                        <div class="vd_approval_label">Finance Head</div>
+                        <div class="vd_approval_bar_wrap">
+                            <div class="vd_approval_bar vd_bar_l2" t-attf-style="width:#{Math.min((data.pending_approvals.l2 / (data.total_vendors || 1)) * 100, 100)}%"></div>
+                        </div>
+                        <div class="vd_approval_count"><t t-esc="data.pending_approvals.l2"/></div>
+                    </div>
+                    <div class="vd_approval_row" t-on-click="() => this.openVendors({pending: true})">
+                        <div class="vd_approval_level vd_l3">L3</div>
+                        <div class="vd_approval_label">Director / CFO</div>
+                        <div class="vd_approval_bar_wrap">
+                            <div class="vd_approval_bar vd_bar_l3" t-attf-style="width:#{Math.min((data.pending_approvals.l3 / (data.total_vendors || 1)) * 100, 100)}%"></div>
+                        </div>
+                        <div class="vd_approval_count"><t t-esc="data.pending_approvals.l3"/></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ASN Status Chart -->
+            <div class="vd_panel vd_panel_chart">
+                <div class="vd_panel_header">
+                    <h3>🚚 Shipment (ASN) Status</h3>
+                </div>
+                <div class="vd_panel_body">
+                    <canvas id="asnStatusChart" height="260"></canvas>
+                </div>
+            </div>
+
+            <!-- Category Breakdown -->
+            <div class="vd_panel vd_panel_chart">
+                <div class="vd_panel_header">
+                    <h3>🏷️ Vendors by Category</h3>
+                </div>
+                <div class="vd_panel_body">
+                    <canvas id="categoryChart" height="260"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Vendors Table -->
+            <div class="vd_panel vd_panel_wide">
+                <div class="vd_panel_header">
+                    <h3>🏆 Top Vendors by Performance Score</h3>
+                </div>
+                <div class="vd_panel_body">
+                    <table class="vd_table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Vendor</th>
+                                <th>Code</th>
+                                <th>Score</th>
+                                <th>Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="data.top_vendors" t-as="v" t-key="v_index">
+                                <tr>
+                                    <td><t t-esc="v_index + 1"/></td>
+                                    <td><t t-esc="v.name"/></td>
+                                    <td class="vd_code_cell"><t t-esc="v.code"/></td>
+                                    <td>
+                                        <div class="vd_score_bar_wrap">
+                                            <div class="vd_score_bar"
+                                                 t-attf-style="width:#{v.score}%; background: #{v.score >= 90 ? '#22c55e' : v.score >= 75 ? '#3b82f6' : v.score >= 60 ? '#f59e0b' : '#ef4444'}">
+                                            </div>
+                                            <span class="vd_score_label"><t t-esc="v.score"/>%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span t-attf-class="vd_grade #{v.rating.startsWith('A') ? 'vd_grade_a' : v.rating.startsWith('B') ? 'vd_grade_b' : v.rating.startsWith('C') ? 'vd_grade_c' : 'vd_grade_d'}">
+                                            <t t-esc="v.rating"/>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </t>
+                            <t t-if="!data.top_vendors or data.top_vendors.length === 0">
+                                <tr><td colspan="5" class="text-center text-muted py-3">No rating data yet.</td></tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</t>
+
+</templates>

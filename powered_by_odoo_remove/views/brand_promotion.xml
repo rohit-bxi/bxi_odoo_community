@@ -2,6 +2,8 @@
 <!-- Copyright © 2025 TugIT. All rights reserved. -->
 <odoo>
     <template id="remove_brand_promotion" inherit_id="web.brand_promotion">
-        <xpath expr="//div[contains(@class, 'o_brand_promotion')]" position="replace"/>
+        <xpath expr="//div[contains(@class, 'o_brand_promotion')]" position="attributes">
+            <attribute name="style">display: none !important;</attribute>
+        </xpath>
     </template>
 </odoo>
