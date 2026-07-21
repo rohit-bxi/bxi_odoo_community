@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Top-level Application Menu
+    ============================================================ -->
+    <menuitem id="menu_shift_management_root"
+              name="Shift Management"
+              sequence="80"
+              groups="bxi_shift_management.group_shift_user"/>
+
+    <!-- ============================================================
+         Sub-menus
+    ============================================================ -->
+
+    <!-- My Requests — visible to all shift users -->
+    <menuitem id="menu_shift_my_requests"
+              name="My Requests"
+              parent="menu_shift_management_root"
+              action="action_shift_request_my"
+              sequence="10"
+              groups="bxi_shift_management.group_shift_user"/>
+
+    <!-- Team Requests — visible to all (record rules limit what they see) -->
+    <menuitem id="menu_shift_team_requests"
+              name="Team Requests"
+              parent="menu_shift_management_root"
+              action="action_shift_request_team"
+              sequence="20"
+              groups="bxi_shift_management.group_shift_user"/>
+
+    <!-- All Requests — HR/Admin only -->
+    <menuitem id="menu_shift_all_requests"
+              name="All Requests"
+              parent="menu_shift_management_root"
+              action="action_shift_request_all"
+              sequence="30"
+              groups="bxi_shift_management.group_shift_hr"/>
+
+</odoo>

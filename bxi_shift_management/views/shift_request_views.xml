@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Form View
+    ============================================================ -->
+    <record id="view_shift_request_form" model="ir.ui.view">
+        <field name="name">bxi.shift.request.form</field>
+        <field name="model">bxi.shift.request</field>
+        <field name="arch" type="xml">
+            <form string="Shift Change Request">
+                <header>
+                    <!-- Submit -->
+                    <button name="action_submit"
+                            string="Submit"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'draft'"/>
+
+                    <!-- Manager Approve -->
+                    <button name="action_manager_approve"
+                            string="Approve (Manager)"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'manager_approval' or not can_manager_approve"/>
+
+                    <!-- HR Approve -->
+                    <button name="action_hr_approve"
+                            string="Approve (HR)"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'hr_approval' or not can_hr_approve"/>
+
+                    <!-- Refuse (Manager stage) -->
+                    <button name="action_refuse"
+                            string="Refuse"
+                            type="object"
+                            class="btn-danger"
+                            invisible="state not in ('manager_approval', 'hr_approval')"/>
+
+                    <!-- Cancel (employee) -->
+                    <button name="action_cancel"
+                            string="Cancel"
+                            type="object"
+                            invisible="state not in ('draft', 'manager_approval')"/>
+
+                    <!-- Reset to Draft (HR/Admin) -->
+                    <button name="action_reset_to_draft"
+                            string="Reset to Draft"
+                            type="object"
+                            groups="bxi_shift_management.group_shift_hr"
+                            invisible="state not in ('refused', 'cancelled', 'approved')"/>
+
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,manager_approval,hr_approval,approved"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <!-- Main Info -->
+                    <group string="Request Details">
+                        <group>
+                            <field name="employee_id"
+                                   readonly="1"
+                                   options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_delete': True}"/>
+                            <field name="department_id"
+                                   readonly="1"
+                                   options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_delete': True}"/>
+                            <field name="manager_id"
+                                   readonly="1"
+                                   options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_delete': True}"/>
+                            <field name="company_id"
+                                   readonly="1"
+                                   groups="base.group_multi_company"
+                                   options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_delete': True}"/>
+                        </group>
+                        <group>
+                            <field name="request_date" readonly="1"/>
+                            <field name="date_from"
+                                   readonly="state != 'draft'"/>
+                            <field name="date_to"
+                                   readonly="state != 'draft'"/>
+                            <field name="requested_shift_id"
+                                   readonly="state != 'draft'"
+                                   options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_delete': True}"/>
+                            <field name="original_shift_id"
+                                   readonly="1"
+                                   invisible="not original_shift_id"
+                                   options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_delete': True}"/>
+                        </group>
+                    </group>
+
+                    <field name="reason"
+                            nolabel="1"
+                            placeholder="Provide the reason for the shift change request..."
+                            readonly="state != 'draft'"/>
+
+                    <group string="Attachments">
+                        <field name="attachment_ids"
+                               widget="many2many_binary"
+                               nolabel="1"
+                               readonly="state != 'draft'"/>
+                    </group>
+
+                    <!-- Manager Approval Section -->
+                    <group string="Manager Approval" invisible="state == 'draft'">
+                        <group>
+                            <field name="manager_approved_by" readonly="1"
+                                   options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_delete': True}"/>
+                            <field name="manager_approved_date" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="manager_remark"
+                                   placeholder="Manager's remarks..."
+                                   readonly="state not in ('manager_approval',) or not can_manager_approve"/>
+                        </group>
+                    </group>
+
+                    <!-- HR Approval Section -->
+                    <group string="HR Approval"
+                           invisible="state in ('draft', 'manager_approval')">
+                        <group>
+                            <field name="hr_approved_by" readonly="1"
+                                   options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_delete': True}"/>
+                            <field name="hr_approved_date" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="hr_remark"
+                                   placeholder="HR's remarks..."
+                                   readonly="state != 'hr_approval' or not can_hr_approve"/>
+                        </group>
+                    </group>
+
+                    <!-- Refusal Info -->
+                    <group string="Refusal Details" invisible="state != 'refused'">
+                        <field name="refused_by" readonly="1"
+                               options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_delete': True}"/>
+                        <field name="refused_date" readonly="1"/>
+                    </group>
+
+                    <!-- Schedule Status -->
+                    <group string="Schedule Application Status"
+                           invisible="state != 'approved'">
+                        <field name="schedule_applied" readonly="1"/>
+                        <field name="schedule_reverted" readonly="1"/>
+                    </group>
+
+                    <!-- Hidden compute fields -->
+                    <field name="can_manager_approve" invisible="1"/>
+                    <field name="can_hr_approve" invisible="1"/>
+                </sheet>
+
+                <!-- Chatter -->
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         List View
+    ============================================================ -->
+    <record id="view_shift_request_list" model="ir.ui.view">
+        <field name="name">bxi.shift.request.list</field>
+        <field name="model">bxi.shift.request</field>
+        <field name="arch" type="xml">
+            <list string="Shift Requests"
+                  decoration-success="state == 'approved'"
+                  decoration-danger="state == 'refused'"
+                  decoration-warning="state in ('manager_approval', 'hr_approval')">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="requested_shift_id"/>
+                <field name="request_date"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+
+    <!-- ============================================================
+         Search View
+    ============================================================ -->
+    <record id="view_shift_request_search" model="ir.ui.view">
+        <field name="name">bxi.shift.request.search</field>
+        <field name="model">bxi.shift.request</field>
+        <field name="arch" type="xml">
+            <search string="Shift Requests">
+                <field name="name" string="Reference"/>
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <field name="requested_shift_id"/>
+
+                <filter string="My Requests" name="my_requests"
+                        domain="[('employee_id.user_id', '=', uid)]"/>
+                <filter string="Draft" name="draft"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter string="Pending Manager" name="pending_manager"
+                        domain="[('state', '=', 'manager_approval')]"/>
+                <filter string="Pending HR" name="pending_hr"
+                        domain="[('state', '=', 'hr_approval')]"/>
+                <filter string="Approved" name="approved"
+                        domain="[('state', '=', 'approved')]"/>
+                <filter string="Refused" name="refused"
+                        domain="[('state', '=', 'refused')]"/>
+                <filter string="Cancelled" name="cancelled"
+                        domain="[('state', '=', 'cancelled')]"/>
+
+                <separator/>
+
+                <filter string="Employee" name="by_employee"
+                        context="{'group_by': 'employee_id'}"/>
+                <filter string="Department" name="by_department"
+                        context="{'group_by': 'department_id'}"/>
+                <filter string="Status" name="by_state"
+                        context="{'group_by': 'state'}"/>
+                <filter string="From Date" name="by_date_from"
+                        context="{'group_by': 'date_from'}"/>
+            </search>
+        </field>
+    </record>
+
+
+    <!-- ============================================================
+         Actions
+    ============================================================ -->
+    <!-- All Requests (HR/Admin) -->
+    <record id="action_shift_request_all" model="ir.actions.act_window">
+        <field name="name">All Shift Requests</field>
+        <field name="res_model">bxi.shift.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_shift_request_search"/>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No shift requests found.
+            </p>
+            <p>
+                Employees can raise shift change requests from the
+                <b>My Requests</b> menu.
+            </p>
+        </field>
+    </record>
+
+    <!-- My Requests (Employee) -->
+    <record id="action_shift_request_my" model="ir.actions.act_window">
+        <field name="name">My Shift Requests</field>
+        <field name="res_model">bxi.shift.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_shift_request_search"/>
+        <field name="domain">[('employee_id.user_id', '=', uid)]</field>
+        <field name="context">{'search_default_my_requests': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No shift requests yet.
+            </p>
+            <p>
+                Click <b>New</b> to request a temporary shift change.
+            </p>
+        </field>
+    </record>
+
+    <!-- Team Requests (Manager view — all records visible per record rules) -->
+    <record id="action_shift_request_team" model="ir.actions.act_window">
+        <field name="name">Team Shift Requests</field>
+        <field name="res_model">bxi.shift.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_shift_request_search"/>
+        <field name="context">{'search_default_pending_manager': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No pending shift requests from your team.
+            </p>
+        </field>
+    </record>
+
+</odoo>

@@ -10,14 +10,27 @@
         <field name="name">contract.list</field>
         <field name="model">project.contract.management</field>
         <field name="arch" type="xml">
-            <list>
-                <field name="name"/>
-                <field name="client_ids"/>
-                <field name="contract_amount"/>
-                <field name="stage_id"/>
+            <list string="Contracts" decoration-info="stage_id == 1" decoration-success="stage_id == 4">
+                <field name="name" string="Contract Name"/>
+                <field name="lead_id" string="Opportunity"/>
+                <field name="client_ids" widget="many2many_tags"/>
+                <field name="industry_id"/>
+                <field name="service_line_id" options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_delete': True}"/>
+                <field name="contract_type"/>
+                <field name="billing_cycle"/>
+                <field name="contract_start_date"/>
+                <field name="contract_end_date" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
+                <field name="contract_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="currency_id" column_invisible="True"/>
+
+                <field name="stage_id" widget="badge"/>
             </list>
+
+
         </field>
     </record>
+
 
     <record id="view_contract_kanban" model="ir.ui.view">
         <field name="name">contract.kanban</field>
@@ -34,8 +47,6 @@
                 <field name="currency_id"/>
                 <field name="contract_start_date"/>
                 <field name="contract_end_date"/>
-                <field name="progress_percent"/>
-                <field name="progress_color"/>
                 <field name="probability"/>
 
                 <templates>
@@ -78,28 +89,13 @@
 
                                 <!-- DATES -->
                                 <div class="small text-muted mb-3">
-                                    <i class="fa fa-calendar me-1"/>
+                                    <i class="fa fa-calendar me-1" title="Dates"/>
                                     <field name="contract_start_date"/>
                                     →
                                     <field name="contract_end_date"/>
                                 </div>
 
-                                <!-- PROGRESS -->
-                                <div>
 
-                                    <div class="d-flex justify-content-between small mb-1">
-                                        <span>Progress</span>
-                                        <span><field name="progress_percent"/>%</span>
-                                    </div>
-
-                                    <div class="progress contract_progress">
-                                        <div t-att-class="'progress-bar ' + record.progress_color.raw_value"
-                                             role="progressbar"
-                                             t-att-style="'width: %s%%' % record.progress_percent.raw_value">
-                                        </div>
-                                    </div>
-
-                                </div>
 
                             </div>
 
@@ -121,12 +117,14 @@
                 <header>
                     <field name="stage_id" widget="statusbar" options="{'clickable': True}"/>
 
-                    <button name="action_generate_quarters"
+                    <button name="action_create_project"
                             type="object"
-                            string="Generate Quarters"
+                            string="Create Project"
                             class="btn-primary"
-                            icon="fa-calculator"/>
+                            icon="fa-plus"/>
+
                 </header>
+
 
                 <sheet>
 
@@ -148,7 +146,16 @@
                             <field name="client_count" widget="statinfo" string="Clients"/>
                         </button>
 
+                        <button type="object"
+                                name="action_view_invoices"
+                                class="oe_stat_button"
+                                icon="fa-pencil-square-o">
+
+                            <field name="invoice_count" widget="statinfo" string="Invoices"/>
+                        </button>
+
                     </div>
+
 
                     <div class="oe_title">
                         <h1>
@@ -157,25 +164,28 @@
                     </div>
 
                     <group>
-                        <group>
+                        <group string="Basic Classification">
                             <field name="lead_id"/>
+                            <field name="industry_id" required="1"/>
+                            <field name="service_line_id" options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_delete': True}"/>
+                            <field name="client_ids" widget="many2many_tags" required="1"/>
+                            <field name="project_ids" widget="many2many_tags"/>
                             <field name="sale_order_ids" widget="many2many_tags"/>
                         </group>
-                        <group string="Project and Client">
-                            <field name="project_ids" widget="many2many_tags"/>
-                            <field name="client_ids" widget="many2many_tags"/>
-                        </group>
 
-                        <group string="Contract Type">
-                            <field name="contract_type"/>
-                            <field name="billing_cycle"/>
+                        <group string="Billing &amp; Value">
+                            <field name="contract_type" required="1"/>
+                            <field name="billing_cycle" required="1"/>
                             <field name="milestone_no" invisible="billing_cycle != 'milestone'"/>
+                            <field name="contract_amount" required="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="currency_id" options="{'no_open': True, 'no_create': True}"/>
+                            <field name="company_id" required="1" groups="base.group_multi_company" options="{'no_create': True}"/>
                         </group>
                     </group>
 
-                    <group string="Contract Duration">
+                    <group string="Duration &amp; Timeline">
                         <group>
-                            <field name="contract_start_date"/>
+                            <field name="contract_start_date" required="1"/>
                             <field name="contract_end_date"/>
                         </group>
                         <group>
@@ -183,12 +193,7 @@
                         </group>
                     </group>
 
-                    <group string="Financial Details">
-                        <group>
-                            <field name="contract_amount"/>
-                            <field name="currency_id"/>
-                        </group>
-                    </group>
+
 
                     <notebook>
 
@@ -200,43 +205,29 @@
                             </group>
                         </page>
 
-                        <page string="Quarterly Breakdown">
+                        <page string="Invoices">
+                            <field name="invoice_ids">
+                                <list>
 
-                            <div class="alert alert-info" role="alert">
-                                Click the "Generate Quarters" button to auto-create quarterly breakdown.
-                            </div>
-
-                            <div class="mb-2">
-                                <button name="action_auto_split_remaining"
-                                        type="object"
-                                        string="Auto Balance"
-                                        class="btn btn-secondary"
-                                        icon="fa-balance-scale"/>
-                            </div>
-
-                            <field name="contract_quarter_ids">
-                                <list editable="bottom">
-                                    <field name="year"/>
-                                    <field name="quarter"/>
-                                    <field name="amount"/>
-                                    <field name="billed"/>
+                                    <field name="name"/>
+                                    <field name="invoice_date"/>
+                                    <field name="partner_id"/>
+                                    <field name="amount_total"/>
+                                    <field name="state"/>
+                                    <field name="payment_state"/>
                                 </list>
                             </field>
-
-                            <group>
-                                <field name="total_quarter_amount" readonly="1"/>
-
-                                <div class="text-danger" invisible="not exceed_warning">
-                                    ⚠ Total exceeds Contract Amount!
-                                </div>
-                            </group>
-
                         </page>
+
+
 
                     </notebook>
 
                 </sheet>
+                <chatter/>
+
             </form>
+
         </field>
     </record>
 

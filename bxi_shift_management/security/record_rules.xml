@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Record Rules for bxi.shift.request
+    ============================================================ -->
+
+    <!--
+        Rule for regular employees (group_shift_user):
+        - Can see own requests
+        - Can see requests of employees they are the direct manager of
+    -->
+    <record id="shift_request_rule_employee" model="ir.rule">
+        <field name="name">Shift Request: Employee Own + Subordinates</field>
+        <field name="model_id" ref="model_bxi_shift_request"/>
+        <field name="domain_force">
+            [
+                '|',
+                ('employee_id.user_id', '=', user.id),
+                ('employee_id.parent_id.user_id', '=', user.id)
+            ]
+        </field>
+        <field name="groups" eval="[(4, ref('bxi_shift_management.group_shift_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!--
+        Rule for HR Officers: no domain restriction → see all records
+    -->
+    <record id="shift_request_rule_hr" model="ir.rule">
+        <field name="name">Shift Request: HR Officer - All Records</field>
+        <field name="model_id" ref="model_bxi_shift_request"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('bxi_shift_management.group_shift_hr'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Global Multi-Company Rule -->
+    <record id="bxi_shift_request_multi_company_rule" model="ir.rule">
+        <field name="name">Shift Request: Multi-Company Rule</field>
+        <field name="model_id" ref="model_bxi_shift_request"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+</odoo>

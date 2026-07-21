@@ -10,9 +10,11 @@
         "security/ir.model.access.csv",
         'views/contract_stage.xml',
         'views/contract_views.xml',
+        'views/service_line_views.xml',
         'views/menu.xml',
-
+        'views/account_move_views.xml',
     ],
+
     'assets': {
         'web.assets_backend': [
             'project_contract_management/static/src/css/contract_kanban.css',

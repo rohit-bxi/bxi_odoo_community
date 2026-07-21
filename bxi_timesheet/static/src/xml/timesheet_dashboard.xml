@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="bxi_timesheet.TimesheetDashboardTemplate" owl="1">
+    <div class="o_timesheet_dashboard_container">
+        <!-- ═══════════════════════════════════════════════════════════════════
+             Dashboard Header & Controls
+             ═══════════════════════════════════════════════════════════════════ -->
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 dashboard-header-panel">
+            <div class="d-flex align-items-center gap-3">
+                <h2 class="dashboard-title">Timesheet</h2>
+                
+                <!-- Own/Team Filter Toggles (for Managers, HR, Admins) -->
+                <t t-if="state.is_manager or state.is_hr or state.is_admin">
+                    <div class="btn-group btn-group-sm rounded-pill shadow-sm bg-white p-1 border" role="group">
+                        <button type="button" 
+                                t-attf-class="btn rounded-pill px-3 py-1 border-0 #{state.filter_type === 'own' ? 'btn-primary text-white shadow-sm' : 'btn-light text-secondary'}"
+                                t-on-click="() => this.setFilterType('own')">
+                            View Own
+                        </button>
+                        <button type="button" 
+                                t-attf-class="btn rounded-pill px-3 py-1 border-0 #{state.filter_type === 'team' ? 'btn-primary text-white shadow-sm' : 'btn-light text-secondary'}"
+                                t-on-click="() => this.setFilterType('team')">
+                            View Team
+                        </button>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Week Navigator and Employee Selector -->
+            <div class="d-flex align-items-center gap-2 flex-wrap control-group-right">
+                <!-- Employee Dropdown (if HR, Admin, or Manager in 'own' mode) -->
+                <t t-if="(state.is_hr or state.is_admin or state.is_manager) and state.filter_type === 'own'">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted fw-bold small">Employee:</span>
+                        <select class="form-select form-select-sm employee-dropdown border-radius-8 shadow-sm"
+                                t-on-change="onEmployeeChange">
+                            <t t-foreach="state.employee_options" t-as="emp" t-key="emp.id">
+                                <option t-att-value="emp.id" t-att-selected="state.selected_employee_id == emp.id">
+                                    <t t-esc="emp.name"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+                </t>
+
+                <!-- Week switcher -->
+                <div class="btn-group btn-group-sm shadow-sm" role="group">
+                    <button type="button" class="btn btn-light border fw-bold text-dark px-3" t-on-click="goToToday">Today</button>
+                    <button type="button" class="btn btn-light border text-dark" t-on-click="() => this.navigateWeek(-1)">
+                        <i class="oi oi-chevron-left"></i>
+                    </button>
+                    <span class="btn btn-light border fw-bold text-dark date-range-label px-3" disabled="disabled">
+                        <t t-esc="state.start_date_str"/> to <t t-esc="state.end_date_str"/>
+                    </span>
+                    <button type="button" class="btn btn-light border text-dark" t-on-click="() => this.navigateWeek(1)">
+                        <i class="oi oi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Spinner when loading -->
+        <t t-if="!state.loaded">
+            <div class="d-flex justify-content-center align-items-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </t>
+
+        <t t-else="">
+            <!-- Approval Status and Actions Panel (only in own timesheet view) -->
+            <t t-if="state.filter_type === 'own'">
+                <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-white border rounded shadow-sm">
+                    <!-- Status Badge -->
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="text-secondary small fw-bold">Week Status:</span>
+                        <t t-if="state.is_past_week and !(state.is_target_employee_manager or state.is_hr or state.is_admin)">
+                            <span class="badge bg-warning text-dark rounded-pill px-3 py-1">Past Week Locked (No Submission / Modification)</span>
+                        </t>
+                        <t t-elif="state.approved_count > 0 and state.submitted_count == 0 and state.draft_count == 0">
+                            <span class="badge bg-success rounded-pill px-3 py-1">Approved</span>
+                        </t>
+                        <t t-elif="state.submitted_count > 0">
+                            <span class="badge bg-info text-white rounded-pill px-3 py-1">Submitted (Pending Approval)</span>
+                        </t>
+                        <t t-elif="state.refused_count > 0 and state.submitted_count == 0">
+                            <span class="badge bg-danger rounded-pill px-3 py-1">Refused</span>
+                        </t>
+                        <t t-else="">
+                            <span class="badge bg-secondary rounded-pill px-3 py-1">Draft</span>
+                        </t>
+                        
+                        <!-- Small counts breakdown -->
+                        <span class="text-muted font-11 ms-2">
+                            (<t t-esc="state.approved_count"/> Approved · <t t-esc="state.submitted_count"/> Pending · <t t-esc="state.draft_count"/> Draft)
+                        </span>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- Submit Button (Disabled if past week for normal employee) -->
+                        <t t-if="state.draft_count > 0 and !(state.is_past_week and !(state.is_target_employee_manager or state.is_hr or state.is_admin))">
+                            <button type="button" class="btn btn-primary btn-sm px-4 rounded-pill text-white shadow-sm fw-bold"
+                                    t-on-click="submitTimesheet">
+                                Submit for Approval
+                            </button>
+                        </t>
+                        
+                        <!-- Manager / HR / Admin Actions -->
+                        <t t-if="state.submitted_count > 0 and (state.is_target_employee_manager or state.is_hr or state.is_admin)">
+                            <button type="button" class="btn btn-success btn-sm px-4 rounded-pill text-white shadow-sm fw-bold"
+                                    t-on-click="approveTimesheet">
+                                Approve Week
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm px-4 rounded-pill text-white shadow-sm fw-bold"
+                                    t-on-click="refuseTimesheet">
+                                Refuse Week
+                            </button>
+                        </t>
+                    </div>
+                </div>
+            </t>
+
+            <!-- ═══════════════════════════════════════════════════════════════════
+                 1. VIEW OWN (Weekly Timesheet Grid View)
+                 ═══════════════════════════════════════════════════════════════════ -->
+            <t t-if="state.filter_type === 'own'">
+                <div class="table-responsive shadow-sm rounded border bg-white grid-table-wrapper">
+                    <table class="table grid-table m-0 align-middle">
+                        <thead>
+                            <!-- Row 1: Day Titles (colspan 2) -->
+                            <tr class="table-light text-center border-bottom text-muted small">
+                                <th rowspan="3" class="row-project-task-header text-start py-3 ps-3 align-middle border-end">ACTIVITY</th>
+                                <th rowspan="3" class="row-description-header text-start py-3 ps-3 align-middle border-end" style="min-width: 160px;">Description</th>
+                                <t t-foreach="state.dates" t-as="d" t-key="d.date_str">
+                                    <th colspan="2" t-attf-class="day-header py-2 border-end #{
+                                        (d.day_name === 'Saturday' || d.day_name === 'Sunday' || d.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
+                                        d.is_today ? 'today-header' : ''
+                                    }">
+                                        <div class="day-name fw-bold text-dark"><t t-esc="d.day_name"/></div>
+                                        <div class="day-date text-muted font-11"><t t-esc="d.day_date"/></div>
+                                    </th>
+                                </t>
+                                <th rowspan="3" class="row-total-header py-3 fw-bold text-dark text-center align-middle">Total</th>
+                            </tr>
+                            
+                            <!-- Row 2: Sub-headers (Check-In / Check-out) -->
+                            <tr class="table-light text-center border-bottom text-muted small sub-headers-row">
+                                <t t-foreach="state.dates" t-as="d" t-key="'sub_' + d.date_str">
+                                    <th t-attf-class="py-1 font-11 border-start #{
+                                        (d.day_name === 'Saturday' || d.day_name === 'Sunday' || d.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
+                                        d.is_today ? 'today-column-cell' : ''
+                                    }" style="width: 4.5%;">Check-In</th>
+                                    <th t-attf-class="py-1 font-11 border-end #{
+                                        (d.day_name === 'Saturday' || d.day_name === 'Sunday' || d.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
+                                        d.is_today ? 'today-column-cell' : ''
+                                    }" style="width: 4.5%;">Check-out</th>
+                                </t>
+                            </tr>
+
+                            <!-- Row 3: Actual Attendance Times -->
+                            <tr class="table-light text-center border-bottom text-muted small attendance-times-row">
+                                <t t-foreach="state.dates" t-as="d" t-key="'time_' + d.date_str">
+                                    <th t-attf-class="py-1 font-11 checkin-time-cell border-start fw-bold #{
+                                        (d.day_name === 'Saturday' || d.day_name === 'Sunday' || d.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
+                                        d.is_today ? 'today-column-cell' : ''
+                                    }">
+                                        <t t-esc="d.check_in"/>
+                                    </th>
+                                    <th t-attf-class="py-1 font-11 checkout-time-cell border-end fw-bold #{
+                                        (d.day_name === 'Saturday' || d.day_name === 'Sunday' || d.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
+                                        d.is_today ? 'today-column-cell' : ''
+                                    }">
+                                        <t t-esc="d.check_out"/>
+                                    </th>
+                                </t>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Timesheet Row Entries -->
+                            <t t-if="state.grid_lines.length === 0">
+                                <tr>
+                                    <td colspan="17" class="text-center text-muted py-4 fs-6 fw-normal">
+                                        No timesheets logged for this week. Click "Add a line" to get started!
+                                    </td>
+                                </tr>
+                            </t>
+                            
+                            <t t-else="">
+                                <t t-foreach="state.grid_lines" t-as="line" t-key="'row_' + line.index">
+                                    <tr class="grid-row">
+                                        <!-- Project & Task -->
+                                        <td class="ps-3 py-3 border-end">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="row-index-badge small"><t t-esc="getRowBadge(line.index)"/></span>
+                                                <div class="d-inline-flex flex-column text-start">
+                                                    <span class="fw-bold text-dark small"><t t-esc="line.project_name"/></span>
+                                                    <span class="task-name-label small font-11 fw-semibold"><t t-esc="line.task_name"/></span>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <!-- Description -->
+                                        <td class="ps-3 py-3 border-end text-start small text-dark font-12">
+                                            <t t-esc="line.description || '-'"/>
+                                        </td>
+                                        
+                                        <!-- Daily Entry Inputs (colspan 2) -->
+                                        <t t-foreach="line.days_data" t-as="day" t-key="day.date_str">
+                                            <t t-set="d_idx" t-value="line.days_data.indexOf(day)"/>
+                                            <t t-set="d_dict" t-value="state.dates[d_idx]"/>
+                                            <td colspan="2" t-attf-class="day-cell p-0 text-center border-end #{
+                                                (day.hours_raw > 0.0) ? (
+                                                    day.state === 'approved' ? 'state-approved' : 
+                                                    day.state === 'submitted' ? 'state-submitted' : 
+                                                    day.state === 'refused' ? 'state-refused' : ''
+                                                ) : (
+                                                    (d_dict.day_name === 'Saturday' || d_dict.day_name === 'Sunday' || d_dict.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
+                                                    day.is_today ? 'today-column-cell' : ''
+                                                )
+                                            }">
+                                                <input type="text" 
+                                                       t-att-value="day.hours" 
+                                                       class="cell-time-input fw-semibold" 
+                                                       t-att-placeholder="'0:00'"
+                                                       t-att-disabled="(state.is_past_week or day.state === 'submitted' or day.state === 'approved' or day.state === 'refused') and !(state.is_target_employee_manager or state.is_hr or state.is_admin)"
+                                                       t-on-blur="(ev) => this.onCellBlur(ev, line, day.date_str)"/>
+                                            </td>
+                                        </t>
+
+                                        <!-- Row Total -->
+                                        <td class="text-center py-3 border-start bg-light fw-bold text-dark border-end-0 text-total-spent">
+                                            <t t-esc="line.total"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </t>
+
+                            <!-- Add a line action link (Hidden if past week or submitted/approved for employee) -->
+                            <t t-if="!((state.is_past_week or state.submitted_count > 0 or state.approved_count > 0) and !(state.is_target_employee_manager or state.is_hr or state.is_admin))">
+                                <tr class="add-line-row">
+                                    <td colspan="17" class="ps-3 py-3 text-start bg-light border-0">
+                                        <button class="btn btn-link btn-sm add-line-btn text-decoration-none d-inline-flex align-items-center gap-1 p-0 fw-bold" 
+                                                t-on-click="openAddRowModal">
+                                            <i class="oi oi-plus"></i> Add a line
+                                        </button>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                        
+                        <!-- Table Footer (Totals, DeskTime Productive Hours, Shift Hours) -->
+                        <tfoot>
+                            <!-- 1. Timesheet Logged Totals -->
+                            <tr class="table-totals-row border-top-2">
+                                <td colspan="2" class="ps-3 py-3 text-start fw-bold text-dark border-end" style="background-color: #dbe2e9;">Total Time Entry Hours</td>
+                                <t t-foreach="state.dates" t-as="d" t-key="'total_' + d.date_str">
+                                    <td colspan="2" t-attf-class="text-center py-3 fw-bold text-dark border-end #{
+                                        (d.day_name === 'Saturday' || d.day_name === 'Sunday' || d.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
+                                        d.is_today ? 'today-column-cell' : ''
+                                    }">
+                                        <t t-esc="d.daily_total"/>
+                                    </td>
+                                </t>
+                                <td class="text-center py-3 fw-bold text-white bg-coral-accent overall-total-cell border-end-0">
+                                    <t t-esc="state.overall_total"/>
+                                </td>
+                            </tr>
+
+                            <!-- 2. DeskTime Productive Hours -->
+                            <tr class="table-prod-hours-row border-top">
+                                <td colspan="2" class="ps-3 py-2 text-start fw-bold text-success border-end font-12 bg-light">
+                                    ACS Hours
+                                </td>
+                                <t t-foreach="state.dates" t-as="d" t-key="'prod_' + d.date_str">
+                                    <td colspan="2" t-attf-class="text-center py-2 fw-bold text-success font-12 border-end #{
+                                        (d.day_name === 'Saturday' || d.day_name === 'Sunday' || d.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
+                                        d.is_today ? 'today-column-cell' : ''
+                                    }">
+                                        <t t-esc="d.prod_hours"/>
+                                    </td>
+                                </t>
+                                <td class="text-center py-2 fw-bold text-success font-12 bg-light border-end-0">
+                                    <t t-esc="state.total_prod_str"/>
+                                </td>
+                            </tr>
+
+                            <!-- 3. Shift / Scheduled Hours -->
+                            <tr class="table-shift-hours-row border-top">
+                                <td colspan="2" class="ps-3 py-2 text-start fw-bold text-primary border-end font-12 bg-light">
+                                    Shift Hours
+                                </td>
+                                <t t-foreach="state.dates" t-as="d" t-key="'shift_' + d.date_str">
+                                    <td colspan="2" t-attf-class="text-center py-2 font-11 fw-bold text-primary border-end #{
+                                        (d.day_name === 'Saturday' || d.day_name === 'Sunday' || d.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
+                                        d.is_today ? 'today-column-cell' : ''
+                                    }">
+                                        <t t-esc="d.shift_hours"/>
+                                    </td>
+                                </t>
+                                <td class="text-center py-2 fw-bold text-primary font-12 bg-light border-end-0">
+                                    <t t-esc="state.total_shift_str"/>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Color Coding Legend (Exactly matches nomenclature & color coding) -->
+                <div class="d-flex align-items-center justify-content-center gap-4 mt-3 py-2 text-muted small">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rounded-circle shadow-sm" style="width: 20px; height: 20px; background-color: #ffff00; display: inline-block; border: 1px solid #d4d400;"></span>
+                        <span class="fw-bold text-dark font-12">Submitted For Approval</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rounded-circle shadow-sm" style="width: 20px; height: 20px; background-color: #ff8a8a; display: inline-block; border: 1px solid #ff5c5c;"></span>
+                        <span class="fw-bold text-dark font-12">Referred Back</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rounded-circle shadow-sm" style="width: 20px; height: 20px; background-color: #c2f0c2; display: inline-block; border: 1px solid #85e085;"></span>
+                        <span class="fw-bold text-dark font-12">Approved</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rounded-circle shadow-sm" style="width: 20px; height: 20px; background-color: #d1ecf1; display: inline-block; border: 1px solid #bee5eb;"></span>
+                        <span class="fw-bold text-dark font-12">Weekly Off</span>
+                    </div>
+                </div>
+            </t>
+
+            <!-- ═══════════════════════════════════════════════════════════════════
+                 2. VIEW TEAM (Subordinates / All Employees Weekly Summary)
+                 ═══════════════════════════════════════════════════════════════════ -->
+            <t t-if="state.filter_type === 'team'">
+                <div class="table-responsive shadow-sm rounded border bg-white team-table-wrapper">
+                    <table class="table team-table m-0 align-middle">
+                        <thead>
+                            <!-- Row 1: Day Headers -->
+                            <tr class="table-light text-center border-bottom text-muted small">
+                                <th rowspan="2" class="team-employee-header text-start py-3 ps-3 border-end align-middle">Employee</th>
+                                <t t-foreach="state.dates" t-as="d" t-key="d.date_str">
+                                    <th colspan="2" t-attf-class="day-header py-2 border-end #{d.is_today ? 'today-header' : ''}">
+                                        <div class="day-name fw-bold text-dark"><t t-esc="d.day_name"/>(<t t-esc="d.day_date"/>)</div>
+                                    </th>
+                                </t>
+                                <th rowspan="2" class="row-total-header py-3 fw-bold text-dark text-center align-middle border-start">Total Hours</th>
+                            </tr>
+                            <!-- Row 2: Sub-headers (Check-In / Check-out) -->
+                            <tr class="table-light text-center border-bottom text-muted small sub-headers-row">
+                                <t t-foreach="state.dates" t-as="d" t-key="'team_sub_' + d.date_str">
+                                    <th t-attf-class="py-1 font-11 border-start #{d.is_today ? 'today-column-cell' : ''}" style="width: 4.5%;">Check-In</th>
+                                    <th t-attf-class="py-1 font-11 border-end #{d.is_today ? 'today-column-cell' : ''}" style="width: 4.5%;">Check-out</th>
+                                </t>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-if="state.team_summary.length === 0">
+                                <tr>
+                                    <td colspan="16" class="text-center text-muted py-4 fs-6 fw-normal">
+                                        No team members found or no data available.
+                                    </td>
+                                </tr>
+                            </t>
+                            
+                            <t t-else="">
+                                <t t-foreach="state.team_summary" t-as="row" t-key="row.employee_id">
+                                    <!-- Employee Check-In / Check-Out Row -->
+                                    <tr class="team-row-attendance border-top">
+                                        <!-- Employee Name (rowspan 2) -->
+                                        <td rowspan="2" class="ps-3 py-3 border-end text-start fw-bold text-dark small align-middle bg-light">
+                                            <t t-esc="row.employee_name"/>
+                                        </td>
+                                        
+                                        <!-- Check In & Check Out values -->
+                                        <t t-foreach="row.day_data" t-as="day" t-key="day.date_str">
+                                            <td t-attf-class="text-center py-1 border-start checkin-time-cell font-12 fw-bold #{day.is_today ? 'today-column-cell' : ''}">
+                                                <t t-esc="day.check_in"/>
+                                            </td>
+                                            <td t-attf-class="text-center py-1 border-end checkout-time-cell font-12 fw-bold #{day.is_today ? 'today-column-cell' : ''}">
+                                                <t t-esc="day.check_out"/>
+                                            </td>
+                                        </t>
+
+                                        <!-- Total Hours (rowspan 2) -->
+                                        <td rowspan="2" t-attf-class="text-center py-3 fw-bold align-middle border-start #{row.total_hours_raw > 0 ? 'text-success bg-light' : 'text-danger bg-light'}">
+                                            <t t-esc="row.total_hours"/>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Employee Logged Hours Row -->
+                                    <tr class="team-row-hours border-bottom">
+                                        <t t-foreach="row.day_data" t-as="day" t-key="'hrs_' + day.date_str">
+                                            <td colspan="2" t-attf-class="text-center py-2 border-end text-dark fw-bold small #{day.is_today ? 'today-column-cell' : ''}">
+                                                <t t-esc="day.hours"/>
+                                            </td>
+                                        </t>
+                                    </tr>
+                                </t>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             Add Line Modal (Project/Task/Description selection dialog)
+             ═══════════════════════════════════════════════════════════════════ -->
+        <t t-if="state.show_add_row_modal">
+            <div class="modal fade show d-block bxi-custom-modal" tabindex="-1" role="dialog">
+                <div class="modal-backdrop fade show"></div>
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content border-0 shadow-lg rounded-12">
+                        <div class="modal-header border-bottom-0 pb-0">
+                            <h5 class="modal-title fw-bold text-dark pt-3 px-3">Add Timesheet Line</h5>
+                            <button type="button" class="btn-close" t-on-click="closeAddRowModal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body px-4 py-3">
+                            <!-- Project Select -->
+                            <div class="mb-3">
+                                <label class="form-label text-muted fw-bold small">Project</label>
+                                <select class="form-select" t-on-change="onProjectChange">
+                                    <option value="">— Select Project —</option>
+                                    <t t-foreach="state.projects" t-as="p" t-key="p.id">
+                                        <option t-att-value="p.id"><t t-esc="p.name"/></option>
+                                    </t>
+                                </select>
+                            </div>
+                            
+                            <!-- Task Select -->
+                            <div class="mb-3">
+                                <label class="form-label text-muted fw-bold small">Task</label>
+                                <select class="form-select" t-on-change="onTaskChange" t-att-disabled="!state.new_row_project_id">
+                                    <option value="">— Select Task (Optional) —</option>
+                                    <t t-foreach="filteredTasks" t-as="t" t-key="t.id">
+                                        <option t-att-value="t.id"><t t-esc="t.name"/></option>
+                                    </t>
+                                </select>
+                            </div>
+
+                            <!-- Description Input -->
+                            <div class="mb-3">
+                                <label class="form-label text-muted fw-bold small">Description / Notes</label>
+                                <input type="text" class="form-control" placeholder="e.g. Development work, Client Meeting..." t-on-input="onDescriptionChange"/>
+                            </div>
+
+                            <!-- Date and Hours Row -->
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label text-muted fw-bold small">Date</label>
+                                    <input type="date" class="form-control" t-att-value="state.new_row_date" t-on-change="onDateChange"/>
+                                    <t t-if="newRowDateError">
+                                        <div class="text-danger small mt-1 fw-bold"><t t-esc="newRowDateError"/></div>
+                                    </t>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label text-muted fw-bold small">Time Spent (Hours)</label>
+                                    <input type="text" class="form-control" placeholder="e.g. 8:00 or 1.5" t-on-input="onHoursChange"/>
+                                    <t t-if="newRowHoursError">
+                                        <div class="text-danger small mt-1 fw-bold"><t t-esc="newRowHoursError"/></div>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top-0 pt-0 pb-4 px-4 d-flex gap-2 justify-content-end">
+                            <button type="button" class="btn btn-light border px-4 rounded-pill fw-bold text-secondary btn-sm" t-on-click="closeAddRowModal">Cancel</button>
+                            <button type="button" class="btn btn-primary px-4 rounded-pill fw-bold btn-sm text-white shadow" t-on-click="confirmAddRow" t-att-disabled="!state.new_row_project_id || newRowHoursError || newRowDateError">Add Line</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </div>
+</t>
+
+</templates>
