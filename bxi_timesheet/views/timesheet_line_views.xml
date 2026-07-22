@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Custom Form View for Timesheet Line Approval -->
+    <record id="view_bxi_analytic_line_form" model="ir.ui.view">
+        <field name="name">account.analytic.line.form.bxi</field>
+        <field name="model">account.analytic.line</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <form string="Timesheet Approval Details">
+                <header>
+                    <button name="action_submit" string="Submit" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object" class="btn-success" invisible="state != 'submitted'"/>
+                    <button name="action_refuse" string="Refuse" type="object" class="btn-danger" invisible="state != 'submitted'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="employee_id" readonly="state in ('approved', 'refused')"/>
+                            <field name="date" readonly="state in ('approved', 'refused')"/>
+                            <field name="project_id" required="1" readonly="state in ('approved', 'refused')"/>
+                            <field name="task_id" readonly="state in ('approved', 'refused')"/>
+                        </group>
+                        <group>
+                            <field name="unit_amount" string="Duration (Hours)" widget="float_time" readonly="state in ('approved', 'refused')"/>
+                            <field name="name" string="Description" readonly="state in ('approved', 'refused')"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Custom Tree/List View for Timesheet Approval -->
+    <record id="view_bxi_analytic_line_tree" model="ir.ui.view">
+        <field name="name">account.analytic.line.tree.bxi</field>
+        <field name="model">account.analytic.line</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <list string="Timesheet Approvals" 
+                  decoration-muted="state == 'refused'" 
+                  decoration-info="state == 'submitted'" 
+                  decoration-success="state == 'approved'"
+                  create="true" 
+                  edit="true">
+                <field name="employee_id"/>
+                <field name="date"/>
+                <field name="project_id"/>
+                <field name="task_id"/>
+                <field name="name"/>
+                <field name="unit_amount" widget="float_time" sum="Total Hours"/>
+                <field name="state" widget="badge" 
+                       decoration-info="state == 'submitted'" 
+                       decoration-success="state == 'approved'" 
+                       decoration-warning="state == 'refused'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action for Timesheet Approvals -->
+    <record id="action_bxi_timesheet_approvals" model="ir.actions.act_window">
+        <field name="name">Approvals</field>
+        <field name="res_model">account.analytic.line</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', '=', 'submitted')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No timesheets pending approval.
+            </p>
+        </field>
+    </record>
+
+    <!-- Bind custom tree and form view IDs to action -->
+    <record id="action_bxi_timesheet_approvals_tree" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_bxi_analytic_line_tree"/>
+        <field name="act_window_id" ref="action_bxi_timesheet_approvals"/>
+    </record>
+
+    <record id="action_bxi_timesheet_approvals_form" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_bxi_analytic_line_form"/>
+        <field name="act_window_id" ref="action_bxi_timesheet_approvals"/>
+    </record>
+
+    <!-- Menu Item: Approvals (Visible to Manager/HR/Admin) -->
+    <menuitem id="menu_bxi_timesheet_approvals"
+              name="Approvals"
+              parent="hr_timesheet.timesheet_menu_root"
+              action="action_bxi_timesheet_approvals"
+              sequence="10"/>
+
+</odoo>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         DeskTime Submenu Category under Odoo Timesheets App
+         ============================================================ -->
+    <menuitem id="menu_bxi_desktime_root"
+              name="DeskTime Integration"
+              parent="hr_timesheet.timesheet_menu_root"
+              sequence="50"/>
+
+    <!-- DeskTime Logs (readable by internal users to see sync results/status) -->
+    <menuitem id="menu_bxi_desktime_logs"
+              name="Sync Logs"
+              parent="menu_bxi_desktime_root"
+              action="action_bxi_desktime_log"
+              sequence="10"/>
+
+    <!-- DeskTime Configurations (restricted to HR Manager/Admin) -->
+    <menuitem id="menu_bxi_desktime_config"
+              name="Configurations"
+              parent="menu_bxi_desktime_root"
+              action="action_bxi_desktime_config"
+              groups="hr.group_hr_manager"
+              sequence="20"/>
+
+</odoo>

@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_shift_request_user,bxi.shift.request user,model_bxi_shift_request,bxi_shift_management.group_shift_user,1,1,1,0
+access_shift_request_hr,bxi.shift.request hr,model_bxi_shift_request,bxi_shift_management.group_shift_hr,1,1,1,1
+access_shift_request_admin,bxi.shift.request admin,model_bxi_shift_request,bxi_shift_management.group_shift_admin,1,1,1,1

@@ -23,4 +23,25 @@
               parent="menu_contract_config"
               action="action_contract_stage"
               sequence="10"/>
-</odoo>
+
+    <!-- INDUSTRY ACTION -->
+    <record id="action_contract_industry" model="ir.actions.act_window">
+        <field name="name">Industries</field>
+        <field name="res_model">res.partner.industry</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- INDUSTRY MENU -->
+    <menuitem id="menu_contract_industry"
+              name="Industries"
+              parent="menu_contract_config"
+              action="action_contract_industry"
+              sequence="20"/>
+
+    <!-- SERVICE LINE MENU -->
+    <menuitem id="menu_contract_service_line"
+              name="Service Lines"
+              parent="menu_contract_config"
+              action="action_contract_service_line"
+              sequence="30"/>
+</odoo>

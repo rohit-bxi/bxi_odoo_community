@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_desktime_config_admin,bxi.desktime.config.admin,model_bxi_desktime_config,hr.group_hr_manager,1,1,1,1
+access_bxi_desktime_config_user,bxi.desktime.config.user,model_bxi_desktime_config,base.group_user,1,0,0,0
+access_bxi_desktime_log_admin,bxi.desktime.log.admin,model_bxi_desktime_log,hr.group_hr_manager,1,1,1,1
+access_bxi_desktime_log_officer,bxi.desktime.log.officer,model_bxi_desktime_log,hr.group_hr_user,1,1,1,1
+access_bxi_desktime_log_user,bxi.desktime.log.user,model_bxi_desktime_log,base.group_user,1,0,0,0
+access_bxi_desktime_sync_wizard,bxi.desktime.sync.wizard.user,model_bxi_desktime_sync_wizard,base.group_user,1,1,1,1

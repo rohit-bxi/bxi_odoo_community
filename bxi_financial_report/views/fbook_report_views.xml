@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_fbook_report_list" model="ir.ui.view">
+        <field name="name">fbook.report.list</field>
+        <field name="model">fbook.report</field>
+        <field name="arch" type="xml">
+            <list string="Fbook Reports" decoration-info="state == 'draft'" decoration-success="state == 'posted'" decoration-muted="state == 'cancel'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="amount"/>
+                <field name="currency_id" column_invisible="True"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'posted'" decoration-danger="state == 'cancel'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_fbook_report_form" model="ir.ui.view">
+        <field name="name">fbook.report.form</field>
+        <field name="model">fbook.report</field>
+        <field name="arch" type="xml">
+            <form string="Fbook Report">
+                <header>
+                    <button name="action_post" string="Post" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_draft" string="Reset to Draft" type="object" invisible="state != 'cancel'"/>
+                    <button name="action_cancel" string="Cancel" type="object" invisible="state != 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,posted"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="date"/>
+                        </group>
+                        <group>
+                            <field name="amount"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Description" name="description_page">
+                            <field name="description" placeholder="Report details..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_fbook_report_search" model="ir.ui.view">
+        <field name="name">fbook.report.search</field>
+        <field name="model">fbook.report</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="description"/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Posted" name="posted" domain="[('state', '=', 'posted')]"/>
+                <group>
+                    <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                    <filter string="Company" name="group_by_company" context="{'group_by': 'company_id'}"/>
+                    <filter string="Date" name="group_by_date" context="{'group_by': 'date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+
+    <!-- Window Action -->
+    <record id="action_fbook_report" model="ir.actions.act_window">
+        <field name="name">Fbook Report</field>
+        <field name="res_model">fbook.report</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_fbook_report_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new Fbook Report!
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Items -->
+    <!-- Child menu 'BXI Reports' under Accounting -> Reporting -->
+    <menuitem id="menu_bxi_reports"
+              name="BXI Reports"
+              parent="account.menu_finance_reports"
+              sequence="100"/>
+
+    <!-- Grandchild menu 'Financial Book' under 'BXI Reports' -->
+    <menuitem id="menu_fbook_report"
+              name="Financial Book"
+              parent="menu_bxi_reports"
+              action="action_fbook_report_wizard"
+              sequence="10"/>
+</odoo>
+

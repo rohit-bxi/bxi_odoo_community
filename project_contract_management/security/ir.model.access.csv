@@ -1,4 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_contract,contract,model_project_contract_management,,1,1,1,1
-access_contract_line,contract_line,model_contract_quarter_line,,1,1,1,1
 access_contract_stage,contract.stage,model_project_contract_stage,,1,1,1,1
+access_contract_service_line,contract.service.line,model_project_contract_service_line,,1,1,1,1
