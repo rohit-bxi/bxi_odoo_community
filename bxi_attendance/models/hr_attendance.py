@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 from datetime import datetime, timedelta
 import pytz
 import logging
@@ -69,33 +70,57 @@ class HrAttendance(models.Model):
         # Rule B: Check-in between shift_start + 1.0 and shift_start + 4.0 -> Half-day Leave with Pay
         # Rule C: Check-in after shift_start + 4.0 -> Full-day LOP (Leave Without Pay)
         
+        employee_company_id = self.employee_id.company_id.id
+
+        # Search for LOP leave type by exact leave code 'LOP': prefer company-specific, fallback to global
         unpaid_type = self.env['hr.leave.type'].sudo().search([
-            ('company_id', 'in', [self.employee_id.company_id.id, False]),
-            '|',
-            ('name', 'ilike', 'unpaid'),
-            ('name', 'ilike', 'without pay')
+            ('company_id', '=', employee_company_id),
+            ('code', '=', 'LOP'),
         ], limit=1)
+        if not unpaid_type:
+            unpaid_type = self.env['hr.leave.type'].sudo().search([
+                ('company_id', '=', False),
+                ('code', '=', 'LOP'),
+            ], limit=1)
+        if not unpaid_type:
+            raise UserError(_(
+                'Leave Without Pay (LOP) leave type is not configured. '
+                'Please configure a leave type with code "LOP" before processing attendance.'
+            ))
 
         paid_type = self.env['hr.leave.type'].sudo().search([
-            ('company_id', 'in', [self.employee_id.company_id.id, False]),
+            ('company_id', '=', employee_company_id),
             '|', '|',
             ('name', 'ilike', 'casual'),
             ('name', 'ilike', 'sick'),
             ('name', 'ilike', 'with pay')
         ], limit=1)
         if not paid_type:
-            # Fallback to any non-unpaid type
             paid_type = self.env['hr.leave.type'].sudo().search([
-                ('company_id', 'in', [self.employee_id.company_id.id, False]),
+                ('company_id', '=', False),
+                '|', '|',
+                ('name', 'ilike', 'casual'),
+                ('name', 'ilike', 'sick'),
+                ('name', 'ilike', 'with pay')
+            ], limit=1)
+        if not paid_type:
+            # Fallback to any non-unpaid type for the employee's company
+            paid_type = self.env['hr.leave.type'].sudo().search([
+                ('company_id', 'in', [employee_company_id, False]),
                 ('name', 'not ilike', 'unpaid'),
                 ('name', 'not ilike', 'without pay'),
             ], limit=1)
+
+        # Use with_context to ensure multi-company security uses the employee's company
+        leave_env = self.env['hr.leave'].sudo().with_context(
+            allowed_company_ids=[employee_company_id]
+        )
 
         if shift_start_hour + 1.0 < check_in_hour <= shift_start_hour + 4.0:
             # Create Half-day Paid Leave
             if paid_type:
                 try:
-                    self.env['hr.leave'].sudo().create({
+                    leave_env.create({
                         'employee_id': self.employee_id.id,
                         'holiday_status_id': paid_type.id,
                         'request_date_from': date_val,
@@ -103,23 +128,23 @@ class HrAttendance(models.Model):
                         'number_of_days': 0.5,
                         'request_unit_half': True,
                         'request_date_from_period': 'am',
-                        'company_id': self.employee_id.company_id.id,
+                        'company_id': employee_company_id,
                         'name': f'Auto-created: Half-day Leave (Late check-in at {check_in_local.strftime("%I:%M %p")} vs Shift start {self._float_to_time(shift_start_hour)})',
                     })
                 except Exception as e:
                     _logger.error(f"Failed to create auto half-day leave for employee {self.employee_id.name}: {str(e)}")
-        
+
         elif check_in_hour > shift_start_hour + 4.0:
             # Create Full-day LOP
             if unpaid_type:
                 try:
-                    self.env['hr.leave'].sudo().create({
+                    leave_env.create({
                         'employee_id': self.employee_id.id,
                         'holiday_status_id': unpaid_type.id,
                         'request_date_from': date_val,
                         'request_date_to': date_val,
                         'number_of_days': 1.0,
-                        'company_id': self.employee_id.company_id.id,
+                        'company_id': employee_company_id,
                         'name': f'Auto-created: Full-day LOP (Late check-in at {check_in_local.strftime("%I:%M %p")} vs Shift start {self._float_to_time(shift_start_hour)})',
                     })
                 except Exception as e:
