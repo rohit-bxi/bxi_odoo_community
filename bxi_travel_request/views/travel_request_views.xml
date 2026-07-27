@@ -1,190 +1,548 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- List View -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         LIST VIEW — Travel Requests
+    ═══════════════════════════════════════════════════════════════ -->
     <record id="view_travel_request_list" model="ir.ui.view">
         <field name="name">travel.request.list</field>
         <field name="model">travel.request</field>
         <field name="arch" type="xml">
-            <list string="Travel Requests">
+            <list string="Travel Requests"
+                  decoration-success="state == 'approved'"
+                  decoration-warning="state in ('manager_approval', 'hr_approval', 'mybiz_pending')"
+                  decoration-danger="state == 'cancelled'"
+                  decoration-muted="state == 'draft'">
                 <field name="name"/>
-                <field name="employee_id"/>
-                <field name="manager_id"/>
-                <field name="department_id"/>
-                <field name="request_date"/>
+                <field name="employee_id" optional="show"/>
+                <field name="department_id" optional="show"/>
+                <field name="manager_id" optional="show"/>
+                <field name="request_date" optional="show"/>
                 <field name="departure_date"/>
-                <field name="return_date"/>
-                <field name="state"/>
+                <field name="return_date" optional="show"/>
+                <field name="days" optional="show"/>
+                <field name="from_city"/>
+                <field name="to_city"/>
+                <field name="mode_of_travel" optional="show"/>
+                <field name="mybiz_service_id" optional="hide"/>
+                <field name="mybiz_status" optional="show" widget="badge"
+                       decoration-success="mybiz_status in ('approved', 'booked')"
+                       decoration-warning="mybiz_status == 'pending'"
+                       decoration-danger="mybiz_status in ('failed', 'cancelled')"
+                       decoration-muted="mybiz_status == 'not_pushed'"/>
+                <field name="state" widget="badge"
+                       decoration-muted="state == 'draft'"
+                       decoration-info="state == 'submitted'"
+                       decoration-warning="state in ('manager_approval', 'hr_approval', 'mybiz_pending')"
+                       decoration-success="state == 'approved'"
+                       decoration-danger="state == 'cancelled'"/>
             </list>
+
         </field>
     </record>
 
-    <!-- Search View -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         SEARCH VIEW
+    ═══════════════════════════════════════════════════════════════ -->
     <record id="view_travel_request_search" model="ir.ui.view">
         <field name="name">travel.request.search</field>
         <field name="model">travel.request</field>
         <field name="arch" type="xml">
             <search string="Search Travel Requests">
-                <field name="name"/>
+                <field name="name" string="Reference"/>
                 <field name="employee_id"/>
                 <field name="department_id"/>
                 <field name="travel_purpose"/>
+                <field name="from_city"/>
+                <field name="to_city"/>
+                <field name="mybiz_service_id" string="myBiz Service ID"/>
 
+                <separator/>
+
+                <filter name="filter_my_requests" string="My Requests"
+                        domain="[('employee_id.user_id', '=', uid)]"/>
                 <filter name="filter_draft" string="Draft" domain="[('state', '=', 'draft')]"/>
-                <filter name="filter_confirm" string="Confirmed" domain="[('state', '=', 'confirm')]"/>
-                <filter name="filter_approve" string="Approved" domain="[('state', '=', 'approve')]"/>
-                <filter name="filter_cancel" string="Cancelled" domain="[('state', '=', 'cancel')]"/>
+                <filter name="filter_submitted" string="Submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter name="filter_manager" string="Manager Approval" domain="[('state', '=', 'manager_approval')]"/>
+                <filter name="filter_hr" string="HR Approval" domain="[('state', '=', 'hr_approval')]"/>
+                <filter name="filter_mybiz" string="myBiz Pending" domain="[('state', '=', 'mybiz_pending')]"/>
+                <filter name="filter_approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <filter name="filter_cancelled" string="Cancelled" domain="[('state', '=', 'cancelled')]"/>
+                <filter name="filter_mybiz_failed" string="myBiz Failed"
+                        domain="[('mybiz_status', '=', 'failed')]"/>
 
                 <separator/>
 
                 <filter name="group_by_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
                 <filter name="group_by_department" string="Department" context="{'group_by': 'department_id'}"/>
                 <filter name="group_by_state" string="Status" context="{'group_by': 'state'}"/>
+                <filter name="group_by_mybiz_status" string="myBiz Status" context="{'group_by': 'mybiz_status'}"/>
+                <filter name="group_by_month" string="Month" context="{'group_by': 'departure_date:month'}"/>
             </search>
         </field>
     </record>
 
-    <!-- Form View -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         FORM VIEW — Travel Request (Beautiful Redesign)
+    ═══════════════════════════════════════════════════════════════ -->
     <record id="view_travel_request_form" model="ir.ui.view">
         <field name="name">travel.request.form</field>
         <field name="model">travel.request</field>
         <field name="arch" type="xml">
             <form string="Travel Request">
                 <header>
-                    <button name="action_confirm" string="Confirm" type="object" invisible="state != 'draft'" class="btn-primary"/>
+                    <!-- Employee: Submit for Manager Approval -->
+                    <button name="action_submit"
+                            string="Submit for Approval"
+                            type="object"
+                            invisible="state != 'draft'"
+                            class="btn-primary"
+                            icon="fa-paper-plane"/>
+
+                    <!-- Manager: Approve / Refuse -->
                     <button name="manager_action_approve"
                             string="Approve"
                             type="object"
                             invisible="state != 'manager_approval' or not can_manager_approve"
-                            class="btn-primary"/>
-
-                    <button name="hr_action_approve"
-                            string="Approve"
+                            class="btn-success"
+                            icon="fa-check"/>
+                    <button name="manager_action_refuse"
+                            string="Refuse"
                             type="object"
-                            invisible="state != 'hr_approval'"
-                            class="btn-primary"
+                            invisible="state != 'manager_approval' or not can_manager_approve"
+                            class="btn-danger"
+                            icon="fa-times"
+                            confirm="Are you sure you want to refuse this travel request?"/>
+
+                    <!-- HR: Approve / Refuse -->
+                    <button name="hr_action_approve"
+                            string="Approve &amp; Push to myBiz"
+                            type="object"
+                            invisible="state != 'hr_approval' or not can_hr_approve"
+                            class="btn-success"
+                            icon="fa-rocket"/>
+                    <button name="hr_action_refuse"
+                            string="Refuse"
+                            type="object"
+                            invisible="state != 'hr_approval' or not can_hr_approve"
+                            class="btn-danger"
+                            icon="fa-times"
+                            confirm="Are you sure you want to refuse this travel request?"/>
+
+                    <!-- myBiz Actions -->
+                    <button name="action_sync_mybiz_status"
+                            string="Sync myBiz Status"
+                            type="object"
+                            invisible="mybiz_service_id == False"
+                            class="btn-secondary"
+                            icon="fa-refresh"/>
+                    <button name="action_retry_mybiz_push"
+                            string="Retry myBiz Push"
+                            type="object"
+                            invisible="mybiz_status != 'failed'"
+                            class="btn-warning"
+                            icon="fa-redo"
+                            groups="base.group_system,hr.group_hr_manager"/>
+
+                    <!-- Cancel / Reset -->
+                    <button name="action_cancel"
+                            string="Cancel"
+                            type="object"
+                            invisible="state in ('draft', 'cancelled', 'approved')"
+                            class="btn-secondary"
+                            confirm="Are you sure you want to cancel this travel request?"/>
+                    <button name="action_reset_to_draft"
+                            string="Reset to Draft"
+                            type="object"
+                            invisible="state == 'draft'"
                             groups="base.group_system"/>
 
-                    <button name="finance_action_approve"
-                            string="Approve"
-                            type="object"
-                            invisible="state != 'finance_approval'"
-                            class="btn-primary"
-                            groups="account.group_account_manager"/>
-                    <button name="action_cancel" string="Cancel" type="object" invisible="state == 'cancel'"/>
-                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" invisible="state == 'draft'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,manager_approval,hr_approval,finance_approval,approve,cancel"/>
+                    <!-- Status Bar -->
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted,manager_approval,hr_approval,mybiz_pending,approved"/>
                 </header>
 
                 <sheet>
-                    <div class="oe_title">
-                        <h1>
-                            <field name="name" readonly="1"/>
-                        </h1>
+                    <!-- ── Smart Buttons ──────────────────────────── -->
+                    <div class="oe_button_box" name="button_box">
+                        <!-- myBiz Booking Status -->
+                        <button class="oe_stat_button"
+                                type="object"
+                                name="action_sync_mybiz_status"
+                                icon="fa-plane"
+                                invisible="mybiz_service_id == False">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">myBiz</span>
+                                <span class="o_stat_value">
+                                    <field name="mybiz_status_badge"/>
+                                </span>
+                            </div>
+                        </button>
+
+                        <!-- Travel Segments count -->
+                        <button class="oe_stat_button"
+                                type="object"
+                                name="action_view_options"
+                                icon="fa-map-signs">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="option_count"/>
+                                </span>
+                                <span class="o_stat_text">Segments</span>
+                            </div>
+                        </button>
+
+                        <!-- Duration -->
+                        <button class="oe_stat_button"
+                                icon="fa-calendar"
+                                invisible="days == 0">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="days"/>
+                                </span>
+                                <span class="o_stat_text">Days</span>
+                            </div>
+                        </button>
                     </div>
 
+                    <!-- ── Reference Title ──────────────────────────── -->
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1" class="o_field_widget"/>
+                        </h1>
+                        <h3 class="text-muted" invisible="mybiz_service_id == False">
+                            myBiz Service ID:
+                            <field name="mybiz_service_id" readonly="1" nolabel="1"/>
+                        </h3>
+                    </div>
+
+                    <!-- myBiz Error Alert -->
+                    <div class="alert alert-danger" role="alert"
+                         invisible="mybiz_status != 'failed'">
+                        <strong>⚠️ myBiz Push Failed:</strong>
+                        <field name="mybiz_error" nolabel="1" readonly="1"/>
+                    </div>
+
+                    <!-- ── Header Info Group ─────────────────────────── -->
                     <group>
-                        <group>
-                            <field name="employee_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
-                            <field name="manager_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
-                            <field name="department_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
+                        <group string="Employee Information">
+                            <field name="employee_id"
+                                   options="{'no_create': True, 'no_create_edit': True}"
+                                   widget="many2one_avatar_employee"/>
+                            <field name="manager_id"
+                                   options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="department_id"
+                                   options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="company_id"
+                                   options="{'no_create': True}"
+                                   groups="base.group_multi_company"/>
                         </group>
-                        <group>
+                        <group string="Request Details">
                             <field name="request_by" readonly="1"/>
                             <field name="request_date"/>
+                            <field name="travel_purpose"/>
+                            <field name="project_id"
+                                   options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="analytic_account_id"
+                                   options="{'no_create': True, 'no_create_edit': True}"/>
                         </group>
                     </group>
 
+                    <!-- ── Tabs ──────────────────────────────────────── -->
                     <notebook>
-                        <page string="Travel Request Info">
-                            <group>
-                                <field name="travel_purpose"/>
-                                <field name="project_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
-                                <field name="analytic_account_id" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
-                            </group>
 
-                            <group string="Travel Details" col="2">
-                                <group string="From">
-                                    <field name="from_address"/>
-                                    <field name="from_city"/>
-                                    <field name="from_state" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
-                                    <field name="from_country" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
-                                </group>
-                                <group string="To">
-                                    <field name="to_address"/>
-                                    <field name="to_city"/>
-                                    <field name="to_state" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
-                                    <field name="to_country" options="{'no_create': True, 'no_create_edit': True, 'no_open': True}"/>
-                                </group>
-                            </group>
+                        <!-- ╔══════════════════════════════════════════╗
+                             ║  TAB 1: Travel Details                   ║
+                             ╚══════════════════════════════════════════╝ -->
+                        <page string="🗺 Travel Details" name="travel_details">
 
+                            <!-- Route Card -->
+                            <div class="row mt-3 mb-3">
+                                <div class="col-md-5">
+                                    <div class="card border-primary h-100">
+                                        <div class="card-header bg-primary text-white fw-bold">
+                                            📍 Departure
+                                        </div>
+                                        <div class="card-body">
+                                            <group>
+                                                <field name="from_city"/>
+                                                <field name="from_state"
+                                                       options="{'no_create': True}"/>
+                                                <field name="from_country"
+                                                       options="{'no_create': True}"/>
+                                                <field name="from_address"/>
+                                            </group>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-center justify-content-center">
+                                    <div class="text-center">
+                                        <i class="fa fa-2x fa-arrow-right text-muted"/>
+                                        <br/>
+                                        <small class="text-muted">
+                                            <field name="mode_of_travel" nolabel="1" readonly="1"/>
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="card border-success h-100">
+                                        <div class="card-header bg-success text-white fw-bold">
+                                            🎯 Destination
+                                        </div>
+                                        <div class="card-body">
+                                            <group>
+                                                <field name="to_city"/>
+                                                <field name="to_state"
+                                                       options="{'no_create': True}"/>
+                                                <field name="to_country"
+                                                       options="{'no_create': True}"/>
+                                                <field name="to_address"/>
+                                            </group>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dates & Mode -->
                             <group>
-                                <group>
+                                <group string="Travel Schedule">
                                     <field name="departure_date"/>
                                     <field name="return_date"/>
-                                    <field name="mode_of_travel"/>
                                     <field name="days" readonly="1"/>
                                 </group>
-                                <group>
-                                    <field name="contact_number"/>
-                                    <field name="email"/>
+                                <group string="Travel Preferences">
+                                    <field name="mode_of_travel"/>
+                                    <field name="trip_type"/>
+                                    <field name="travel_class"
+                                           invisible="mode_of_travel not in ('flight',)"/>
                                 </group>
+                            </group>
+
+                            <!-- Contact -->
+                            <group string="Contact Details">
+                                <field name="contact_number"/>
+                                <field name="email"/>
                             </group>
                         </page>
 
-                        <page string="Other Info">
-                            <field name="other_info" nolabel="1" placeholder="Add other information here..."/>
-                        </page>
+                        <!-- ╔══════════════════════════════════════════╗
+                             ║  TAB 2: Travel Segments (myBiz Options)  ║
+                             ╚══════════════════════════════════════════╝ -->
+                        <page string="✈ Travel Segments &amp; Options" name="travel_options">
 
-                        <page string="Advance Payment Request">
-                            <group>
-                                <field name="advance_required"/>
-                                <field name="advance_amount" invisible="not advance_required"/>
-                                <field name="advance_notes" invisible="not advance_required"/>
-                            </group>
-                        </page>
-                        <!-- <page string="Expense Submission">
-                            <group>
-                                <group>
-                                    <field name="expense_line_count" readonly="1"/>
-                                    <field name="total_submitted_expense" readonly="1"/>
-                                </group>
-                            </group>
-                            <field name="expense_line_ids" nolabel="1">
-                                <list editable="bottom">
-                                    <field name="expense_date"/>
-                                    <field name="expense_type"/>
-                                    <field name="description"/>
-                                    <field name="payment_mode"/>
-                                    <field name="remarks"/>
-                                    <field name="attachment_ids" widget="many2many_binary"/>
-                                    <field name="amount"/>
+                            <!-- Hotel Toggle -->
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="card border-info">
+                                        <div class="card-header fw-bold">🏨 Hotel Accommodation</div>
+                                        <div class="card-body">
+                                            <field name="hotel_required" widget="boolean_toggle"/>
+                                            <label for="hotel_required" string="Hotel Required"/>
+                                            <group invisible="not hotel_required">
+                                                <field name="hotel_city"/>
+                                                <field name="hotel_grade"/>
+                                                <field name="hotel_checkin"/>
+                                                <field name="hotel_checkout"/>
+                                                <field name="hotel_rooms"/>
+                                            </group>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-warning">
+                                        <div class="card-header fw-bold">🚗 Cab / Car Service</div>
+                                        <div class="card-body">
+                                            <field name="cab_required" widget="boolean_toggle"/>
+                                            <label for="cab_required" string="Cab Required"/>
+                                            <group invisible="not cab_required">
+                                                <field name="cab_type"/>
+                                                <field name="cab_pickup"/>
+                                                <field name="cab_dropoff"/>
+                                            </group>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Segments Line -->
+                            <separator string="Travel Segment Details (per Leg)"/>
+                            <field name="travel_option_ids" nolabel="1">
+                                <list editable="bottom" string="Travel Segments">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="option_type"/>
+                                    <field name="origin_code"
+                                           string="From (Code/City)"
+                                           optional="show"/>
+                                    <field name="destination_code"
+                                           string="To (Code/City)"
+                                           optional="show"/>
+                                    <field name="operator"
+                                           string="Airline/Operator"
+                                           optional="show"/>
+                                    <field name="departure_datetime"
+                                           string="Departure"
+                                           optional="show"/>
+                                    <field name="arrival_datetime"
+                                           string="Arrival"
+                                           optional="show"/>
+                                    <field name="travel_class"
+                                           optional="show"/>
+                                    <field name="hotel_city"
+                                           optional="hide"
+                                           column_invisible="True"/>
+                                    <field name="checkin_date"
+                                           optional="show"/>
+                                    <field name="checkout_date"
+                                           optional="show"/>
+                                    <field name="hotel_nights"
+                                           optional="show"/>
+                                    <field name="hotel_grade"
+                                           optional="show"/>
+                                    <field name="price"/>
+                                    <field name="currency_id"
+                                           optional="hide"/>
+                                    <field name="mybiz_ref"
+                                           optional="show"
+                                           readonly="1"/>
+                                    <field name="mybiz_status"
+                                           optional="show"
+                                           readonly="1"
+                                           widget="badge"
+                                           options="{'colors': {
+                                               'pending': 'warning',
+                                               'confirmed': 'success',
+                                               'cancelled': 'danger',
+                                               'failed': 'danger'
+                                           }}"/>
+                                    <field name="description"
+                                           optional="show"/>
                                 </list>
+                                <form string="Travel Segment Details">
+                                    <group>
+                                        <group string="Segment Info">
+                                            <field name="option_type"/>
+                                            <field name="description"/>
+                                            <field name="mybiz_ref" readonly="1"/>
+                                            <field name="mybiz_status" readonly="1" widget="badge"/>
+                                        </group>
+                                        <group string="Pricing">
+                                            <field name="price"/>
+                                            <field name="currency_id"/>
+                                        </group>
+                                    </group>
+                                    <group>
+                                        <group string="From / Departure"
+                                               invisible="option_type == 'hotel'">
+                                            <field name="origin_code"/>
+                                            <field name="operator"/>
+                                            <field name="departure_datetime"/>
+                                            <field name="travel_class"
+                                                   invisible="option_type == 'cab'"/>
+                                        </group>
+                                        <group string="To / Arrival"
+                                               invisible="option_type == 'hotel'">
+                                            <field name="destination_code"/>
+                                            <field name="arrival_datetime"/>
+                                            <field name="pnr_or_booking_ref" readonly="1"/>
+                                        </group>
+                                    </group>
+                                    <group string="Hotel Details"
+                                           invisible="option_type != 'hotel'">
+                                        <group>
+                                            <field name="hotel_city"/>
+                                            <field name="hotel_name"/>
+                                            <field name="hotel_grade"/>
+                                        </group>
+                                        <group>
+                                            <field name="checkin_date"/>
+                                            <field name="checkout_date"/>
+                                            <field name="hotel_nights" readonly="1"/>
+                                            <field name="rooms"/>
+                                        </group>
+                                    </group>
+                                    <group string="Cab Details"
+                                           invisible="option_type != 'cab'">
+                                        <field name="cab_type"/>
+                                        <field name="pickup_location"/>
+                                        <field name="drop_location"/>
+                                        <field name="pickup_datetime"/>
+                                    </group>
+                                    <field name="notes"/>
+                                </form>
                             </field>
-                        </page> -->
-                        <page string="Approvals">
-                            <group col="3">
+                        </page>
 
-                                <!-- Manager Approval -->
+                        <!-- ╔══════════════════════════════════════════╗
+                             ║  TAB 3: myBiz Booking Status             ║
+                             ╚══════════════════════════════════════════╝ -->
+                        <page string="🔗 myBiz Booking" name="mybiz_booking">
+                            <group>
+                                <group string="myBiz Reference">
+                                    <field name="mybiz_service_id" readonly="1"/>
+                                    <field name="mybiz_booking_ref" readonly="1"/>
+                                    <field name="mybiz_status" readonly="1" widget="badge"
+                                           options="{'colors': {
+                                               'not_pushed': 'secondary',
+                                               'pending': 'warning',
+                                               'approved': 'success',
+                                               'booked': 'success',
+                                               'failed': 'danger',
+                                               'cancelled': 'danger'
+                                           }}"/>
+                                    <field name="mybiz_sync_date" readonly="1"/>
+                                </group>
+                                <group string="Last Error" invisible="not mybiz_error">
+                                    <field name="mybiz_error" readonly="1" nolabel="1"
+                                           widget="text"/>
+                                </group>
+                            </group>
+                            <separator string="myBiz Raw API Response"
+                                       invisible="not mybiz_raw_response"/>
+                            <field name="mybiz_raw_response" readonly="1" nolabel="1"
+                                   invisible="not mybiz_raw_response"
+                                   widget="text"/>
+                        </page>
+
+                        <!-- ╔══════════════════════════════════════════╗
+                             ║  TAB 4: Approvals                        ║
+                             ╚══════════════════════════════════════════╝ -->
+                        <page string="✅ Approvals" name="approvals">
+                            <group>
                                 <group string="Manager Approval">
                                     <field name="manager_approved_by" readonly="1"/>
                                     <field name="manager_approved_date" readonly="1"/>
                                 </group>
-
-                                <!-- HR Approval -->
                                 <group string="HR Approval">
                                     <field name="hr_approved_by" readonly="1"/>
                                     <field name="hr_approved_date" readonly="1"/>
                                 </group>
-
-                                <!-- Finance Approval -->
-                                <group string="Finance Approval">
-                                    <field name="finance_approved_by" readonly="1"/>
-                                    <field name="finance_approved_date" readonly="1"/>
-                                </group>
-
                             </group>
                         </page>
+
+                        <!-- ╔══════════════════════════════════════════╗
+                             ║  TAB 5: Advance Payment                  ║
+                             ╚══════════════════════════════════════════╝ -->
+                        <page string="💰 Advance Payment" name="advance">
+                            <group>
+                                <field name="advance_required" widget="boolean_toggle"/>
+                                <field name="advance_amount"
+                                       invisible="not advance_required"
+                                       widget="monetary"/>
+                                <field name="advance_notes"
+                                       invisible="not advance_required"
+                                       widget="text"/>
+                            </group>
+                        </page>
+
+                        <!-- ╔══════════════════════════════════════════╗
+                             ║  TAB 6: Additional Info                  ║
+                             ╚══════════════════════════════════════════╝ -->
+                        <page string="📝 Additional Notes" name="other_info">
+                            <field name="other_info" nolabel="1"
+                                   placeholder="Add any additional information, special requirements, or notes for this travel request…"
+                                   widget="text"/>
+                        </page>
+
                     </notebook>
                 </sheet>
 
@@ -193,17 +551,116 @@
         </field>
     </record>
 
-    <!-- Action -->
-    <record id="action_travel_request" model="ir.actions.act_window">
-        <field name="name">Travel Requests</field>
+    <!-- ═══════════════════════════════════════════════════════════════
+         KANBAN VIEW — Travel Requests
+    ═══════════════════════════════════════════════════════════════ -->
+    <record id="view_travel_request_kanban" model="ir.ui.view">
+        <field name="name">travel.request.kanban</field>
+        <field name="model">travel.request</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" quick_create="false">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="from_city"/>
+                <field name="to_city"/>
+                <field name="departure_date"/>
+                <field name="return_date"/>
+                <field name="state"/>
+                <field name="mybiz_status"/>
+                <field name="mode_of_travel"/>
+                <field name="days"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="o_kanban_card_header">
+                            <div class="o_kanban_card_header_title">
+                                <field name="name" class="o_primary"/>
+                            </div>
+                        </div>
+                        <div class="o_kanban_card_content">
+                            <div class="o_field_widget mb-1">
+                                <field name="employee_id"/>
+                            </div>
+                            <div class="text-muted mb-1">
+                                <i class="fa fa-map-marker me-1"/>
+                                <field name="from_city" nolabel="1"/>
+                                <span class="mx-1">→</span>
+                                <field name="to_city" nolabel="1"/>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fa fa-calendar me-1"/>
+                                    <field name="departure_date" nolabel="1"/>
+                                </small>
+                                <span class="badge rounded-pill bg-secondary">
+                                    <field name="days" nolabel="1"/> days
+                                </span>
+                            </div>
+                            <div class="mt-2" t-if="record.mybiz_status.raw_value != 'not_pushed'">
+                                <small class="text-info">
+                                    <i class="fa fa-plane me-1"/>
+                                    myBiz: <field name="mybiz_status" nolabel="1"/>
+                                </small>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ACTION — My Requests
+    ═══════════════════════════════════════════════════════════════ -->
+    <record id="action_travel_request_mine" model="ir.actions.act_window">
+        <field name="name">My Travel Requests</field>
         <field name="res_model">travel.request</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('employee_id.user_id', '=', uid)]</field>
         <field name="search_view_id" ref="view_travel_request_search"/>
+        <field name="context">{'search_default_filter_my_requests': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create your first travel request
             </p>
+            <p>Submit a travel request to get flight, hotel, cab bookings via MakeMyTrip myBiz.</p>
         </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ACTION — All Requests (HR / Admin)
+    ═══════════════════════════════════════════════════════════════ -->
+    <record id="action_travel_request" model="ir.actions.act_window">
+        <field name="name">Travel Requests</field>
+        <field name="res_model">travel.request</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_travel_request_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No travel requests found
+            </p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ACTION — Pending Approvals
+    ═══════════════════════════════════════════════════════════════ -->
+    <record id="action_travel_pending_approvals" model="ir.actions.act_window">
+        <field name="name">Pending Approvals</field>
+        <field name="res_model">travel.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ('manager_approval', 'hr_approval', 'mybiz_pending'))]</field>
+        <field name="search_view_id" ref="view_travel_request_search"/>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ACTION — myBiz Failed
+    ═══════════════════════════════════════════════════════════════ -->
+    <record id="action_travel_mybiz_failed" model="ir.actions.act_window">
+        <field name="name">myBiz Push Failures</field>
+        <field name="res_model">travel.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('mybiz_status', '=', 'failed')]</field>
+        <field name="search_view_id" ref="view_travel_request_search"/>
     </record>
 
 </odoo>

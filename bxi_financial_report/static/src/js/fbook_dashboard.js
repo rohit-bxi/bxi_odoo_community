@@ -106,8 +106,9 @@ class FbookDashboard extends Component {
      * e.g. 45.678 → "45.68 %"
      */
     formatPct(val) {
-        const num = parseFloat(val);
+        let num = parseFloat(val);
         if (isNaN(num)) return "0.00 %";
+        if (num > 100) num = 100;
         return num.toFixed(2) + " %";
     }
 

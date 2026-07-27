@@ -22,23 +22,34 @@ class BxiTimesheetDashboard(models.AbstractModel):
         and team list/summary. Returns structured dict for OWL dashboard.
         """
         user = self.env.user
+        # Multi-company: IDs of all companies the current user is allowed to access
+        allowed_company_ids = self.env.companies.ids
 
         # 1. Resolve employee and permissions
-        current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
-        
+        current_employee = self.env['hr.employee'].search([
+            ('user_id', '=', user.id),
+            ('company_id', 'in', allowed_company_ids),
+        ], limit=1)
+
         is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager')
         is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager')
-        
-        # Determine manager status (has direct reports)
+
+        # Determine manager status (has direct reports within allowed companies)
         is_manager = False
         subordinates = self.env['hr.employee']
         if current_employee:
-            subordinates = self.env['hr.employee'].search([('parent_id', '=', current_employee.id)])
+            subordinates = self.env['hr.employee'].search([
+                ('parent_id', '=', current_employee.id),
+                ('company_id', 'in', allowed_company_ids),
+            ])
             is_manager = len(subordinates) > 0
 
-        # Build list of allowed employees
+        # Build list of allowed employees — always scoped to user's companies
         if is_admin or is_hr:
-            allowed_employees = self.env['hr.employee'].search([('active', '=', True)])
+            allowed_employees = self.env['hr.employee'].search([
+                ('active', '=', True),
+                ('company_id', 'in', allowed_company_ids),
+            ])
         elif is_manager:
             allowed_employees = current_employee + subordinates
         elif current_employee:
@@ -68,12 +79,15 @@ class BxiTimesheetDashboard(models.AbstractModel):
         end_date = start_date + timedelta(days=6)
         is_past_week = start_date < current_week_start
 
-        # 3. Retrieve projects and tasks for "Add a line"
-        projects = self.env['project.project'].search_read([('active', '=', True)], ['id', 'name'])
+        # 3. Retrieve projects and tasks scoped to allowed companies
+        projects = self.env['project.project'].search_read([
+            ('active', '=', True),
+            ('company_id', 'in', allowed_company_ids),
+        ], ['id', 'name'])
         project_ids = [p['id'] for p in projects]
         tasks = self.env['project.task'].search_read([
             ('project_id', 'in', project_ids),
-            ('active', '=', True)
+            ('active', '=', True),
         ], ['id', 'name', 'project_id'])
 
         # 4. Fetch attendances and desktime logs for target employee
@@ -89,14 +103,16 @@ class BxiTimesheetDashboard(models.AbstractModel):
         if target_employee and has_attendance:
             attendances = self.env['hr.attendance'].search([
                 ('employee_id', '=', target_employee.id),
+                ('employee_id.company_id', 'in', allowed_company_ids),
                 ('check_in', '>=', datetime.combine(start_date, datetime.min.time()) - timedelta(days=1)),
                 ('check_in', '<=', datetime.combine(end_date, datetime.max.time()) + timedelta(days=1)),
             ])
 
         dt_logs = self.env['bxi.desktime.log']
         if target_employee:
-            dt_logs = self.env['bxi.desktime.log'].search([
+            dt_logs = self.env['bxi.desktime.log'].sudo().search([
                 ('employee_id', '=', target_employee.id),
+                ('employee_id.company_id', 'in', allowed_company_ids),
                 ('date', '>=', start_date),
                 ('date', '<=', end_date),
             ])
@@ -115,8 +131,9 @@ class BxiTimesheetDashboard(models.AbstractModel):
         if target_employee:
             domain = [
                 ('employee_id', '=', target_employee.id),
+                ('company_id', 'in', allowed_company_ids),
                 ('date', '>=', start_date),
-                ('date', '<=', end_date)
+                ('date', '<=', end_date),
             ]
             ts_lines = self.env['account.analytic.line'].search(domain)
 
@@ -265,29 +282,37 @@ class BxiTimesheetDashboard(models.AbstractModel):
         # 6. Generate team summary (ONLY count Approved timesheets, include Check-in/Check-out per employee)
         team_summary = []
         if filter_type == 'team' and (is_manager or is_hr or is_admin):
-            team_members = allowed_employees
+            # For a manager: show only direct reports; for HR/admin: all employees in allowed companies
+            if is_admin or is_hr:
+                team_members = allowed_employees
+            else:
+                # Manager: their own record + subordinates in allowed companies
+                team_members = current_employee + subordinates if current_employee else subordinates
 
             has_attendance = 'hr.attendance' in self.env
             all_attendances = self.env['hr.attendance']
             if has_attendance:
                 all_attendances = self.env['hr.attendance'].search([
                     ('employee_id', 'in', team_members.ids),
+                    ('employee_id.company_id', 'in', allowed_company_ids),
                     ('check_in', '>=', datetime.combine(start_date, datetime.min.time()) - timedelta(days=1)),
                     ('check_in', '<=', datetime.combine(end_date, datetime.max.time()) + timedelta(days=1)),
                 ])
 
-            all_dt_logs = self.env['bxi.desktime.log'].search([
+            all_dt_logs = self.env['bxi.desktime.log'].sudo().search([
                 ('employee_id', 'in', team_members.ids),
+                ('employee_id.company_id', 'in', allowed_company_ids),
                 ('date', '>=', start_date),
                 ('date', '<=', end_date),
             ])
 
-            # Fetch ONLY approved timesheet lines for all team members for this week
+            # Fetch ONLY approved timesheet lines — scoped to company
             domain = [
                 ('employee_id', 'in', team_members.ids),
+                ('company_id', 'in', allowed_company_ids),
                 ('date', '>=', start_date),
                 ('date', '<=', end_date),
-                ('state', '=', 'approved')
+                ('state', '=', 'approved'),
             ]
             lines = self.env['account.analytic.line'].search(domain)
 
@@ -433,18 +458,29 @@ class BxiTimesheetDashboard(models.AbstractModel):
         Add or update account.analytic.line records.
         """
         user = self.env.user
-        current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
+        allowed_company_ids = self.env.companies.ids
+        current_employee = self.env['hr.employee'].search([
+            ('user_id', '=', user.id),
+            ('company_id', 'in', allowed_company_ids),
+        ], limit=1)
 
         is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager')
         is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager')
 
         subordinates = self.env['hr.employee']
         if current_employee:
-            subordinates = self.env['hr.employee'].search([('parent_id', '=', current_employee.id)])
+            subordinates = self.env['hr.employee'].search([
+                ('parent_id', '=', current_employee.id),
+                ('company_id', 'in', allowed_company_ids),
+            ])
 
+        # allowed_employee_ids — always scoped to user's companies
         allowed_employee_ids = []
         if is_admin or is_hr:
-            allowed_employee_ids = self.env['hr.employee'].search([('active', '=', True)]).ids
+            allowed_employee_ids = self.env['hr.employee'].search([
+                ('active', '=', True),
+                ('company_id', 'in', allowed_company_ids),
+            ]).ids
         else:
             allowed_employee_ids = [current_employee.id] if current_employee else []
             allowed_employee_ids += subordinates.ids
@@ -513,8 +549,10 @@ class BxiTimesheetDashboard(models.AbstractModel):
             if amount > 0.0:
                 task_name = self.env['project.task'].browse(tsk_id).name if tsk_id else ''
                 proj_name = self.env['project.project'].browse(proj_id).name if proj_id else ''
-                company_id = self.env.company.id
-                
+                # Use the target employee's company for the timesheet line
+                target_emp = self.env['hr.employee'].browse(target_emp_id)
+                emp_company_id = target_emp.company_id.id or self.env.company.id
+
                 line_name = description if description else (f"{proj_name} / {task_name}" if proj_name and task_name else "Logged via Dashboard")
 
                 vals = {
@@ -524,10 +562,12 @@ class BxiTimesheetDashboard(models.AbstractModel):
                     'task_id': tsk_id,
                     'unit_amount': amount,
                     'name': line_name,
-                    'company_id': company_id,
-                    'state': 'draft'
+                    'company_id': emp_company_id,
+                    'state': 'draft',
                 }
-                self.env['account.analytic.line'].create(vals)
+                self.env['account.analytic.line'].with_context(
+                    allowed_company_ids=[emp_company_id]
+                ).create(vals)
 
         return True
 
@@ -535,12 +575,25 @@ class BxiTimesheetDashboard(models.AbstractModel):
     def submit_weekly_timesheet(self, employee_id, start_date_str):
         """Submit all draft timesheets for this employee and week."""
         user = self.env.user
-        current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
+        allowed_company_ids = self.env.companies.ids
+        current_employee = self.env['hr.employee'].search([
+            ('user_id', '=', user.id),
+            ('company_id', 'in', allowed_company_ids),
+        ], limit=1)
         is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager')
         is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager')
 
         target_emp_id = int(employee_id)
-        is_manager = current_employee and target_emp_id in self.env['hr.employee'].search([('parent_id', '=', current_employee.id)]).ids
+
+        # Verify target employee belongs to an allowed company
+        target_emp = self.env['hr.employee'].browse(target_emp_id)
+        if target_emp.company_id.id not in allowed_company_ids:
+            raise UserError(_('You are not authorized to submit timesheets for this employee.'))
+
+        is_manager = current_employee and target_emp_id in self.env['hr.employee'].search([
+            ('parent_id', '=', current_employee.id),
+            ('company_id', 'in', allowed_company_ids),
+        ]).ids
 
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         current_week_start = self._get_current_week_start()
@@ -549,12 +602,12 @@ class BxiTimesheetDashboard(models.AbstractModel):
             raise UserError(_("Once a week is crossed, timesheets for the previous week cannot be submitted."))
 
         end_date = start_date + timedelta(days=6)
-        
         lines = self.env['account.analytic.line'].search([
             ('employee_id', '=', target_emp_id),
+            ('company_id', 'in', allowed_company_ids),
             ('date', '>=', start_date),
             ('date', '<=', end_date),
-            ('state', '=', 'draft')
+            ('state', '=', 'draft'),
         ])
         if lines:
             lines.action_submit()
@@ -563,14 +616,37 @@ class BxiTimesheetDashboard(models.AbstractModel):
     @api.model
     def approve_weekly_timesheet(self, employee_id, start_date_str):
         """Approve all submitted timesheets for this employee and week."""
+        user = self.env.user
+        allowed_company_ids = self.env.companies.ids
+        current_employee = self.env['hr.employee'].search([
+            ('user_id', '=', user.id),
+            ('company_id', 'in', allowed_company_ids),
+        ], limit=1)
+        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager')
+        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager')
+        target_emp_id = int(employee_id)
+
+        # Verify target employee belongs to an allowed company
+        target_emp = self.env['hr.employee'].browse(target_emp_id)
+        if target_emp.company_id.id not in allowed_company_ids:
+            raise UserError(_('You are not authorized to approve timesheets for this employee.'))
+
+        is_manager = current_employee and target_emp_id in self.env['hr.employee'].search([
+            ('parent_id', '=', current_employee.id),
+            ('company_id', 'in', allowed_company_ids),
+        ]).ids
+
+        if not (is_admin or is_hr or is_manager):
+            raise UserError(_('Only the employee\'s manager, HR officers, or System Admins can approve timesheets.'))
+
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = start_date + timedelta(days=6)
-        
         lines = self.env['account.analytic.line'].search([
-            ('employee_id', '=', int(employee_id)),
+            ('employee_id', '=', target_emp_id),
+            ('company_id', 'in', allowed_company_ids),
             ('date', '>=', start_date),
             ('date', '<=', end_date),
-            ('state', '=', 'submitted')
+            ('state', '=', 'submitted'),
         ])
         if lines:
             lines.action_approve()
@@ -579,14 +655,37 @@ class BxiTimesheetDashboard(models.AbstractModel):
     @api.model
     def refuse_weekly_timesheet(self, employee_id, start_date_str):
         """Refuse all submitted timesheets for this employee and week."""
+        user = self.env.user
+        allowed_company_ids = self.env.companies.ids
+        current_employee = self.env['hr.employee'].search([
+            ('user_id', '=', user.id),
+            ('company_id', 'in', allowed_company_ids),
+        ], limit=1)
+        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager')
+        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager')
+        target_emp_id = int(employee_id)
+
+        # Verify target employee belongs to an allowed company
+        target_emp = self.env['hr.employee'].browse(target_emp_id)
+        if target_emp.company_id.id not in allowed_company_ids:
+            raise UserError(_('You are not authorized to refuse timesheets for this employee.'))
+
+        is_manager = current_employee and target_emp_id in self.env['hr.employee'].search([
+            ('parent_id', '=', current_employee.id),
+            ('company_id', 'in', allowed_company_ids),
+        ]).ids
+
+        if not (is_admin or is_hr or is_manager):
+            raise UserError(_('Only the employee\'s manager, HR officers, or System Admins can refuse timesheets.'))
+
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = start_date + timedelta(days=6)
-        
         lines = self.env['account.analytic.line'].search([
-            ('employee_id', '=', int(employee_id)),
+            ('employee_id', '=', target_emp_id),
+            ('company_id', 'in', allowed_company_ids),
             ('date', '>=', start_date),
             ('date', '<=', end_date),
-            ('state', '=', 'submitted')
+            ('state', '=', 'submitted'),
         ])
         if lines:
             lines.action_refuse()

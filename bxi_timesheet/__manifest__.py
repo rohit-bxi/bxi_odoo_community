@@ -22,6 +22,7 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'security/record_rules.xml',
         'data/cron.xml',
         'views/timesheet_dashboard_views.xml',
         'views/timesheet_line_views.xml',

@@ -7,7 +7,7 @@
     'author': 'BXI',
     'summary': 'Employee Payslip Customization',
     'description': 'Employee View Modification',
-    'depends': ['om_hr_payroll'],
+    'depends': ['hr_payroll'],
     'data': [
         'data/ir_cron.xml',
         'report/payslip_report.xml',

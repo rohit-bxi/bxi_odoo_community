@@ -48,55 +48,70 @@
                 <field name="contract_start_date"/>
                 <field name="contract_end_date"/>
                 <field name="probability"/>
+                <field name="contract_type"/>
+                <field name="billing_cycle"/>
 
                 <templates>
                     <t t-name="card">
 
-                        <div class="oe_kanban_card oe_kanban_global_click contract_card">
+                        <div class="oe_kanban_global_click contract_card">
 
-                            <!-- LEFT COLOR STRIP -->
-                            <div class="stage_strip"
-                                 t-attf-class="stage_strip o_kanban_color_#{record.stage_id.raw_value}">
-                            </div>
+                            <!-- TOP GRADIENT ACCENT BAR -->
+                            <div class="contract_top_bar"/>
 
-                            <div class="card_content">
+                            <!-- MAIN BODY -->
+                            <div class="contract_body">
 
-                                <!-- HEADER -->
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-
-                                    <div class="fw-bold text-dark">
+                                <!-- HEADER: Name + Probability Badge -->
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <div class="contract_title" t-att-title="record.name.value">
                                         <field name="name"/>
                                     </div>
-
-                                    <span class="badge rounded-pill bg-primary">
+                                    <span class="contract_prob_badge ms-2 flex-shrink-0">
+                                        <i class="fa fa-bolt" style="font-size:9px;"/>
                                         <field name="probability"/>%
                                     </span>
-
                                 </div>
 
+                                <!-- DIVIDER -->
+                                <div class="contract_divider"/>
+
                                 <!-- CLIENTS -->
-                                <div class="mb-2 small text-muted">
-                                    <i class="fa fa-users me-1" title="Clients"/>
+                                <div class="contract_clients">
+                                    <i class="fa fa-users contract_client_icon"/>
                                     <field name="client_ids" widget="many2many_tags"/>
                                 </div>
 
                                 <!-- AMOUNT -->
-                                <div class="mb-2 fw-semibold text-success">
-                                    <field name="contract_amount"
-                                           widget="monetary"
-                                           options="{'currency_field': 'currency_id'}"/>
+                                <div class="contract_amount_row">
+                                    <div class="contract_amount_icon">
+                                        <i class="fa fa-inr"/>
+                                    </div>
+                                    <span class="contract_amount_value">
+                                        <field name="contract_amount"
+                                               widget="monetary"
+                                               options="{'currency_field': 'currency_id'}"/>
+                                    </span>
                                 </div>
 
                                 <!-- DATES -->
-                                <div class="small text-muted mb-3">
-                                    <i class="fa fa-calendar me-1" title="Dates"/>
+                                <div class="contract_dates_row">
+                                    <i class="fa fa-calendar-o"/>
                                     <field name="contract_start_date"/>
-                                    →
+                                    <span class="date_sep">→</span>
                                     <field name="contract_end_date"/>
                                 </div>
 
+                            </div>
 
-
+                            <!-- FOOTER STRIP -->
+                            <div class="contract_footer">
+                                <span class="contract_type_badge">
+                                    <field name="contract_type"/>
+                                </span>
+                                <div class="contract_open_btn">
+                                    <i class="fa fa-angle-right"/>
+                                </div>
                             </div>
 
                         </div>
