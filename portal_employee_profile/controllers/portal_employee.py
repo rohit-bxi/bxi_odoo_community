@@ -6,9 +6,22 @@ import base64
 class EmployeePortal(http.Controller):
 
     def _get_employee(self):
-        return request.env.user.employee_id
+        user = request.env.user
+        if user.employee_id:
+            return user.employee_id
+        # Fallback search by user_id or email
+        return request.env['hr.employee'].sudo().search([
+            '|', ('user_id', '=', user.id),
+            '|', ('work_email', '=', user.email), ('private_email', '=', user.email)
+        ], limit=1)
 
-    @http.route(['/my/employee-profile'],type='http',auth='user',website=True)
+    @http.route([
+        '/my/employee-profile',
+        '/my/employee_profile',
+        '/my/employee/profile',
+        '/employee/profile',
+        '/employee-profile'
+    ], type='http', auth='user', website=True, sitemap=False)
     def employee_profile(self, **kw):
         employee = self._get_employee()
         countries = request.env['res.country'].sudo().search([])
@@ -17,14 +30,17 @@ class EmployeePortal(http.Controller):
             'portal_employee_profile.portal_employee_profile',
             {
                 'employee': employee,
-                'countries':countries,
+                'countries': countries,
             }
         )
 
-    @http.route(['/my/employee-profile/update'], type='http', auth='user', methods=['POST'], website=True, csrf=True)
+    @http.route([
+        '/my/employee-profile/update',
+        '/my/employee_profile/update'
+    ], type='http', auth='user', methods=['POST'], website=True, csrf=True)
     def employee_profile_update(self, **post):
 
-        employee = request.env.user.employee_id
+        employee = self._get_employee()
         if not employee:
             return request.redirect('/my/employee-profile')
 
