@@ -2,15 +2,27 @@
 <odoo>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         Record Rule: travel.request
-         - Employee sees own requests
-         - Manager sees own + direct reports
-         - HR / Admin sees all
+         Record Rules: travel.request
+         - Base (group_travel_user): sees ONLY own requests
+         - Manager (group_travel_manager): sees own + team/subordinates requests
+         - Admin (group_travel_admin) / HR: sees ALL requests (company-scoped)
     ═══════════════════════════════════════════════════════════════ -->
 
-    <!-- Regular user: own requests + direct reports' requests -->
-    <record id="travel_request_user_rule" model="ir.rule">
-        <field name="name">Travel Request: User sees own and subordinates (company-scoped)</field>
+    <!-- Base User: own travel requests only -->
+    <record id="travel_request_base_user_rule" model="ir.rule">
+        <field name="name">Travel Request: Base user sees own requests only (company-scoped)</field>
+        <field name="model_id" ref="model_travel_request"/>
+        <field name="domain_force">['&amp;', ('company_id', 'in', company_ids), ('employee_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('bxi_travel_request.group_travel_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Manager: own requests + direct reports' requests -->
+    <record id="travel_request_manager_rule" model="ir.rule">
+        <field name="name">Travel Request: Manager sees own and team requests (company-scoped)</field>
         <field name="model_id" ref="model_travel_request"/>
         <field name="domain_force">[
             '&amp;',
@@ -19,40 +31,23 @@
             ('employee_id.user_id', '=', user.id),
             ('employee_id.parent_id.user_id', '=', user.id)
         ]</field>
-        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="groups" eval="[(4, ref('bxi_travel_request.group_travel_manager'))]"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
         <field name="perm_unlink" eval="False"/>
     </record>
 
-    <!-- HR Officer: all records within allowed companies -->
-    <record id="travel_request_hr_user_rule" model="ir.rule">
-        <field name="name">Travel Request: HR User sees all (company-scoped)</field>
+    <!-- Admin / HR Officer / HR Manager: all records within allowed companies -->
+    <record id="travel_request_admin_rule" model="ir.rule">
+        <field name="name">Travel Request: Admin sees all records (company-scoped)</field>
         <field name="model_id" ref="model_travel_request"/>
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
-        <field name="groups" eval="[(4, ref('hr.group_hr_user'))]"/>
+        <field name="groups" eval="[(4, ref('bxi_travel_request.group_travel_admin')), (4, ref('hr.group_hr_user')), (4, ref('hr.group_hr_manager'))]"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
         <field name="perm_unlink" eval="True"/>
     </record>
-
-    <!-- HR Manager: all records within allowed companies -->
-    <record id="travel_request_hr_manager_rule" model="ir.rule">
-        <field name="name">Travel Request: HR Manager sees all (company-scoped)</field>
-        <field name="model_id" ref="model_travel_request"/>
-        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
-        <field name="groups" eval="[(4, ref('hr.group_hr_manager'))]"/>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="True"/>
-        <field name="perm_create" eval="True"/>
-        <field name="perm_unlink" eval="True"/>
-    </record>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         Record Rule: bxi.mybiz.config
-         Admin only — no user-level record rule needed
-    ═══════════════════════════════════════════════════════════════ -->
 
 </odoo>

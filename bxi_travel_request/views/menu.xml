@@ -6,51 +6,54 @@
     <menuitem id="menu_travel_root"
               name="Travel"
               sequence="10"
-              web_icon="bxi_travel_request,static/description/icon.png"/>
+              web_icon="bxi_travel_request,static/description/icon.png"
+              groups="bxi_travel_request.group_travel_user,bxi_travel_request.group_travel_manager,bxi_travel_request.group_travel_admin"/>
 
     <!-- ── My Travel Requests ────────────────────────────────────── -->
     <menuitem id="menu_my_travel_request"
               name="My Requests"
               parent="menu_travel_root"
               action="action_travel_request_mine"
-              sequence="10"/>
+              sequence="10"
+              groups="bxi_travel_request.group_travel_user,bxi_travel_request.group_travel_manager,bxi_travel_request.group_travel_admin"/>
 
-    <!-- ── All Travel Requests (HR / Admin) ─────────────────────── -->
+    <!-- ── All Travel Requests (Manager / Admin / HR) ───────────── -->
     <menuitem id="menu_all_travel_request"
               name="All Requests"
               parent="menu_travel_root"
               action="action_travel_request"
               sequence="20"
-              groups="hr.group_hr_user,hr.group_hr_manager,base.group_erp_manager,base.group_system"/>
+              groups="bxi_travel_request.group_travel_manager,bxi_travel_request.group_travel_admin,hr.group_hr_user,hr.group_hr_manager"/>
 
-    <!-- ── Pending Approvals ─────────────────────────────────────── -->
+    <!-- ── Pending Approvals (Manager / Admin) ───────────────────── -->
     <menuitem id="menu_travel_pending"
               name="Pending Approvals"
               parent="menu_travel_root"
               action="action_travel_pending_approvals"
-              sequence="30"/>
+              sequence="30"
+              groups="bxi_travel_request.group_travel_manager,bxi_travel_request.group_travel_admin"/>
 
-    <!-- ── myBiz Push Failures ───────────────────────────────────── -->
+    <!-- ── myBiz Push Failures (Admin) ───────────────────────────── -->
     <menuitem id="menu_travel_mybiz_failed"
               name="myBiz Failures"
               parent="menu_travel_root"
               action="action_travel_mybiz_failed"
               sequence="40"
-              groups="hr.group_hr_manager,base.group_erp_manager,base.group_system"/>
+              groups="bxi_travel_request.group_travel_admin,base.group_erp_manager,base.group_system"/>
 
-    <!-- ── Configuration ─────────────────────────────────────────── -->
+    <!-- ── Configuration (Admin) ─────────────────────────────────── -->
     <menuitem id="menu_travel_config_root"
               name="Configuration"
               parent="menu_travel_root"
               sequence="100"
-              groups="base.group_erp_manager,base.group_system"/>
+              groups="bxi_travel_request.group_travel_admin,base.group_erp_manager,base.group_system"/>
 
     <menuitem id="menu_mybiz_config"
               name="myBiz API Configuration"
               parent="menu_travel_config_root"
               action="action_mybiz_config"
               sequence="10"
-              groups="base.group_erp_manager,base.group_system"/>
+              groups="bxi_travel_request.group_travel_admin,base.group_erp_manager,base.group_system"/>
 
     <!-- ── Portal Template ───────────────────────────────────────── -->
     <template id="travel_request_link"

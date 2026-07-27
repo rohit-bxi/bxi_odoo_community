@@ -26,6 +26,7 @@
         'bxi_user_access',
     ],
     'data': [
+        'security/security_groups.xml',
         'security/ir.model.access.csv',
         'security/record_rules.xml',
         'data/sequence.xml',
