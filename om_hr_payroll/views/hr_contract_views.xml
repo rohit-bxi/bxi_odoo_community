@@ -5,7 +5,8 @@
     <menuitem id="menu_hr_payroll_root"
               name="Payroll"
               sequence="186"
-              web_icon="om_hr_payroll,static/description/icon.png"/>
+              web_icon="om_hr_payroll,static/description/icon.png"
+              groups="om_hr_payroll.group_hr_payroll_manager"/>
 
     <menuitem id="menu_hr_payroll_configuration"
               name="Configuration" parent="menu_hr_payroll_root"

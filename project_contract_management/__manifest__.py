@@ -5,7 +5,7 @@
     "summary": "Manage Contracts with Quarterly Breakdown",
     "category": "Project",
     "author": "Your Company",
-    "depends": ['base', 'project', 'mail', 'sale'],
+    "depends": ['base', 'project', 'mail', 'sale', 'account'],
     "data": [
         "security/ir.model.access.csv",
         'views/contract_stage.xml',

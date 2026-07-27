@@ -6,7 +6,8 @@
         id="menu_employee_onboarding_root"
         name="Employee Onboarding"
         sequence="10"
-        web_icon="employee_onboarding,static/description/icon.png"/>
+        web_icon="employee_onboarding,static/description/icon.png"
+        groups="hr.group_hr_user,hr.group_hr_manager"/>
 
     <!-- Onboarding / Offboarding -->
     <menuitem

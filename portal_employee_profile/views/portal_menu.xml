@@ -1,4 +1,12 @@
 <odoo>
+    <!-- Website Navbar Menu -->
+    <record id="menu_employee_profile_website" model="website.menu">
+        <field name="name">My Profile</field>
+        <field name="url">/my/employee-profile</field>
+        <field name="parent_id" ref="website.main_menu"/>
+        <field name="sequence" type="int">25</field>
+    </record>
+
     <template id="portal_my_employee_profile_link"
               inherit_id="portal.portal_my_home"
               name="Portal Home - Employee Profile">
@@ -11,14 +19,6 @@
                 <t t-set="url" t-value="'/my/employee-profile'"/>
                 <t t-set="config_card" t-value="True"/>
             </t>
-
-            <!-- <t t-call="portal.portal_docs_entry">
-                <t t-set="icon" t-value="'/portal_employee_profile/static/src/img/payslip.svg'"/>
-                <t t-set="title">My Payslips</t>
-                <t t-set="text">View and download your salary slips</t>
-                <t t-set="url" t-value="'/my/payslips'"/>
-                <t t-set="config_card" t-value="True"/>
-            </t> -->
         </xpath>
 
     </template>
