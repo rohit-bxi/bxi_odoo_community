@@ -87,6 +87,9 @@
                             <field name="requested_shift_id"
                                    readonly="state != 'draft'"
                                    options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_delete': True}"/>
+                            <field name="current_shift_id"
+                                   readonly="1"
+                                   options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_delete': True}"/>
                             <field name="original_shift_id"
                                    readonly="1"
                                    invisible="not original_shift_id"
@@ -177,6 +180,7 @@
                 <field name="date_from"/>
                 <field name="date_to"/>
                 <field name="requested_shift_id"/>
+                <field name="current_shift_id" optional="show"/>
                 <field name="request_date"/>
                 <field name="state" widget="badge"/>
             </list>

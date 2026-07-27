@@ -9,6 +9,7 @@ class BxiTimesheetDashboard extends Component {
 
     setup() {
         this.orm = useService("orm");
+        this.notification = useService("notification");
         this.state = useState({
             loaded: false,
             employee_id: false,
@@ -221,19 +222,20 @@ class BxiTimesheetDashboard extends Component {
     get newRowDateError() {
         if (!this.state.new_row_date) return "";
         const parts = this.state.new_row_date.split('-');
+        if (parts.length !== 3) return "";
         const year = parseInt(parts[0], 10);
         const month = parseInt(parts[1], 10) - 1;
         const day = parseInt(parts[2], 10);
         const targetDate = new Date(year, month, day);
-        targetDate.setHours(0,0,0,0);
+        targetDate.setHours(0, 0, 0, 0);
         
         // Find preceding Sunday for today
         const today = new Date();
         const sunday = new Date(today);
         sunday.setDate(today.getDate() - today.getDay());
-        sunday.setHours(0,0,0,0);
+        sunday.setHours(0, 0, 0, 0);
         
-        if (targetDate < sunday && !(this.state.is_target_employee_manager || this.state.is_hr || this.state.is_admin)) {
+        if (targetDate < sunday) {
             return "Timesheets for previous weeks cannot be created or modified.";
         }
         return "";
@@ -265,6 +267,12 @@ class BxiTimesheetDashboard extends Component {
             return;
         }
         if (this.newRowHoursError || this.newRowDateError) {
+            if (this.notification) {
+                this.notification.add(
+                    this.newRowDateError || this.newRowHoursError,
+                    { title: "Action Blocked", type: "danger" }
+                );
+            }
             return;
         }
 
@@ -289,10 +297,26 @@ class BxiTimesheetDashboard extends Component {
             this.closeAddRowModal();
         } catch (error) {
             console.error("Error adding timesheet line:", error);
+            if (this.notification) {
+                this.notification.add(
+                    error.message || "Error adding timesheet line.",
+                    { title: "Error", type: "danger" }
+                );
+            }
         }
     }
 
     async submitTimesheet() {
+        if (this.state.is_past_week && !(this.state.is_target_employee_manager || this.state.is_hr || this.state.is_admin)) {
+            if (this.notification) {
+                this.notification.add(
+                    "Once a week is crossed, timesheets for the previous week cannot be submitted.",
+                    { title: "Submission Blocked", type: "danger" }
+                );
+            }
+            return;
+        }
+
         try {
             await this.orm.call(
                 "bxi.timesheet.dashboard",
@@ -304,8 +328,20 @@ class BxiTimesheetDashboard extends Component {
                 }
             );
             await this.loadData();
+            if (this.notification) {
+                this.notification.add(
+                    "Weekly timesheet submitted successfully for approval.",
+                    { title: "Submitted", type: "success" }
+                );
+            }
         } catch (error) {
             console.error("Error submitting timesheet:", error);
+            if (this.notification) {
+                this.notification.add(
+                    error.message || "Error submitting timesheet.",
+                    { title: "Error", type: "danger" }
+                );
+            }
         }
     }
 

@@ -493,8 +493,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
         current_week_start = self._get_current_week_start()
         is_manager = current_employee and target_emp_id in subordinates.ids
 
-        # Past week lock check for employee
-        if target_date < current_week_start and not (is_admin or is_hr or is_manager):
+        # Past week lock check
+        if target_date < current_week_start:
             raise UserError(_("Once a week is crossed, timesheets for the previous week cannot be modified or submitted."))
 
         # Parse hours
@@ -611,6 +611,9 @@ class BxiTimesheetDashboard(models.AbstractModel):
         ])
         if lines:
             lines.action_submit()
+            total_hours = sum(lines.mapped('unit_amount'))
+            period_str = f"{start_date.strftime('%d %b %Y')} to {end_date.strftime('%d %b %Y')}"
+            self._send_timesheet_email_notification(target_emp, period_str, round(total_hours, 2), 'submit')
         return True
 
     @api.model
@@ -650,6 +653,10 @@ class BxiTimesheetDashboard(models.AbstractModel):
         ])
         if lines:
             lines.action_approve()
+            total_hours = sum(lines.mapped('unit_amount'))
+            period_str = f"{start_date.strftime('%d %b %Y')} to {end_date.strftime('%d %b %Y')}"
+            approver_name = current_employee.name if current_employee else user.name
+            self._send_timesheet_email_notification(target_emp, period_str, round(total_hours, 2), 'approve', approver_name=approver_name)
         return True
 
     @api.model
@@ -689,4 +696,102 @@ class BxiTimesheetDashboard(models.AbstractModel):
         ])
         if lines:
             lines.action_refuse()
+            total_hours = sum(lines.mapped('unit_amount'))
+            period_str = f"{start_date.strftime('%d %b %Y')} to {end_date.strftime('%d %b %Y')}"
+            approver_name = current_employee.name if current_employee else user.name
+            self._send_timesheet_email_notification(target_emp, period_str, round(total_hours, 2), 'refuse', approver_name=approver_name)
         return True
+
+    @api.model
+    def _send_timesheet_email_notification(self, employee, date_range_str, total_hours, action_type, approver_name=None):
+        """
+        Send email notifications for timesheet submission, approval, and refusal.
+        action_type: 'submit' (notify manager), 'approve' (notify employee), 'refuse' (notify employee)
+        """
+        if not employee:
+            return
+
+        company = employee.company_id or self.env.company
+
+        try:
+            if action_type == 'submit':
+                # Notify Manager
+                manager = employee.parent_id
+                manager_email = manager.work_email or (manager.user_id and manager.user_id.email) if manager else False
+                if not manager_email:
+                    _logger.info(f"No manager email found for employee {employee.name}'s manager ({manager.name if manager else 'None'})")
+                    return
+
+                subject = f"[Timesheet Approval Request] {employee.name} submitted timesheet for {date_range_str}"
+                body_html = f"""
+                    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <h2 style="color: #4f46e5; margin-top: 0;">Timesheet Submitted for Approval</h2>
+                        <p>Dear <strong>{manager.name}</strong>,</p>
+                        <p>Employee <strong>{employee.name}</strong> ({employee.department_id.name or 'General'}) has submitted their timesheet for review and approval.</p>
+                        <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+                            <tr style="background: #f8fafc;"><th style="padding: 10px; border: 1px solid #e2e8f0; text-align: left;">Employee Name</th><td style="padding: 10px; border: 1px solid #e2e8f0;">{employee.name}</td></tr>
+                            <tr><th style="padding: 10px; border: 1px solid #e2e8f0; text-align: left;">Department</th><td style="padding: 10px; border: 1px solid #e2e8f0;">{employee.department_id.name or 'N/A'}</td></tr>
+                            <tr style="background: #f8fafc;"><th style="padding: 10px; border: 1px solid #e2e8f0; text-align: left;">Period / Dates</th><td style="padding: 10px; border: 1px solid #e2e8f0;">{date_range_str}</td></tr>
+                            <tr><th style="padding: 10px; border: 1px solid #e2e8f0; text-align: left;">Total Logged Hours</th><td style="padding: 10px; border: 1px solid #e2e8f0;"><strong style="color: #4f46e5;">{total_hours} hrs</strong></td></tr>
+                        </table>
+                        <p>Kindly log in to your Odoo Timesheet Dashboard to approve or refuse this submission.</p>
+                        <br/>
+                        <p style="font-size: 12px; color: #64748b;">This is an automated notification from {company.name} Timesheet System.</p>
+                    </div>
+                """
+                self.env['mail.mail'].sudo().create({
+                    'subject': subject,
+                    'body_html': body_html,
+                    'email_to': manager_email,
+                    'email_from': company.email or self.env.user.email_formatted,
+                }).send()
+
+            elif action_type == 'approve':
+                # Notify Employee
+                emp_email = employee.work_email or (employee.user_id and employee.user_id.email)
+                if not emp_email:
+                    return
+
+                subject = f"[Timesheet Approved] Your timesheet for {date_range_str} has been approved"
+                body_html = f"""
+                    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <h2 style="color: #10b981; margin-top: 0;">Timesheet Approved</h2>
+                        <p>Dear <strong>{employee.name}</strong>,</p>
+                        <p>Your timesheet for <strong>{date_range_str}</strong> ({total_hours} hrs) has been <span style="color: #10b981; font-weight: bold;">APPROVED</span> by <strong>{approver_name or 'Management'}</strong>.</p>
+                        <br/>
+                        <p style="font-size: 12px; color: #64748b;">This is an automated notification from {company.name} Timesheet System.</p>
+                    </div>
+                """
+                self.env['mail.mail'].sudo().create({
+                    'subject': subject,
+                    'body_html': body_html,
+                    'email_to': emp_email,
+                    'email_from': company.email or self.env.user.email_formatted,
+                }).send()
+
+            elif action_type == 'refuse':
+                # Notify Employee
+                emp_email = employee.work_email or (employee.user_id and employee.user_id.email)
+                if not emp_email:
+                    return
+
+                subject = f"[Timesheet Refused] Your timesheet for {date_range_str} has been refused"
+                body_html = f"""
+                    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                        <h2 style="color: #ef4444; margin-top: 0;">Timesheet Refused</h2>
+                        <p>Dear <strong>{employee.name}</strong>,</p>
+                        <p>Your timesheet for <strong>{date_range_str}</strong> ({total_hours} hrs) has been <span style="color: #ef4444; font-weight: bold;">REFUSED / REJECTED</span> by <strong>{approver_name or 'Management'}</strong>.</p>
+                        <p>Please review your timesheet lines and contact your reporting manager if you have questions.</p>
+                        <br/>
+                        <p style="font-size: 12px; color: #64748b;">This is an automated notification from {company.name} Timesheet System.</p>
+                    </div>
+                """
+                self.env['mail.mail'].sudo().create({
+                    'subject': subject,
+                    'body_html': body_html,
+                    'email_to': emp_email,
+                    'email_from': company.email or self.env.user.email_formatted,
+                }).send()
+
+        except Exception as e:
+            _logger.error(f"Failed to send timesheet notification email ({action_type}) for employee {employee.name}: {str(e)}")

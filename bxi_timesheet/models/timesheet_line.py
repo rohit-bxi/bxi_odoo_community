@@ -32,9 +32,7 @@ class AccountAnalyticLine(models.Model):
 
         for rec in self:
             if rec.date and rec.date < current_week_start:
-                is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
-                if not (is_admin or is_hr or is_manager):
-                    raise UserError(_("Timesheets for previous weeks (before %s) cannot be created, modified, or submitted.") % current_week_start.strftime('%Y-%m-%d'))
+                raise UserError(_("Timesheets for previous weeks (before %s) cannot be created, modified, or submitted.") % current_week_start.strftime('%Y-%m-%d'))
 
     # NOTE: Multiple timesheet lines per day are allowed (different project/task combos).
     # A per-day uniqueness constraint is NOT enforced here.
@@ -56,6 +54,7 @@ class AccountAnalyticLine(models.Model):
         is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager')
         current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
 
+        submitted_recs = self.filtered(lambda r: r.state == 'draft')
         for rec in self:
             if rec.date and rec.date < current_week_start:
                 is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
@@ -64,6 +63,19 @@ class AccountAnalyticLine(models.Model):
 
             if rec.state == 'draft':
                 rec.state = 'submitted'
+
+        # Send email notifications grouped by employee
+        if submitted_recs:
+            dashboard_model = self.env['bxi.timesheet.dashboard']
+            for emp in submitted_recs.mapped('employee_id'):
+                emp_lines = submitted_recs.filtered(lambda l: l.employee_id == emp)
+                total_hours = sum(emp_lines.mapped('unit_amount'))
+                dates = emp_lines.mapped('date')
+                min_date = min(dates) if dates else today
+                max_date = max(dates) if dates else today
+                period_str = f"{min_date.strftime('%d %b %Y')} to {max_date.strftime('%d %b %Y')}" if min_date != max_date else min_date.strftime('%d %b %Y')
+                dashboard_model._send_timesheet_email_notification(emp, period_str, round(total_hours, 2), 'submit')
+
         return True
 
     def action_approve(self):
@@ -71,6 +83,7 @@ class AccountAnalyticLine(models.Model):
         is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager')
         is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager')
 
+        approved_recs = self.env['account.analytic.line']
         for rec in self:
             current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
             is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
@@ -80,6 +93,21 @@ class AccountAnalyticLine(models.Model):
 
             if rec.state == 'submitted':
                 rec.state = 'approved'
+                approved_recs |= rec
+
+        if approved_recs:
+            dashboard_model = self.env['bxi.timesheet.dashboard']
+            current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
+            approver_name = current_employee.name if current_employee else user.name
+            for emp in approved_recs.mapped('employee_id'):
+                emp_lines = approved_recs.filtered(lambda l: l.employee_id == emp)
+                total_hours = sum(emp_lines.mapped('unit_amount'))
+                dates = emp_lines.mapped('date')
+                min_date = min(dates) if dates else date.today()
+                max_date = max(dates) if dates else date.today()
+                period_str = f"{min_date.strftime('%d %b %Y')} to {max_date.strftime('%d %b %Y')}" if min_date != max_date else min_date.strftime('%d %b %Y')
+                dashboard_model._send_timesheet_email_notification(emp, period_str, round(total_hours, 2), 'approve', approver_name=approver_name)
+
         return True
 
     def action_refuse(self):
@@ -87,6 +115,7 @@ class AccountAnalyticLine(models.Model):
         is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager')
         is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager')
 
+        refused_recs = self.env['account.analytic.line']
         for rec in self:
             current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
             is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
@@ -96,6 +125,21 @@ class AccountAnalyticLine(models.Model):
 
             if rec.state == 'submitted':
                 rec.state = 'refused'
+                refused_recs |= rec
+
+        if refused_recs:
+            dashboard_model = self.env['bxi.timesheet.dashboard']
+            current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
+            approver_name = current_employee.name if current_employee else user.name
+            for emp in refused_recs.mapped('employee_id'):
+                emp_lines = refused_recs.filtered(lambda l: l.employee_id == emp)
+                total_hours = sum(emp_lines.mapped('unit_amount'))
+                dates = emp_lines.mapped('date')
+                min_date = min(dates) if dates else date.today()
+                max_date = max(dates) if dates else date.today()
+                period_str = f"{min_date.strftime('%d %b %Y')} to {max_date.strftime('%d %b %Y')}" if min_date != max_date else min_date.strftime('%d %b %Y')
+                dashboard_model._send_timesheet_email_notification(emp, period_str, round(total_hours, 2), 'refuse', approver_name=approver_name)
+
         return True
 
     @api.model

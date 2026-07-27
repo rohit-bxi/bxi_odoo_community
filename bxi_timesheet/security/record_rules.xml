@@ -7,11 +7,11 @@
          - HR User / HR Manager: sees all records within their allowed companies
     ============================================================ -->
 
-    <!-- Regular employee: own record + within allowed companies -->
+    <!-- Regular employee / Manager: own records + team records within allowed companies -->
     <record id="rule_bxi_desktime_log_employee_own" model="ir.rule">
-        <field name="name">DeskTime Log: Employee sees own records (company-scoped)</field>
+        <field name="name">DeskTime Log: Employee/Manager sees own and team records (company-scoped)</field>
         <field name="model_id" ref="model_bxi_desktime_log"/>
-        <field name="domain_force">['&amp;', ('employee_id.user_id', '=', user.id), ('employee_id.company_id', 'in', company_ids)]</field>
+        <field name="domain_force">['&amp;', '|', ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id), ('employee_id.company_id', 'in', company_ids)]</field>
         <field name="groups" eval="[(4, ref('base.group_user'))]"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="False"/>
@@ -45,15 +45,15 @@
 
     <!-- ============================================================
          Record Rules: account.analytic.line  (Multi-Company aware)
-         - Employee (base.group_user): sees only own records in their company
+         - Employee/Manager (base.group_user): sees own + team records in their company
          - HR User / HR Manager: sees all records within their allowed companies
     ============================================================ -->
 
-    <!-- Regular employee: own timesheet lines + within allowed companies -->
+    <!-- Regular employee / Manager: own + team timesheet lines + within allowed companies -->
     <record id="rule_analytic_line_employee_own" model="ir.rule">
-        <field name="name">Timesheet Line: Employee sees own records (company-scoped)</field>
+        <field name="name">Timesheet Line: Employee/Manager sees own and team records (company-scoped)</field>
         <field name="model_id" ref="analytic.model_account_analytic_line"/>
-        <field name="domain_force">['&amp;', ('employee_id.user_id', '=', user.id), ('company_id', 'in', company_ids)]</field>
+        <field name="domain_force">['&amp;', '|', ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id), ('company_id', 'in', company_ids)]</field>
         <field name="groups" eval="[(4, ref('base.group_user'))]"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
