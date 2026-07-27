@@ -10,8 +10,8 @@
             <form string="Timesheet Approval Details">
                 <header>
                     <button name="action_submit" string="Submit" type="object" class="oe_highlight" invisible="state != 'draft'"/>
-                    <button name="action_approve" string="Approve" type="object" class="btn-success" invisible="state != 'submitted'" groups="hr.group_hr_user,hr.group_hr_manager,hr_timesheet.group_hr_timesheet_approver"/>
-                    <button name="action_refuse" string="Refuse" type="object" class="btn-danger" invisible="state != 'submitted'" groups="hr.group_hr_user,hr.group_hr_manager,hr_timesheet.group_hr_timesheet_approver"/>
+                    <button name="action_approve" string="Approve" type="object" class="btn-success" invisible="state != 'submitted'" groups="hr.group_hr_user,hr.group_hr_manager,hr_timesheet.group_hr_timesheet_approver,hr_timesheet.group_timesheet_manager"/>
+                    <button name="action_refuse" string="Refuse" type="object" class="btn-danger" invisible="state != 'submitted'" groups="hr.group_hr_user,hr.group_hr_manager,hr_timesheet.group_hr_timesheet_approver,hr_timesheet.group_timesheet_manager"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
                 </header>
                 <sheet>
@@ -87,12 +87,12 @@
         <field name="act_window_id" ref="action_bxi_timesheet_approvals"/>
     </record>
 
-    <!-- Menu Item: Approvals (Visible to Manager/HR/Admin only) -->
+    <!-- Menu Item: Approvals (Visible to Approver / Manager / HR / Admin) -->
     <menuitem id="menu_bxi_timesheet_approvals"
               name="Approvals"
               parent="hr_timesheet.timesheet_menu_root"
               action="action_bxi_timesheet_approvals"
-              groups="hr.group_hr_user,hr.group_hr_manager,base.group_erp_manager,base.group_system"
+              groups="hr_timesheet.group_hr_timesheet_approver,hr_timesheet.group_timesheet_manager,hr.group_hr_user,hr.group_hr_manager,base.group_erp_manager,base.group_system"
               sequence="10"/>
 
 </odoo>
