@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Root Menu -->
+    <!-- Root Menu - Only visible to HR Administrator -->
     <menuitem
         id="menu_employee_onboarding_root"
         name="Employee Onboarding"
         sequence="10"
         web_icon="employee_onboarding,static/description/icon.png"
-        groups="hr.group_hr_user,hr.group_hr_manager"/>
+        groups="hr.group_hr_manager"/>
 
     <!-- Onboarding / Offboarding -->
     <menuitem
@@ -15,7 +15,8 @@
         name="Onboarding / Offboarding"
         parent="menu_employee_onboarding_root"
         action="action_employee_onboarding_offboarding"
-        sequence="1"/>
+        sequence="1"
+        groups="hr.group_hr_manager"/>
 
     <!-- Resignation -->
     <menuitem
@@ -23,14 +24,16 @@
         name="Resignations"
         parent="menu_employee_onboarding_root"
         action="action_employee_resignation"
-        sequence="5"/>
+        sequence="5"
+        groups="hr.group_hr_manager"/>
 
     <!-- Configuration -->
     <menuitem
         id="menu_employee_onboarding_config"
         name="Configuration"
         parent="menu_employee_onboarding_root"
-        sequence="99"/>
+        sequence="99"
+        groups="hr.group_hr_manager"/>
 
     <!-- Configuration > Request Types -->
     <menuitem
@@ -38,7 +41,8 @@
         name="Request Types"
         parent="menu_employee_onboarding_config"
         action="action_boarding_request_type"
-        sequence="1"/>
+        sequence="1"
+        groups="hr.group_hr_manager"/>
 
     <!-- Configuration > Teams -->
     <menuitem
@@ -46,6 +50,7 @@
         name="Teams"
         parent="menu_employee_onboarding_config"
         action="action_request_type_team"
-        sequence="2"/>
+        sequence="2"
+        groups="hr.group_hr_manager"/>
 
 </odoo>
