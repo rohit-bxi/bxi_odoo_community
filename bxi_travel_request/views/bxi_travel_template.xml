@@ -1,432 +1,699 @@
 <odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         LINK STYLESHEET TO PORTAL LAYOUT
+    ═══════════════════════════════════════════════════════════════ -->
+    <template id="portal_layout_travel_assets" inherit_id="portal.portal_layout">
+        <xpath expr="//div[@id='wrap']" position="before">
+            <link rel="stylesheet" href="/bxi_travel_request/static/src/css/travel.css"/>
+        </xpath>
+    </template>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         1. PORTAL LIST VIEW — Travel Requests
+    ═══════════════════════════════════════════════════════════════ -->
     <template id="bxi_travel_request_template" name="My Travel Requests">
         <t t-call="portal.portal_layout">
-            <div class="container mt-6 o_form_sheet_bg">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="fw-bold mb-0">My Travel Requests</h2>
-                    <a href="/my/submit-travel-request" class="btn btn-success">
-                        + Add Travel Request
-                    </a>
+            <div class="container my-4">
+
+                <!-- Hero Banner Header -->
+                <div class="bxi-hero-header mb-4">
+                    <div class="row align-items-center position-relative" style="z-index: 2;">
+                        <div class="col-md-8">
+                            <h2 class="fw-extrabold mb-1">
+                                <i class="fa fa-paper-plane me-2"/>Corporate Travel Portal
+                            </h2>
+                            <p class="mb-0 text-white-50 fs-6">Manage employee travel requests with automatic MakeMyTrip myBiz booking</p>
+                        </div>
+                        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                            <a href="/my/submit-travel-request" class="btn btn-bxi-success">
+                                <i class="fa fa-plus-circle me-1"/> New Travel Request
+                            </a>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Role Filter Tabs (Employee / Manager / HR) -->
+                <div class="mb-4" t-if="is_manager or is_hr">
+                    <ul class="nav bxi-pills">
+                        <li class="nav-item">
+                            <a t-attf-class="nav-link #{'active' if filter_type == 'my' else ''}"
+                               href="/my/travel-request?filter_type=my">
+                                <i class="fa fa-user me-1"/> My Requests
+                            </a>
+                        </li>
+                        <li class="nav-item" t-if="is_manager">
+                            <a t-attf-class="nav-link #{'active' if filter_type == 'team' else ''}"
+                               href="/my/travel-request?filter_type=team">
+                                <i class="fa fa-users me-1"/> Team Requests
+                            </a>
+                        </li>
+                        <li class="nav-item" t-if="is_manager or is_hr">
+                            <a t-attf-class="nav-link #{'active' if filter_type == 'pending_approval' else ''}"
+                               href="/my/travel-request?filter_type=pending_approval">
+                                <i class="fa fa-clock-o me-1"/> Pending Approvals
+                                <span class="badge bg-danger rounded-pill ms-1" t-if="pending_count > 0">
+                                    <t t-esc="pending_count"/>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="nav-item" t-if="is_hr">
+                            <a t-attf-class="nav-link #{'active' if filter_type == 'all' else ''}"
+                               href="/my/travel-request?filter_type=all">
+                                <i class="fa fa-globe me-1"/> All Company Requests
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Empty State -->
                 <t t-if="not requests">
-                    <div class="alert alert-warning text-center">
-                        <i class="fa fa-info-circle me-2"></i> No travel requests found. </div>
-                </t>
-                <t t-if="requests">
-                    <div class="card shadow-sm">
-                        <div class="table-responsive">
-                            <table class="table table-hover table-striped mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Employee</th>
-                                        <th>Manager</th>
-                                        <th>Department</th>
-                                        <th>Request By</th>
-                                        <th>Travel Purpose</th>
-                                        <th>From Country</th>
-                                        <th>To Country</th>
-                                        <th>From State</th>
-                                        <th>To State</th>
-                                        <th>From City</th>
-                                        <th>To City</th>
-                                        <th>Departure Date</th>
-                                        <th>Return Date</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <t t-foreach="requests" t-as="req">
-                                        <tr>
-                                            <td class="fw-bold text-primary">
-                                                <t t-esc="req.name" />
-                                            </td>
-                                            <td>
-                                                <t t-esc="req.employee_id.name" />
-                                            </td>
-                                            <td>
-                                                <t t-esc="req.manager_id.name" />
-                                            </td>
-
-                                            <td>
-                                                <t t-esc="req.department_id.name" />
-                                            </td>
-                                            <td>
-                                                <t t-esc="req.request_by.name" />
-                                            </td>
-
-                                            <td>
-                                                <t t-esc="req.travel_purpose" />
-                                            </td>
-                                            <td>
-                                                <t t-esc="req.from_country.name" />
-                                            </td>
-                                            <td>
-                                                <t t-esc="req.to_country.name" />
-                                            </td>
-                                            <td>
-                                                <t t-esc="req.from_state.name" />
-                                            </td>
-                                            <td>
-                                                <t t-esc="req.to_state.name" />
-                                            </td>
-                                            <td>
-                                                <t t-esc="req.from_city"></t>
-                                            </td>
-                                            <td>
-                                                <t t-esc="req.to_city"></t>
-                                            </td>
-                                            <td>
-                                                <t t-esc="req.departure_date" />
-                                            </td>
-                                            <td>
-                                                <t t-esc="req.return_date" />
-                                            </td>
-                                            <td>
-                                                <span t-if="req.state == 'draft'"
-                                                    class="badge bg-secondary px-3 py-2">
-                                                    Draft
-                                                </span>
-                                                <span t-elif="req.state == 'manager_approval'"
-                                                    class="badge bg-info px-3 py-2">
-                                                    Manager Approval
-                                                </span>
-                                                <span t-elif="req.state == 'hr_approval'"
-                                                    class="badge bg-warning text-dark px-3 py-2">
-                                                    HR Approval
-                                                </span>
-                                                <span t-elif="req.state == 'finance_approval'"
-                                                    class="badge bg-success px-3 py-2">
-                                                    Finance Approval
-                                                </span>
-                                                <span t-elif="req.state == 'approved'"
-                                                    class="badge bg-primary px-3 py-2">
-                                                    Approved
-                                                </span>
-                                                <span t-else="" class="badge bg-dark px-3 py-2">
-                                                    <t t-esc="req.state" />
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    </t>
-                                </tbody>
-                            </table>
+                    <div class="bxi-card p-5 text-center my-4 border-0">
+                        <i class="fa fa-plane fa-4x text-muted mb-3 opacity-50"/>
+                        <h4 class="fw-bold text-secondary">No Travel Requests Found</h4>
+                        <p class="text-muted">You currently have no travel requests in this view.</p>
+                        <div>
+                            <a href="/my/submit-travel-request" class="btn btn-bxi-primary">
+                                Create Travel Request
+                            </a>
                         </div>
                     </div>
                 </t>
+
+                <!-- Requests Table -->
+                <t t-if="requests">
+                    <div class="bxi-table-container shadow-sm">
+                        <table class="table bxi-table">
+                            <thead>
+                                <tr>
+                                    <th>Reference</th>
+                                    <th>Employee</th>
+                                    <th>Purpose</th>
+                                    <th>Route</th>
+                                    <th>Departure</th>
+                                    <th>Duration</th>
+                                    <th>myBiz Status</th>
+                                    <th>Workflow State</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="requests" t-as="req">
+                                    <tr>
+                                        <td>
+                                            <a t-attf-href="/my/travel-request/#{req.id}" class="fw-bold text-primary text-decoration-none">
+                                                <t t-esc="req.name"/>
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold text-dark"><t t-esc="req.employee_id.name"/></div>
+                                            <small class="text-muted"><t t-esc="req.department_id.name or ''"/></small>
+                                        </td>
+                                        <td>
+                                            <span class="text-secondary fw-medium"><t t-esc="req.travel_purpose"/></span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill fw-semibold">
+                                                <t t-esc="req.from_city"/> <i class="fa fa-arrow-right text-primary mx-1"/> <t t-esc="req.to_city"/>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <i class="fa fa-calendar text-muted me-1"/>
+                                            <span class="fw-medium"><t t-esc="req.departure_date"/></span>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold text-dark"><t t-esc="int(req.days)"/></span> days
+                                        </td>
+                                        <td>
+                                            <span t-if="req.mybiz_status in ('approved', 'booked')" class="bxi-badge bxi-badge-approved">
+                                                <i class="fa fa-check-circle"/> Booked
+                                            </span>
+                                            <span t-elif="req.mybiz_status == 'pending'" class="bxi-badge bxi-badge-mybiz">
+                                                <i class="fa fa-clock-o"/> myBiz Pending
+                                            </span>
+                                            <span t-elif="req.mybiz_status == 'failed'" class="bxi-badge bxi-badge-danger">
+                                                <i class="fa fa-exclamation-triangle"/> Push Failed
+                                            </span>
+                                            <span t-else="" class="bxi-badge bxi-badge-draft">
+                                                Not Pushed
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span t-if="req.state == 'draft'" class="bxi-badge bxi-badge-draft">Draft</span>
+                                            <span t-elif="req.state == 'submitted'" class="bxi-badge bxi-badge-submitted">Submitted</span>
+                                            <span t-elif="req.state == 'manager_approval'" class="bxi-badge bxi-badge-warning">Manager Approval</span>
+                                            <span t-elif="req.state == 'hr_approval'" class="bxi-badge bxi-badge-warning">HR Approval</span>
+                                            <span t-elif="req.state == 'mybiz_pending'" class="bxi-badge bxi-badge-mybiz">myBiz Pending</span>
+                                            <span t-elif="req.state == 'approved'" class="bxi-badge bxi-badge-approved">Approved &amp; Booked</span>
+                                            <span t-elif="req.state == 'cancelled'" class="bxi-badge bxi-badge-danger">Cancelled</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <a t-attf-href="/my/travel-request/#{req.id}"
+                                               class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                                View <i class="fa fa-chevron-right ms-1"/>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+
             </div>
         </t>
     </template>
 
+    <!-- ═══════════════════════════════════════════════════════════════
+         2. SUBMIT TRAVEL REQUEST FORM
+    ═══════════════════════════════════════════════════════════════ -->
     <template id="submit_travel_template" name="Submit Request">
         <t t-call="portal.portal_layout">
-            <div class="container mt-4">
-                <div class="card shadow-sm p-4">
-                    <div class="mb-3">
-                        <h3 class="fw-bold">Travel Request</h3>
+            <div class="container my-4">
+                <div class="bxi-card bxi-form-card p-0 overflow-hidden">
+                    <div class="bg-primary bg-gradient text-white p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="fw-bold mb-1">
+                                    <i class="fa fa-plane me-2"/>Submit Corporate Travel Request
+                                </h3>
+                                <p class="mb-0 text-white-50">Provide travel details and select your flight/hotel/cab preferences</p>
+                            </div>
+                            <a href="/my/travel-request" class="btn btn-outline-light rounded-pill btn-sm">
+                                <i class="fa fa-arrow-left me-1"/> Back
+                            </a>
+                        </div>
                     </div>
-                    <form method="post" action="/my/submit-travel-request" id="request_form">
-                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()" />
-                        <div class="row">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Employee</label>
-                                <input type="text"
-                                    class="form-control"
-                                    t-att-value="employee.name"
-                                    readonly="1" />
+
+                    <div class="p-4">
+                        <form method="post" action="/my/submit-travel-request" id="request_form">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                            <!-- Employee Context Banner -->
+                            <div class="row bg-light rounded-3 p-3 mb-4 border">
+                                <div class="col-md-4 mb-2 mb-md-0">
+                                    <span class="text-muted small d-block">Employee Name</span>
+                                    <strong class="text-dark fs-6"><t t-esc="employee.name if employee else request.env.user.name"/></strong>
+                                </div>
+                                <div class="col-md-4 mb-2 mb-md-0">
+                                    <span class="text-muted small d-block">Reporting Manager</span>
+                                    <strong class="text-dark fs-6"><t t-esc="employee.parent_id.name if (employee and employee.parent_id) else '—'"/></strong>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="text-muted small d-block">Department</span>
+                                    <strong class="text-dark fs-6"><t t-esc="employee.department_id.name if (employee and employee.department_id) else '—'"/></strong>
+                                </div>
                             </div>
-                        </div>
-                        <ul class="nav nav-tabs mt-4" id="travelTabs">
-                            <li class="nav-item">
-                                <a class="nav-link active" data-bs-toggle="tab" href="#tab_info">Travel
-                                    Request Info</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-bs-toggle="tab" href="#tab_other">Other
-                                    Info</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-bs-toggle="tab" href="#tab_adv_pay_req">Advance
-                                    Payment Request</a>
-                            </li>
-                        </ul>
-                        <div class="tab-content border p-3">
-                            <div class="tab-pane fade show active" id="tab_info">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label>Travel Purpose</label>
-                                            <input type="text" name="travel_purpose"
-                                                class="form-control" required="True" />
+
+                            <!-- Form Tabs Header -->
+                            <ul class="nav bxi-tab-nav" id="travelTabs" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" data-bs-toggle="tab" href="#tab_info" role="tab">
+                                        📍 Route &amp; Travel Schedule
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-bs-toggle="tab" href="#tab_hotel_cab" role="tab">
+                                        🏨 Hotel &amp; Cab Options
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-bs-toggle="tab" href="#tab_advance" role="tab">
+                                        💰 Advance Payment &amp; Notes
+                                    </a>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content py-4">
+
+                                <!-- TAB 1: Route & Travel Details -->
+                                <div class="tab-pane fade show active" id="tab_info" role="tabpanel">
+                                    <div class="mb-4">
+                                        <label class="form-label">Purpose of Travel <span class="text-danger">*</span></label>
+                                        <input type="text" name="travel_purpose" class="form-control form-control-lg"
+                                               placeholder="e.g. Client Onboarding Meeting at Delhi Office, Annual Conference" required="1"/>
+                                    </div>
+
+                                    <div class="row g-4">
+                                        <!-- Departure Side -->
+                                        <div class="col-md-6">
+                                            <div class="p-3 bg-light rounded-3 border h-100">
+                                                <h5 class="text-primary fw-bold mb-3">📍 Departure Details</h5>
+                                                <div class="mb-3">
+                                                    <label class="form-label">From City <span class="text-danger">*</span></label>
+                                                    <input type="text" name="from_city" class="form-control" placeholder="e.g. Mumbai, DEL" required="1"/>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">From Country <span class="text-danger">*</span></label>
+                                                    <select name="from_country" id="from_country" class="form-select" required="1">
+                                                        <t t-foreach="countries" t-as="c">
+                                                            <option t-att-value="c.id" t-att-selected="c.id == from_country_id">
+                                                                <t t-esc="c.name"/>
+                                                            </option>
+                                                        </t>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">From State</label>
+                                                    <select name="from_state" id="from_state" class="form-select">
+                                                        <option value="">Select State</option>
+                                                        <t t-foreach="from_states" t-as="s">
+                                                            <option t-att-value="s.id"><t t-esc="s.name"/></option>
+                                                        </t>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Departure Date <span class="text-danger">*</span></label>
+                                                    <input type="date" name="departure_date" class="form-control" required="1"/>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Destination Side -->
+                                        <div class="col-md-6">
+                                            <div class="p-3 bg-light rounded-3 border h-100">
+                                                <h5 class="text-success fw-bold mb-3">🎯 Destination Details</h5>
+                                                <div class="mb-3">
+                                                    <label class="form-label">To City <span class="text-danger">*</span></label>
+                                                    <input type="text" name="to_city" class="form-control" placeholder="e.g. Bangalore, BLR" required="1"/>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">To Country <span class="text-danger">*</span></label>
+                                                    <select name="to_country" id="to_country" class="form-select" required="1">
+                                                        <t t-foreach="countries" t-as="c">
+                                                            <option t-att-value="c.id" t-att-selected="c.id == to_country_id">
+                                                                <t t-esc="c.name"/>
+                                                            </option>
+                                                        </t>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">To State</label>
+                                                    <select name="to_state" id="to_state" class="form-select">
+                                                        <option value="">Select State</option>
+                                                        <t t-foreach="to_states" t-as="s">
+                                                            <option t-att-value="s.id"><t t-esc="s.name"/></option>
+                                                        </t>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Return Date</label>
+                                                    <input type="date" name="return_date" class="form-control"/>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="row">
-                                    <h4 class="mb-3">Travel Details</h4>
-                                    <hr class="mt-0 mb-3" />
 
-                                    <div class="col-md-6">
-                                        <h4 class="mb-3">From</h4>
-                                        <hr class="mt-0 mb-3" />
-                                        <div class="mb-3">
-                                            <label>From Address</label>
-                                            <input type="text" name="from_address"
-                                                class="form-control" />
-                                        </div>
-                                        <div class="mb-3">
-                                            <label>From Country</label>
-                                            <select name="from_country" id="from_country"
-                                                class="form-control" required="1">
-                                                <option value="">Select Country</option>
-                                                <t t-foreach="countries" t-as="c">
-                                                    <option t-att-value="c.id"
-                                                        t-att-selected="c.id == to_country_id">
-                                                        <t t-esc="c.name" />
-                                                    </option>
-                                                </t>
-                                            </select>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label>From State</label>
-                                            <select name="from_state" id="from_state"
-                                                class="form-control">
-                                                <option value="">Select State</option>
-                                                <t t-foreach="from_states" t-as="s">
-                                                    <option t-att-value="s.id">
-                                                        <t t-esc="s.name" />
-                                                    </option>
-                                                </t>
-                                            </select>
-                                        </div>
-                                         <div class="mb-3">
-                                            <label>From City</label>
-                                            <input type="text" name="from_city" class="form-control"
-                                                required="True" />
-                                        </div>
-                                        <div class="mb-3">
-                                            <label>Request Departure Date</label>
-                                            <input type="date" name="departure_date"
-                                                class="form-control" required="True" />
-                                        </div>
-                                        <div class="mb-3">
-                                            <label>Request Return Date</label>
-                                            <input type="date" name="return_date"
-                                                class="form-control"/>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label>Request Mode of Travel</label>
-                                            <select name="mode_of_travel" class="form-control">
-                                                <option value="">Select Mode</option>
+                                    <div class="row g-3 mt-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Mode of Travel</label>
+                                            <select name="mode_of_travel" class="form-select">
                                                 <t t-foreach="mode_options" t-as="opt">
-                                                    <option t-att-value="opt[0]">
-                                                        <t t-esc="opt[1]" />
-                                                    </option>
+                                                    <option t-att-value="opt[0]"><t t-esc="opt[1]"/></option>
+                                                </t>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Trip Type</label>
+                                            <select name="trip_type" class="form-select">
+                                                <t t-foreach="trip_options" t-as="opt">
+                                                    <option t-att-value="opt[0]"><t t-esc="opt[1]"/></option>
+                                                </t>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Preferred Travel Class</label>
+                                            <select name="travel_class" class="form-select">
+                                                <t t-foreach="class_options" t-as="opt">
+                                                    <option t-att-value="opt[0]"><t t-esc="opt[1]"/></option>
                                                 </t>
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <h4 class="mb-3">To</h4>
-                                        <hr class="mt-0 mb-3" />
-                                        <div class="mb-3">
-                                            <label>To Address</label>
-                                            <input type="text" name="to_address"
-                                                class="form-control" />
-                                        </div>
-                                        <div class="mb-3">
-                                            <label>To Country</label>
-                                            <select id="to_country" name="to_country"
-                                            class="form-control"
-                                                required="1">
-                                                <option value="">Select Country</option>
-                                                <t t-foreach="countries" t-as="c">
-                                                    <option t-att-value="c.id"
-                                                        t-att-selected="c.id == to_country_id">
-                                                        <t t-esc="c.name" />
-                                                    </option>
-                                                </t>
-                                            </select>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label>To State</label>
-                                            <select id="to_state" name="to_state" class="form-control">
-                                                <option value="">Select State</option>
-                                                <t t-foreach="to_states" t-as="s">
-                                                    <option t-att-value="s.id">
-                                                        <t t-esc="s.name" />
-                                                    </option>
-                                                </t>
-                                            </select>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label>To City</label>
-                                            <input type="text" name="to_city" class="form-control"
-                                                required="True" />
-                                        </div>
-                                        <div class="mb-3">
-                                            <label>Contact Number</label>
-                                            <input type="text" name="contact_number"
-                                                class="form-control" />
-                                        </div>
 
-                                        <div class="mb-3">
-                                            <label>Email</label>
-                                            <input type="text" name="email" class="form-control" />
+                                    <div class="row g-3 mt-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Contact Mobile</label>
+                                            <input type="text" name="contact_number" class="form-control"
+                                                   t-att-value="employee.mobile_phone or employee.work_phone if employee else ''"/>
                                         </div>
-
-                                    </div>
-
-                                </div>
-                            </div>
-                            <div class="tab-pane fade" id="tab_other">
-                                <div class="row">
-                                    <div class="col-md-12 mb-3">
-                                        <label class="form-label">Other Info</label>
-                                        <textarea name="other_info"
-                                            class="form-control"
-                                            rows="4"
-                                            placeholder="Add other information here..."></textarea>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Contact Email</label>
+                                            <input type="email" name="email" class="form-control"
+                                                   t-att-value="employee.work_email if employee else ''"/>
+                                        </div>
                                     </div>
                                 </div>
+
+                                <!-- TAB 2: Hotel & Cab Options -->
+                                <div class="tab-pane fade" id="tab_hotel_cab" role="tabpanel">
+                                    <div class="row g-4">
+                                        <!-- Hotel Options -->
+                                        <div class="col-md-6">
+                                            <div class="border rounded-3 p-4 bg-light h-100">
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" name="hotel_required" id="hotel_required" value="1"/>
+                                                    <label class="form-check-label fw-bold text-primary fs-6" for="hotel_required">
+                                                        🏨 Require Hotel Accommodation
+                                                    </label>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Hotel City</label>
+                                                    <input type="text" name="hotel_city" class="form-control" placeholder="Destination City"/>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Hotel Grade Preference</label>
+                                                    <select name="hotel_grade" class="form-select">
+                                                        <t t-foreach="hotel_grade_options" t-as="g">
+                                                            <option t-att-value="g[0]"><t t-esc="g[1]"/></option>
+                                                        </t>
+                                                    </select>
+                                                </div>
+                                                <div class="row g-2">
+                                                    <div class="col-6 mb-3">
+                                                        <label class="form-label">Check-in Date</label>
+                                                        <input type="date" name="hotel_checkin" class="form-control"/>
+                                                    </div>
+                                                    <div class="col-6 mb-3">
+                                                        <label class="form-label">Check-out Date</label>
+                                                        <input type="date" name="hotel_checkout" class="form-control"/>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label class="form-label">Rooms Count</label>
+                                                    <input type="number" name="hotel_rooms" class="form-control" value="1" min="1"/>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Cab Options -->
+                                        <div class="col-md-6">
+                                            <div class="border rounded-3 p-4 bg-light h-100">
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" name="cab_required" id="cab_required" value="1"/>
+                                                    <label class="form-check-label fw-bold text-warning fs-6" for="cab_required">
+                                                        🚗 Require Cab / Car Service
+                                                    </label>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Cab Type Preference</label>
+                                                    <select name="cab_type" class="form-select">
+                                                        <t t-foreach="cab_type_options" t-as="ct">
+                                                            <option t-att-value="ct[0]"><t t-esc="ct[1]"/></option>
+                                                        </t>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Pickup Location</label>
+                                                    <input type="text" name="cab_pickup" class="form-control" placeholder="e.g. Airport Terminal / Railway Station"/>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Drop Location</label>
+                                                    <input type="text" name="cab_dropoff" class="form-control" placeholder="e.g. Hotel Address / Client Office"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- TAB 3: Advance Payment & Notes -->
+                                <div class="tab-pane fade" id="tab_advance" role="tabpanel">
+                                    <div class="border rounded-3 p-4 bg-light mb-4">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" name="advance_required" id="advance_required" value="1"/>
+                                            <label class="form-check-label fw-bold text-success fs-6" for="advance_required">
+                                                💰 Require Travel Advance Payment
+                                            </label>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Advance Amount (INR)</label>
+                                                <input type="number" step="0.01" name="advance_amount" class="form-control" placeholder="0.00"/>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Advance Justification / Notes</label>
+                                                <input type="text" name="advance_notes" class="form-control" placeholder="Reason for advance payment"/>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="form-label">Additional Instructions / Special Requests</label>
+                                        <textarea name="other_info" class="form-control" rows="4"
+                                                  placeholder="Add preferred flight timings, specific hotel preferences, or special dietary requirements…"></textarea>
+                                    </div>
+                                </div>
+
                             </div>
-                            <div class="tab-pane fade" id="tab_adv_pay_req">
-                                <label class="form-check-label" for="advance_required">
-                                    Advance Required
-                                </label>
-                                <input type="checkbox"
-                                    name="advance_required"
-                                    class="form-check-input"
-                                    id="advance_required" />
+
+                            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                                <a href="/my/travel-request" class="btn btn-outline-secondary rounded-pill px-4">
+                                    Cancel
+                                </a>
+                                <button type="submit" class="btn btn-bxi-primary">
+                                    <i class="fa fa-paper-plane me-1"/> Submit Travel Request
+                                </button>
                             </div>
-                        </div>
-                        <div class="mt-4">
-                            <button type="submit" class="btn btn-primary">Save</button>
-                            <a href="/my/travel-request" class="btn btn-secondary">Cancel</a>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
             </div>
             <script type="text/javascript" src="/bxi_travel_request/static/src/js/state.js"></script>
         </t>
     </template>
 
-    <template id="travel_request_detail_template">
+    <!-- ═══════════════════════════════════════════════════════════════
+         3. DETAIL VIEW & WEBSITE APPROVAL ACTIONS
+    ═══════════════════════════════════════════════════════════════ -->
+    <template id="travel_request_detail_template" name="Travel Request Detail">
         <t t-call="portal.portal_layout">
-            <div class="container mt-4 o_form_sheet_bg">
-                <div class="card shadow-sm p-4">
-                    <div class="mb-4">
-                        <h3 class="fw-bold text-success">
-                            Travel Request Submitted Successfully
-                        </h3>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-muted">Reference</label>
-                        <input type="text"
-                            t-att-value="record.name"
-                            class="form-control fw-bold text-primary"
-                            style="font-size: 18px; background-color: #f8f9fa;"
-                            readonly="1" />
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Employee</label>
-                            <input type="text"
-                                t-att-value="record.employee_id.name"
-                                class="form-control"
-                                readonly="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Manager</label>
-                            <input type="text"
-                                t-att-value="record.manager_id.name"
-                                class="form-control"
-                                readonly="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Department</label>
-                            <input type="text"
-                                t-att-value="record.department_id.name"
-                                class="form-control"
-                                readonly="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Travel Purpose</label>
-                            <input type="text"
-                                t-att-value="record.travel_purpose"
-                                class="form-control"
-                                readonly="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Departure Date</label>
-                            <input type="text"
-                                t-att-value="record.departure_date"
-                                class="form-control"
-                                readonly="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Return Date</label>
-                            <input type="text"
-                                t-att-value="record.return_date"
-                                class="form-control"
-                                readonly="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">From Country</label>
-                            <input type="text"
-                                t-att-value="record.from_country.name"
-                                class="form-control"
-                                readonly="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">To Country </label>
-                            <input type="text"
-                                t-att-value="record.to_country.name"
-                                class="form-control"
-                                readonly="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">From State</label>
-                            <input type="text"
-                                t-att-value="record.to_state.name"
-                                class="form-control"
-                                readonly="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">To State</label>
-                            <input type="text"
-                                t-att-value="record.to_state.name"
-                                class="form-control"
-                                readonly="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">From City</label>
-                            <input type="text"
-                                t-att-value="record.from_city"
-                                class="form-control"
-                                readonly="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">To City</label>
-                            <input type="text"
-                                t-att-value="record.to_city"
-                                class="form-control"
-                                readonly="1" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Mode of Travel</label>
-                            <input type="text"
-                                t-att-value="record.mode_of_travel"
-                                class="form-control"
-                                readonly="1" />
+            <div class="container my-4">
+
+                <!-- Alert Banners -->
+                <div t-if="success or msg" class="alert alert-success alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                    <i class="fa fa-check-circle me-2"/><t t-esc="msg or 'Travel Request Submitted Successfully!'"/>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <a href="/my/travel-request" class="btn btn-outline-secondary rounded-pill btn-sm">
+                        <i class="fa fa-arrow-left me-1"/> Back to Requests List
+                    </a>
+                    <span class="text-muted small">Created on <t t-esc="record.create_date.strftime('%Y-%m-%d')"/></span>
+                </div>
+
+                <!-- Main Card -->
+                <div class="bxi-card p-0 overflow-hidden mb-4">
+                    
+                    <!-- Header -->
+                    <div class="bg-dark text-white p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="fw-bold mb-1 text-light"><t t-esc="record.name"/></h3>
+                                <p class="mb-0 text-white-50 small">
+                                    <i class="fa fa-user me-1"/><t t-esc="record.employee_id.name"/> |
+                                    <i class="fa fa-building me-1"/><t t-esc="record.department_id.name or '—'"/>
+                                </p>
+                            </div>
+                            <div>
+                                <span t-if="record.state == 'draft'" class="bxi-badge bxi-badge-draft">Draft</span>
+                                <span t-elif="record.state == 'submitted'" class="bxi-badge bxi-badge-submitted">Submitted</span>
+                                <span t-elif="record.state == 'manager_approval'" class="bxi-badge bxi-badge-warning">Manager Approval</span>
+                                <span t-elif="record.state == 'hr_approval'" class="bxi-badge bxi-badge-warning">HR Approval</span>
+                                <span t-elif="record.state == 'mybiz_pending'" class="bxi-badge bxi-badge-mybiz">myBiz Pending</span>
+                                <span t-elif="record.state == 'approved'" class="bxi-badge bxi-badge-approved">Approved &amp; Booked</span>
+                                <span t-elif="record.state == 'cancelled'" class="bxi-badge bxi-badge-danger">Cancelled</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="mt-4">
-                        <a href="/my/travel-request" class="btn btn-primary">
-                            Back to Requests
-                        </a>
+
+                    <!-- ── Website Manager Action Banner ─────────────────────── -->
+                    <div t-if="can_manager_approve" class="bxi-action-banner-manager m-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="fw-bold text-dark mb-0">⚡ Reporting Manager Approval Needed</h5>
+                                <small class="text-muted">You are assigned as reporting manager for <t t-esc="record.employee_id.name"/></small>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <form t-attf-action="/my/travel-request/#{record.id}/approve-manager" method="post" class="d-inline">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <button type="submit" class="btn btn-bxi-success">
+                                        <i class="fa fa-check me-1"/> Approve Request
+                                    </button>
+                                </form>
+                                <form t-attf-action="/my/travel-request/#{record.id}/refuse-manager" method="post" class="d-inline">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <button type="submit" class="btn btn-outline-danger fw-bold rounded-pill px-3">
+                                        <i class="fa fa-times me-1"/> Refuse
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Website HR Action Banner ──────────────────────────── -->
+                    <div t-if="can_hr_approve" class="bxi-action-banner-hr m-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="fw-bold text-success mb-0">🚀 HR Approval &amp; Automatic myBiz Push</h5>
+                                <small class="text-muted">Approving will push this request directly to MakeMyTrip myBiz API</small>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <form t-attf-action="/my/travel-request/#{record.id}/approve-hr" method="post" class="d-inline">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <button type="submit" class="btn btn-bxi-success">
+                                        <i class="fa fa-rocket me-1"/> Approve &amp; Push to myBiz
+                                    </button>
+                                </form>
+                                <form t-attf-action="/my/travel-request/#{record.id}/refuse-hr" method="post" class="d-inline">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <button type="submit" class="btn btn-outline-danger fw-bold rounded-pill px-3">
+                                        <i class="fa fa-times me-1"/> Refuse
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <!-- Animated Route Header Card -->
+                        <div class="bxi-route-card mb-4">
+                            <div class="row align-items-center text-center">
+                                <div class="col-md-5">
+                                    <span class="text-muted small fw-bold text-uppercase">Departure</span>
+                                    <h2 class="fw-extrabold text-primary mb-0"><t t-esc="record.from_city"/></h2>
+                                    <small class="text-muted fw-semibold"><t t-esc="record.from_country.name"/></small>
+                                    <div class="mt-2 text-dark font-monospace fw-bold"><i class="fa fa-calendar text-primary me-1"/><t t-esc="record.departure_date"/></div>
+                                </div>
+                                <div class="col-md-2 my-3 my-md-0 bxi-route-line">
+                                    <div class="bxi-plane-icon">
+                                        <i class="fa fa-plane fa-lg"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <span class="text-muted small fw-bold text-uppercase">Destination</span>
+                                    <h2 class="fw-extrabold text-success mb-0"><t t-esc="record.to_city"/></h2>
+                                    <small class="text-muted fw-semibold"><t t-esc="record.to_country.name"/></small>
+                                    <div class="mt-2 text-dark font-monospace fw-bold"><i class="fa fa-calendar text-success me-1"/><t t-esc="record.return_date or 'One-Way'"/></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- myBiz API Status Card -->
+                        <div t-if="record.mybiz_service_id or record.mybiz_status != 'not_pushed'" class="bxi-card p-4 mb-4 border-primary">
+                            <h5 class="fw-bold text-primary mb-3">🔗 MakeMyTrip myBiz Booking Reference</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <span class="text-muted small d-block">myBiz Service ID</span>
+                                    <strong class="text-primary fs-5"><t t-esc="record.mybiz_service_id or '—'"/></strong>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="text-muted small d-block">Booking Reference / PNR</span>
+                                    <strong class="text-success fs-5"><t t-esc="record.mybiz_booking_ref or '—'"/></strong>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="text-muted small d-block">myBiz API Status</span>
+                                    <div>
+                                        <span t-if="record.mybiz_status in ('approved', 'booked')" class="bxi-badge bxi-badge-approved">Booked</span>
+                                        <span t-elif="record.mybiz_status == 'pending'" class="bxi-badge bxi-badge-mybiz">myBiz Pending</span>
+                                        <span t-elif="record.mybiz_status == 'failed'" class="bxi-badge bxi-badge-danger">Push Failed</span>
+                                        <span t-else="" class="bxi-badge bxi-badge-draft"><t t-esc="record.mybiz_status"/></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Details Grid -->
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6">
+                                <div class="bxi-card p-4 h-100">
+                                    <h5 class="fw-bold text-dark mb-3">📋 Request Specifications</h5>
+                                    <table class="table table-borderless table-sm mb-0">
+                                        <tr><th class="text-muted w-40">Purpose:</th><td class="fw-bold"><t t-esc="record.travel_purpose"/></td></tr>
+                                        <tr><th class="text-muted">Travel Mode:</th><td><t t-esc="record.mode_of_travel or '—'"/></td></tr>
+                                        <tr><th class="text-muted">Trip Type:</th><td><t t-esc="record.trip_type or '—'"/></td></tr>
+                                        <tr><th class="text-muted">Travel Class:</th><td><t t-esc="record.travel_class or '—'"/></td></tr>
+                                        <tr><th class="text-muted">Requested By:</th><td><t t-esc="record.request_by.name"/></td></tr>
+                                        <tr><th class="text-muted">Request Date:</th><td><t t-esc="record.request_date"/></td></tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="bxi-card p-4 h-100">
+                                    <h5 class="fw-bold text-dark mb-3">✅ Workflow Approvals</h5>
+                                    <table class="table table-borderless table-sm mb-0">
+                                        <tr>
+                                            <th class="text-muted w-40">Manager:</th>
+                                            <td>
+                                                <t t-if="record.manager_approved_by">
+                                                    <span class="bxi-badge bxi-badge-approved me-1">Approved</span>
+                                                    <t t-esc="record.manager_approved_by.name"/>
+                                                </t>
+                                                <t t-else="">
+                                                    <span class="bxi-badge bxi-badge-draft">Pending</span>
+                                                </t>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th class="text-muted">HR Approver:</th>
+                                            <td>
+                                                <t t-if="record.hr_approved_by">
+                                                    <span class="bxi-badge bxi-badge-approved me-1">Approved</span>
+                                                    <t t-esc="record.hr_approved_by.name"/>
+                                                </t>
+                                                <t t-else="">
+                                                    <span class="bxi-badge bxi-badge-draft">Pending</span>
+                                                </t>
+                                            </td>
+                                        </tr>
+                                        <tr t-if="record.advance_required">
+                                            <th class="text-muted">Advance Requested:</th>
+                                            <td class="fw-bold text-success">
+                                                INR <t t-esc="record.advance_amount"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Travel Option Segments Table -->
+                        <div t-if="record.travel_option_ids">
+                            <h5 class="fw-bold text-dark mb-3">✈ Selected Travel Segments</h5>
+                            <div class="bxi-table-container">
+                                <table class="table bxi-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Description</th>
+                                            <th>Departure / Check-in</th>
+                                            <th>Class / Grade</th>
+                                            <th>myBiz Ref</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="record.travel_option_ids" t-as="opt">
+                                            <tr>
+                                                <td class="fw-bold"><t t-esc="opt.option_type.capitalize()"/></td>
+                                                <td><t t-esc="opt.description or '—'"/></td>
+                                                <td><t t-esc="opt.departure_datetime or opt.checkin_date or '—'"/></td>
+                                                <td><t t-esc="opt.travel_class or opt.hotel_grade or '—'"/></td>
+                                                <td><code><t t-esc="opt.mybiz_ref or '—'"/></code></td>
+                                                <td><span class="bxi-badge bxi-badge-submitted"><t t-esc="opt.mybiz_status"/></span></td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
+
             </div>
         </t>
     </template>
+
 </odoo>

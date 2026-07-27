@@ -1,3 +1,8 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_travel_request_user,travel.request user,model_travel_request,base.group_user,1,1,1,1
+access_travel_request_user,travel.request user,model_travel_request,base.group_user,1,1,1,0
+access_travel_request_hr,travel.request hr,model_travel_request,hr.group_hr_user,1,1,1,1
 access_travel_request_expense_line_user,travel.request.expense.line user,model_travel_request_expense_line,base.group_user,1,1,1,1
+access_travel_request_option_user,travel.request.option user,model_travel_request_option,base.group_user,1,1,1,1
+access_travel_request_option_hr,travel.request.option hr,model_travel_request_option,hr.group_hr_user,1,1,1,1
+access_bxi_mybiz_config_admin,bxi.mybiz.config admin,model_bxi_mybiz_config,base.group_erp_manager,1,1,1,1
+access_bxi_mybiz_config_system,bxi.mybiz.config system,model_bxi_mybiz_config,base.group_system,1,1,1,1

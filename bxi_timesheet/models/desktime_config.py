@@ -205,11 +205,20 @@ class BxiDesktimeConfig(models.Model):
         desktime_emp_id = emp_data.get('id')
         emp_name = emp_data.get('name', '')
 
-        # ── Match Odoo employee by work_email ──────────────────────────
+        # Match Odoo employee by work_email, scoped to this config's company
         odoo_employee = self.env['hr.employee'].search(
-            [('work_email', '=ilike', email)],
+            [
+                ('work_email', '=ilike', email),
+                ('company_id', '=', self.company_id.id),
+            ],
             limit=1
         )
+        if not odoo_employee:
+            # Fallback: try across all companies if not found in config company
+            odoo_employee = self.env['hr.employee'].search(
+                [('work_email', '=ilike', email)],
+                limit=1
+            )
         if not odoo_employee:
             _logger.debug(
                 'BXI DeskTime: No Odoo employee found for email "%s" (DeskTime: %s). Skipping.',

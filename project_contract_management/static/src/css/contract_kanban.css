@@ -1,54 +1,196 @@
+/* =========================================================
+   Contract Kanban — Advanced Premium Design
+   ========================================================= */
+
+/* ---- CARD BASE ---- */
 .contract_card {
     position: relative;
-    border-radius: 16px;
+    border-radius: 14px;
     padding: 0;
     overflow: hidden;
-
-    /* GLASS EFFECT */
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-
-    border: 1px solid rgba(255,255,255,0.3);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-
-    transition: all 0.2s ease;
+    background: #ffffff;
+    border: 1px solid #e8edf3;
+    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    cursor: pointer;
 }
 
 .contract_card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    transform: translateY(-5px);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
 }
 
-/* LEFT STRIP */
-.stage_strip {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 6px;
-    border-radius: 6px 0 0 6px;
+/* ---- TOP ACCENT BAR (gradient) ---- */
+.contract_top_bar {
+    height: 5px;
+    width: 100%;
+    background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 50%, #06b6d4 100%);
 }
 
-/* CONTENT */
-.card_content {
-    padding: 16px;
+/* ---- MAIN CONTENT AREA ---- */
+.contract_body {
+    padding: 14px 16px 10px 16px;
 }
 
-/* PROGRESS BAR */
-.contract_progress {
-    height: 8px;
-    border-radius: 10px;
-    background: #e9ecef;
+/* ---- CONTRACT NAME ---- */
+.contract_title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.35;
+    margin-bottom: 4px;
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.contract_progress .progress-bar {
-    border-radius: 10px;
-}
-
-/* TAG STYLE IMPROVEMENT */
-.o_tag {
-    border-radius: 20px !important;
-    padding: 2px 10px;
+/* ---- PROBABILITY BADGE ---- */
+.contract_prob_badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
     font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #ffffff;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.35);
+}
+
+/* ---- DIVIDER ---- */
+.contract_divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+    margin: 10px 0 8px;
+}
+
+/* ---- CLIENT TAGS AREA ---- */
+.contract_clients {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.contract_client_icon {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+/* ---- AMOUNT ROW ---- */
+.contract_amount_row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.contract_amount_icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.contract_amount_icon i {
+    color: #16a34a;
+    font-size: 12px;
+}
+
+.contract_amount_value {
+    font-size: 15px;
+    font-weight: 800;
+    color: #15803d;
+    letter-spacing: -0.3px;
+}
+
+/* ---- DATES ROW ---- */
+.contract_dates_row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.contract_dates_row i {
+    color: #94a3b8;
+    font-size: 10px;
+}
+
+.date_sep {
+    color: #cbd5e1;
+    font-size: 10px;
+    margin: 0 2px;
+}
+
+/* ---- FOOTER STRIP ---- */
+.contract_footer {
+    padding: 7px 16px;
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.contract_type_badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: #ede9fe;
+    color: #6d28d9;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+}
+
+.contract_open_btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.contract_open_btn:hover {
+    background: #e2e8f0;
+}
+
+.contract_open_btn i {
+    color: #64748b;
+    font-size: 10px;
+}
+
+/* ---- KANBAN COLUMN HEADER ---- */
+.o_kanban_group .o_column_title {
+    font-weight: 700 !important;
+    font-size: 13px !important;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #475569 !important;
+}
+
+/* ---- OVERRIDE DEFAULT MANY2MANY TAGS ---- */
+.contract_card .o_field_many2many_tags .o_tag {
+    border-radius: 20px !important;
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    padding: 2px 9px !important;
+    background: #f0f4ff !important;
+    color: #3730a3 !important;
+    border: none !important;
+    box-shadow: none !important;
 }

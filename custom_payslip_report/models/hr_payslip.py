@@ -60,5 +60,3 @@ class HrPayslipRun(models.Model):
                             new_run.generate_payslips(version_ids=version_ids)
                     except Exception as e:
                         pass
-
-

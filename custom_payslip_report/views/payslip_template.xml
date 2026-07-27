@@ -42,7 +42,7 @@
                         </tr>
                         <tr>
                             <td style="border:1px solid #000;"><b>DOJ / Gender</b></td>
-                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.contract_date_start"/>, <t t-esc="o.employee_id.sex"/></td>
+                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.emp_date_of_joining"/>, <t t-esc="o.employee_id.sex"/></td>
                             <td style="border:1px solid #000;"><b>Department</b></td>
                             <td style="border:1px solid #000;"><t t-esc="o.employee_id.department_id.name"/></td>
                         </tr>
@@ -338,4 +338,3 @@
         </t>
     </template>
 </odoo>
-

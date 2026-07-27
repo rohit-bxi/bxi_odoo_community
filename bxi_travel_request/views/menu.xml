@@ -1,30 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem id="menu_travel_root" name="Travel Request" sequence="10"
-        web_icon="bxi_travel_request,static/description/icon.png"/>
+    <!-- ═══════════════════════════════════════════════════════════════
+         ROOT MENU — Travel Request App
+    ═══════════════════════════════════════════════════════════════ -->
+    <menuitem id="menu_travel_root"
+              name="Travel"
+              sequence="10"
+              web_icon="bxi_travel_request,static/description/icon.png"/>
 
-    <menuitem
-        id="menu_travel_request"
-        name="Travel Requests"
-        parent="menu_travel_root"
-        action="action_travel_request"
-        sequence="20"  
-    />
+    <!-- ── My Travel Requests ────────────────────────────────────── -->
+    <menuitem id="menu_my_travel_request"
+              name="My Requests"
+              parent="menu_travel_root"
+              action="action_travel_request_mine"
+              sequence="10"/>
+
+    <!-- ── All Travel Requests (HR / Admin) ─────────────────────── -->
+    <menuitem id="menu_all_travel_request"
+              name="All Requests"
+              parent="menu_travel_root"
+              action="action_travel_request"
+              sequence="20"
+              groups="hr.group_hr_user,hr.group_hr_manager,base.group_erp_manager,base.group_system"/>
+
+    <!-- ── Pending Approvals ─────────────────────────────────────── -->
+    <menuitem id="menu_travel_pending"
+              name="Pending Approvals"
+              parent="menu_travel_root"
+              action="action_travel_pending_approvals"
+              sequence="30"/>
+
+    <!-- ── myBiz Push Failures ───────────────────────────────────── -->
+    <menuitem id="menu_travel_mybiz_failed"
+              name="myBiz Failures"
+              parent="menu_travel_root"
+              action="action_travel_mybiz_failed"
+              sequence="40"
+              groups="hr.group_hr_manager,base.group_erp_manager,base.group_system"/>
+
+    <!-- ── Configuration ─────────────────────────────────────────── -->
+    <menuitem id="menu_travel_config_root"
+              name="Configuration"
+              parent="menu_travel_root"
+              sequence="100"
+              groups="base.group_erp_manager,base.group_system"/>
+
+    <menuitem id="menu_mybiz_config"
+              name="myBiz API Configuration"
+              parent="menu_travel_config_root"
+              action="action_mybiz_config"
+              sequence="10"
+              groups="base.group_erp_manager,base.group_system"/>
+
+    <!-- ── Portal Template ───────────────────────────────────────── -->
     <template id="travel_request_link"
         inherit_id="portal.portal_my_home"
         name="Portal Home - Travel Request">
         <xpath expr="//div[@id='portal_common_category']/t[1]" position="after">
-            <t
-                t-if="(request.env.user.has_group('base.group_portal') or request.env.user.has_group('base.group_user')) 
-         and not request.env.user.sudo().vender_custmer_access">
+            <t t-if="(request.env.user.has_group('base.group_portal') or request.env.user.has_group('base.group_user'))
+             and not request.env.user.sudo().vender_custmer_access">
                 <t t-call="portal.portal_docs_entry">
                     <t t-set="icon" t-value="'bxi_travel_request/static/src/img/icon-travel-services.svg'"/>
                     <t t-set="title">Submit Travel Request</t>
                     <t t-set="text">View and update your Travel Request</t>
-                    <t t-set="url" t-value="'/my/travel-request'" />
-                    <t t-set="config_card" t-value="True" />
+                    <t t-set="url" t-value="'/my/travel-request'"/>
+                    <t t-set="config_card" t-value="True"/>
                 </t>
             </t>
         </xpath>
     </template>
+
 </odoo>

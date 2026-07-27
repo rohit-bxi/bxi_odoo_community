@@ -11,7 +11,7 @@
         'hr',
         'portal',
         'website',
-        'om_hr_payroll',
+        'l10n_in_hr_payroll',
         'bxi_hr_employee',
     ],
     'data': [

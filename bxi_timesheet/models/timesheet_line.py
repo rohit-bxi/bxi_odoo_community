@@ -36,18 +36,8 @@ class AccountAnalyticLine(models.Model):
                 if not (is_admin or is_hr or is_manager):
                     raise UserError(_("Timesheets for previous weeks (before %s) cannot be created, modified, or submitted.") % current_week_start.strftime('%Y-%m-%d'))
 
-    @api.constrains('employee_id', 'date')
-    def _check_single_timesheet_per_day(self):
-        """Block users from creating more than one timesheet entry per day."""
-        for rec in self:
-            if rec.employee_id and rec.date:
-                existing = self.env['account.analytic.line'].sudo().search([
-                    ('employee_id', '=', rec.employee_id.id),
-                    ('date', '=', rec.date),
-                    ('id', '!=', rec.id)
-                ], limit=1)
-                if existing:
-                    raise UserError(_("More than one timesheet entry cannot be submitted for a single day (%s).") % rec.date.strftime('%Y-%m-%d'))
+    # NOTE: Multiple timesheet lines per day are allowed (different project/task combos).
+    # A per-day uniqueness constraint is NOT enforced here.
 
     @api.constrains('unit_amount')
     def _check_max_hours_per_day(self):
@@ -124,15 +114,19 @@ class AccountAnalyticLine(models.Model):
         employees = self.env['hr.employee'].sudo().search([('active', '=', True)])
         
         for emp in employees:
+            # Search by exact leave code 'LOP': company-specific first, then global
             unpaid_type = self.env['hr.leave.type'].sudo().search([
-                ('company_id', 'in', [emp.company_id.id, False]),
-                '|',
-                ('name', 'ilike', 'unpaid'),
-                ('name', 'ilike', 'without pay')
+                ('company_id', '=', emp.company_id.id),
+                ('code', '=', 'LOP'),
             ], limit=1)
-            
             if not unpaid_type:
-                _logger.warning("Unpaid Leave / Leave Without Pay type not found for employee %s (company: %s).", emp.name, emp.company_id.name)
+                unpaid_type = self.env['hr.leave.type'].sudo().search([
+                    ('company_id', '=', False),
+                    ('code', '=', 'LOP'),
+                ], limit=1)
+
+            if not unpaid_type:
+                _logger.warning("LOP leave type (code='LOP') not found for employee %s (company: %s). Please configure it.", emp.name, emp.company_id.name)
                 continue
 
             logged_days = self.env['account.analytic.line'].sudo().search([
@@ -153,7 +147,9 @@ class AccountAnalyticLine(models.Model):
                 
                 if not existing_leave:
                     try:
-                        self.env['hr.leave'].sudo().create({
+                        self.env['hr.leave'].sudo().with_context(
+                            allowed_company_ids=[emp.company_id.id]
+                        ).create({
                             'employee_id': emp.id,
                             'holiday_status_id': unpaid_type.id,
                             'request_date_from': today,
