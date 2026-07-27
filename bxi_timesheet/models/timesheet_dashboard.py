@@ -31,39 +31,58 @@ class BxiTimesheetDashboard(models.AbstractModel):
             ('company_id', 'in', allowed_company_ids),
         ], limit=1)
 
-        is_admin = (
+        # Timesheet specific permission resolution:
+        # Determine admin and approver status strictly by Timesheet security groups & System Admin
+        is_timesheet_admin = (
             user.has_group('base.group_system') or
             user.has_group('base.group_erp_manager') or
-            user.has_group('hr_timesheet.group_timesheet_manager') or
-            user.has_group('hr.group_hr_manager')
-        )
-        is_hr = (
-            user.has_group('hr.group_hr_user') or
             user.has_group('hr_timesheet.group_timesheet_manager')
         )
-        is_approver = user.has_group('hr_timesheet.group_hr_timesheet_approver')
+        is_timesheet_approver = user.has_group('hr_timesheet.group_hr_timesheet_approver')
 
-        # Determine manager status (has direct reports within allowed companies)
-        is_manager = False
+        # Subordinates check
         subordinates = self.env['hr.employee']
         if current_employee:
             subordinates = self.env['hr.employee'].search([
                 ('parent_id', '=', current_employee.id),
                 ('company_id', 'in', allowed_company_ids),
             ])
-            is_manager = len(subordinates) > 0
 
-        # Build list of allowed employees — always scoped to user's companies
-        if is_admin or is_hr:
+        # If user has "User: own timesheets only" (and NOT Timesheet Admin/Approver):
+        # They MUST only see themselves — hide team toggle and dropdown for other employees!
+        has_own_timesheets_only = (
+            user.has_group('hr_timesheet.group_hr_timesheet_user') and
+            not is_timesheet_approver and
+            not is_timesheet_admin
+        )
+
+        if has_own_timesheets_only:
+            is_admin = False
+            is_hr = False
+            is_manager = False
+            allowed_employees = current_employee if current_employee else self.env['hr.employee']
+        elif is_timesheet_admin:
+            is_admin = True
+            is_hr = True
+            is_manager = True
             allowed_employees = self.env['hr.employee'].search([
                 ('active', '=', True),
                 ('company_id', 'in', allowed_company_ids),
             ])
-        elif is_approver or is_manager:
-            allowed_employees = current_employee + subordinates
+        elif is_timesheet_approver or len(subordinates) > 0:
+            is_admin = False
+            is_hr = False
+            is_manager = True
+            allowed_employees = current_employee + subordinates if current_employee else subordinates
         elif current_employee:
+            is_admin = False
+            is_hr = False
+            is_manager = False
             allowed_employees = current_employee
         else:
+            is_admin = False
+            is_hr = False
+            is_manager = False
             allowed_employees = self.env['hr.employee']
 
         # Determine target employee
@@ -473,9 +492,12 @@ class BxiTimesheetDashboard(models.AbstractModel):
             ('company_id', 'in', allowed_company_ids),
         ], limit=1)
 
-        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager') or user.has_group('hr_timesheet.group_timesheet_manager') or user.has_group('hr.group_hr_manager')
-        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr_timesheet.group_timesheet_manager')
-        is_approver = user.has_group('hr_timesheet.group_hr_timesheet_approver')
+        is_timesheet_admin = (
+            user.has_group('base.group_system') or
+            user.has_group('base.group_erp_manager') or
+            user.has_group('hr_timesheet.group_timesheet_manager')
+        )
+        is_timesheet_approver = user.has_group('hr_timesheet.group_hr_timesheet_approver')
 
         subordinates = self.env['hr.employee']
         if current_employee:
@@ -484,16 +506,25 @@ class BxiTimesheetDashboard(models.AbstractModel):
                 ('company_id', 'in', allowed_company_ids),
             ])
 
-        # allowed_employee_ids — always scoped to user's companies
+        has_own_timesheets_only = (
+            user.has_group('hr_timesheet.group_hr_timesheet_user') and
+            not is_timesheet_approver and
+            not is_timesheet_admin
+        )
+
         allowed_employee_ids = []
-        if is_admin or is_hr:
+        if has_own_timesheets_only:
+            allowed_employee_ids = [current_employee.id] if current_employee else []
+        elif is_timesheet_admin:
             allowed_employee_ids = self.env['hr.employee'].search([
                 ('active', '=', True),
                 ('company_id', 'in', allowed_company_ids),
             ]).ids
-        else:
+        elif is_timesheet_approver or len(subordinates) > 0:
             allowed_employee_ids = [current_employee.id] if current_employee else []
             allowed_employee_ids += subordinates.ids
+        elif current_employee:
+            allowed_employee_ids = [current_employee.id]
 
         target_emp_id = int(employee_id)
         if target_emp_id not in allowed_employee_ids:
@@ -590,18 +621,20 @@ class BxiTimesheetDashboard(models.AbstractModel):
             ('user_id', '=', user.id),
             ('company_id', 'in', allowed_company_ids),
         ], limit=1)
-        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager') or user.has_group('hr_timesheet.group_timesheet_manager') or user.has_group('hr.group_hr_manager')
-        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr_timesheet.group_timesheet_manager')
+        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager') or user.has_group('hr_timesheet.group_timesheet_manager')
         is_approver = user.has_group('hr_timesheet.group_hr_timesheet_approver')
+        has_own_timesheets_only = user.has_group('hr_timesheet.group_hr_timesheet_user') and not is_approver and not is_admin
 
         target_emp_id = int(employee_id)
+        if has_own_timesheets_only and current_employee and target_emp_id != current_employee.id:
+            raise UserError(_('You are not authorized to submit timesheets for another employee.'))
 
         # Verify target employee belongs to an allowed company
         target_emp = self.env['hr.employee'].browse(target_emp_id)
         if target_emp.company_id.id not in allowed_company_ids:
             raise UserError(_('You are not authorized to submit timesheets for this employee.'))
 
-        is_manager = is_approver or (current_employee and target_emp_id in self.env['hr.employee'].search([
+        is_manager = is_admin or is_approver or (current_employee and target_emp_id in self.env['hr.employee'].search([
             ('parent_id', '=', current_employee.id),
             ('company_id', 'in', allowed_company_ids),
         ]).ids)
@@ -609,7 +642,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         current_week_start = self._get_current_week_start()
 
-        if start_date < current_week_start and not (is_admin or is_hr or is_manager):
+        if start_date < current_week_start and not is_manager:
             raise UserError(_("Once a week is crossed, timesheets for the previous week cannot be submitted."))
 
         end_date = start_date + timedelta(days=6)
@@ -636,9 +669,13 @@ class BxiTimesheetDashboard(models.AbstractModel):
             ('user_id', '=', user.id),
             ('company_id', 'in', allowed_company_ids),
         ], limit=1)
-        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager') or user.has_group('hr_timesheet.group_timesheet_manager') or user.has_group('hr.group_hr_manager')
-        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr_timesheet.group_timesheet_manager')
+        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager') or user.has_group('hr_timesheet.group_timesheet_manager')
         is_approver = user.has_group('hr_timesheet.group_hr_timesheet_approver')
+        has_own_timesheets_only = user.has_group('hr_timesheet.group_hr_timesheet_user') and not is_approver and not is_admin
+
+        if has_own_timesheets_only:
+            raise UserError(_('Only managers, approvers, or System Admins can approve timesheets.'))
+
         target_emp_id = int(employee_id)
 
         # Verify target employee belongs to an allowed company
@@ -646,12 +683,12 @@ class BxiTimesheetDashboard(models.AbstractModel):
         if target_emp.company_id.id not in allowed_company_ids:
             raise UserError(_('You are not authorized to approve timesheets for this employee.'))
 
-        is_manager = is_approver or (current_employee and target_emp_id in self.env['hr.employee'].search([
+        is_manager = is_admin or is_approver or (current_employee and target_emp_id in self.env['hr.employee'].search([
             ('parent_id', '=', current_employee.id),
             ('company_id', 'in', allowed_company_ids),
         ]).ids)
 
-        if not (is_admin or is_hr or is_manager):
+        if not is_manager:
             raise UserError(_('Only the employee\'s manager, HR officers, or System Admins can approve timesheets.'))
 
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
@@ -680,9 +717,13 @@ class BxiTimesheetDashboard(models.AbstractModel):
             ('user_id', '=', user.id),
             ('company_id', 'in', allowed_company_ids),
         ], limit=1)
-        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager') or user.has_group('hr_timesheet.group_timesheet_manager') or user.has_group('hr.group_hr_manager')
-        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr_timesheet.group_timesheet_manager')
+        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager') or user.has_group('hr_timesheet.group_timesheet_manager')
         is_approver = user.has_group('hr_timesheet.group_hr_timesheet_approver')
+        has_own_timesheets_only = user.has_group('hr_timesheet.group_hr_timesheet_user') and not is_approver and not is_admin
+
+        if has_own_timesheets_only:
+            raise UserError(_('Only managers, approvers, or System Admins can refuse timesheets.'))
+
         target_emp_id = int(employee_id)
 
         # Verify target employee belongs to an allowed company
@@ -690,12 +731,12 @@ class BxiTimesheetDashboard(models.AbstractModel):
         if target_emp.company_id.id not in allowed_company_ids:
             raise UserError(_('You are not authorized to refuse timesheets for this employee.'))
 
-        is_manager = is_approver or (current_employee and target_emp_id in self.env['hr.employee'].search([
+        is_manager = is_admin or is_approver or (current_employee and target_emp_id in self.env['hr.employee'].search([
             ('parent_id', '=', current_employee.id),
             ('company_id', 'in', allowed_company_ids),
         ]).ids)
 
-        if not (is_admin or is_hr or is_manager):
+        if not is_manager:
             raise UserError(_('Only the employee\'s manager, HR officers, or System Admins can refuse timesheets.'))
 
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
