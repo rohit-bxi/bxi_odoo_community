@@ -50,8 +50,8 @@ class AccountAnalyticLine(models.Model):
         current_week_start = today - timedelta(days=offset)
 
         user = self.env.user
-        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager')
-        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager')
+        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager') or user.has_group('hr_timesheet.group_timesheet_manager')
+        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager') or user.has_group('hr_timesheet.group_hr_timesheet_approver')
         current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
 
         submitted_recs = self.filtered(lambda r: r.state == 'draft')
@@ -80,13 +80,13 @@ class AccountAnalyticLine(models.Model):
 
     def action_approve(self):
         user = self.env.user
-        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager')
-        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager')
+        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager') or user.has_group('hr_timesheet.group_timesheet_manager')
+        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager') or user.has_group('hr_timesheet.group_hr_timesheet_approver')
 
         approved_recs = self.env['account.analytic.line']
         for rec in self:
             current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
-            is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
+            is_manager = (current_employee and rec.employee_id.parent_id.id == current_employee.id) or is_hr or is_admin
 
             if not (is_admin or is_hr or is_manager):
                 raise UserError(_("Only the employee's manager, HR officers, or System Admins can approve timesheets."))
@@ -112,13 +112,13 @@ class AccountAnalyticLine(models.Model):
 
     def action_refuse(self):
         user = self.env.user
-        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager')
-        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager')
+        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager') or user.has_group('hr_timesheet.group_timesheet_manager')
+        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager') or user.has_group('hr_timesheet.group_hr_timesheet_approver')
 
         refused_recs = self.env['account.analytic.line']
         for rec in self:
             current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
-            is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
+            is_manager = (current_employee and rec.employee_id.parent_id.id == current_employee.id) or is_hr or is_admin
 
             if not (is_admin or is_hr or is_manager):
                 raise UserError(_("Only the employee's manager, HR officers, or System Admins can refuse timesheets."))

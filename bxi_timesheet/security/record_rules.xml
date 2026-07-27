@@ -2,14 +2,48 @@
 <odoo>
 
     <!-- ============================================================
-         Record Rules: bxi.desktime.log  (Multi-Company aware)
-         - Employee (base.group_user): sees only own records in their company
-         - HR User / HR Manager: sees all records within their allowed companies
+         Record Rules: bxi.desktime.log (Multi-Company aware)
     ============================================================ -->
 
-    <!-- Regular employee / Manager: own records + team records within allowed companies -->
+    <!-- Timesheet User: own records -->
+    <record id="rule_bxi_desktime_log_user_own" model="ir.rule">
+        <field name="name">DeskTime Log: Timesheet User sees own records</field>
+        <field name="model_id" ref="model_bxi_desktime_log"/>
+        <field name="domain_force">['&amp;', ('employee_id.user_id', '=', user.id), ('employee_id.company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('hr_timesheet.group_hr_timesheet_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Timesheet Approver: own + team records -->
+    <record id="rule_bxi_desktime_log_approver_team" model="ir.rule">
+        <field name="name">DeskTime Log: Approver sees own and team records</field>
+        <field name="model_id" ref="model_bxi_desktime_log"/>
+        <field name="domain_force">['&amp;', '|', ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id), ('employee_id.company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('hr_timesheet.group_hr_timesheet_approver'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Timesheet Manager / HR Manager: all records -->
+    <record id="rule_bxi_desktime_log_manager_all" model="ir.rule">
+        <field name="name">DeskTime Log: Administrator sees all records (company-scoped)</field>
+        <field name="model_id" ref="model_bxi_desktime_log"/>
+        <field name="domain_force">[('employee_id.company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('hr_timesheet.group_timesheet_manager')), (4, ref('hr.group_hr_user')), (4, ref('hr.group_hr_manager'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Fallback Base User: own + team records -->
     <record id="rule_bxi_desktime_log_employee_own" model="ir.rule">
-        <field name="name">DeskTime Log: Employee/Manager sees own and team records (company-scoped)</field>
+        <field name="name">DeskTime Log: Base User sees own and team records (company-scoped)</field>
         <field name="model_id" ref="model_bxi_desktime_log"/>
         <field name="domain_force">['&amp;', '|', ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id), ('employee_id.company_id', 'in', company_ids)]</field>
         <field name="groups" eval="[(4, ref('base.group_user'))]"/>
@@ -19,66 +53,52 @@
         <field name="perm_unlink" eval="False"/>
     </record>
 
-    <!-- HR Officer: all records within allowed companies -->
-    <record id="rule_bxi_desktime_log_hr_user_all" model="ir.rule">
-        <field name="name">DeskTime Log: HR User sees all records (company-scoped)</field>
-        <field name="model_id" ref="model_bxi_desktime_log"/>
-        <field name="domain_force">[('employee_id.company_id', 'in', company_ids)]</field>
-        <field name="groups" eval="[(4, ref('hr.group_hr_user'))]"/>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="True"/>
-        <field name="perm_create" eval="True"/>
-        <field name="perm_unlink" eval="True"/>
-    </record>
-
-    <!-- HR Manager: all records within allowed companies -->
-    <record id="rule_bxi_desktime_log_hr_manager_all" model="ir.rule">
-        <field name="name">DeskTime Log: HR Manager sees all records (company-scoped)</field>
-        <field name="model_id" ref="model_bxi_desktime_log"/>
-        <field name="domain_force">[('employee_id.company_id', 'in', company_ids)]</field>
-        <field name="groups" eval="[(4, ref('hr.group_hr_manager'))]"/>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="True"/>
-        <field name="perm_create" eval="True"/>
-        <field name="perm_unlink" eval="True"/>
-    </record>
-
     <!-- ============================================================
-         Record Rules: account.analytic.line  (Multi-Company aware)
-         - Employee/Manager (base.group_user): sees own + team records in their company
-         - HR User / HR Manager: sees all records within their allowed companies
+         Record Rules: account.analytic.line (Timesheets)
     ============================================================ -->
 
-    <!-- Regular employee / Manager: own + team timesheet lines + within allowed companies -->
+    <!-- Timesheet User: own timesheets only -->
+    <record id="rule_analytic_line_timesheet_user_own" model="ir.rule">
+        <field name="name">Timesheet Line: User sees own timesheets only</field>
+        <field name="model_id" ref="analytic.model_account_analytic_line"/>
+        <field name="domain_force">['&amp;', ('employee_id.user_id', '=', user.id), ('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('hr_timesheet.group_hr_timesheet_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Timesheet Approver: own + team timesheets -->
+    <record id="rule_analytic_line_timesheet_approver_team" model="ir.rule">
+        <field name="name">Timesheet Line: Approver sees own and team timesheets</field>
+        <field name="model_id" ref="analytic.model_account_analytic_line"/>
+        <field name="domain_force">['&amp;', '|', ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id), ('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('hr_timesheet.group_hr_timesheet_approver'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Timesheet Manager / HR Manager: all timesheets -->
+    <record id="rule_analytic_line_timesheet_manager_all" model="ir.rule">
+        <field name="name">Timesheet Line: Administrator sees all timesheets (company-scoped)</field>
+        <field name="model_id" ref="analytic.model_account_analytic_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('hr_timesheet.group_timesheet_manager')), (4, ref('hr.group_hr_user')), (4, ref('hr.group_hr_manager'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Fallback Base User: own + team records -->
     <record id="rule_analytic_line_employee_own" model="ir.rule">
-        <field name="name">Timesheet Line: Employee/Manager sees own and team records (company-scoped)</field>
+        <field name="name">Timesheet Line: Base User sees own and team records (company-scoped)</field>
         <field name="model_id" ref="analytic.model_account_analytic_line"/>
         <field name="domain_force">['&amp;', '|', ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id), ('company_id', 'in', company_ids)]</field>
         <field name="groups" eval="[(4, ref('base.group_user'))]"/>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="True"/>
-        <field name="perm_create" eval="True"/>
-        <field name="perm_unlink" eval="True"/>
-    </record>
-
-    <!-- HR Officer: all timesheet lines within allowed companies -->
-    <record id="rule_analytic_line_hr_user_all" model="ir.rule">
-        <field name="name">Timesheet Line: HR User sees all records (company-scoped)</field>
-        <field name="model_id" ref="analytic.model_account_analytic_line"/>
-        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
-        <field name="groups" eval="[(4, ref('hr.group_hr_user'))]"/>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="True"/>
-        <field name="perm_create" eval="True"/>
-        <field name="perm_unlink" eval="True"/>
-    </record>
-
-    <!-- HR Manager: all timesheet lines within allowed companies -->
-    <record id="rule_analytic_line_hr_manager_all" model="ir.rule">
-        <field name="name">Timesheet Line: HR Manager sees all records (company-scoped)</field>
-        <field name="model_id" ref="analytic.model_account_analytic_line"/>
-        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
-        <field name="groups" eval="[(4, ref('hr.group_hr_manager'))]"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
