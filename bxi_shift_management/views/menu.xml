@@ -7,6 +7,7 @@
     <menuitem id="menu_shift_management_root"
               name="Shift Management"
               sequence="80"
+              web_icon="bxi_shift_management,static/description/icon.png"
               groups="bxi_shift_management.group_shift_user"/>
 
     <!-- ============================================================
