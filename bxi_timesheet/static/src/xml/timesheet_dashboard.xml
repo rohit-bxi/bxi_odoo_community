@@ -76,8 +76,8 @@
                     <!-- Status Badge -->
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <span class="text-secondary small fw-bold">Week Status:</span>
-                        <t t-if="state.is_past_week and !(state.is_target_employee_manager or state.is_hr or state.is_admin)">
-                            <span class="badge bg-warning text-dark rounded-pill px-3 py-1">Past Week Locked (No Submission / Modification)</span>
+                        <t t-if="state.is_past_week">
+                            <span class="badge bg-warning text-dark rounded-pill px-3 py-1"><i class="fa fa-lock me-1"/>Past Week Locked</span>
                         </t>
                         <t t-elif="state.approved_count > 0 and state.submitted_count == 0 and state.draft_count == 0">
                             <span class="badge bg-success rounded-pill px-3 py-1">Approved</span>
@@ -100,8 +100,8 @@
 
                     <!-- Action Buttons -->
                     <div class="d-flex align-items-center gap-2">
-                        <!-- Submit Button (Disabled if past week for normal employee) -->
-                        <t t-if="state.draft_count > 0 and !(state.is_past_week and !(state.is_target_employee_manager or state.is_hr or state.is_admin))">
+                        <!-- Submit Button (Disabled if past week) -->
+                        <t t-if="state.draft_count > 0 and !state.is_past_week">
                             <button type="button" class="btn btn-primary btn-sm px-4 rounded-pill text-white shadow-sm fw-bold"
                                     t-on-click="submitTimesheet">
                                 Submit for Approval
@@ -225,7 +225,7 @@
                                                        t-att-value="day.hours" 
                                                        class="cell-time-input fw-semibold" 
                                                        t-att-placeholder="'0:00'"
-                                                       t-att-disabled="(state.is_past_week or day.state === 'submitted' or day.state === 'approved' or day.state === 'refused') and !(state.is_target_employee_manager or state.is_hr or state.is_admin)"
+                                                       t-att-disabled="state.is_past_week or day.state === 'submitted' or day.state === 'approved' or day.state === 'refused'"
                                                        t-on-blur="(ev) => this.onCellBlur(ev, line, day.date_str)"/>
                                             </td>
                                         </t>
@@ -238,8 +238,8 @@
                                 </t>
                             </t>
 
-                            <!-- Add a line action link (Hidden if past week or submitted/approved for employee) -->
-                            <t t-if="!((state.is_past_week or state.submitted_count > 0 or state.approved_count > 0) and !(state.is_target_employee_manager or state.is_hr or state.is_admin))">
+                            <!-- Add a line action link (STRICTLY HIDDEN if past week) -->
+                            <t t-if="!state.is_past_week">
                                 <tr class="add-line-row">
                                     <td colspan="17" class="ps-3 py-3 text-start bg-light border-0">
                                         <button class="btn btn-link btn-sm add-line-btn text-decoration-none d-inline-flex align-items-center gap-1 p-0 fw-bold" 
@@ -449,23 +449,37 @@
                             <div class="row mb-3">
                                 <div class="col-6">
                                     <label class="form-label text-muted fw-bold small">Date</label>
-                                    <input type="date" class="form-control" t-att-value="state.new_row_date" t-on-change="onDateChange"/>
+                                    <input type="date"
+                                           t-att-class="newRowDateError ? 'form-control is-invalid border-danger text-danger fw-bold' : 'form-control'"
+                                           t-att-value="state.new_row_date"
+                                           t-on-input="onDateChange"
+                                           t-on-change="onDateChange"/>
                                     <t t-if="newRowDateError">
-                                        <div class="text-danger small mt-1 fw-bold"><t t-esc="newRowDateError"/></div>
+                                        <div class="text-danger small mt-1 fw-bold">
+                                            <i class="fa fa-exclamation-triangle me-1"/>
+                                            <t t-esc="newRowDateError"/>
+                                        </div>
                                     </t>
                                 </div>
                                 <div class="col-6">
                                     <label class="form-label text-muted fw-bold small">Time Spent (Hours)</label>
-                                    <input type="text" class="form-control" placeholder="e.g. 8:00 or 1.5" t-on-input="onHoursChange"/>
+                                    <input type="text"
+                                           t-att-class="newRowHoursError ? 'form-control is-invalid border-danger text-danger fw-bold' : 'form-control'"
+                                           placeholder="e.g. 8:00 or 1.5"
+                                           t-on-input="onHoursChange"
+                                           t-on-change="onHoursChange"/>
                                     <t t-if="newRowHoursError">
-                                        <div class="text-danger small mt-1 fw-bold"><t t-esc="newRowHoursError"/></div>
+                                        <div class="text-danger small mt-1 fw-bold">
+                                            <i class="fa fa-exclamation-triangle me-1"/>
+                                            <t t-esc="newRowHoursError"/>
+                                        </div>
                                     </t>
                                 </div>
                             </div>
                         </div>
                         <div class="modal-footer border-top-0 pt-0 pb-4 px-4 d-flex gap-2 justify-content-end">
                             <button type="button" class="btn btn-light border px-4 rounded-pill fw-bold text-secondary btn-sm" t-on-click="closeAddRowModal">Cancel</button>
-                            <button type="button" class="btn btn-primary px-4 rounded-pill fw-bold btn-sm text-white shadow" t-on-click="confirmAddRow" t-att-disabled="!state.new_row_project_id || newRowHoursError || newRowDateError">Add Line</button>
+                            <button type="button" class="btn btn-primary px-4 rounded-pill fw-bold btn-sm text-white shadow" t-on-click="confirmAddRow" t-att-disabled="!state.new_row_project_id || !state.new_row_date || newRowHoursError || newRowDateError">Add Line</button>
                         </div>
                     </div>
                 </div>

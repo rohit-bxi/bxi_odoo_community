@@ -71,6 +71,14 @@ class BxiShiftRequest(models.Model):
         required=True,
         tracking=True,
     )
+    current_shift_id = fields.Many2one(
+        'resource.calendar',
+        string='Current Shift',
+        related='employee_id.resource_calendar_id',
+        readonly=True,
+        store=True,
+        help='Current working schedule mapped in the employee master.',
+    )
     original_shift_id = fields.Many2one(
         'resource.calendar',
         string='Original Working Schedule',
