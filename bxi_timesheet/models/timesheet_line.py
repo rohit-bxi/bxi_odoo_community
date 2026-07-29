@@ -18,6 +18,8 @@ class AccountAnalyticLine(models.Model):
         ('refused', 'Refused')
     ], string='Approval Status', default='draft', required=True, copy=False, index=True)
 
+    remarks = fields.Text(string='Manager Remarks', copy=False)
+
     @api.constrains('date')
     def _check_past_week_lock(self):
         """Block standard employees from adding or modifying timesheets for past weeks."""
@@ -28,7 +30,7 @@ class AccountAnalyticLine(models.Model):
         user = self.env.user
         is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager')
         is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager')
-        current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
+        current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
 
         for rec in self:
             if rec.date and rec.date < current_week_start:
@@ -52,7 +54,7 @@ class AccountAnalyticLine(models.Model):
         user = self.env.user
         is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager') or user.has_group('hr_timesheet.group_timesheet_manager')
         is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager') or user.has_group('hr_timesheet.group_hr_timesheet_approver')
-        current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
+        current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
 
         submitted_recs = self.filtered(lambda r: r.state == 'draft')
         for rec in self:
@@ -61,7 +63,18 @@ class AccountAnalyticLine(models.Model):
                 if not (is_admin or is_hr or is_manager):
                     raise UserError(_("Timesheets for previous weeks cannot be submitted for approval."))
 
+            # Check if another timesheet for the same employee & date is already submitted or approved
             if rec.state == 'draft':
+                already_submitted = self.env['account.analytic.line'].sudo().search([
+                    ('employee_id', '=', rec.employee_id.id),
+                    ('date', '=', rec.date),
+                    ('state', 'in', ['submitted', 'approved']),
+                    ('id', '!=', rec.id)
+                ], limit=1)
+                if already_submitted:
+                    status_str = "submitted for approval" if already_submitted.state == 'submitted' else "approved"
+                    raise UserError(_("Timesheet for %s on %s has already been %s.") % (rec.employee_id.name, rec.date.strftime('%Y-%m-%d'), status_str))
+
                 rec.state = 'submitted'
 
         # Send email notifications grouped by employee
@@ -81,15 +94,23 @@ class AccountAnalyticLine(models.Model):
     def action_approve(self):
         user = self.env.user
         is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager') or user.has_group('hr_timesheet.group_timesheet_manager')
-        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager') or user.has_group('hr_timesheet.group_hr_timesheet_approver')
+        is_hr_manager = user.has_group('hr.group_hr_manager')
 
         approved_recs = self.env['account.analytic.line']
         for rec in self:
-            current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
-            is_manager = (current_employee and rec.employee_id.parent_id.id == current_employee.id) or is_hr or is_admin
+            current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
 
-            if not (is_admin or is_hr or is_manager):
-                raise UserError(_("Only the employee's manager, HR officers, or System Admins can approve timesheets."))
+            # Block self-approval for non-admins
+            if current_employee and rec.employee_id.id == current_employee.id and not is_admin:
+                raise UserError(_("You are not authorized to approve your own timesheet. Only your reporting manager can approve or refuse your timesheet."))
+
+            is_manager = (current_employee and rec.employee_id.parent_id.id == current_employee.id) or is_hr_manager or is_admin
+
+            if not is_manager:
+                raise UserError(_("You are not authorized for the approval of timesheets for %s. Only their reporting manager can approve or refuse them.") % rec.employee_id.name)
+
+            if not rec.remarks or not rec.remarks.strip():
+                raise UserError(_("Please enter mandatory Manager Remarks before approving the timesheet for %s.") % rec.employee_id.name)
 
             if rec.state == 'submitted':
                 rec.state = 'approved'
@@ -97,7 +118,7 @@ class AccountAnalyticLine(models.Model):
 
         if approved_recs:
             dashboard_model = self.env['bxi.timesheet.dashboard']
-            current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
+            current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
             approver_name = current_employee.name if current_employee else user.name
             for emp in approved_recs.mapped('employee_id'):
                 emp_lines = approved_recs.filtered(lambda l: l.employee_id == emp)
@@ -113,15 +134,23 @@ class AccountAnalyticLine(models.Model):
     def action_refuse(self):
         user = self.env.user
         is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager') or user.has_group('hr_timesheet.group_timesheet_manager')
-        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager') or user.has_group('hr_timesheet.group_hr_timesheet_approver')
+        is_hr_manager = user.has_group('hr.group_hr_manager')
 
         refused_recs = self.env['account.analytic.line']
         for rec in self:
-            current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
-            is_manager = (current_employee and rec.employee_id.parent_id.id == current_employee.id) or is_hr or is_admin
+            current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
 
-            if not (is_admin or is_hr or is_manager):
-                raise UserError(_("Only the employee's manager, HR officers, or System Admins can refuse timesheets."))
+            # Block self-refusal for non-admins
+            if current_employee and rec.employee_id.id == current_employee.id and not is_admin:
+                raise UserError(_("You are not authorized to refuse your own timesheet. Only your reporting manager can approve or refuse your timesheet."))
+
+            is_manager = (current_employee and rec.employee_id.parent_id.id == current_employee.id) or is_hr_manager or is_admin
+
+            if not is_manager:
+                raise UserError(_("You are not authorized for the refusal of timesheets for %s. Only their reporting manager can approve or refuse them.") % rec.employee_id.name)
+
+            if not rec.remarks or not rec.remarks.strip():
+                raise UserError(_("Please enter mandatory Manager Remarks before refusing the timesheet for %s.") % rec.employee_id.name)
 
             if rec.state == 'submitted':
                 rec.state = 'refused'
@@ -129,7 +158,7 @@ class AccountAnalyticLine(models.Model):
 
         if refused_recs:
             dashboard_model = self.env['bxi.timesheet.dashboard']
-            current_employee = self.env['hr.employee'].search([('user_id', '=', user.id)], limit=1)
+            current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
             approver_name = current_employee.name if current_employee else user.name
             for emp in refused_recs.mapped('employee_id'):
                 emp_lines = refused_recs.filtered(lambda l: l.employee_id == emp)

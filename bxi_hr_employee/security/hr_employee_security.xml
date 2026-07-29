@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_show_hidden_menus" model="res.groups">
+        <field name="name">Show Hidden Menus</field>
+        <field name="comment">Users in this group can view hidden menus such as the Contacts main app and its submenus.</field>
+    </record>
+</odoo>

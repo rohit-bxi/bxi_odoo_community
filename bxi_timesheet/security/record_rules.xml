@@ -69,11 +69,11 @@
         <field name="perm_unlink" eval="True"/>
     </record>
 
-    <!-- Timesheet Approver: own + team timesheets -->
+    <!-- Timesheet Approver (User: all timesheets): own + team timesheets only -->
     <record id="rule_analytic_line_timesheet_approver_team" model="ir.rule">
         <field name="name">Timesheet Line: Approver sees own and team timesheets</field>
         <field name="model_id" ref="analytic.model_account_analytic_line"/>
-        <field name="domain_force">['&amp;', '|', ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id), ('company_id', 'in', company_ids)]</field>
+        <field name="domain_force">['&amp;', '|', ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id), '|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         <field name="groups" eval="[(4, ref('hr_timesheet.group_hr_timesheet_approver'))]"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
@@ -85,7 +85,7 @@
     <record id="rule_analytic_line_timesheet_manager_all" model="ir.rule">
         <field name="name">Timesheet Line: Administrator sees all timesheets (company-scoped)</field>
         <field name="model_id" ref="analytic.model_account_analytic_line"/>
-        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         <field name="groups" eval="[(4, ref('hr_timesheet.group_timesheet_manager')), (4, ref('hr.group_hr_user')), (4, ref('hr.group_hr_manager'))]"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
@@ -97,7 +97,7 @@
     <record id="rule_analytic_line_employee_own" model="ir.rule">
         <field name="name">Timesheet Line: Base User sees own and team records (company-scoped)</field>
         <field name="model_id" ref="analytic.model_account_analytic_line"/>
-        <field name="domain_force">['&amp;', '|', ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id), ('company_id', 'in', company_ids)]</field>
+        <field name="domain_force">['&amp;', '|', ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id), '|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         <field name="groups" eval="[(4, ref('base.group_user'))]"/>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>

@@ -72,7 +72,7 @@
                         </tr>
                         <tr>
                             <td style="border:1px solid #000;"><b>PF / Pension No</b></td>
-                            <td style="border:1px solid #000;"></td>
+                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.epf_number or o.employee_id.pf_number or ''"/></td>
                             <td style="border:1px solid #000;"><b>LWP Current / Previous</b></td>
                             <td style="border:1px solid #000;">
                               <t t-esc="sum(o.input_line_ids.filtered(lambda l: l.code == 'LWP_DAYS').mapped('amount')) or 0"/>

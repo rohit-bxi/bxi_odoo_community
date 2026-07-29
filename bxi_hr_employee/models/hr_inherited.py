@@ -5,6 +5,8 @@ from datetime import date
 class HrEmployee(models.Model):
     _inherit = 'hr.employee'
 
+    version_id = fields.Many2one('hr.version', groups="base.group_user")
+    current_version_id = fields.Many2one('hr.version', groups="base.group_user")
     employee_code = fields.Char(string="Employee Code")
     pa_name = fields.Char(string="PA Name")  
     psa = fields.Char(string="PSA")
@@ -24,6 +26,36 @@ class HrEmployee(models.Model):
         help="Employee NPS contribution amount",
         currency_field="currency_id"
     )  
+
+    # Indian Payroll & Government Identification Fields
+    l10n_in_pan = fields.Char(string="PAN Number", help="Permanent Account Number")
+    l10n_in_uan = fields.Char(string="UAN Number", help="Universal Account Number for EPF")
+    epf_number = fields.Char(string="EPF / PF / Pension No", help="Employee Provident Fund Number")
+    pf_number = fields.Char(string="PF Number", compute="_compute_pf_number", inverse="_inverse_pf_number", store=True)
+    l10n_in_esic_number = fields.Char(string="ESIC Number", help="Employee State Insurance Corporation Number")
+    emp_date_of_joining = fields.Date(string="Date of Joining")
+    sex = fields.Selection([
+        ('male', 'Male'),
+        ('female', 'Female'),
+        ('other', 'Other'),
+    ], string="Gender (Sex)")
+
+    # Standard & Monthly Payroll Computation Fields
+    l10n_in_basic_salary_amount = fields.Monetary(string="Basic Salary Amount", currency_field="currency_id")
+    l10n_in_hra = fields.Monetary(string="HRA Amount", currency_field="currency_id")
+    l10n_in_fixed_allowance = fields.Monetary(string="Flexible / Special Allowance", currency_field="currency_id")
+    l10n_in_pf_employer_amount = fields.Monetary(string="Employer EPF Monthly", currency_field="currency_id")
+    l10n_in_tds = fields.Monetary(string="Monthly TDS Amount", currency_field="currency_id")
+
+    @api.depends('epf_number')
+    def _compute_pf_number(self):
+        for rec in self:
+            rec.pf_number = rec.epf_number
+
+    def _inverse_pf_number(self):
+        for rec in self:
+            rec.epf_number = rec.pf_number
+
     probation_period = fields.Selection(
         [
             ('yes', 'Yes'),
@@ -196,7 +228,7 @@ class HrEmployee(models.Model):
 
             bank_account = rec.bank_account_ids.filtered(lambda a: a.partner_id == partner)[:1]
             if not bank_account:
-                bank_account = self.env['res.partner.bank'].sudo().search([
+                bank_account = self.env['res.partner.bank'].sudo().create([
                     ('partner_id', '=', partner.id),
                     ('acc_number', '=', rec.bank_account_number)
                 ], limit=1)
@@ -219,3 +251,52 @@ class HrEmployee(models.Model):
 
             if bank_account not in rec.bank_account_ids:
                 rec.write({'bank_account_ids': [(4, bank_account.id)]})
+
+
+class HrEmployeePublic(models.Model):
+    _inherit = 'hr.employee.public'
+
+    currency_id = fields.Many2one('res.currency', related='employee_id.currency_id')
+    employee_code = fields.Char(related='employee_id.employee_code')
+    pa_name = fields.Char(related='employee_id.pa_name')
+    psa = fields.Char(related='employee_id.psa')
+    disp = fields.Char(related='employee_id.disp')
+    role_band = fields.Char(related='employee_id.role_band')
+    aadhar_card = fields.Char(related='employee_id.aadhar_card')
+    emp_category = fields.Char(related='employee_id.emp_category')
+    emp_skill_category = fields.Char(related='employee_id.emp_skill_category')
+    manager_emp_code = fields.Char(related='employee_id.manager_emp_code')
+    medical_insurance_no = fields.Char(related='employee_id.medical_insurance_no')
+    bank_ifsc = fields.Char(related='employee_id.bank_ifsc')
+    bank_document = fields.Binary(related='employee_id.bank_document')
+    bank_account_number = fields.Char(related='employee_id.bank_account_number')
+    bank_name = fields.Char(related='employee_id.bank_name')
+    nps_contribution = fields.Monetary(related='employee_id.nps_contribution', currency_field='currency_id')
+    l10n_in_pan = fields.Char(related='employee_id.l10n_in_pan')
+    l10n_in_uan = fields.Char(related='employee_id.l10n_in_uan')
+    epf_number = fields.Char(related='employee_id.epf_number')
+    pf_number = fields.Char(related='employee_id.pf_number')
+    l10n_in_esic_number = fields.Char(related='employee_id.l10n_in_esic_number')
+    emp_date_of_joining = fields.Date(related='employee_id.emp_date_of_joining')
+    sex = fields.Selection(related='employee_id.sex')
+    l10n_in_basic_salary_amount = fields.Monetary(related='employee_id.l10n_in_basic_salary_amount', currency_field='currency_id')
+    l10n_in_hra = fields.Monetary(related='employee_id.l10n_in_hra', currency_field='currency_id')
+    l10n_in_fixed_allowance = fields.Monetary(related='employee_id.l10n_in_fixed_allowance', currency_field='currency_id')
+    l10n_in_pf_employer_amount = fields.Monetary(related='employee_id.l10n_in_pf_employer_amount', currency_field='currency_id')
+    l10n_in_tds = fields.Monetary(related='employee_id.l10n_in_tds', currency_field='currency_id')
+    probation_period = fields.Selection(related='employee_id.probation_period')
+    trainee_category = fields.Selection(related='employee_id.trainee_category')
+    onsite_offshore = fields.Selection(related='employee_id.onsite_offshore')
+    company_code = fields.Char(related='employee_id.company_code')
+    employee_ctc = fields.Float(related='employee_id.employee_ctc')
+    meeting_qty = fields.Integer(related='employee_id.meeting_qty')
+    meeting_rate = fields.Float(related='employee_id.meeting_rate')
+    script_qty = fields.Integer(related='employee_id.script_qty')
+    script_rate = fields.Float(related='employee_id.script_rate')
+    video_qty = fields.Integer(related='employee_id.video_qty')
+    video_rate = fields.Float(related='employee_id.video_rate')
+    total_amount = fields.Float(related='employee_id.total_amount')
+    template_company_id = fields.Many2one(related='employee_id.template_company_id')
+    month_year = fields.Date(related='employee_id.month_year')
+    employee_location_id = fields.Many2one('stock.location', string='Location', readonly=True)
+    struct_id = fields.Many2one('hr.payroll.structure', string='Salary Structure', readonly=True)

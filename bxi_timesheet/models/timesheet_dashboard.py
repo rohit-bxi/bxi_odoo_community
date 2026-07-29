@@ -25,11 +25,14 @@ class BxiTimesheetDashboard(models.AbstractModel):
         # Multi-company: IDs of all companies the current user is allowed to access
         allowed_company_ids = self.env.companies.ids
 
-        # 1. Resolve employee and permissions
-        current_employee = self.env['hr.employee'].search([
+        # 1. Resolve employee and permissions using sudo (since normal users lack HR view access)
+        current_employee = self.env['hr.employee'].sudo().search([
             ('user_id', '=', user.id),
-            ('company_id', 'in', allowed_company_ids),
         ], limit=1)
+        if not current_employee and user.email:
+            current_employee = self.env['hr.employee'].sudo().search([
+                ('work_email', '=', user.email),
+            ], limit=1)
 
         # Timesheet specific permission resolution:
         # Determine admin and approver status strictly by Timesheet security groups & System Admin
@@ -43,9 +46,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
         # Subordinates check
         subordinates = self.env['hr.employee']
         if current_employee:
-            subordinates = self.env['hr.employee'].search([
+            subordinates = self.env['hr.employee'].sudo().search([
                 ('parent_id', '=', current_employee.id),
-                ('company_id', 'in', allowed_company_ids),
             ])
 
         # If user has "User: own timesheets only" (and NOT Timesheet Admin/Approver):
@@ -65,9 +67,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
             is_admin = True
             is_hr = True
             is_manager = True
-            allowed_employees = self.env['hr.employee'].search([
+            allowed_employees = self.env['hr.employee'].sudo().search([
                 ('active', '=', True),
-                ('company_id', 'in', allowed_company_ids),
             ])
         elif is_timesheet_approver or len(subordinates) > 0:
             is_admin = False
@@ -88,7 +89,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
         # Determine target employee
         target_employee = current_employee
         if employee_id:
-            emp = self.env['hr.employee'].browse(int(employee_id))
+            emp = self.env['hr.employee'].sudo().browse(int(employee_id))
             if emp in allowed_employees:
                 target_employee = emp
             else:
@@ -107,16 +108,40 @@ class BxiTimesheetDashboard(models.AbstractModel):
         end_date = start_date + timedelta(days=6)
         is_past_week = start_date < current_week_start
 
-        # 3. Retrieve projects and tasks scoped to allowed companies
-        projects = self.env['project.project'].search_read([
-            ('active', '=', True),
-            ('company_id', 'in', allowed_company_ids),
-        ], ['id', 'name'])
-        project_ids = [p['id'] for p in projects]
-        tasks = self.env['project.task'].search_read([
-            ('project_id', 'in', project_ids),
-            ('active', '=', True),
-        ], ['id', 'name', 'project_id'])
+        # 3. Retrieve projects and tasks (using sudo with company_id = False or company_id in allowed_company_ids)
+        project_domain = [
+            '|', ('company_id', '=', False), ('company_id', 'in', allowed_company_ids)
+        ]
+        project_records = self.env['project.project'].sudo().search(project_domain)
+        _logger.info(f"BXI Timesheet: Found {len(project_records)} projects for dashboard")
+        projects = []
+        for p in project_records:
+            p_name = p.display_name or p.name or f"Project #{p.id}"
+            projects.append({
+                'id': p.id,
+                'name': p.name or p_name,
+                'display_name': p_name,
+            })
+
+        if 'company_id' in self.env['project.task']._fields:
+            task_domain = [
+                '|', ('company_id', '=', False), ('company_id', 'in', allowed_company_ids)
+            ]
+        else:
+            task_domain = [
+                '|', ('project_id', '=', False), '|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', allowed_company_ids)
+            ]
+        task_records = self.env['project.task'].sudo().search(task_domain)
+        _logger.info(f"BXI Timesheet: Found {len(task_records)} tasks for dashboard")
+        tasks = []
+        for t in task_records:
+            t_name = t.display_name or t.name or f"Task #{t.id}"
+            tasks.append({
+                'id': t.id,
+                'name': t.name or t_name,
+                'display_name': t_name,
+                'project_id': [t.project_id.id, t.project_id.display_name or t.project_id.name] if t.project_id else False,
+            })
 
         # 4. Fetch attendances and desktime logs for target employee
         import pytz
@@ -129,9 +154,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
         has_attendance = 'hr.attendance' in self.env
         attendances = self.env['hr.attendance']
         if target_employee and has_attendance:
-            attendances = self.env['hr.attendance'].search([
+            attendances = self.env['hr.attendance'].sudo().search([
                 ('employee_id', '=', target_employee.id),
-                ('employee_id.company_id', 'in', allowed_company_ids),
                 ('check_in', '>=', datetime.combine(start_date, datetime.min.time()) - timedelta(days=1)),
                 ('check_in', '<=', datetime.combine(end_date, datetime.max.time()) + timedelta(days=1)),
             ])
@@ -140,7 +164,6 @@ class BxiTimesheetDashboard(models.AbstractModel):
         if target_employee:
             dt_logs = self.env['bxi.desktime.log'].sudo().search([
                 ('employee_id', '=', target_employee.id),
-                ('employee_id.company_id', 'in', allowed_company_ids),
                 ('date', '>=', start_date),
                 ('date', '<=', end_date),
             ])
@@ -159,11 +182,10 @@ class BxiTimesheetDashboard(models.AbstractModel):
         if target_employee:
             domain = [
                 ('employee_id', '=', target_employee.id),
-                ('company_id', 'in', allowed_company_ids),
                 ('date', '>=', start_date),
                 ('date', '<=', end_date),
             ]
-            ts_lines = self.env['account.analytic.line'].search(domain)
+            ts_lines = self.env['account.analytic.line'].sudo().search(domain)
 
             draft_count = len(ts_lines.filtered(lambda l: l.state == 'draft'))
             submitted_count = len(ts_lines.filtered(lambda l: l.state == 'submitted'))
@@ -526,17 +548,38 @@ class BxiTimesheetDashboard(models.AbstractModel):
         elif current_employee:
             allowed_employee_ids = [current_employee.id]
 
-        target_emp_id = int(employee_id)
+        target_emp_id = False
+        if employee_id:
+            try:
+                target_emp_id = int(employee_id)
+            except (ValueError, TypeError):
+                target_emp_id = False
+        if not target_emp_id and current_employee:
+            target_emp_id = current_employee.id
+
+        if not target_emp_id:
+            raise UserError(_('Employee not specified or found.'))
+
         if target_emp_id not in allowed_employee_ids:
             raise UserError(_('You are not authorized to edit timesheets for this employee.'))
 
         target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         current_week_start = self._get_current_week_start()
-        is_manager = is_approver or (current_employee and target_emp_id in subordinates.ids)
+        is_manager = is_timesheet_admin or is_timesheet_approver or (current_employee and target_emp_id in subordinates.ids)
 
         # Past week lock check
         if target_date < current_week_start:
             raise UserError(_("Once a week is crossed, timesheets for the previous week cannot be modified or submitted."))
+
+        # Check if timesheet for this employee and date is already submitted or approved
+        already_submitted = self.env['account.analytic.line'].sudo().search([
+            ('employee_id', '=', target_emp_id),
+            ('date', '=', target_date),
+            ('state', 'in', ['submitted', 'approved']),
+        ], limit=1)
+        if already_submitted and not is_manager:
+            status_str = "submitted for approval" if already_submitted.state == 'submitted' else "approved"
+            raise UserError(_("Timesheet for %s has already been %s. You cannot add or modify entries for a date that has already been submitted or approved.") % (target_date.strftime('%Y-%m-%d'), status_str))
 
         # Parse hours
         amount = 0.0
@@ -576,7 +619,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
         if existing_line:
             # Block edits on approved timesheets for employees
             if existing_line.state == 'approved':
-                if not (is_admin or is_hr or is_manager):
+                if not is_manager:
                     raise UserError(_("You cannot edit a timesheet that has already been approved."))
 
             if amount <= 0.0:
@@ -625,7 +668,18 @@ class BxiTimesheetDashboard(models.AbstractModel):
         is_approver = user.has_group('hr_timesheet.group_hr_timesheet_approver')
         has_own_timesheets_only = user.has_group('hr_timesheet.group_hr_timesheet_user') and not is_approver and not is_admin
 
-        target_emp_id = int(employee_id)
+        target_emp_id = False
+        if employee_id:
+            try:
+                target_emp_id = int(employee_id)
+            except (ValueError, TypeError):
+                target_emp_id = False
+        if not target_emp_id and current_employee:
+            target_emp_id = current_employee.id
+
+        if not target_emp_id:
+            raise UserError(_('Employee not specified or found.'))
+
         if has_own_timesheets_only and current_employee and target_emp_id != current_employee.id:
             raise UserError(_('You are not authorized to submit timesheets for another employee.'))
 
@@ -676,7 +730,17 @@ class BxiTimesheetDashboard(models.AbstractModel):
         if has_own_timesheets_only:
             raise UserError(_('Only managers, approvers, or System Admins can approve timesheets.'))
 
-        target_emp_id = int(employee_id)
+        target_emp_id = False
+        if employee_id:
+            try:
+                target_emp_id = int(employee_id)
+            except (ValueError, TypeError):
+                target_emp_id = False
+        if not target_emp_id and current_employee:
+            target_emp_id = current_employee.id
+
+        if not target_emp_id:
+            raise UserError(_('Employee not specified or found.'))
 
         # Verify target employee belongs to an allowed company
         target_emp = self.env['hr.employee'].browse(target_emp_id)
@@ -724,7 +788,17 @@ class BxiTimesheetDashboard(models.AbstractModel):
         if has_own_timesheets_only:
             raise UserError(_('Only managers, approvers, or System Admins can refuse timesheets.'))
 
-        target_emp_id = int(employee_id)
+        target_emp_id = False
+        if employee_id:
+            try:
+                target_emp_id = int(employee_id)
+            except (ValueError, TypeError):
+                target_emp_id = False
+        if not target_emp_id and current_employee:
+            target_emp_id = current_employee.id
+
+        if not target_emp_id:
+            raise UserError(_('Employee not specified or found.'))
 
         # Verify target employee belongs to an allowed company
         target_emp = self.env['hr.employee'].browse(target_emp_id)
@@ -769,58 +843,103 @@ class BxiTimesheetDashboard(models.AbstractModel):
 
         try:
             if action_type == 'submit':
-                # Notify Manager
+                # Notify Manager (with fallback to HR / Timesheet Approvers if manager email missing)
                 manager = employee.parent_id
-                manager_email = manager.work_email or (manager.user_id and manager.user_id.email) if manager else False
+                manager_name = manager.name if manager else 'Manager'
+                manager_email = (manager.work_email or (manager.user_id and manager.user_id.email)) if manager else False
+
                 if not manager_email:
-                    _logger.info(f"No manager email found for employee {employee.name}'s manager ({manager.name if manager else 'None'})")
+                    # Fallback to HR / Timesheet Approver users if manager has no email
+                    hr_users = self.env['res.users'].sudo().search([
+                        ('groups_id', 'in', [
+                            self.env.ref('hr_timesheet.group_hr_timesheet_approver').id,
+                            self.env.ref('hr_timesheet.group_timesheet_manager').id
+                        ]),
+                        ('email', '!=', False)
+                    ], limit=5)
+                    emails = [u.email for u in hr_users if u.email]
+                    manager_email = ','.join(emails) if emails else False
+
+                if not manager_email:
+                    _logger.warning(f"BXI Timesheet: No email found to send submission notification for {employee.name}")
                     return
 
-                subject = f"[Timesheet Approval Request] {employee.name} submitted timesheet for {date_range_str}"
+                subject = f"[Timesheet Submission] {employee.name} submitted timesheet for {date_range_str}"
                 body_html = f"""
-                    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 8px;">
-                        <h2 style="color: #4f46e5; margin-top: 0;">Timesheet Submitted for Approval</h2>
-                        <p>Dear <strong>{manager.name}</strong>,</p>
-                        <p>Employee <strong>{employee.name}</strong> ({employee.department_id.name or 'General'}) has submitted their timesheet for review and approval.</p>
-                        <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
-                            <tr style="background: #f8fafc;"><th style="padding: 10px; border: 1px solid #e2e8f0; text-align: left;">Employee Name</th><td style="padding: 10px; border: 1px solid #e2e8f0;">{employee.name}</td></tr>
-                            <tr><th style="padding: 10px; border: 1px solid #e2e8f0; text-align: left;">Department</th><td style="padding: 10px; border: 1px solid #e2e8f0;">{employee.department_id.name or 'N/A'}</td></tr>
-                            <tr style="background: #f8fafc;"><th style="padding: 10px; border: 1px solid #e2e8f0; text-align: left;">Period / Dates</th><td style="padding: 10px; border: 1px solid #e2e8f0;">{date_range_str}</td></tr>
-                            <tr><th style="padding: 10px; border: 1px solid #e2e8f0; text-align: left;">Total Logged Hours</th><td style="padding: 10px; border: 1px solid #e2e8f0;"><strong style="color: #4f46e5;">{total_hours} hrs</strong></td></tr>
+                    <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; padding: 25px; color: #1e293b; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+                        <h2 style="color: #4f46e5; margin-top: 0; font-size: 20px;">Timesheet Submitted for Approval</h2>
+                        <p style="font-size: 14px; line-height: 1.6;">Dear <strong>{manager_name}</strong>,</p>
+                        <p style="font-size: 14px; line-height: 1.6;">Employee <strong>{employee.name}</strong> ({employee.department_id.name or 'General'}) has submitted their timesheet for <strong>{date_range_str}</strong> for your review and approval. Kindly check and approve.</p>
+                        
+                        <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
+                            <tr style="background: #f8fafc;">
+                                <th style="padding: 10px 14px; border: 1px solid #cbd5e1; text-align: left; width: 40%;">Employee Name</th>
+                                <td style="padding: 10px 14px; border: 1px solid #cbd5e1;"><strong>{employee.name}</strong></td>
+                            </tr>
+                            <tr>
+                                <th style="padding: 10px 14px; border: 1px solid #cbd5e1; text-align: left;">Department</th>
+                                <td style="padding: 10px 14px; border: 1px solid #cbd5e1;">{employee.department_id.name or 'N/A'}</td>
+                            </tr>
+                            <tr style="background: #f8fafc;">
+                                <th style="padding: 10px 14px; border: 1px solid #cbd5e1; text-align: left;">Respective Days / Period</th>
+                                <td style="padding: 10px 14px; border: 1px solid #cbd5e1;"><strong>{date_range_str}</strong></td>
+                            </tr>
+                            <tr>
+                                <th style="padding: 10px 14px; border: 1px solid #cbd5e1; text-align: left;">Total Logged Hours</th>
+                                <td style="padding: 10px 14px; border: 1px solid #cbd5e1;"><strong style="color: #4f46e5;">{total_hours} hrs</strong></td>
+                            </tr>
                         </table>
-                        <p>Kindly log in to your Odoo Timesheet Dashboard to approve or refuse this submission.</p>
-                        <br/>
-                        <p style="font-size: 12px; color: #64748b;">This is an automated notification from {company.name} Timesheet System.</p>
+
+                        <p style="font-size: 14px; line-height: 1.6;">Kindly log in to your Odoo Timesheet Dashboard to review and approve this submission.</p>
+                        <hr style="border: none; border-top: 1px solid #e2e8f0; margin-top: 25px;"/>
+                        <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">This is an automated notification from {company.name} Timesheet System.</p>
                     </div>
                 """
                 self.env['mail.mail'].sudo().create({
                     'subject': subject,
                     'body_html': body_html,
                     'email_to': manager_email,
-                    'email_from': company.email or self.env.user.email_formatted,
+                    'email_from': 'hrsupport@bxitech.com',
                 }).send()
 
             elif action_type == 'approve':
                 # Notify Employee
                 emp_email = employee.work_email or (employee.user_id and employee.user_id.email)
                 if not emp_email:
+                    _logger.warning(f"BXI Timesheet: No email found for employee {employee.name}")
                     return
 
                 subject = f"[Timesheet Approved] Your timesheet for {date_range_str} has been approved"
                 body_html = f"""
-                    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 8px;">
-                        <h2 style="color: #10b981; margin-top: 0;">Timesheet Approved</h2>
-                        <p>Dear <strong>{employee.name}</strong>,</p>
-                        <p>Your timesheet for <strong>{date_range_str}</strong> ({total_hours} hrs) has been <span style="color: #10b981; font-weight: bold;">APPROVED</span> by <strong>{approver_name or 'Management'}</strong>.</p>
-                        <br/>
-                        <p style="font-size: 12px; color: #64748b;">This is an automated notification from {company.name} Timesheet System.</p>
+                    <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; padding: 25px; color: #1e293b; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+                        <h2 style="color: #10b981; margin-top: 0; font-size: 20px;">Timesheet Approved</h2>
+                        <p style="font-size: 14px; line-height: 1.6;">Dear <strong>{employee.name}</strong>,</p>
+                        <p style="font-size: 14px; line-height: 1.6;">Your timesheet for <strong>{date_range_str}</strong> ({total_hours} hrs) has been <span style="color: #10b981; font-weight: bold;">APPROVED</span> by <strong>{approver_name or 'Management'}</strong>.</p>
+                        
+                        <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
+                            <tr style="background: #f8fafc;">
+                                <th style="padding: 10px 14px; border: 1px solid #cbd5e1; text-align: left; width: 40%;">Approved Period</th>
+                                <td style="padding: 10px 14px; border: 1px solid #cbd5e1;"><strong>{date_range_str}</strong></td>
+                            </tr>
+                            <tr>
+                                <th style="padding: 10px 14px; border: 1px solid #cbd5e1; text-align: left;">Total Approved Hours</th>
+                                <td style="padding: 10px 14px; border: 1px solid #cbd5e1;"><strong style="color: #10b981;">{total_hours} hrs</strong></td>
+                            </tr>
+                            <tr style="background: #f8fafc;">
+                                <th style="padding: 10px 14px; border: 1px solid #cbd5e1; text-align: left;">Approved By</th>
+                                <td style="padding: 10px 14px; border: 1px solid #cbd5e1;"><strong>{approver_name or 'Management'}</strong></td>
+                            </tr>
+                        </table>
+
+                        <hr style="border: none; border-top: 1px solid #e2e8f0; margin-top: 25px;"/>
+                        <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">This is an automated notification from {company.name} Timesheet System.</p>
                     </div>
                 """
                 self.env['mail.mail'].sudo().create({
                     'subject': subject,
                     'body_html': body_html,
                     'email_to': emp_email,
-                    'email_from': company.email or self.env.user.email_formatted,
+                    'email_from': 'hrsupport@bxitech.com',
                 }).send()
 
             elif action_type == 'refuse':
@@ -831,21 +950,21 @@ class BxiTimesheetDashboard(models.AbstractModel):
 
                 subject = f"[Timesheet Refused] Your timesheet for {date_range_str} has been refused"
                 body_html = f"""
-                    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 8px;">
-                        <h2 style="color: #ef4444; margin-top: 0;">Timesheet Refused</h2>
-                        <p>Dear <strong>{employee.name}</strong>,</p>
-                        <p>Your timesheet for <strong>{date_range_str}</strong> ({total_hours} hrs) has been <span style="color: #ef4444; font-weight: bold;">REFUSED / REJECTED</span> by <strong>{approver_name or 'Management'}</strong>.</p>
-                        <p>Please review your timesheet lines and contact your reporting manager if you have questions.</p>
-                        <br/>
-                        <p style="font-size: 12px; color: #64748b;">This is an automated notification from {company.name} Timesheet System.</p>
+                    <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; padding: 25px; color: #1e293b; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+                        <h2 style="color: #ef4444; margin-top: 0; font-size: 20px;">Timesheet Refused</h2>
+                        <p style="font-size: 14px; line-height: 1.6;">Dear <strong>{employee.name}</strong>,</p>
+                        <p style="font-size: 14px; line-height: 1.6;">Your timesheet for <strong>{date_range_str}</strong> ({total_hours} hrs) has been <span style="color: #ef4444; font-weight: bold;">REFUSED</span> by <strong>{approver_name or 'Management'}</strong>.</p>
+                        <p style="font-size: 14px; line-height: 1.6;">Please review your timesheet lines and contact your reporting manager if you have questions.</p>
+                        <hr style="border: none; border-top: 1px solid #e2e8f0; margin-top: 25px;"/>
+                        <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">This is an automated notification from {company.name} Timesheet System.</p>
                     </div>
                 """
                 self.env['mail.mail'].sudo().create({
                     'subject': subject,
                     'body_html': body_html,
                     'email_to': emp_email,
-                    'email_from': company.email or self.env.user.email_formatted,
+                    'email_from': 'hrsupport@bxitech.com',
                 }).send()
 
         except Exception as e:
-            _logger.error(f"Failed to send timesheet notification email ({action_type}) for employee {employee.name}: {str(e)}")
+            _logger.error(f"BXI Timesheet: Failed to send notification email ({action_type}) for employee {employee.name}: {str(e)}")

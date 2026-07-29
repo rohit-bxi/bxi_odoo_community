@@ -195,13 +195,15 @@ class PurchaseRequisition(models.Model):
 
     def _compute_internal_transfer_count(self):
         """Function to compute the transfer count"""
-        self.internal_transfer_count = self.env['stock.picking'].search_count([
-            ('requisition_order', '=', self.name)])
+        for rec in self:
+            rec.internal_transfer_count = rec.env['stock.picking'].sudo().search_count([
+                ('requisition_order', '=', rec.name)]) if rec.name else 0
 
     def _compute_purchase_count(self):
         """Function to compute the purchase count"""
-        self.purchase_count = self.env['purchase.order'].search_count([
-            ('requisition_order', '=', self.name)])
+        for rec in self:
+            rec.purchase_count = rec.env['purchase.order'].sudo().search_count([
+                ('requisition_order', '=', rec.name)]) if rec.name else 0
 
     def action_receive(self):
         """Received purchase requisition"""

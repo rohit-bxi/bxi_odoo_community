@@ -1,56 +1,91 @@
 <odoo>
     <template id="portal_my_payslips" name="My Payslips">
         <t t-call="portal.portal_layout">
-            <div class="container mt-4">
-                <h3 class="mb-3">My Payslips</h3>
+            <div class="container portal-employee mt-4 mb-5">
 
-                <t t-if="payslips">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Period</th>
-                                <th>Net Salary</th>
-                                <th>Status</th>
-                                <th class="text-end">Download</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <t t-foreach="payslips" t-as="slip">
-                                <tr>
-                                    <td>
-                                        <t t-esc="slip.date_from"/> →
-                                        <t t-esc="slip.date_to"/>
-                                    </td>
-                                    <td>
-                                        <t t-esc="slip.net_wage"/>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-success"
-                                              t-if="slip.state == 'done'">
-                                            Done
-                                        </span>
-                                        <span class="badge bg-secondary"
-                                              t-if="slip.state != 'done'">
-                                            Draft
-                                        </span>
-                                    </td>
-                                    <td class="text-end">
-                                        <a t-att-href="'/my/payslip/%s/download' % slip.id"
-                                           class="btn btn-sm btn-primary">
-                                            Download PDF
-                                        </a>
-                                    </td>
-                                </tr>
-                            </t>
-                        </tbody>
-                    </table>
-                </t>
+                <!-- Title & Month/Year Selection Form -->
+                <div class="card shadow-sm mb-4 border">
+                    <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between py-3">
+                        <h4 class="mb-0 fs-5"><i class="fa fa-file-text-o me-2"></i>My Salary Payslip</h4>
+                        <span class="badge bg-light text-dark font-monospace small"><i class="fa fa-eye me-1"></i>Screen View Only</span>
+                    </div>
+                    <div class="card-body bg-light p-4">
+                        <form action="/my/payslips" method="get" class="row g-3 align-items-end">
+                            <div class="col-md-5">
+                                <label for="month_select" class="form-label fw-bold small text-muted">SELECT MONTH</label>
+                                <select id="month_select" name="month" class="form-select shadow-sm">
+                                    <t t-foreach="months_list" t-as="m">
+                                        <option t-att-value="m[0]" t-att-selected="m[0] == selected_month">
+                                            <t t-esc="m[1]"/>
+                                        </option>
+                                    </t>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label for="year_select" class="form-label fw-bold small text-muted">SELECT YEAR</label>
+                                <select id="year_select" name="year" class="form-select shadow-sm">
+                                    <t t-foreach="years_list" t-as="y">
+                                        <option t-att-value="y" t-att-selected="y == selected_year">
+                                            <t t-esc="y"/>
+                                        </option>
+                                    </t>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm">
+                                    <i class="fa fa-search me-1"></i> View
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
 
-                <t t-else="">
-                    <div class="alert alert-info">
-                        No payslips available.
+                <!-- Payslip Inline Report View -->
+                <t t-if="payslip">
+                    <div class="card shadow-sm no-download-payslip p-4 bg-white border">
+                        <div class="alert alert-info py-2 text-center small mb-4 border-info">
+                            <i class="fa fa-shield me-1"></i>
+                            <strong>Screen View Only:</strong> Downloads and printing are restricted for security.
+                        </div>
+
+                        <!-- Render Custom Payslip QWeb Report Template -->
+                        <div class="payslip-report-container" style="overflow-x: auto;">
+                            <t t-set="docs" t-value="payslip"/>
+                            <t t-call="custom_payslip_report.payslip_custom_template"/>
+                        </div>
                     </div>
                 </t>
+
+                <!-- No Payslip Found Alert -->
+                <t t-if="not payslip">
+                    <div class="alert alert-warning text-center p-4 shadow-sm border-warning rounded">
+                        <i class="fa fa-exclamation-triangle fa-2x mb-2 text-warning"></i>
+                        <h5 class="alert-heading fw-bold">No Payslip Found</h5>
+                        <p class="mb-0 text-muted">
+                            No salary payslip record was found for 
+                            <strong>
+                                <t t-foreach="months_list" t-as="m">
+                                    <t t-if="m[0] == selected_month"><t t-esc="m[1]"/></t>
+                                </t>
+                                <t t-esc="selected_year"/>
+                            </strong>.
+                        </p>
+                    </div>
+                </t>
+
+                <!-- Restrict printing and downloading via CSS -->
+                <style type="text/css">
+                    @media print {
+                        body { display: none !important; }
+                    }
+                    .no-download-payslip {
+                        user-select: none;
+                        -webkit-user-select: none;
+                        -moz-user-select: none;
+                        -ms-user-select: none;
+                    }
+                </style>
+
             </div>
         </t>
     </template>

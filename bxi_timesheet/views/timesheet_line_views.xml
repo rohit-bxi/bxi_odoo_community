@@ -16,17 +16,20 @@
                 </header>
                 <sheet>
                     <group>
-                        <group>
-                            <field name="employee_id" readonly="state in ('approved', 'refused')"/>
-                            <field name="date" readonly="state in ('approved', 'refused')"/>
-                            <field name="project_id" required="1" readonly="state in ('approved', 'refused')"/>
-                            <field name="task_id" readonly="state in ('approved', 'refused')"/>
+                        <group string="Timesheet Information">
+                            <field name="employee_id" readonly="1"/>
+                            <field name="date" readonly="1"/>
+                            <field name="project_id" readonly="1"/>
+                            <field name="task_id" readonly="1"/>
                         </group>
-                        <group>
-                            <field name="unit_amount" string="Duration (Hours)" widget="float_time" readonly="state in ('approved', 'refused')"/>
-                            <field name="name" string="Description" readonly="state in ('approved', 'refused')"/>
+                        <group string="Details">
+                            <field name="unit_amount" string="Duration (Hours)" widget="float_time" readonly="1"/>
+                            <field name="name" string="Description" readonly="1"/>
                             <field name="company_id" groups="base.group_multi_company" readonly="1"/>
                         </group>
+                    </group>
+                    <group string="Approval Remarks">
+                        <field name="remarks" string="Manager Remarks" placeholder="Enter mandatory remarks for approval or refusal..." required="state == 'submitted'" readonly="state in ('approved', 'refused')"/>
                     </group>
                 </sheet>
             </form>
@@ -51,6 +54,7 @@
                 <field name="task_id"/>
                 <field name="name"/>
                 <field name="unit_amount" widget="float_time" sum="Total Hours"/>
+                <field name="remarks" string="Manager Remarks"/>
                 <field name="state" widget="badge" 
                        decoration-info="state == 'submitted'" 
                        decoration-success="state == 'approved'" 
