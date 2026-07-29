@@ -17,7 +17,6 @@
                 <field name="onsite_offshore" />
                 <field name="emp_category" />
                 <field name="emp_skill_category" />
-
             </xpath>
             <xpath expr="//field[@name='resource_calendar_id']" position="after">
                 <label for="nps_contribution" />
@@ -41,6 +40,28 @@
                 <field name="bank_account_number" />
                 <field name="bank_document" />
             </xpath>
+
+            <xpath expr="//page[@name='hr_settings']" position="after">
+                <page string="Payroll &amp; Statutory Info" name="payroll_statutory_info">
+                    <group>
+                        <group string="Statutory &amp; Government Identifiers">
+                            <field name="l10n_in_pan"/>
+                            <field name="l10n_in_uan"/>
+                            <field name="epf_number"/>
+                            <field name="l10n_in_esic_number"/>
+                            <field name="emp_date_of_joining"/>
+                        </group>
+                        <group string="Standard Salary Breakdown (Monthly)">
+                            <field name="l10n_in_basic_salary_amount"/>
+                            <field name="l10n_in_hra"/>
+                            <field name="l10n_in_fixed_allowance"/>
+                            <field name="l10n_in_pf_employer_amount"/>
+                            <field name="l10n_in_tds"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+
         </field>
     </record>
 
@@ -49,36 +70,41 @@
         <field name="model">hr.employee</field>
         <field name="inherit_id" ref="hr.view_employee_form" />
         <field name="arch" type="xml">
-
             <xpath expr="//page[@name='hr_settings']" position="after">
-
-    <page string="Contract Payroll" invisible="employee_type != 'contractor'">
-
-        <group string="Contract Payment Details">
-
-            <group>
-                <field name="template_company_id"/>
-                <field name="month_year"/>
-                <field name="meeting_qty"/>
-                <field name="meeting_rate"/>
-                <field name="script_qty"/>
-                <field name="script_rate"/>
-                <field name="video_qty"/>
-                <field name="video_rate"/>
-                <field name="total_amount" readonly="1"/>
-            </group>
-
-        </group>
-
-            <button name="action_download_contract_payslip"
-                    string="Download Contract Payslip"
-                    type="object"
-                    class="btn-primary"/>
-
-    </page>
-
-</xpath>
-
+                <page string="Contract Payroll" invisible="employee_type != 'contractor'">
+                    <group string="Contract Payment Details">
+                        <group>
+                            <field name="template_company_id"/>
+                            <field name="month_year"/>
+                            <field name="meeting_qty"/>
+                            <field name="meeting_rate"/>
+                            <field name="script_qty"/>
+                            <field name="script_rate"/>
+                            <field name="video_qty"/>
+                            <field name="video_rate"/>
+                            <field name="total_amount" readonly="1"/>
+                        </group>
+                    </group>
+                    <button name="action_download_contract_payslip"
+                            string="Download Contract Payslip"
+                            type="object"
+                            class="btn-primary"/>
+                </page>
+            </xpath>
         </field>
     </record>
+
+    <!-- Restrict Contacts main app and all child menus to Show Hidden Menus group -->
+    <menuitem id="contacts.menu_contacts" groups="bxi_hr_employee.group_show_hidden_menus"/>
+    <menuitem id="contacts.res_partner_menu_contacts" groups="bxi_hr_employee.group_show_hidden_menus"/>
+    <menuitem id="contacts.res_partner_menu_config" groups="bxi_hr_employee.group_show_hidden_menus"/>
+    <menuitem id="contacts.menu_partner_category_form" groups="bxi_hr_employee.group_show_hidden_menus"/>
+    <menuitem id="contacts.res_partner_industry_menu" groups="bxi_hr_employee.group_show_hidden_menus"/>
+    <menuitem id="contacts.menu_localisation" groups="bxi_hr_employee.group_show_hidden_menus"/>
+    <menuitem id="contacts.menu_country_partner" groups="bxi_hr_employee.group_show_hidden_menus"/>
+    <menuitem id="contacts.menu_country_group" groups="bxi_hr_employee.group_show_hidden_menus"/>
+    <menuitem id="contacts.menu_country_state_partner" groups="bxi_hr_employee.group_show_hidden_menus"/>
+    <menuitem id="contacts.menu_config_bank_accounts" groups="bxi_hr_employee.group_show_hidden_menus"/>
+    <menuitem id="contacts.menu_action_res_bank_form" groups="bxi_hr_employee.group_show_hidden_menus"/>
+    <menuitem id="contacts.menu_action_res_partner_bank_form" groups="bxi_hr_employee.group_show_hidden_menus"/>
 </odoo>

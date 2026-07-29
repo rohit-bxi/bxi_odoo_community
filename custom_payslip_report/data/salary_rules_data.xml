@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ========================================================= -->
+        <!--  1. SALARY RULES FOR INDIA: REGULAR PAY                   -->
+        <!-- ========================================================= -->
+
+        <!-- Basic Salary -->
+        <record id="hr_rule_basic" model="hr.salary.rule">
+            <field name="name">Basic Salary</field>
+            <field name="sequence" eval="1"/>
+            <field name="code">BASIC</field>
+            <field name="category_id" ref="om_hr_payroll.BASIC"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = contract.wage or employee.l10n_in_basic_salary_amount or 0.0</field>
+        </record>
+
+        <!-- Organization Performance Bonus -->
+        <record id="hr_rule_opb" model="hr.salary.rule">
+            <field name="name">Organization Performance Bonus</field>
+            <field name="sequence" eval="5"/>
+            <field name="code">OPB</field>
+            <field name="category_id" ref="om_hr_payroll.ALW"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = inputs.OPB.amount if 'OPB' in inputs else 0.0</field>
+        </record>
+
+        <!-- Arrears Allowances -->
+        <record id="hr_rule_ara" model="hr.salary.rule">
+            <field name="name">Arrears Allowances</field>
+            <field name="sequence" eval="10"/>
+            <field name="code">ARA</field>
+            <field name="category_id" ref="om_hr_payroll.ALW"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = inputs.ARA.amount if 'ARA' in inputs else 0.0</field>
+        </record>
+
+        <!-- Standard Allowance -->
+        <record id="hr_rule_std" model="hr.salary.rule">
+            <field name="name">Standard Allowance</field>
+            <field name="sequence" eval="15"/>
+            <field name="code">STD</field>
+            <field name="category_id" ref="om_hr_payroll.ALW"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = contract.hra or employee.l10n_in_hra or 0.0</field>
+        </record>
+
+        <!-- Performance Bonus -->
+        <record id="hr_rule_p_bonus" model="hr.salary.rule">
+            <field name="name">Performance Bonus</field>
+            <field name="sequence" eval="20"/>
+            <field name="code">P_BONUS</field>
+            <field name="category_id" ref="om_hr_payroll.ALW"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = inputs.P_BONUS.amount if 'P_BONUS' in inputs else 0.0</field>
+        </record>
+
+        <!-- Fixed Allowance / Special Allowance -->
+        <record id="hr_rule_spl" model="hr.salary.rule">
+            <field name="name">Fixed Allowance</field>
+            <field name="sequence" eval="25"/>
+            <field name="code">SPL</field>
+            <field name="category_id" ref="om_hr_payroll.ALW"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = employee.l10n_in_fixed_allowance or 0.0</field>
+        </record>
+
+        <!-- Taxable Salary / Gross Earning -->
+        <record id="hr_rule_gross" model="hr.salary.rule">
+            <field name="name">Taxable Salary</field>
+            <field name="sequence" eval="100"/>
+            <field name="code">GROSS</field>
+            <field name="category_id" ref="om_hr_payroll.GROSS"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = categories.BASIC + categories.ALW</field>
+        </record>
+
+        <!-- Professional Tax -->
+        <record id="hr_rule_pt" model="hr.salary.rule">
+            <field name="name">Professional Tax</field>
+            <field name="sequence" eval="101"/>
+            <field name="code">PT</field>
+            <field name="category_id" ref="om_hr_payroll.DED"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = -200.0 if categories.GROSS > 15000 else 0.0</field>
+        </record>
+
+        <!-- Provident fund - Employee -->
+        <record id="hr_rule_pf" model="hr.salary.rule">
+            <field name="name">Provident fund - Employee</field>
+            <field name="sequence" eval="102"/>
+            <field name="code">PF</field>
+            <field name="category_id" ref="om_hr_payroll.DED"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = -round((employee.l10n_in_basic_salary_amount or contract.wage or 0.0) * 0.12, 2)</field>
+        </record>
+
+        <!-- Tax Deducted at Source -->
+        <record id="hr_rule_tds" model="hr.salary.rule">
+            <field name="name">Tax Deducted at Source</field>
+            <field name="sequence" eval="103"/>
+            <field name="code">TDS</field>
+            <field name="category_id" ref="om_hr_payroll.DED"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = -abs(employee.l10n_in_tds or 0.0)</field>
+        </record>
+
+        <!-- Medical Insurance Premium -->
+        <record id="hr_rule_mip" model="hr.salary.rule">
+            <field name="name">Medical Insurance Premium</field>
+            <field name="sequence" eval="104"/>
+            <field name="code">MIP</field>
+            <field name="category_id" ref="om_hr_payroll.DED"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = -abs(inputs.MIP.amount) if 'MIP' in inputs else 0.0</field>
+        </record>
+
+        <!-- Leave Without Pay -->
+        <record id="hr_rule_lwp" model="hr.salary.rule">
+            <field name="name">Leave Without Pay</field>
+            <field name="sequence" eval="105"/>
+            <field name="code">LWP_DAYS</field>
+            <field name="category_id" ref="om_hr_payroll.DED"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = -abs((categories.BASIC / 30.0) * inputs.LWP_DAYS.amount) if ('LWP_DAYS' in inputs and inputs.LWP_DAYS.amount) else 0.0</field>
+        </record>
+
+        <!-- Deduction -->
+        <record id="hr_rule_deduction" model="hr.salary.rule">
+            <field name="name">Deduction</field>
+            <field name="sequence" eval="106"/>
+            <field name="code">DEDUCTION</field>
+            <field name="category_id" ref="om_hr_payroll.DED"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = -abs(inputs.DEDUCTION.amount) if 'DEDUCTION' in inputs else 0.0</field>
+        </record>
+
+        <!-- Net Salary -->
+        <record id="hr_rule_net" model="hr.salary.rule">
+            <field name="name">Net Salary</field>
+            <field name="sequence" eval="200"/>
+            <field name="code">NET</field>
+            <field name="category_id" ref="om_hr_payroll.NET"/>
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = categories.GROSS + categories.DED</field>
+        </record>
+
+
+        <!-- ========================================================= -->
+        <!--  2. OTHER INPUT TYPES FOR INDIA: REGULAR PAY               -->
+        <!-- ========================================================= -->
+
+        <record id="hr_rule_input_deduction" model="hr.rule.input">
+            <field name="code">DEDUCTION</field>
+            <field name="name">Deduction</field>
+            <field name="input_id" ref="hr_rule_deduction"/>
+        </record>
+
+        <record id="hr_rule_input_mip" model="hr.rule.input">
+            <field name="code">MIP</field>
+            <field name="name">Medical Insurance Premium</field>
+            <field name="input_id" ref="hr_rule_mip"/>
+        </record>
+
+        <record id="hr_rule_input_ara" model="hr.rule.input">
+            <field name="code">ARA</field>
+            <field name="name">Arrears Allowances</field>
+            <field name="input_id" ref="hr_rule_ara"/>
+        </record>
+
+        <record id="hr_rule_input_opb" model="hr.rule.input">
+            <field name="code">OPB</field>
+            <field name="name">Organization Performance Bonus</field>
+            <field name="input_id" ref="hr_rule_opb"/>
+        </record>
+
+        <record id="hr_rule_input_lwp" model="hr.rule.input">
+            <field name="code">LWP_DAYS</field>
+            <field name="name">Leave Without Pay</field>
+            <field name="input_id" ref="hr_rule_lwp"/>
+        </record>
+
+        <record id="hr_rule_input_pbonus" model="hr.rule.input">
+            <field name="code">P_BONUS</field>
+            <field name="name">Performance Bonus</field>
+            <field name="input_id" ref="hr_rule_p_bonus"/>
+        </record>
+
+
+        <!-- ========================================================= -->
+        <!--  3. SALARY STRUCTURE: INDIA: REGULAR PAY                  -->
+        <!-- ========================================================= -->
+
+        <record id="structure_india_regular_pay" model="hr.payroll.structure">
+            <field name="name">India: Regular Pay</field>
+            <field name="code">IN_REGULAR</field>
+            <field name="rule_ids" eval="[(6, 0, [
+                ref('hr_rule_basic'),
+                ref('hr_rule_opb'),
+                ref('hr_rule_ara'),
+                ref('hr_rule_std'),
+                ref('hr_rule_p_bonus'),
+                ref('hr_rule_spl'),
+                ref('hr_rule_gross'),
+                ref('hr_rule_pt'),
+                ref('hr_rule_pf'),
+                ref('hr_rule_tds'),
+                ref('hr_rule_mip'),
+                ref('hr_rule_lwp'),
+                ref('hr_rule_deduction'),
+                ref('hr_rule_net')
+            ])]"/>
+        </record>
+
+    </data>
+</odoo>

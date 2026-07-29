@@ -7,21 +7,23 @@
     <menuitem id="menu_bxi_desktime_root"
               name="DeskTime Integration"
               parent="hr_timesheet.timesheet_menu_root"
+              groups="hr_timesheet.group_timesheet_manager"
               sequence="50"/>
 
-    <!-- DeskTime Logs (readable by internal users to see sync results/status) -->
+    <!-- DeskTime Logs (restricted to Timesheet Administrator) -->
     <menuitem id="menu_bxi_desktime_logs"
               name="Sync Logs"
               parent="menu_bxi_desktime_root"
               action="action_bxi_desktime_log"
+              groups="hr_timesheet.group_timesheet_manager"
               sequence="10"/>
 
-    <!-- DeskTime Configurations (restricted to HR Manager/Admin) -->
+    <!-- DeskTime Configurations (restricted to Timesheet Administrator) -->
     <menuitem id="menu_bxi_desktime_config"
               name="Configurations"
               parent="menu_bxi_desktime_root"
               action="action_bxi_desktime_config"
-              groups="hr.group_hr_manager"
+              groups="hr_timesheet.group_timesheet_manager"
               sequence="20"/>
 
 </odoo>

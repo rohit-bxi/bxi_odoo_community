@@ -417,60 +417,97 @@
                             <button type="button" class="btn-close" t-on-click="closeAddRowModal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body px-4 py-3">
+                            <!-- Warning Banner if mandatory fields are missing -->
+                            <!-- Warning Banner if mandatory fields are missing -->
+                            <t t-if="newRowProjectError || newRowTaskError || newRowDescriptionError || newRowDateError || newRowHoursError">
+                                <div class="alert alert-warning d-flex align-items-center gap-2 p-2 mb-3 rounded border-warning small font-12 fw-bold text-dark">
+                                    <i class="fa fa-exclamation-triangle text-warning fs-6 me-1"/>
+                                    <span>Please fill in all mandatory fields: Project, Task, Description, Date, and Time Spent.</span>
+                                </div>
+                            </t>
+
                             <!-- Project Select -->
                             <div class="mb-3">
-                                <label class="form-label text-muted fw-bold small">Project</label>
-                                <select class="form-select" t-on-change="onProjectChange">
+                                <label class="form-label text-dark fw-bold small">Project <span class="text-danger">*</span></label>
+                                <select t-att-class="newRowProjectError ? 'form-select is-invalid border-danger text-danger fw-semibold' : 'form-select'" t-att-value="state.new_row_project_id" t-on-change="onProjectChange">
                                     <option value="">— Select Project —</option>
-                                    <t t-foreach="state.projects" t-as="p" t-key="p.id">
-                                        <option t-att-value="p.id"><t t-esc="p.name"/></option>
+                                    <t t-foreach="state.projects || []" t-as="p" t-key="p.id">
+                                        <option t-att-value="p.id" t-att-selected="state.new_row_project_id == p.id">
+                                            <t t-esc="p.display_name || p.name"/>
+                                        </option>
                                     </t>
                                 </select>
+                                <t t-if="newRowProjectError">
+                                    <div class="text-danger small mt-1 font-11 fw-bold">
+                                        <i class="fa fa-exclamation-circle me-1"/>
+                                        <t t-esc="newRowProjectError"/>
+                                    </div>
+                                </t>
                             </div>
                             
                             <!-- Task Select -->
                             <div class="mb-3">
-                                <label class="form-label text-muted fw-bold small">Task</label>
-                                <select class="form-select" t-on-change="onTaskChange" t-att-disabled="!state.new_row_project_id">
-                                    <option value="">— Select Task (Optional) —</option>
-                                    <t t-foreach="filteredTasks" t-as="t" t-key="t.id">
-                                        <option t-att-value="t.id"><t t-esc="t.name"/></option>
+                                <label class="form-label text-dark fw-bold small">Task <span class="text-danger">*</span></label>
+                                <select t-att-class="newRowTaskError ? 'form-select is-invalid border-danger text-danger fw-semibold' : 'form-select'" t-att-value="state.new_row_task_id" t-on-change="onTaskChange">
+                                    <option value="">— Select Task —</option>
+                                    <t t-foreach="filteredTasks || []" t-as="t" t-key="t.id">
+                                        <option t-att-value="t.id" t-att-selected="state.new_row_task_id == t.id">
+                                            <t t-esc="t.display_name || t.name"/>
+                                        </option>
                                     </t>
                                 </select>
+                                <t t-if="newRowTaskError">
+                                    <div class="text-danger small mt-1 font-11 fw-bold">
+                                        <i class="fa fa-exclamation-circle me-1"/>
+                                        <t t-esc="newRowTaskError"/>
+                                    </div>
+                                </t>
                             </div>
 
                             <!-- Description Input -->
                             <div class="mb-3">
-                                <label class="form-label text-muted fw-bold small">Description / Notes</label>
-                                <input type="text" class="form-control" placeholder="e.g. Development work, Client Meeting..." t-on-input="onDescriptionChange"/>
+                                <label class="form-label text-dark fw-bold small">Description / Notes <span class="text-danger">*</span></label>
+                                <input type="text"
+                                       t-att-class="newRowDescriptionError ? 'form-control is-invalid border-danger text-danger fw-semibold' : 'form-control'"
+                                       placeholder="e.g. Development work, Client Meeting..."
+                                       t-att-value="state.new_row_description"
+                                       t-on-input="onDescriptionChange"
+                                       required="required"/>
+                                <t t-if="newRowDescriptionError">
+                                    <div class="text-danger small mt-1 font-11 fw-bold">
+                                        <i class="fa fa-exclamation-circle me-1"/>
+                                        <t t-esc="newRowDescriptionError"/>
+                                    </div>
+                                </t>
                             </div>
 
                             <!-- Date and Hours Row -->
                             <div class="row mb-3">
                                 <div class="col-6">
-                                    <label class="form-label text-muted fw-bold small">Date</label>
+                                    <label class="form-label text-dark fw-bold small">Date <span class="text-danger">*</span></label>
                                     <input type="date"
                                            t-att-class="newRowDateError ? 'form-control is-invalid border-danger text-danger fw-bold' : 'form-control'"
                                            t-att-value="state.new_row_date"
                                            t-on-input="onDateChange"
                                            t-on-change="onDateChange"/>
                                     <t t-if="newRowDateError">
-                                        <div class="text-danger small mt-1 fw-bold">
-                                            <i class="fa fa-exclamation-triangle me-1"/>
+                                        <div class="text-danger small mt-1 font-11 fw-bold">
+                                            <i class="fa fa-exclamation-circle me-1"/>
                                             <t t-esc="newRowDateError"/>
                                         </div>
                                     </t>
                                 </div>
                                 <div class="col-6">
-                                    <label class="form-label text-muted fw-bold small">Time Spent (Hours)</label>
+                                    <label class="form-label text-dark fw-bold small">Time Spent (Hours) <span class="text-danger">*</span></label>
                                     <input type="text"
                                            t-att-class="newRowHoursError ? 'form-control is-invalid border-danger text-danger fw-bold' : 'form-control'"
                                            placeholder="e.g. 8:00 or 1.5"
+                                           t-att-value="state.new_row_hours"
                                            t-on-input="onHoursChange"
                                            t-on-change="onHoursChange"/>
                                     <t t-if="newRowHoursError">
-                                        <div class="text-danger small mt-1 fw-bold">
-                                            <i class="fa fa-exclamation-triangle me-1"/>
+                                        <div class="text-danger small mt-1 font-11 fw-bold">
+                                            <i class="fa fa-exclamation-circle me-1"/>
                                             <t t-esc="newRowHoursError"/>
                                         </div>
                                     </t>
@@ -479,7 +516,7 @@
                         </div>
                         <div class="modal-footer border-top-0 pt-0 pb-4 px-4 d-flex gap-2 justify-content-end">
                             <button type="button" class="btn btn-light border px-4 rounded-pill fw-bold text-secondary btn-sm" t-on-click="closeAddRowModal">Cancel</button>
-                            <button type="button" class="btn btn-primary px-4 rounded-pill fw-bold btn-sm text-white shadow" t-on-click="confirmAddRow" t-att-disabled="!state.new_row_project_id || !state.new_row_date || newRowHoursError || newRowDateError">Add Line</button>
+                            <button type="button" class="btn btn-primary px-4 rounded-pill fw-bold btn-sm text-white shadow" t-on-click="confirmAddRow" t-att-disabled="newRowProjectError || newRowTaskError || newRowDescriptionError || newRowDateError || newRowHoursError">Add Line</button>
                         </div>
                     </div>
                 </div>

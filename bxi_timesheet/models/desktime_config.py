@@ -318,24 +318,24 @@ class BxiDesktimeConfig(models.Model):
         else:
             log_record = self.env['bxi.desktime.log'].create(log_vals)
 
-        # ── Auto Checkout Odoo Attendance from DeskTime ───────────────
-        if 'hr.attendance' in self.env and left_dt:
-            dt_min = datetime.combine(record_date, time.min)
-            dt_max = datetime.combine(record_date, time.max)
-            
-            open_attendance = self.env['hr.attendance'].sudo().search([
-                ('employee_id', '=', odoo_employee.id),
-                ('check_in', '>=', dt_min),
-                ('check_in', '<=', dt_max),
-                ('check_out', '=', False)
-            ], limit=1)
-            
-            if open_attendance:
-                # Check if is_auto_checkout is defined on model before writing
-                write_vals = {'check_out': left_dt}
-                if 'is_auto_checkout' in open_attendance._fields:
-                    write_vals['is_auto_checkout'] = True
-                open_attendance.write(write_vals)
+        # ── Auto Checkout Odoo Attendance from DeskTime (Commented out per user requirement) ──
+        # if 'hr.attendance' in self.env and left_dt:
+        #     dt_min = datetime.combine(record_date, time.min)
+        #     dt_max = datetime.combine(record_date, time.max)
+        #     
+        #     open_attendance = self.env['hr.attendance'].sudo().search([
+        #         ('employee_id', '=', odoo_employee.id),
+        #         ('check_in', '>=', dt_min),
+        #         ('check_in', '<=', dt_max),
+        #         ('check_out', '=', False)
+        #     ], limit=1)
+        #     
+        #     if open_attendance:
+        #         # Check if is_auto_checkout is defined on model before writing
+        #         write_vals = {'check_out': left_dt}
+        #         if 'is_auto_checkout' in open_attendance._fields:
+        #             write_vals['is_auto_checkout'] = True
+        #         open_attendance.write(write_vals)
 
         # Timesheet creation/updates disabled per requirement:
         # "while syncing the logs from the desktime api from schedule or manual on logs will create in sync log not the timesheet"

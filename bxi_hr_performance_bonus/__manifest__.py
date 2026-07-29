@@ -17,7 +17,7 @@
         - Performance/Bonus Tracking
         - PDF Reports
     """,
-    'depends': ['hr', 'mail','custom_template'],
+    'depends': ['hr', 'mail', 'custom_template', 'bxi_hr_employee'],
     'data': [
         'security/ir.model.access.csv',
         'views/employee_letter_wizard.xml',

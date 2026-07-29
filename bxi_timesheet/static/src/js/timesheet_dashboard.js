@@ -181,12 +181,15 @@ class BxiTimesheetDashboard extends Component {
         }
     }
 
-    openAddRowModal() {
+    async openAddRowModal() {
         this.state.new_row_project_id = "";
         this.state.new_row_task_id = "";
         this.state.new_row_description = "";
         this.state.new_row_date = this.formatDateStr(new Date());
         this.state.new_row_hours = "";
+        if (!this.state.projects || this.state.projects.length === 0) {
+            await this.loadData();
+        }
         this.state.show_add_row_modal = true;
     }
 
@@ -198,12 +201,43 @@ class BxiTimesheetDashboard extends Component {
         if (!this.state.new_row_project_id) {
             return [];
         }
-        return this.state.tasks.filter(t => t.project_id[0] === parseInt(this.state.new_row_project_id));
+        const selectedProjId = parseInt(this.state.new_row_project_id, 10);
+        return (this.state.tasks || []).filter(t => {
+            if (!t.project_id) return false;
+            if (Array.isArray(t.project_id)) {
+                return t.project_id[0] === selectedProjId;
+            }
+            return parseInt(t.project_id, 10) === selectedProjId;
+        });
+    }
+
+    get newRowProjectError() {
+        if (!this.state.new_row_project_id) {
+            return "Project is required.";
+        }
+        return "";
+    }
+
+    get newRowTaskError() {
+        if (!this.state.new_row_task_id) {
+            return "Task is required.";
+        }
+        return "";
+    }
+
+    get newRowDescriptionError() {
+        const val = (this.state.new_row_description || "").trim();
+        if (!val) {
+            return "Description / Notes is required.";
+        }
+        return "";
     }
 
     get newRowHoursError() {
         const val = (this.state.new_row_hours || "").trim();
-        if (!val) return "";
+        if (!val) {
+            return "Time Spent (Hours) is required.";
+        }
         let hours = 0.0;
         if (val.includes(':')) {
             const parts = val.split(':');
@@ -220,8 +254,26 @@ class BxiTimesheetDashboard extends Component {
     }
 
     get newRowDateError() {
-        if (!this.state.new_row_date) return "";
-        const parts = this.state.new_row_date.split('-');
+        if (!this.state.new_row_date) {
+            return "Date is required.";
+        }
+        const targetDateStr = this.state.new_row_date;
+
+        // Check if any line on this date is already submitted or approved
+        if (this.state.grid_lines && this.state.grid_lines.length > 0) {
+            const dateIdx = (this.state.dates || []).findIndex(d => d.date_str === targetDateStr);
+            if (dateIdx !== -1) {
+                const isAlreadySubmitted = this.state.grid_lines.some(line => {
+                    const st = line.states ? line.states[dateIdx] : false;
+                    return st === 'submitted' || st === 'approved';
+                });
+                if (isAlreadySubmitted && !(this.state.is_manager || this.state.is_hr || this.state.is_admin)) {
+                    return `Timesheet for ${targetDateStr} has already been submitted or approved.`;
+                }
+            }
+        }
+
+        const parts = targetDateStr.split('-');
         if (parts.length !== 3) return "";
         const year = parseInt(parts[0], 10);
         const month = parseInt(parts[1], 10) - 1;
@@ -263,21 +315,23 @@ class BxiTimesheetDashboard extends Component {
     }
 
     async confirmAddRow() {
-        if (!this.state.new_row_project_id || !this.state.new_row_date) {
-            return;
-        }
-        if (this.newRowHoursError || this.newRowDateError) {
+        if (this.newRowProjectError || this.newRowTaskError || this.newRowDescriptionError || this.newRowDateError || this.newRowHoursError) {
             if (this.notification) {
                 this.notification.add(
-                    this.newRowDateError || this.newRowHoursError,
-                    { title: "Action Blocked", type: "danger" }
+                    this.newRowProjectError || this.newRowTaskError || this.newRowDescriptionError || this.newRowDateError || this.newRowHoursError,
+                    { title: "Required Field", type: "warning" }
                 );
             }
             return;
         }
 
-        const projId = parseInt(this.state.new_row_project_id);
+        const projId = parseInt(this.state.new_row_project_id) || 0;
         const tskId = parseInt(this.state.new_row_task_id) || 0;
+
+        let empId = parseInt(this.state.selected_employee_id) || 0;
+        if (!empId && this.state.employee_options && this.state.employee_options.length > 0) {
+            empId = parseInt(this.state.employee_options[0].id) || 0;
+        }
 
         try {
             await this.orm.call(
@@ -285,7 +339,7 @@ class BxiTimesheetDashboard extends Component {
                 "save_timesheet_hours",
                 [],
                 {
-                    employee_id: parseInt(this.state.selected_employee_id),
+                    employee_id: empId || false,
                     date_str: this.state.new_row_date,
                     project_id: projId,
                     task_id: tskId,
