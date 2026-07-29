@@ -36,15 +36,33 @@ class AccountAnalyticLine(models.Model):
             if rec.date and rec.date < current_week_start:
                 raise UserError(_("Timesheets for previous weeks (before %s) cannot be created, modified, or submitted.") % current_week_start.strftime('%Y-%m-%d'))
 
-    # NOTE: Multiple timesheet lines per day are allowed (different project/task combos).
-    # A per-day uniqueness constraint is NOT enforced here.
+    @api.constrains('employee_id', 'date')
+    def _check_one_entry_per_day(self):
+        """Block users from creating more than 1 timesheet entry for a single day."""
+        for rec in self:
+            if rec.employee_id and rec.date:
+                existing = self.env['account.analytic.line'].sudo().search([
+                    ('employee_id', '=', rec.employee_id.id),
+                    ('date', '=', rec.date),
+                    ('id', '!=', rec.id),
+                ], limit=1)
+                if existing:
+                    raise UserError(_("Only one timesheet entry is allowed per day (%s) for employee %s.") % (
+                        rec.date.strftime('%Y-%m-%d'), rec.employee_id.name
+                    ))
 
-    @api.constrains('unit_amount')
+    @api.constrains('unit_amount', 'employee_id', 'date')
     def _check_max_hours_per_day(self):
         """Block users from logging more than 9 hours for a single day."""
         for rec in self:
-            if rec.unit_amount > 9.0:
-                raise UserError(_("You cannot log more than 9 hours for a single day (%s).") % rec.date.strftime('%Y-%m-%d'))
+            if rec.employee_id and rec.date:
+                day_lines = self.env['account.analytic.line'].sudo().search([
+                    ('employee_id', '=', rec.employee_id.id),
+                    ('date', '=', rec.date),
+                ])
+                total_hours = sum(day_lines.mapped('unit_amount'))
+                if total_hours > 9.0:
+                    raise UserError(_("You cannot log more than 9 hours for a single day (%s).") % rec.date.strftime('%Y-%m-%d'))
 
     def action_submit(self):
         today = date.today()
