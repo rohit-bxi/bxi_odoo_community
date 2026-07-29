@@ -342,7 +342,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
             has_attendance = 'hr.attendance' in self.env
             all_attendances = self.env['hr.attendance']
             if has_attendance:
-                all_attendances = self.env['hr.attendance'].search([
+                all_attendances = self.env['hr.attendance'].sudo().search([
                     ('employee_id', 'in', team_members.ids),
                     ('employee_id.company_id', 'in', allowed_company_ids),
                     ('check_in', '>=', datetime.combine(start_date, datetime.min.time()) - timedelta(days=1)),
@@ -631,6 +631,13 @@ class BxiTimesheetDashboard(models.AbstractModel):
                 existing_line.write(write_vals)
         else:
             if amount > 0.0:
+                any_existing = self.env['account.analytic.line'].sudo().search([
+                    ('employee_id', '=', target_emp_id),
+                    ('date', '=', target_date),
+                ], limit=1)
+                if any_existing:
+                    raise UserError(_("A timesheet entry already exists for %s. Only one timesheet entry is allowed per day.") % target_date.strftime('%Y-%m-%d'))
+
                 task_name = self.env['project.task'].browse(tsk_id).name if tsk_id else ''
                 proj_name = self.env['project.project'].browse(proj_id).name if proj_id else ''
                 # Use the target employee's company for the timesheet line

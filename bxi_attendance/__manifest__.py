@@ -12,6 +12,7 @@
         'hr_attendance',
     ],
     'data': [
+        'data/cron_data.xml',
         'views/hr_attendance_views.xml',
     ],
     'installable': True,
