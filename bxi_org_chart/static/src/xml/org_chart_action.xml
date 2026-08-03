@@ -217,6 +217,9 @@
                         <div class="bxi_emp_job" t-att-title="node.job_title"><t t-esc="node.job_title"/></div>
                         <div class="bxi_emp_dept">
                             <i class="fa fa-building-o"/> <t t-esc="node.department"/>
+                            <t t-if="node.is_cross_company">
+                                <span class="badge bg-light text-dark border ms-1" t-att-title="node.company_name"><i class="fa fa-globe me-1 text-primary"/><t t-esc="node.company_name"/></span>
+                            </t>
                         </div>
 
                         <!-- Direct Reports Count Badge / Expand Toggle -->

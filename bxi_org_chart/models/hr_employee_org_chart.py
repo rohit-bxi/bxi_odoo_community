@@ -12,18 +12,26 @@ class HrEmployeeOrgChart(models.Model):
         """
         current_company = self.env.company
 
-        # Domain to get active employees of current company only
-        domain = [
+        # Search active employees of current company
+        company_employees = self.sudo().search([
             ('active', '=', True),
             ('company_id', '=', current_company.id),
-        ]
+        ])
 
-        # Search active employees with sudo()
-        employees = self.sudo().search(domain)
+        # Traverse UP parent_id relationships to fetch cross-company reporting managers
+        all_employees = company_employees
+        manager_ids = company_employees.mapped('parent_id').filtered(lambda m: m.active).ids
+
+        while manager_ids:
+            managers = self.sudo().search([('id', 'in', manager_ids), ('active', '=', True)])
+            all_employees |= managers
+            # Get next level of managers up the chain not yet in all_employees
+            next_managers = managers.mapped('parent_id').filtered(lambda m: m.active and m.id not in all_employees.ids)
+            manager_ids = next_managers.ids
 
         # Filter out 'Administrator' or system admin user employees if any
         filtered_employees = []
-        for emp in employees:
+        for emp in all_employees:
             login = (emp.user_id.login or '').lower() if emp.user_id else ''
             emp_name = (emp.name or '').lower()
             if login in ('admin', 'administrator') or 'administrator' in emp_name:
@@ -37,7 +45,7 @@ class HrEmployeeOrgChart(models.Model):
             job_name = emp.job_title or (emp.job_id.name if emp.job_id else False) or _("Employee")
             dept_name = emp.department_id.name if emp.department_id else _("General")
             
-            # Check if parent is valid and in current active company set
+            # Check if parent is valid and in active set
             parent_id = False
             if emp.parent_id and emp.parent_id.id in valid_emp_ids:
                 parent_id = emp.parent_id.id
@@ -48,6 +56,8 @@ class HrEmployeeOrgChart(models.Model):
                 'job_title': job_name,
                 'department': dept_name,
                 'department_id': emp.department_id.id if emp.department_id else False,
+                'company_name': emp.company_id.name if emp.company_id else '',
+                'is_cross_company': emp.company_id.id != current_company.id if emp.company_id else False,
                 'work_email': emp.work_email or (emp.user_id.email if emp.user_id else ''),
                 'work_phone': emp.work_phone or emp.mobile_phone or '',
                 'work_location': emp.work_location_id.name if hasattr(emp, 'work_location_id') and emp.work_location_id else '',
