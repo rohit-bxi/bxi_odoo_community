@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="bxi_org_chart.OrgChartAction">
+        <div t-attf-class="o_bxi_org_chart_container {{ state.isFullscreen ? 'bxi_fullscreen_mode' : '' }}">
+            <!-- Header Controls Toolbar -->
+            <div class="bxi_org_chart_header">
+                <div class="bxi_org_chart_title_area">
+                    <h2>
+                        <i class="fa fa-sitemap text-indigo-600 me-2"/> Organization Chart
+                        <span class="company_badge" t-if="state.companyName">
+                            <i class="fa fa-building me-1"/> <t t-esc="state.companyName"/>
+                        </span>
+                    </h2>
+                </div>
+
+                <!-- Stats Badges -->
+                <div class="bxi_org_stats_bar d-none d-md-flex">
+                    <div class="stat_chip">
+                        <i class="fa fa-users text-indigo-500"/>
+                        <span><strong t-esc="state.totalEmployees"/> Active Employees</span>
+                    </div>
+                    <div class="stat_chip">
+                        <i class="fa fa-briefcase text-emerald-500"/>
+                        <span><strong t-esc="state.totalDepartments"/> Departments</span>
+                    </div>
+                    <div class="stat_chip">
+                        <i class="fa fa-star text-amber-500"/>
+                        <span><strong t-esc="state.directBoardReports"/> Board Directs</span>
+                    </div>
+                </div>
+
+                <div class="bxi_org_chart_controls">
+                    <!-- Search Input -->
+                    <div class="bxi_org_search_box">
+                        <i class="fa fa-search"/>
+                        <input type="text" placeholder="Search employee, job, dept..." t-on-input="onSearchInput" t-att-value="state.searchQuery"/>
+                    </div>
+
+                    <!-- Zoom & Expand Buttons -->
+                    <div class="bxi_btn_group">
+                        <button class="btn-primary-action" t-on-click="expandAll" title="Expand All Nodes">
+                            <i class="fa fa-expand"/> Expand All
+                        </button>
+                        <button t-on-click="collapseAll" title="Collapse All Nodes">
+                            <i class="fa fa-compress"/> Minimise All
+                        </button>
+                        <button t-on-click="zoomIn" title="Zoom In">
+                            <i class="fa fa-search-plus"/>
+                        </button>
+                        <button t-on-click="zoomOut" title="Zoom Out">
+                            <i class="fa fa-search-minus"/>
+                        </button>
+                        <button t-on-click="resetZoom" title="Reset Scale">
+                            <t t-esc="Math.round(state.zoomScale * 100)"/>%
+                        </button>
+                        <button t-on-click="toggleFullscreen" title="Toggle Fullscreen">
+                            <i t-attf-class="fa {{ state.isFullscreen ? 'fa-compress' : 'fa-arrows-alt' }}"/>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Viewport Canvas -->
+            <div class="bxi_org_chart_viewport">
+                <t t-if="state.loading">
+                    <div class="text-center py-5">
+                        <i class="fa fa-circle-o-notch fa-spin fa-3x text-indigo-600 mb-3"/>
+                        <p class="text-muted fw-semibold">Loading Organization Chart...</p>
+                    </div>
+                </t>
+
+                <t t-elif="!state.rootNodes or state.rootNodes.length === 0">
+                    <div class="bxi_org_empty_state">
+                        <i class="fa fa-users"/>
+                        <h4>No Active Employees Found</h4>
+                        <p>No active employees found for the currently selected company (<t t-esc="state.companyName"/>).</p>
+                    </div>
+                </t>
+
+                <t t-else="">
+                    <div class="bxi_org_tree_wrapper" t-attf-style="transform: scale({{ state.zoomScale }});">
+                        <!-- Top Executive Root: Reporting to The Board -->
+                        <div class="bxi_board_card">
+                            <div class="bxi_board_crown_icon">
+                                <i class="fa fa-university"/>
+                            </div>
+                            <div class="bxi_board_details">
+                                <h3><t t-esc="state.boardTitle"/></h3>
+                                <p>Board of Directors / Executive Leadership</p>
+                            </div>
+                        </div>
+
+                        <!-- Top Level Root Branches -->
+                        <div class="bxi_tree_branch">
+                            <div class="bxi_tree_children">
+                                <t t-foreach="state.rootNodes" t-as="node" t-key="node.id">
+                                    <t t-call="bxi_org_chart.OrgNode">
+                                        <t t-set="node" t-value="node"/>
+                                    </t>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Executive Employee Profile Modal -->
+            <t t-if="state.selectedEmployeeModal">
+                <div class="bxi_modal_backdrop" t-on-click="closeModal">
+                    <div class="bxi_profile_modal" t-on-click.stop="">
+                        <!-- Modal Close Button -->
+                        <button class="bxi_close_btn" t-on-click="closeModal" title="Close">
+                            <i class="fa fa-times"/>
+                        </button>
+                        
+                        <!-- Modal Header Banner -->
+                        <div class="bxi_pm_header">
+                            <div class="bxi_pm_avatar_box">
+                                <img t-att-src="state.selectedEmployeeModal.avatar_url" alt="Avatar"/>
+                            </div>
+                            <div class="bxi_pm_user_info">
+                                <h3 class="bxi_pm_name"><t t-esc="state.selectedEmployeeModal.name"/></h3>
+                                <div class="bxi_pm_job"><t t-esc="state.selectedEmployeeModal.job_title"/></div>
+                                <div class="bxi_pm_dept">
+                                    <i class="fa fa-building-o me-1"/> <t t-esc="state.selectedEmployeeModal.department"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal Body Details -->
+                        <div class="bxi_pm_body">
+                            <t t-if="state.selectedEmployeeModal.parent_name">
+                                <div class="bxi_pm_detail_item">
+                                    <div class="bxi_pm_icon text-indigo"><i class="fa fa-user-secret"/></div>
+                                    <div class="bxi_pm_text">
+                                        <div class="bxi_pm_label">Reporting Manager</div>
+                                        <div class="bxi_pm_val"><t t-esc="state.selectedEmployeeModal.parent_name"/></div>
+                                    </div>
+                                </div>
+                            </t>
+
+                            <t t-if="state.selectedEmployeeModal.work_email">
+                                <div class="bxi_pm_detail_item">
+                                    <div class="bxi_pm_icon text-purple"><i class="fa fa-envelope"/></div>
+                                    <div class="bxi_pm_text">
+                                        <div class="bxi_pm_label">Work Email</div>
+                                        <div class="bxi_pm_val">
+                                            <a t-attf-href="mailto:{{ state.selectedEmployeeModal.work_email }}"><t t-esc="state.selectedEmployeeModal.work_email"/></a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+
+                            <t t-if="state.selectedEmployeeModal.work_phone">
+                                <div class="bxi_pm_detail_item">
+                                    <div class="bxi_pm_icon text-green"><i class="fa fa-phone"/></div>
+                                    <div class="bxi_pm_text">
+                                        <div class="bxi_pm_label">Work Phone</div>
+                                        <div class="bxi_pm_val">
+                                            <a t-attf-href="tel:{{ state.selectedEmployeeModal.work_phone }}"><t t-esc="state.selectedEmployeeModal.work_phone"/></a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+
+                            <t t-if="state.selectedEmployeeModal.work_location">
+                                <div class="bxi_pm_detail_item">
+                                    <div class="bxi_pm_icon text-amber"><i class="fa fa-map-marker"/></div>
+                                    <div class="bxi_pm_text">
+                                        <div class="bxi_pm_label">Work Location</div>
+                                        <div class="bxi_pm_val"><t t-esc="state.selectedEmployeeModal.work_location"/></div>
+                                    </div>
+                                </div>
+                            </t>
+
+                            <!-- Subordinate Stats -->
+                            <div class="bxi_pm_stats_grid">
+                                <div class="bxi_pm_stat_card">
+                                    <div class="bxi_pm_stat_number"><t t-esc="state.selectedEmployeeModal.direct_reports_count"/></div>
+                                    <div class="bxi_pm_stat_label">Direct Reports</div>
+                                </div>
+                                <div class="bxi_pm_stat_card">
+                                    <div class="bxi_pm_stat_number"><t t-esc="state.selectedEmployeeModal.total_reports_count"/></div>
+                                    <div class="bxi_pm_stat_label">Total Subordinates</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal Footer Action -->
+                        <div class="bxi_pm_footer">
+                            <button class="bxi_pm_btn_action" t-on-click="(ev) => this.openEmployeeProfile(state.selectedEmployeeModal.id, ev)">
+                                <i class="fa fa-id-card-o me-2"/> Open Full Employee Profile
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <!-- Recursive Org Node Template -->
+    <t t-name="bxi_org_chart.OrgNode">
+        <div class="bxi_tree_node">
+            <!-- Employee Card -->
+            <div t-attf-class="bxi_employee_card {{ isMatched(node) ? 'matched' : '' }}" t-on-click="(ev) => this.openModal(node, ev)">
+                <div class="bxi_card_accent_bar"/>
+                
+                <div class="bxi_card_content">
+                    <div class="bxi_avatar_wrapper">
+                        <img t-att-src="node.avatar_url" alt="Avatar"/>
+                        <span class="bxi_status_indicator"/>
+                    </div>
+
+                    <div class="bxi_emp_details">
+                        <h4 class="bxi_emp_name" t-att-title="node.name"><t t-esc="node.name"/></h4>
+                        <div class="bxi_emp_job" t-att-title="node.job_title"><t t-esc="node.job_title"/></div>
+                        <div class="bxi_emp_dept">
+                            <i class="fa fa-building-o"/> <t t-esc="node.department"/>
+                        </div>
+
+                        <!-- Direct Reports Count Badge / Expand Toggle -->
+                        <t t-if="node.children and node.children.length > 0">
+                            <button t-attf-class="bxi_expand_btn {{ isExpanded(node.id) ? 'expanded' : '' }}" t-on-click="(ev) => this.toggleExpand(node.id, ev)" t-attf-title="{{ isExpanded(node.id) ? 'Minimise Subordinates' : 'Expand Subordinates' }}">
+                                <t t-if="isExpanded(node.id)">
+                                    <i class="fa fa-minus-circle"/> <t t-esc="node.direct_reports_count"/> Direct Reports
+                                </t>
+                                <t t-else="">
+                                    <i class="fa fa-plus-circle"/> <t t-esc="node.direct_reports_count"/> Direct Reports
+                                </t>
+                            </button>
+                        </t>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stem & Subordinates Children -->
+            <t t-if="node.children and node.children.length > 0 and isExpanded(node.id)">
+                <div class="bxi_card_stem"/>
+                <div class="bxi_tree_children">
+                    <t t-foreach="node.children" t-as="child" t-key="child.id">
+                        <t t-call="bxi_org_chart.OrgNode">
+                            <t t-set="node" t-value="child"/>
+                        </t>
+                    </t>
+                </div>
+            </t>
+        </div>
+    </t>
+
+</templates>

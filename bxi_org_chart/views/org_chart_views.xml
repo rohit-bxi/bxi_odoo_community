@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Client Action for Org Chart -->
+    <record id="action_bxi_org_chart" model="ir.actions.client">
+        <field name="name">Org Chart</field>
+        <field name="tag">bxi_org_chart_action</field>
+        <field name="target">main</field>
+    </record>
+
+    <!-- Menu Item: Org Chart under Employees (hr.menu_hr_root) right after Departments -->
+    <menuitem id="menu_bxi_org_chart"
+              name="Org Chart"
+              parent="hr.menu_hr_root"
+              action="action_bxi_org_chart"
+              groups="base.group_user"
+              sequence="16"/>
+
+</odoo>
