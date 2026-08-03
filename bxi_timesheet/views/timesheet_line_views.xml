@@ -29,7 +29,7 @@
                         </group>
                     </group>
                     <group string="Approval Remarks">
-                        <field name="remarks" string="Manager Remarks" placeholder="Enter mandatory remarks for approval or refusal..." required="state == 'submitted'" readonly="state in ('approved', 'refused')"/>
+                        <field name="remarks" string="Manager Remarks" placeholder="Enter remarks for approval or refusal (optional)..." readonly="state in ('approved', 'refused')"/>
                     </group>
                 </sheet>
             </form>
@@ -89,6 +89,31 @@
         <field name="view_mode">form</field>
         <field name="view_id" ref="view_bxi_analytic_line_form"/>
         <field name="act_window_id" ref="action_bxi_timesheet_approvals"/>
+    </record>
+
+    <!-- Server Actions for Bulk Approval and Rejection -->
+    <record id="action_server_bxi_timesheet_approve" model="ir.actions.server">
+        <field name="name">Approve Timesheets</field>
+        <field name="model_id" ref="model_account_analytic_line"/>
+        <field name="binding_model_id" ref="model_account_analytic_line"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+            records.action_approve()
+        </field>
+        <!-- <field name="groups_id" eval="[(4, ref('hr_timesheet.group_hr_timesheet_approver')), (4, ref('hr_timesheet.group_timesheet_manager')), (4, ref('hr.group_hr_user')), (4, ref('hr.group_hr_manager'))]"/> -->
+    </record>
+
+    <record id="action_server_bxi_timesheet_refuse" model="ir.actions.server">
+        <field name="name">Reject Timesheets</field>
+        <field name="model_id" ref="model_account_analytic_line"/>
+        <field name="binding_model_id" ref="model_account_analytic_line"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+            records.action_refuse()
+        </field>
+        <!-- <field name="groups_id" eval="[(4, ref('hr_timesheet.group_hr_timesheet_approver')), (4, ref('hr_timesheet.group_timesheet_manager')), (4, ref('hr.group_hr_user')), (4, ref('hr.group_hr_manager'))]"/> -->
     </record>
 
     <!-- Menu Item: Approvals (Visible to Approver / Manager / HR / Admin) -->

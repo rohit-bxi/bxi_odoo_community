@@ -716,9 +716,6 @@ class BxiTimesheetDashboard(models.AbstractModel):
         ])
         if lines:
             lines.action_submit()
-            total_hours = sum(lines.mapped('unit_amount'))
-            period_str = f"{start_date.strftime('%d %b %Y')} to {end_date.strftime('%d %b %Y')}"
-            self._send_timesheet_email_notification(target_emp, period_str, round(total_hours, 2), 'submit')
         return True
 
     @api.model
@@ -975,3 +972,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
 
         except Exception as e:
             _logger.error(f"BXI Timesheet: Failed to send notification email ({action_type}) for employee {employee.name}: {str(e)}")
+
+
+
+

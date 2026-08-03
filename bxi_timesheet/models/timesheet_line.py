@@ -94,19 +94,6 @@ class AccountAnalyticLine(models.Model):
                     raise UserError(_("Timesheet for %s on %s has already been %s.") % (rec.employee_id.name, rec.date.strftime('%Y-%m-%d'), status_str))
 
                 rec.state = 'submitted'
-
-        # Send email notifications grouped by employee
-        if submitted_recs:
-            dashboard_model = self.env['bxi.timesheet.dashboard']
-            for emp in submitted_recs.mapped('employee_id'):
-                emp_lines = submitted_recs.filtered(lambda l: l.employee_id == emp)
-                total_hours = sum(emp_lines.mapped('unit_amount'))
-                dates = emp_lines.mapped('date')
-                min_date = min(dates) if dates else today
-                max_date = max(dates) if dates else today
-                period_str = f"{min_date.strftime('%d %b %Y')} to {max_date.strftime('%d %b %Y')}" if min_date != max_date else min_date.strftime('%d %b %Y')
-                dashboard_model._send_timesheet_email_notification(emp, period_str, round(total_hours, 2), 'submit')
-
         return True
 
     def action_approve(self):
@@ -126,9 +113,6 @@ class AccountAnalyticLine(models.Model):
 
             if not is_manager:
                 raise UserError(_("You are not authorized for the approval of timesheets for %s. Only their reporting manager can approve or refuse them.") % rec.employee_id.name)
-
-            if not rec.remarks or not rec.remarks.strip():
-                raise UserError(_("Please enter mandatory Manager Remarks before approving the timesheet for %s.") % rec.employee_id.name)
 
             if rec.state == 'submitted':
                 rec.state = 'approved'
@@ -166,9 +150,6 @@ class AccountAnalyticLine(models.Model):
 
             if not is_manager:
                 raise UserError(_("You are not authorized for the refusal of timesheets for %s. Only their reporting manager can approve or refuse them.") % rec.employee_id.name)
-
-            if not rec.remarks or not rec.remarks.strip():
-                raise UserError(_("Please enter mandatory Manager Remarks before refusing the timesheet for %s.") % rec.employee_id.name)
 
             if rec.state == 'submitted':
                 rec.state = 'refused'
@@ -252,4 +233,119 @@ class AccountAnalyticLine(models.Model):
                         _logger.info(f"Auto-created Unpaid Leave for employee {emp.name} on {today}")
                     except Exception as e:
                         _logger.error(f"Failed to auto-create Unpaid Leave for employee {emp.name}: {str(e)}")
+        return True
+
+    @api.model
+    def _cron_send_consolidated_approval_emails(self):
+        """
+        Daily scheduled action to send consolidated email notifications to reporting managers
+        containing all submitted timesheets pending approval for their direct reports.
+        """
+        import logging
+        _logger = logging.getLogger(__name__)
+
+        submitted_lines = self.sudo().search([('state', '=', 'submitted')])
+        if not submitted_lines:
+            _logger.info("BXI Timesheet Cron: No submitted timesheets pending approval.")
+            return True
+
+        # Group lines by employee
+        employee_data = {}
+        for emp in submitted_lines.mapped('employee_id'):
+            emp_lines = submitted_lines.filtered(lambda l: l.employee_id == emp)
+            total_hours = sum(emp_lines.mapped('unit_amount'))
+            dates = emp_lines.mapped('date')
+            today_date = fields.Date.today()
+            min_date = min(dates) if dates else today_date
+            max_date = max(dates) if dates else today_date
+            period_str = f"{min_date.strftime('%d %b %Y')} to {max_date.strftime('%d %b %Y')}" if min_date != max_date else min_date.strftime('%d %b %Y')
+
+            employee_data[emp] = {
+                'total_hours': round(total_hours, 2),
+                'period_str': period_str,
+                'department': emp.department_id.name or 'N/A',
+            }
+
+        # Group employees by manager
+        manager_employees = {}
+        for emp in employee_data.keys():
+            manager = emp.parent_id
+            if manager not in manager_employees:
+                manager_employees[manager] = []
+            manager_employees[manager].append(emp)
+
+        # For each manager, compose and send a single consolidated email
+        for manager, emp_list in manager_employees.items():
+            company = manager.company_id if manager and manager.company_id else self.env.company
+            manager_name = manager.name if manager else 'Manager'
+            manager_email = (manager.work_email or (manager.user_id and manager.user_id.email)) if manager else False
+
+            if not manager_email:
+                # Fallback to HR / Timesheet Approver users if manager has no email or manager is not set
+                hr_users = self.env['res.users'].sudo().search([
+                    ('groups_id', 'in', [
+                        self.env.ref('hr_timesheet.group_hr_timesheet_approver').id,
+                        self.env.ref('hr_timesheet.group_timesheet_manager').id
+                    ]),
+                    ('email', '!=', False)
+                ], limit=5)
+                emails = [u.email for u in hr_users if u.email]
+                manager_email = ','.join(emails) if emails else False
+
+            if not manager_email:
+                _logger.warning(f"BXI Timesheet Cron: No email found to send consolidated timesheet notification for manager {manager_name}")
+                continue
+
+            # Build HTML table rows for all employees under this manager
+            rows_html = ""
+            for idx, emp in enumerate(emp_list):
+                info = employee_data[emp]
+                bg_style = "background: #f8fafc;" if idx % 2 == 0 else ""
+                rows_html += f"""
+                <tr style="{bg_style}">
+                    <td style="padding: 10px 14px; border: 1px solid #cbd5e1; font-weight: bold;">{emp.name}</td>
+                    <td style="padding: 10px 14px; border: 1px solid #cbd5e1;">{info['department']}</td>
+                    <td style="padding: 10px 14px; border: 1px solid #cbd5e1;">{info['period_str']}</td>
+                    <td style="padding: 10px 14px; border: 1px solid #cbd5e1; text-align: right;"><strong style="color: #4f46e5;">{info['total_hours']} hrs</strong></td>
+                </tr>
+                """
+
+            subject = f"[Timesheet Approval Required] Consolidated Submissions Summary ({fields.Date.today().strftime('%d %b %Y')})"
+            body_html = f"""
+                <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; padding: 25px; color: #1e293b; max-width: 650px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+                    <h2 style="color: #4f46e5; margin-top: 0; font-size: 20px;">Timesheet Submissions Pending Approval</h2>
+                    <p style="font-size: 14px; line-height: 1.6;">Dear <strong>{manager_name}</strong>,</p>
+                    <p style="font-size: 14px; line-height: 1.6;">The following employees under your supervision have submitted their timesheets for approval. Please review the summary below:</p>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px;">
+                        <thead>
+                            <tr style="background: #4f46e5; color: #ffffff;">
+                                <th style="padding: 10px 14px; border: 1px solid #4f46e5; text-align: left;">Employee Name</th>
+                                <th style="padding: 10px 14px; border: 1px solid #4f46e5; text-align: left;">Department</th>
+                                <th style="padding: 10px 14px; border: 1px solid #4f46e5; text-align: left;">Period</th>
+                                <th style="padding: 10px 14px; border: 1px solid #4f46e5; text-align: right;">Total Hours</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows_html}
+                        </tbody>
+                    </table>
+
+                    <p style="font-size: 14px; line-height: 1.6;">Kindly log in to your Odoo Timesheet Dashboard to review and approve these submissions.</p>
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin-top: 25px;"/>
+                    <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">This is an automated consolidated notification from {company.name} Timesheet System.</p>
+                </div>
+            """
+
+            try:
+                self.env['mail.mail'].sudo().create({
+                    'subject': subject,
+                    'body_html': body_html,
+                    'email_to': manager_email,
+                    'email_from': 'hrsupport@bxitech.com',
+                }).send()
+                _logger.info("BXI Timesheet Cron: Sent consolidated timesheet approval email to %s for %d employees", manager_email, len(emp_list))
+            except Exception as e:
+                _logger.error("BXI Timesheet Cron: Failed to send consolidated email to %s: %s", manager_email, str(e))
+
         return True
