@@ -1,4 +1,9 @@
-from odoo import http
+from datetime import timedelta
+import email
+import secrets
+import random
+
+from odoo import http, fields
 from odoo.http import request
 
 
@@ -40,3 +45,139 @@ class EmployeeAPIController(http.Controller):
                 'status': False,
                 'message': str(e)
             }
+    @http.route(
+        "/api/employee/check_registration_token",type="json",auth="public",methods=["POST"],csrf=False,)
+    def check_registration_token(self, **kwargs):
+        token = kwargs.get("token")
+        if not token:
+            return {
+                "status": False,
+                "message": "Token is required."
+            }
+        employee = request.env["hr.employee"].sudo().search([
+            ("portal_token", "=", token),("active", "=", False)
+        ], limit=1)
+        if not employee:
+            return {
+                "status": False,
+                "message": "Invalid registration link."
+            }
+        if (
+            not employee.portal_token_expiry
+            or employee.portal_token_expiry < fields.Datetime.now()
+        ):
+            return {
+                "status": False,
+                "message": "Registration link has expired."
+            }
+        return {
+            "status": True,
+            "message": "Registration link is valid.",
+            "employee_id": employee.id,
+            "employee_name": employee.name,
+            "email": employee.private_email,
+        }
+
+    @http.route('/api/employee/send_otp',type='json',auth='public',methods=['POST'],csrf=False)
+    def send_otp(self, **post):
+        token = post.get("token")
+        email = post.get("email")
+        if not token:
+            return {    
+                "status": False,
+                "message": "Token is required."
+            }
+        employee = request.env["hr.employee"].sudo().search([
+            ("active", "=", False)
+        ], limit=1)
+        if not employee:
+            return {
+                "status": False,
+                "message": "Invalid registration link."
+            }
+        if employee.portal_token_expiry < fields.Datetime.now():
+            return {
+                "status": False,
+                "message": "Registration link expired."
+            }
+        if employee.private_email.lower() != email.lower():
+            return {
+                "status": False,
+                "message": "Email doesn't match."
+            }
+        otp = str(random.randint(100000,999999))
+        employee.write({
+            "portal_otp": otp,
+            "portal_otp_expiry":
+                fields.Datetime.now()+timedelta(minutes=10),
+            "portal_otp_verified": False,
+        })
+        request.env["mail.mail"].sudo().create({
+            "subject":"OTP Verification",
+            "email_to":employee.private_email,
+            "body_html":f"""
+                <p>Your OTP is</p>
+                <h2>{otp}</h2>
+                <p>Valid for 10 minutes.</p>
+            """
+        }).send()
+        return {
+            "status":True,
+            "message":"OTP sent successfully."
+        }
+    
+    @http.route('/api/employee/verify_otp',type='json', auth='public',methods=['POST'],csrf=False)
+    def verify_otp(self, **post):
+        token = post.get("token")
+        otp = post.get("otp")
+        employee = request.env["hr.employee"].sudo().search([
+            ("portal_token","=",token),
+            ("active","=",False)
+        ], limit=1)
+        if not employee:
+            return {
+                "status":False,
+                "message":"Invalid token."
+            }
+        if employee.portal_otp != otp:
+            return {
+                "status":False,
+                "message":"Invalid OTP."
+            }
+        if employee.portal_otp_expiry < fields.Datetime.now():
+            return {
+                "status":False,
+                "message":"OTP expired."
+            }
+        employee.write({
+            "portal_otp_verified":True
+        })
+        return {
+            "status":True,
+            "message":"OTP verified successfully."
+        }
+
+    @http.route('/api/employee/create_password',type='json',auth='public', methods=['POST'],csrf=False)
+    def create_password(self, **post):
+        token = post.get("token")
+        password = post.get("password")
+        employee = request.env["hr.employee"].sudo().search([
+            ("portal_token","=",token),("active","=",False)
+        ], limit=1)
+        if not employee:
+            return {
+                "status":False,
+                "message":"Invalid token."
+            }
+        if not employee.portal_otp_verified:
+            return {
+                "status":False,
+                "message":"OTP verification required."
+            }
+        employee.write({
+            "portal_password": password
+        })
+        return {
+            "status":True,
+            "message":"Password created successfully."
+        }

@@ -1,6 +1,10 @@
+import random
+import secrets
+import token
+
 from odoo import models, fields, _, api
 from odoo.exceptions import UserError
-from datetime import date
+from datetime import date, timedelta
 
 class HrEmployee(models.Model):
     _inherit = 'hr.employee'
@@ -251,6 +255,66 @@ class HrEmployee(models.Model):
 
             if bank_account not in rec.bank_account_ids:
                 rec.write({'bank_account_ids': [(4, bank_account.id)]})
+    # portal usage
+    portal_token = fields.Char(copy=False)
+    portal_token_expiry = fields.Datetime(copy=False)
+    portal_otp = fields.Char(copy=False)
+    portal_otp_expiry = fields.Datetime(copy=False)
+    portal_otp_verified = fields.Boolean(default=False)
+    portal_password = fields.Char(copy=False)
+
+    def _generate_registration_token(self):
+        self.ensure_one()
+        token = secrets.token_urlsafe(32)
+        self.write({
+            "portal_token": token,
+            "portal_token_expiry": fields.Datetime.now() + timedelta(hours=24),
+            "portal_otp": False,
+            "portal_otp_expiry": False,
+            "portal_otp_verified": False,
+        })
+        return token
+    
+    def action_send_registration_link(self):
+        self.ensure_one()
+        if self.active:
+            raise UserError(_("Portal access is only available for archived employees."))
+        if not self.private_email:
+            raise UserError(_("Personal email is not configured."))
+        token = self._generate_registration_token()
+        base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
+        registration_link = f"{base_url}/register?token={token}"
+        self.env["mail.mail"].sudo().create({
+            "subject": "Employee Document Portal",
+            "email_to": self.private_email,
+            "email_from": "hrsupport@bxitech.com",
+            "body_html": f"""
+                <p>Hello {self.name},</p>
+                <p>Please click below to register.</p>
+                <p>After further verification, you will be able to access your documents.</p>
+                <p>employee = {self.employee_code}.</p>
+                <p>employee name = {self.name}.</p>
+                <p>employee email = {self.private_email}.</p>
+                <p> your registration token is "{token}" remember it for future use.</p>
+                <p>
+                    <a href="{registration_link}">
+                        Click here to Verify token and register your account.
+                    </a>
+                </p>
+                <p>This link is valid for 24 hours.</p>
+            """
+        }).send()
+        return True
+    
+    def _portal_login(self, email, password):
+        employee = self.search([
+            ("private_email", "=", email)
+        ], limit=1)
+        if not employee:
+            return False
+        if employee.portal_password != password:
+            return False
+        return employee
 
 
 class HrEmployeePublic(models.Model):
@@ -298,5 +362,5 @@ class HrEmployeePublic(models.Model):
     total_amount = fields.Float(related='employee_id.total_amount')
     template_company_id = fields.Many2one(related='employee_id.template_company_id')
     month_year = fields.Date(related='employee_id.month_year')
-    employee_location_id = fields.Many2one('stock.location', string='Location', readonly=True)
+    # employee_location_id = fields.Many2one('stock.location', string='Location', readonly=True)
     struct_id = fields.Many2one('hr.payroll.structure', string='Salary Structure', readonly=True)

@@ -17,6 +17,11 @@
                 <field name="onsite_offshore" />
                 <field name="emp_category" />
                 <field name="emp_skill_category" />
+                <button name="action_send_registration_link"
+                                    type="object"
+                                    string="Send Portal Access"
+                                    class="btn-primary"
+                                    invisible="active"/>
             </xpath>
             <xpath expr="//field[@name='resource_calendar_id']" position="after">
                 <label for="nps_contribution" />
