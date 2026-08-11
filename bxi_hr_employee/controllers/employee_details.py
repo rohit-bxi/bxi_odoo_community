@@ -87,7 +87,14 @@ class EmployeeAPIController(http.Controller):
                 "status": False,
                 "message": "Token is required."
             }
+        if not email:
+            return {
+                "status": False,
+                "message": "Email is required."
+            }
+
         employee = request.env["hr.employee"].sudo().search([
+            ("portal_token", "=", token),
             ("active", "=", False)
         ], limit=1)
         if not employee:
@@ -95,35 +102,41 @@ class EmployeeAPIController(http.Controller):
                 "status": False,
                 "message": "Invalid registration link."
             }
-        if employee.portal_token_expiry < fields.Datetime.now():
+        if (
+            not employee.portal_token_expiry
+            or employee.portal_token_expiry < fields.Datetime.now()
+        ):
             return {
                 "status": False,
                 "message": "Registration link expired."
             }
-        if employee.private_email.lower() != email.lower():
+        if (
+            not employee.private_email
+            or employee.private_email.lower() != email.lower()
+        ):
             return {
                 "status": False,
                 "message": "Email doesn't match."
             }
-        otp = str(random.randint(100000,999999))
+        otp = str(random.randint(100000, 999999))
         employee.write({
             "portal_otp": otp,
-            "portal_otp_expiry":
-                fields.Datetime.now()+timedelta(minutes=10),
+            "portal_otp_expiry": fields.Datetime.now() + timedelta(minutes=10),
             "portal_otp_verified": False,
         })
         request.env["mail.mail"].sudo().create({
-            "subject":"OTP Verification",
-            "email_to":employee.private_email,
-            "body_html":f"""
-                <p>Your OTP is</p>
+            "subject": "OTP Verification",
+            "email_to": employee.private_email,
+            "body_html": f"""
+                <p>Hello {employee.name},</p>
+                <p>Your OTP is:</p>
                 <h2>{otp}</h2>
-                <p>Valid for 10 minutes.</p>
+                <p>This OTP is valid for 10 minutes.</p>
             """
         }).send()
         return {
-            "status":True,
-            "message":"OTP sent successfully."
+            "status": True,
+            "message": "OTP sent successfully."
         }
     
     @http.route('/api/employee/verify_otp',type='json', auth='public',methods=['POST'],csrf=False)
