@@ -651,7 +651,7 @@ class HrPayslipWorkedDays(models.Model):
     number_of_days = fields.Float(string='Number of Days')
     number_of_hours = fields.Float(string='Number of Hours')
     # MIGRATION: Contract to Version
-    version_id = fields.Many2one('hr.version', string='Version/Contract', required=True,
+    version_id = fields.Many2one('hr.version', string='Version/Contract', required=False,
                                  help="The version for which applied this input")
 
 
