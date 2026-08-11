@@ -17,11 +17,6 @@
                 <field name="onsite_offshore" />
                 <field name="emp_category" />
                 <field name="emp_skill_category" />
-                <button name="action_send_registration_link"
-                                    type="object"
-                                    string="Send Portal Access"
-                                    class="btn-primary"
-                                    invisible="active"/>
             </xpath>
             <xpath expr="//field[@name='resource_calendar_id']" position="after">
                 <label for="nps_contribution" />
@@ -94,6 +89,22 @@
                             string="Download Contract Payslip"
                             type="object"
                             class="btn-primary"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_employee_form_inherit_fnf" model="ir.ui.view">
+        <field name="name">hr.employee.form.fnf</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='hr_settings']" position="after">
+                <page string="Final Settlement">
+                    <button name="action_send_registration_link"
+                        type="object"
+                        string="Send Portal Access"
+                        class="btn-primary"
+                        style="margin-left:10px;" />
                 </page>
             </xpath>
         </field>

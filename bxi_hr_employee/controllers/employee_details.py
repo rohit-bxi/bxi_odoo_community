@@ -181,3 +181,101 @@ class EmployeeAPIController(http.Controller):
             "status":True,
             "message":"Password created successfully."
         }
+
+    @http.route("/api/employee/login",type="json",auth="public",methods=["POST"],csrf=False)
+    def employee_login(self, **post):
+        email = post.get("email")
+        password = post.get("password")
+        if not email:
+            return {
+                "status": False,
+                "message": "Email is required."
+            }
+        if not password:
+            return {
+                "status": False,
+                "message": "Password is required."
+            }
+        employee = request.env["hr.employee"].sudo().search([
+            ("private_email", "=", email),
+            ("active", "=", False),
+        ], limit=1)
+        if not employee:
+            return {
+                "status": False,
+                "message": "Employee not found."
+            }
+        if not employee.portal_password:
+            return {
+                "status": False,
+                "message": "Please complete registration first."
+            }
+        if employee.portal_password != password:
+            return {
+                "status": False,
+                "message": "Invalid password."
+            }
+        return {
+            "status": True,
+            "message": "Login successful.",
+            "employee": {
+                "employee_code": employee.employee_code,
+                "name": employee.name,
+                "email": employee.private_email,
+                "job_title": employee.job_id.name,
+            }
+        }
+
+    @http.route("/api/employee/payslips",type="json",auth="public",methods=["POST"],csrf=False)
+    def employee_payslips(self, **post):
+        email = post.get("email")
+        employee = request.env["hr.employee"].sudo().search([
+            ("private_email", "=", email),
+            ("active", "=", False),
+        ], limit=1)
+        if not employee:
+            return {
+                "status": False,
+                "message": "Employee not found."
+            }
+        payslips = request.env["hr.payslip"].sudo().search(
+            [("employee_id", "=", employee.id)],
+            order="date_to desc",
+            limit=3
+        )
+        data = []
+        for slip in payslips:
+            data.append({
+                "id": slip.id,
+                "name": slip.name,
+                "date_from": slip.date_from,
+                "date_to": slip.date_to,
+                "state": slip.state,
+            })
+        return {
+            "status": True,
+            "payslips": data,
+        }
+
+    @http.route(
+        "/api/employee/payslip/download/<int:payslip_id>",
+        type="http",
+        auth="public",
+    )
+    def download_payslip(self, payslip_id, **kw):
+        payslip = request.env["hr.payslip"].sudo().browse(payslip_id)
+        if not payslip.exists():
+            return request.not_found()
+
+        pdf, _ = request.env["ir.actions.report"].sudo()._render_qweb_pdf(
+            "hr_payroll.action_report_payslip",
+            [payslip.id]
+        )
+        headers = [
+            ("Content-Type", "application/pdf"),
+            (
+                "Content-Disposition",
+                f'attachment; filename="{payslip.name}.pdf"',
+            ),
+        ]
+        return request.make_response(pdf, headers=headers)
