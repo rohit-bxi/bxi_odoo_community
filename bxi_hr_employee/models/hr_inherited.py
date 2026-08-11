@@ -282,8 +282,8 @@ class HrEmployee(models.Model):
         if not self.private_email:
             raise UserError(_("Personal email is not configured."))
         token = self._generate_registration_token()
-        base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
-        registration_link = f"{base_url}/register?token={token}"
+        base_url = "https://alumni.bxiventures.com/verify-email"
+        registration_link = f"{base_url}"
         self.env["mail.mail"].sudo().create({
             "subject": "Employee Document Portal",
             "email_to": self.private_email,
