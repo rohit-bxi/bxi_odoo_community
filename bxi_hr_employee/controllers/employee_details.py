@@ -127,6 +127,7 @@ class EmployeeAPIController(http.Controller):
         request.env["mail.mail"].sudo().create({
             "subject": "OTP Verification",
             "email_to": employee.private_email,
+            "email_from": "hrsupport@bxitech.com",
             "body_html": f"""
                 <p>Hello {employee.name},</p>
                 <p>Your OTP is:</p>
