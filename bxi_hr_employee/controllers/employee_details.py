@@ -237,6 +237,26 @@ class EmployeeAPIController(http.Controller):
                 "name": employee.name,
                 "email": employee.private_email,
                 "job_title": employee.job_id.name,
+                "hr_responsible": (
+                    employee.hr_responsible_id.name
+                    if employee.hr_responsible_id
+                    else False
+                ),
+                "department": (
+                    employee.department_id.name
+                    if employee.department_id
+                    else False
+                ),
+                "date_of_joining": (
+                    str(employee.emp_date_of_joining)
+                    if employee.emp_date_of_joining
+                    else False
+                ),
+                "date_of_leaving": (
+                    str(employee.date_of_leaving)
+                    if employee.date_of_leaving
+                    else False
+                ),
             }
         }
 
