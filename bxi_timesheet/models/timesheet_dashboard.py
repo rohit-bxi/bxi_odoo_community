@@ -847,25 +847,15 @@ class BxiTimesheetDashboard(models.AbstractModel):
 
         try:
             if action_type == 'submit':
-                # Notify Manager (with fallback to HR / Timesheet Approvers if manager email missing)
+                # Notify direct manager only; do not fallback to higher-level approvers
                 manager = employee.parent_id
                 manager_name = manager.name if manager else 'Manager'
                 manager_email = (manager.work_email or (manager.user_id and manager.user_id.email)) if manager else False
 
                 if not manager_email:
-                    # Fallback to HR / Timesheet Approver users if manager has no email
-                    hr_users = self.env['res.users'].sudo().search([
-                        ('groups_id', 'in', [
-                            self.env.ref('hr_timesheet.group_hr_timesheet_approver').id,
-                            self.env.ref('hr_timesheet.group_timesheet_manager').id
-                        ]),
-                        ('email', '!=', False)
-                    ], limit=5)
-                    emails = [u.email for u in hr_users if u.email]
-                    manager_email = ','.join(emails) if emails else False
-
-                if not manager_email:
-                    _logger.warning(f"BXI Timesheet: No email found to send submission notification for {employee.name}")
+                    _logger.warning(
+                        f"BXI Timesheet: Direct manager {manager_name} has no configured email for employee {employee.name}. Skipping submission notification."
+                    )
                     return
 
                 subject = f"[Timesheet Submission] {employee.name} submitted timesheet for {date_range_str}"
