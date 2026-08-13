@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from odoo import http, fields
 from odoo.http import request
 import base64
@@ -91,160 +93,110 @@ class EmployeePortal(http.Controller):
         if not employee:
             return request.redirect('/my/employee-profile')
 
-
         vals = {}
 
         # ================= PERSONAL =================
-        if post.get('name'):
-            vals['name'] = post.get('name')
-            vals['legal_name'] = post.get('name')
+        if 'name' in post:
+            name_val = post.get('name') or False
+            vals['name'] = name_val
+            if 'legal_name' in employee._fields:
+                vals['legal_name'] = name_val
 
-        if post.get('private_email'):
-            vals['private_email'] = post.get('private_email')
+        if 'private_email' in post:
+            vals['private_email'] = post.get('private_email') or False
 
-        if post.get('work_email'):
-            vals['work_email'] = post.get('work_email')
+        if 'work_email' in post:
+            vals['work_email'] = post.get('work_email') or False
 
-        if post.get('private_phone'):
-            vals['private_phone'] = post.get('private_phone')
-            vals['work_phone'] = post.get('private_phone')
+        if 'private_phone' in post:
+            phone_val = post.get('private_phone') or False
+            vals['private_phone'] = phone_val
+            if 'work_phone' in employee._fields:
+                vals['work_phone'] = phone_val
 
-        if post.get('birthday'):
-            vals['birthday'] = post.get('birthday')
+        if 'birthday' in post:
+            vals['birthday'] = post.get('birthday') or False
 
-        if post.get('aadhar_card'):
-            vals['aadhar_card'] = post.get('aadhar_card')
+        if 'aadhar_card' in post:
+            vals['aadhar_card'] = post.get('aadhar_card') or False
 
-        if post.get('role_band'):
-            vals['role_band'] = post.get('role_band')
+        if 'role_band' in post:
+            vals['role_band'] = post.get('role_band') or False
 
-        if post.get('country_id'):
-            vals['country_id'] = int(post.get('country_id'))
+        if 'country_id' in post:
+            country_id = post.get('country_id')
+            vals['country_id'] = int(country_id) if country_id and str(country_id).isdigit() else False
 
         # ================= EMERGENCY =================
-        if post.get('emergency_contact'):
-            vals['emergency_contact'] = post.get('emergency_contact')
+        if 'emergency_contact' in post:
+            vals['emergency_contact'] = post.get('emergency_contact') or False
 
-        if post.get('emergency_phone'):
-            vals['emergency_phone'] = post.get('emergency_phone')
+        if 'emergency_phone' in post:
+            vals['emergency_phone'] = post.get('emergency_phone') or False
 
-        if 'l10n_in_relationship' in employee._fields and post.get('l10n_in_relationship'):
-            vals['l10n_in_relationship'] = post.get('l10n_in_relationship')
+        if 'l10n_in_relationship' in post:
+            vals['l10n_in_relationship'] = post.get('l10n_in_relationship') or False
 
         # ================= CITIZENSHIP =================
         vals['is_non_resident'] = bool(post.get('is_non_resident'))
 
-        if post.get('passport_id'):
-            vals['passport_id'] = post.get('passport_id')
+        if 'passport_id' in post:
+            vals['passport_id'] = post.get('passport_id') or False
 
         uploaded_file = request.httprequest.files.get('bank_document')
-        if uploaded_file:
+        if uploaded_file and uploaded_file.filename:
             file_data = uploaded_file.read()
-            vals['bank_document'] = base64.b64encode(file_data)
+            if file_data:
+                vals['bank_document'] = base64.b64encode(file_data)
 
-        if post.get('marital'):
-            vals['marital'] = post.get('marital')
+        if 'marital' in post:
+            vals['marital'] = post.get('marital') or False
 
-        if post.get('children'):
+        if 'children' in post:
+            children_val = post.get('children')
             try:
-                vals['children'] = int(post.get('children'))
+                vals['children'] = int(children_val) if children_val and str(children_val).isdigit() else 0
             except:
-                pass
+                vals['children'] = 0
 
         vals['disabled'] = bool(post.get('disabled'))
 
         # ================= ADDRESS =================
-        if post.get('private_street'):
-            vals['private_street'] = post.get('private_street')
+        if 'private_street' in post:
+            vals['private_street'] = post.get('private_street') or False
 
-        if post.get('private_street2'):
-            vals['private_street2'] = post.get('private_street2')
+        if 'private_street2' in post:
+            vals['private_street2'] = post.get('private_street2') or False
 
-        if post.get('city'):
-            vals['private_city'] = post.get('city')
+        if 'city' in post:
+            vals['private_city'] = post.get('city') or False
 
-        if post.get('zip'):
-            vals['private_zip'] = post.get('zip')
+        if 'zip' in post:
+            vals['private_zip'] = post.get('zip') or False
 
         # ================= GOV INFO =================
-        if post.get('l10n_in_uan'):
-            vals['l10n_in_uan'] = post.get('l10n_in_uan')
+        if 'l10n_in_uan' in post:
+            vals['l10n_in_uan'] = post.get('l10n_in_uan') or False
 
-        if post.get('l10n_in_esic_number'):
-            vals['l10n_in_esic_number'] = post.get('l10n_in_esic_number')
+        if 'l10n_in_esic_number' in post:
+            vals['l10n_in_esic_number'] = post.get('l10n_in_esic_number') or False
 
-        if post.get('l10n_in_pan'):
-            vals['l10n_in_pan'] = post.get('l10n_in_pan')
+        if 'l10n_in_pan' in post:
+            vals['l10n_in_pan'] = post.get('l10n_in_pan') or False
 
-        if post.get('medical_insurance_no'):
-            vals['medical_insurance_no'] = post.get('medical_insurance_no')
-        if post.get('bank_ifsc'):
-            vals['bank_ifsc'] = post.get('bank_ifsc')
-        if post.get('bank_name'):
-            vals['bank_name'] = post.get('bank_name')
+        if 'medical_insurance_no' in post:
+            vals['medical_insurance_no'] = post.get('medical_insurance_no') or False
 
-        if post.get('bank_account_number'):
-            vals['bank_account_number'] = post.get('bank_account_number')
-        
+        if 'bank_ifsc' in post:
+            vals['bank_ifsc'] = post.get('bank_ifsc') or False
+
+        if 'bank_name' in post:
+            vals['bank_name'] = post.get('bank_name') or False
+
+        if 'bank_account_number' in post:
+            vals['bank_account_number'] = post.get('bank_account_number') or False
+
         if vals:
             employee.sudo().write(vals)
 
         return request.redirect('/?profile_updated=1')
-
-
-    # @http.route(['/my/payslips'], type='http', auth='user', website=True)
-    # def portal_my_payslips(self, **kw):
-    #     employee = self._get_employee()
-
-    #     if not employee:
-    #         return request.redirect('/my/home')
-
-    #     payslips = request.env['hr.payslip'].sudo().search(
-    #         [('employee_id', '=', employee.id)],
-    #         order='date_from desc'
-    #     )
-
-    #     return request.render(
-    #         'portal_employee_profile.portal_my_payslips',
-    #         {
-    #             'payslips': payslips,
-    #             'employee': employee,
-    #         }
-    #     )
-
-
-    # @http.route(
-    #     ['/my/payslip/<int:payslip_id>/download'],
-    #     type='http',
-    #     auth='user',
-    #     website=True
-    # )
-    # def portal_download_payslip(self, payslip_id):
-
-    #     payslip = request.env['hr.payslip'].sudo().browse(payslip_id)
-    #     employee = self._get_employee()
-
-    #     if not payslip.exists() or payslip.employee_id != employee:
-    #         return request.redirect('/my')
-
-    #     # XML ID of your custom report
-    #     report_xmlid = 'custom_payslip_report.action_custom_payslip_pdf'
-
-    #     report = request.env.ref(report_xmlid).sudo()
-
-    #     pdf, _ = report._render_qweb_pdf(
-    #         report_xmlid,
-    #         res_ids=[payslip.id]
-    #     )
-
-    #     return request.make_response(
-    #         pdf,
-    #         headers=[
-    #             ('Content-Type', 'application/pdf'),
-    #             (
-    #                 'Content-Disposition',
-    #                 f'attachment; filename="Payslip-{payslip.name or payslip.id}.pdf"'
-    #             ),
-    #         ]
-    #     )
-

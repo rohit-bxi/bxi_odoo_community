@@ -185,6 +185,7 @@
                                 <div class="col-md-4">
                                     <label>Marital Status</label>
                                     <select name="marital" class="form-control">
+                                        <option value="">Select Marital Status</option>
                                         <t
                                             t-foreach="employee.fields_get(['marital'])['marital']['selection']"
                                             t-as="opt">

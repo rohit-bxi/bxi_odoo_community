@@ -9,65 +9,73 @@
                     <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
                         <tr style="background:#2f5597; color:white;">
                             <td colspan="8" style="padding:8px; text-align:center; font-weight:bold;">
-                                Salary Payslip for the Month of
-                                <t t-esc="o.date_to.strftime('%B %Y')"/><br/>
+                                Payslip for the Month of
+                                <t t-esc="o.date_to.strftime('%B %Y') if o.date_to else ''"/><br/>
                                 Pay Period
-                                <t t-esc="o.date_from.strftime('%d.%m.%Y')"/>
+                                <t t-esc="o.date_from.strftime('%d.%m.%Y') if o.date_from else ''"/>
                                 to
-                                <t t-esc="o.date_to.strftime('%d.%m.%Y')"/><br/>
+                                <t t-esc="o.date_to.strftime('%d.%m.%Y') if o.date_to else ''"/><br/>
                                 <t t-esc="o.employee_id.name"/>
                             </td>
-                            <td colspan="2" style="background:#d9d9d9; text-align:center;">
-                                <b>BXI Tech</b><br/>
-                                Technology Brilliance<br/>Service First Mindset
+                            <td colspan="2" style="background:#d9d9d9; text-align:center; color:#000; padding:6px; vertical-align:middle;">
+                                <t t-set="comp" t-value="o.company_id or o.employee_id.company_id"/>
+                                <t t-if="comp and comp.logo">
+                                    <img t-att-src="image_data_uri(comp.logo)" style="max-height:45px; max-width:140px; display:block; margin:0 auto 4px auto;"/>
+                                </t>
+                                <b style="font-size:12px;"><t t-esc="comp.name if comp else 'BXI Tech'"/></b><br/>
+                                <span style="font-size:9px;">Technology Brilliance<br/>Service First Mindset</span>
                             </td>
                         </tr>
                     </table>
 
-                    <!-- EMPLOYEE DETAILS -->
+                    <!-- EMPLOYEE DETAILS & CALCULATED VALUES -->
+                    <t t-set="total_month_days" t-value="(o.date_to - o.date_from).days + 1 if (o.date_to and o.date_from) else 30"/>
+                    <t t-set="lwp_count" t-value="sum(o.input_line_ids.filtered(lambda l: l.code in ('LWP_DAYS', 'LWP')).mapped('amount')) or sum(o.worked_days_line_ids.filtered(lambda l: l.code in ('LWP', 'UNPAID')).mapped('number_of_days')) or 0"/>
+                    <t t-set="work_100" t-value="sum(o.worked_days_line_ids.filtered(lambda l: l.code not in ('LWP', 'UNPAID')).mapped('number_of_days'))"/>
+                    <t t-set="days_worked" t-value="work_100 if work_100 else (total_month_days - lwp_count)"/>
+                    <t t-set="ee_pf_val" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code in ('PF', 'EPF', 'EE_PF')).mapped('total'))) or 0"/>
+                    <t t-set="nps_val" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code in ('NPS', 'ERNPS', 'ER_NPS', 'EE_NPS')).mapped('total'))) or o.employee_id.nps_contribution or 0"/>
+
                     <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
                         <tr>
-                            <td style="border:1px solid #000;"><b> Employee No/Name </b></td>
-                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.employee_code"/> / <t t-esc="o.employee_id.name"/></td>
-                            <td style="border:1px solid #000;"><b> Bank Name and Account No </b></td>
-                            <td style="border:1px solid #000;" t-foreach="o.employee_id.bank_account_ids" t-as="l">
-                               <span t-field="l.bank_id.name"/>, <span t-field="l.acc_number"/> 
+                            <td style="border:1px solid #000; width:20%;"><b> Employee No/Name </b></td>
+                            <td style="border:1px solid #000; width:30%;"><t t-esc="o.employee_id.employee_code or ''"/> / <t t-esc="o.employee_id.name or ''"/></td>
+                            <td style="border:1px solid #000; width:20%;"><b> Bank Name and Account No </b></td>
+                            <td style="border:1px solid #000; width:30%;">
+                                <t t-if="o.employee_id.bank_account_ids">
+                                    <t t-foreach="o.employee_id.bank_account_ids" t-as="l">
+                                        <span t-field="l.bank_id.name"/>, <span t-field="l.acc_number"/>
+                                    </t>
+                                </t>
+                                <t t-else="">
+                                    <t t-esc="o.employee_id.bank_name or ''"/> <t t-if="o.employee_id.bank_account_number">, <t t-esc="o.employee_id.bank_account_number"/></t>
+                                </t>
                             </td>
                         </tr>
                         <tr>
                             <td style="border:1px solid #000;"><b>Designation</b></td>
-                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.job_title"/></td>
+                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.job_title or ''"/></td>
                             <td style="border:1px solid #000;"><b>Location</b></td>
-                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.psa"/></td>
+                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.psa or ''"/></td>
                         </tr>
                         <tr>
                             <td style="border:1px solid #000;"><b>DOJ / Gender</b></td>
-                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.emp_date_of_joining"/>, <t t-esc="o.employee_id.sex"/></td>
+                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.emp_date_of_joining or ''"/>, <t t-esc="dict(o.employee_id._fields['sex'].selection).get(o.employee_id.sex, o.employee_id.sex) if o.employee_id.sex else ''"/></td>
                             <td style="border:1px solid #000;"><b>Department</b></td>
-                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.department_id.name"/></td>
+                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.department_id.name or ''"/></td>
                         </tr>
                         <tr>
                             <td style="border:1px solid #000;"><b>PAN Number</b></td>
-                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.l10n_in_pan"/></td>
+                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.l10n_in_pan or ''"/></td>
                             <td style="border:1px solid #000;"><b>Band</b></td>
-                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.role_band"/></td>
+                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.role_band or ''"/></td>
                         </tr>
                         <tr>
                             <td style="border:1px solid #000;"><b>Medical Insurance No</b></td>
-                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.medical_insurance_no"/></td>
+                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.medical_insurance_no or ''"/></td>
                             <td style="border:1px solid #000;"><b>Day Worked in Months</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-set="work_days"
-                                 t-value="o.worked_days_line_ids.filtered(lambda l: l.code == 'WORK100')"/>
-                              <t t-set="lwp_input"
-                                 t-value="o.input_line_ids.filtered(lambda i: i.code == 'LWP_DAYS')"/>
-                              <t t-esc="
-                                  round(
-                                      (work_days and work_days.number_of_days or 0)
-                                      -
-                                      (lwp_input and lwp_input.amount or 0)
-                                  )
-                              "/>
+                                <t t-esc="round(days_worked)"/>
                             </td>
                         </tr>
                         <tr>
@@ -75,12 +83,12 @@
                             <td style="border:1px solid #000;"><t t-esc="o.employee_id.epf_number or o.employee_id.pf_number or ''"/></td>
                             <td style="border:1px solid #000;"><b>LWP Current / Previous</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="sum(o.input_line_ids.filtered(lambda l: l.code == 'LWP_DAYS').mapped('amount')) or 0"/>
+                                <t t-esc="round(lwp_count)"/>
                             </td>
                         </tr>
                         <tr>
                             <td style="border:1px solid #000;"><b>UAN No</b></td>
-                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.l10n_in_uan"/></td>
+                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.l10n_in_uan or ''"/></td>
                             <td style="border:1px solid #000;"><b>Sabbatical Leave</b></td>
                             <td style="border:1px solid #000;"></td>
                         </tr>
@@ -99,7 +107,7 @@
                         <tr>
                             <td style="border:1px solid #000;"><b>Basic Salary</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="o.employee_id.l10n_in_basic_salary_amount"/>
+                              <t t-esc="o.employee_id.l10n_in_basic_salary_amount or 0"/>
                             </td>
                             <td style="border:1px solid #000;"><b>Basic Salary</b></td>
                             <td style="border:1px solid #000;">
@@ -113,7 +121,7 @@
                         <tr>
                             <td style="border:1px solid #000;"><b>HRA</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="o.employee_id.l10n_in_hra"/>
+                              <t t-esc="o.employee_id.l10n_in_hra or 0"/>
                             </td>
                             <td style="border:1px solid #000;"><b>HRA</b></td>
                             <td style="border:1px solid #000;">
@@ -121,13 +129,13 @@
                             </td>
                             <td style="border:1px solid #000;"><b>EE PF Monthly</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="abs(sum(o.line_ids.filtered(lambda l: l.code == 'PF').mapped('total'))) or 0"/>
+                              <t t-esc="ee_pf_val"/>
                             </td>
                         </tr>
                         <tr>
                             <td style="border:1px solid #000;"><b>Flexible Allowance</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="o.employee_id.l10n_in_fixed_allowance"/>
+                              <t t-esc="o.employee_id.l10n_in_fixed_allowance or 0"/>
                             </td>
                             <td style="border:1px solid #000;"><b>Flexible Allowance</b></td>
                             <td style="border:1px solid #000;">
@@ -139,41 +147,17 @@
                             </td>
                         </tr>
                         <!-- Arrear / Deduction Row (Conditional) -->
-                        <t t-if="
-                                o.line_ids.filtered(
-                                    lambda l: l.code in ('ARA', 'DEDUCTION')
-                                )
-                            ">
+                        <t t-if="o.line_ids.filtered(lambda l: l.code in ('ARA', 'DEDUCTION'))">
                             <tr>
-                                <!-- Empty columns to keep layout -->
                                 <td style="border:1px solid #000;"></td>
                                 <td style="border:1px solid #000;"></td>
-
-                                <!-- Arrear Allowance -->
                                 <td style="border:1px solid #000;"><b>Arrear Allowance</b></td>
                                 <td style="border:1px solid #000;">
-                                    <t t-esc="
-                                        abs(
-                                            sum(
-                                                o.line_ids.filtered(lambda l: l.code == 'ARA')
-                                                .mapped('total')
-                                            )
-                                        )
-                                    "/>
+                                    <t t-esc="abs(sum(o.line_ids.filtered(lambda l: l.code == 'ARA').mapped('total'))) or 0"/>
                                 </td>
-
-
-                                <!-- Deduction -->
                                 <td style="border:1px solid #000;"><b>Deduction</b></td>
                                 <td style="border:1px solid #000;">
-                                    <t t-esc="
-                                        abs(
-                                            sum(
-                                                o.line_ids.filtered(lambda l: l.code == 'DEDUCTION')
-                                                .mapped('total')
-                                            )
-                                        )
-                                    "/>
+                                    <t t-esc="abs(sum(o.line_ids.filtered(lambda l: l.code == 'DEDUCTION').mapped('total'))) or 0"/>
                                 </td>
                             </tr>
                         </t>
@@ -181,7 +165,7 @@
                         <tr>
                             <td style="border:1px solid #000;"><b>Total Standard Salary</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="(o.employee_id.l10n_in_basic_salary_amount or 0) + (o.employee_id.l10n_in_fixed_allowance or 0)"/>
+                              <t t-esc="(o.employee_id.l10n_in_basic_salary_amount or 0) + (o.employee_id.l10n_in_hra or 0) + (o.employee_id.l10n_in_fixed_allowance or 0)"/>
                             </td>
                             <td style="border:1px solid #000;"><b>Gross Earning</b></td>
                             <td style="border:1px solid #000;">
@@ -216,10 +200,10 @@
                         <tr style="height:180px;">
                             <td style="border:1px solid #000; vertical-align:top;">
                                 <b>ER PF Monthly :</b>
-                                <t t-esc="o.employee_id.l10n_in_pf_employer_amount"/>
+                                <t t-esc="ee_pf_val if ee_pf_val else (o.employee_id.l10n_in_pf_employer_amount or 0)"/>
                                 <br/><br/>
                                 <b>ER NPS Monthly :</b>
-                                <t t-esc="o.employee_id.nps_contribution"/>
+                                <t t-esc="nps_val"/>
                                 <br/><br/>
                             </td>
 
@@ -254,7 +238,7 @@
 
                                 <!-- Financial Year Start -->
                                 <t t-set="fy_start_year"
-                                   t-value="o.date_from.year if o.date_from.month &gt;= 4 else o.date_from.year - 1"/>
+                                   t-value="o.date_from.year if o.date_from and o.date_from.month &gt;= 4 else (o.date_from.year - 1 if o.date_from else 2025)"/>
 
                                 <!-- All employee slips -->
                                 <t t-set="all_slips" t-value="o.employee_id.slip_ids"/>
@@ -264,12 +248,13 @@
                                     <t t-set="month_date" t-value="datetime.date(fy_start_year, m, 1)"/>
 
                                     <!-- Skip future months -->
-                                    <t t-if="month_date &lt;= o.date_from">
+                                    <t t-if="o.date_from and month_date &lt;= o.date_from">
 
                                         <t t-set="month_slip"
                                            t-value="all_slips.filtered(
                                                lambda s:
-                                                   s.date_from.month == m
+                                                   s.date_from
+                                                   and s.date_from.month == m
                                                    and s.date_from.year == fy_start_year
                                                    and s.date_from &lt;= o.date_from
                                            )"/>
@@ -294,12 +279,13 @@
                                     <t t-set="month_date" t-value="datetime.date(fy_start_year + 1, m, 1)"/>
 
                                     <!-- Skip future months -->
-                                    <t t-if="month_date &lt;= o.date_from">
+                                    <t t-if="o.date_from and month_date &lt;= o.date_from">
 
                                         <t t-set="month_slip"
                                            t-value="all_slips.filtered(
                                                lambda s:
-                                                   s.date_from.month == m
+                                                   s.date_from
+                                                   and s.date_from.month == m
                                                    and s.date_from.year == fy_start_year + 1
                                                    and s.date_from &lt;= o.date_from
                                            )"/>
@@ -321,10 +307,8 @@
 
                             </td>
 
-
                         </tr>
                     </table>
-
 
                     <!-- FOOTER -->
                     <p style="font-size:9px;">
