@@ -32,9 +32,9 @@ class AccountAnalyticLine(models.Model):
         is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager')
         current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
 
-        for rec in self:
-            if rec.date and rec.date < current_week_start:
-                raise UserError(_("Timesheets for previous weeks (before %s) cannot be created, modified, or submitted.") % current_week_start.strftime('%Y-%m-%d'))
+        # for rec in self:
+        #     if rec.date and rec.date < current_week_start:
+        #         raise UserError(_("Timesheets for previous weeks (before %s) cannot be created, modified, or submitted.") % current_week_start.strftime('%Y-%m-%d'))
 
     @api.constrains('employee_id', 'date')
     def _check_one_entry_per_day(self):
@@ -78,8 +78,8 @@ class AccountAnalyticLine(models.Model):
         for rec in self:
             if rec.date and rec.date < current_week_start:
                 is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
-                if not (is_admin or is_hr or is_manager):
-                    raise UserError(_("Timesheets for previous weeks cannot be submitted for approval."))
+                # if not (is_admin or is_hr or is_manager):
+                #     raise UserError(_("Timesheets for previous weeks cannot be submitted for approval."))
 
             # Check if another timesheet for the same employee & date is already submitted or approved
             if rec.state == 'draft':
