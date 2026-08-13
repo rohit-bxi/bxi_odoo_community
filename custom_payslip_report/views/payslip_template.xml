@@ -33,8 +33,30 @@
                     <t t-set="lwp_count" t-value="sum(o.input_line_ids.filtered(lambda l: l.code in ('LWP_DAYS', 'LWP')).mapped('amount')) or sum(o.worked_days_line_ids.filtered(lambda l: l.code in ('LWP', 'UNPAID')).mapped('number_of_days')) or 0"/>
                     <t t-set="work_100" t-value="sum(o.worked_days_line_ids.filtered(lambda l: l.code not in ('LWP', 'UNPAID')).mapped('number_of_days'))"/>
                     <t t-set="days_worked" t-value="work_100 if work_100 else (total_month_days - lwp_count)"/>
-                    <t t-set="ee_pf_val" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code in ('PF', 'EPF', 'EE_PF')).mapped('total'))) or 0"/>
-                    <t t-set="nps_val" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code in ('NPS', 'ERNPS', 'ER_NPS', 'EE_NPS')).mapped('total'))) or o.employee_id.nps_contribution or 0"/>
+
+                    <t t-set="basic_std" t-value="o.employee_id.l10n_in_basic_salary_amount or 0.0"/>
+                    <t t-set="hra_std" t-value="o.employee_id.l10n_in_hra or 0.0"/>
+                    <t t-set="spl_std" t-value="o.employee_id.l10n_in_fixed_allowance or 0.0"/>
+                    <t t-set="tot_std" t-value="basic_std + hra_std + spl_std"/>
+
+                    <t t-set="basic_earn" t-value="sum(o.line_ids.filtered(lambda l: l.code == 'BASIC').mapped('total')) or 0.0"/>
+                    <t t-set="hra_earn" t-value="sum(o.line_ids.filtered(lambda l: l.code == 'HRA').mapped('total')) or 0.0"/>
+                    <t t-set="spl_earn" t-value="sum(o.line_ids.filtered(lambda l: l.code in ('SPL', 'FLEX')).mapped('total')) or 0.0"/>
+                    <t t-set="ara_earn" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code == 'ARA').mapped('total'))) or 0.0"/>
+                    <t t-set="gross_earn" t-value="sum(o.line_ids.filtered(lambda l: l.category_id.code == 'GROSS').mapped('total')) or (basic_earn + hra_earn + spl_earn + ara_earn)"/>
+
+                    <t t-set="mip_ded" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code == 'MIP').mapped('total'))) or 0.0"/>
+                    <t t-set="ee_pf_val" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code in ('PF', 'EPF', 'EE_PF')).mapped('total'))) or 0.0"/>
+                    <t t-set="tds_ded" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code == 'TDS').mapped('total'))) or 0.0"/>
+                    <t t-set="other_ded" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code == 'DEDUCTION').mapped('total'))) or 0.0"/>
+
+                    <t t-set="cat_ded_total" t-value="abs(sum(o.line_ids.filtered(lambda l: l.category_id.code == 'DED').mapped('total'))) or 0.0"/>
+                    <t t-set="items_ded_total" t-value="mip_ded + ee_pf_val + tds_ded + other_ded"/>
+                    <t t-set="gross_ded" t-value="items_ded_total if items_ded_total &gt; 0 else cat_ded_total"/>
+
+                    <t t-set="net_pay" t-value="gross_earn - gross_ded"/>
+                    <t t-set="er_pf_val" t-value="ee_pf_val if ee_pf_val else (o.employee_id.l10n_in_pf_employer_amount or 0.0)"/>
+                    <t t-set="nps_val" t-value="o.employee_id.nps_contribution if o.employee_id.nps_contribution else (abs(sum(o.line_ids.filtered(lambda l: l.code in ('NPS', 'ERNPS', 'ER_NPS', 'EE_NPS')).mapped('total'))) or 0.0)"/>
 
                     <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
                         <tr>
@@ -107,43 +129,43 @@
                         <tr>
                             <td style="border:1px solid #000;"><b>Basic Salary</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="o.employee_id.l10n_in_basic_salary_amount or 0"/>
+                              <t t-esc="'%.2f' % basic_std"/>
                             </td>
                             <td style="border:1px solid #000;"><b>Basic Salary</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="sum(o.line_ids.filtered(lambda l: l.code == 'BASIC').mapped('total')) or 0"/>
+                              <t t-esc="'%.2f' % basic_earn"/>
                             </td>
                             <td style="border:1px solid #000;"><b>Medical Premium</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="abs(sum(o.line_ids.filtered(lambda l: l.code == 'MIP').mapped('total'))) or 0"/>
+                              <t t-esc="'%.2f' % mip_ded"/>
                             </td>
                         </tr>
                         <tr>
                             <td style="border:1px solid #000;"><b>HRA</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="o.employee_id.l10n_in_hra or 0"/>
+                              <t t-esc="'%.2f' % hra_std"/>
                             </td>
                             <td style="border:1px solid #000;"><b>HRA</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="sum(o.line_ids.filtered(lambda l: l.code == 'HRA').mapped('total')) or 0"/>
+                              <t t-esc="'%.2f' % hra_earn"/>
                             </td>
                             <td style="border:1px solid #000;"><b>EE PF Monthly</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="ee_pf_val"/>
+                              <t t-esc="'%.2f' % ee_pf_val"/>
                             </td>
                         </tr>
                         <tr>
                             <td style="border:1px solid #000;"><b>Flexible Allowance</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="o.employee_id.l10n_in_fixed_allowance or 0"/>
+                              <t t-esc="'%.2f' % spl_std"/>
                             </td>
                             <td style="border:1px solid #000;"><b>Flexible Allowance</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="sum(o.line_ids.filtered(lambda l: l.code == 'SPL').mapped('total')) or 0"/>
+                              <t t-esc="'%.2f' % spl_earn"/>
                             </td>
                             <td style="border:1px solid #000;"><b>Income Tax</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="abs(sum(o.line_ids.filtered(lambda l: l.code == 'TDS').mapped('total'))) or 0"/>
+                              <t t-esc="'%.2f' % tds_ded"/>
                             </td>
                         </tr>
                         <!-- Arrear / Deduction Row (Conditional) -->
@@ -153,11 +175,11 @@
                                 <td style="border:1px solid #000;"></td>
                                 <td style="border:1px solid #000;"><b>Arrear Allowance</b></td>
                                 <td style="border:1px solid #000;">
-                                    <t t-esc="abs(sum(o.line_ids.filtered(lambda l: l.code == 'ARA').mapped('total'))) or 0"/>
+                                    <t t-esc="'%.2f' % ara_earn"/>
                                 </td>
                                 <td style="border:1px solid #000;"><b>Deduction</b></td>
                                 <td style="border:1px solid #000;">
-                                    <t t-esc="abs(sum(o.line_ids.filtered(lambda l: l.code == 'DEDUCTION').mapped('total'))) or 0"/>
+                                    <t t-esc="'%.2f' % other_ded"/>
                                 </td>
                             </tr>
                         </t>
@@ -165,22 +187,22 @@
                         <tr>
                             <td style="border:1px solid #000;"><b>Total Standard Salary</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="(o.employee_id.l10n_in_basic_salary_amount or 0) + (o.employee_id.l10n_in_hra or 0) + (o.employee_id.l10n_in_fixed_allowance or 0)"/>
+                              <t t-esc="'%.2f' % tot_std"/>
                             </td>
                             <td style="border:1px solid #000;"><b>Gross Earning</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="sum(o.line_ids.filtered(lambda l: l.category_id.code == 'GROSS').mapped('total')) or 0"/>
+                              <t t-esc="'%.2f' % gross_earn"/>
                             </td>
                             <td style="border:1px solid #000;"><b>Gross Deduction</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="abs(sum(o.line_ids.filtered(lambda l: l.category_id.code == 'DED').mapped('total'))) or 0"/>
+                              <t t-esc="'%.2f' % gross_ded"/>
                             </td>
                         </tr>
                         <tr>
                             <td colspan="4"></td>
                             <td style="border:1px solid #000;"><b>Net Pay</b></td>
                             <td style="border:1px solid #000;"><b>
-                              <t t-esc="sum(o.line_ids.filtered(lambda l: l.code == 'NET').mapped('total')) or 0"/>
+                              <t t-esc="'%.2f' % net_pay"/>
                               </b></td>
                         </tr>
                     </table>
@@ -200,10 +222,10 @@
                         <tr style="height:180px;">
                             <td style="border:1px solid #000; vertical-align:top;">
                                 <b>ER PF Monthly :</b>
-                                <t t-esc="ee_pf_val if ee_pf_val else (o.employee_id.l10n_in_pf_employer_amount or 0)"/>
+                                <t t-esc="'%.2f' % er_pf_val"/>
                                 <br/><br/>
                                 <b>ER NPS Monthly :</b>
-                                <t t-esc="nps_val"/>
+                                <t t-esc="'%.2f' % nps_val"/>
                                 <br/><br/>
                             </td>
 
