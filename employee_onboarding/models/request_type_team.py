@@ -15,3 +15,8 @@ class RequestTypeTeam(models.Model):
         string='Email',
         required=True,
     )
+    is_manager = fields.Boolean(
+        string='Manager Team',
+        default=False,
+    )
+

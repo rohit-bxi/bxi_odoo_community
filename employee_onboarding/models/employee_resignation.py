@@ -109,6 +109,26 @@ class EmployeeResignation(models.Model):
         required=True,
         tracking=True,
     )
+    offboarding_ids = fields.One2many(
+        'employee.onboarding.offboarding',
+        'resignation_id',
+        string='Off-boarding Requests',
+    )
+    offboarding_count = fields.Integer(
+        string='Off-boarding Count',
+        compute='_compute_offboarding_count',
+    )
+
+    @api.depends('offboarding_ids')
+    def _compute_offboarding_count(self):
+        read_group_result = self.env['employee.onboarding.offboarding']._read_group(
+            [('resignation_id', 'in', self.ids)],
+            ['resignation_id'],
+            ['__count']
+        )
+        result = {resignation.id: count for resignation, count in read_group_result}
+        for rec in self:
+            rec.offboarding_count = result.get(rec.id, 0)
 
     # ── Constraints & Validation ─────────────────────────────────────────
     @api.constrains('resignation_date', 'last_working_day')
@@ -210,3 +230,68 @@ class EmployeeResignation(models.Model):
             if rec.state not in ('rejected', 'cancelled'):
                 continue
             rec.state = 'draft'
+
+    def action_record_offboarding(self):
+        self.ensure_one()
+        if self.offboarding_ids:
+            offboarding = self.offboarding_ids[0]
+        else:
+            offboarding_type = self.env['boarding.request.type'].search(
+                [('name', 'ilike', '%off%board%')],
+                limit=1
+            )
+            if not offboarding_type:
+                offboarding_type = self.env['boarding.request.type'].search([], limit=1)
+
+            task_lines = []
+            if offboarding_type and offboarding_type.task_ids:
+                for task in offboarding_type.task_ids:
+                    task_lines.append((0, 0, {
+                        'task': task.task,
+                        'performed_by': task.performed_by.id if task.performed_by else False,
+                        'sequence': task.sequence,
+                        'status': 'incomplete',
+                        'review': 'pending',
+                    }))
+
+            reason_label = dict(self._fields['reason'].selection).get(self.reason, self.reason) if self.reason else ''
+
+            offboarding_vals = {
+                'employee_id': self.employee_id.id,
+                'resignation_id': self.id,
+                'request_type_id': offboarding_type.id if offboarding_type else False,
+                'effective_date': self.approved_last_working_day or self.last_working_day,
+                'reason': _("Resignation (%s): %s") % (self.name, reason_label) if reason_label else _("Resignation: %s") % self.name,
+                'company_id': self.company_id.id if self.company_id else self.env.company.id,
+                'task_line_ids': task_lines,
+            }
+            offboarding = self.env['employee.onboarding.offboarding'].create(offboarding_vals)
+
+        return {
+            'name': _('Off-boarding Request'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'employee.onboarding.offboarding',
+            'res_id': offboarding.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def action_view_offboarding(self):
+        self.ensure_one()
+        action = {
+            'name': _('Off-boarding'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'employee.onboarding.offboarding',
+            'domain': [('resignation_id', '=', self.id)],
+            'context': {
+                'default_employee_id': self.employee_id.id,
+                'default_resignation_id': self.id,
+            },
+        }
+        if len(self.offboarding_ids) == 1:
+            action['view_mode'] = 'form'
+            action['res_id'] = self.offboarding_ids.id
+        else:
+            action['view_mode'] = 'list,form'
+        return action
+

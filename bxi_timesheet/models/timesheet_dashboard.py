@@ -248,17 +248,6 @@ class BxiTimesheetDashboard(models.AbstractModel):
                 if atts_with_checkout:
                     latest_att = max(atts_with_checkout, key=lambda a: a.check_out)
                     check_out_time = self._format_time_12h(latest_att.check_out, user_tz)
-                else:
-                    dt_log = dt_logs.filtered(lambda l: l.date == d)
-                    if dt_log and dt_log[0].left:
-                        check_out_time = self._format_time_12h(dt_log[0].left, user_tz)
-            else:
-                dt_log = dt_logs.filtered(lambda l: l.date == d)
-                if dt_log:
-                    if dt_log[0].arrived:
-                        check_in_time = self._format_time_12h(dt_log[0].arrived, user_tz)
-                    if dt_log[0].left:
-                        check_out_time = self._format_time_12h(dt_log[0].left, user_tz)
 
             # DeskTime Productive Hours
             dt_log = dt_logs.filtered(lambda l: l.date == d)
@@ -405,17 +394,6 @@ class BxiTimesheetDashboard(models.AbstractModel):
                         if atts_with_checkout:
                             latest_att = max(atts_with_checkout, key=lambda a: a.check_out)
                             check_out_time = self._format_time_12h(latest_att.check_out, user_tz)
-                        else:
-                            dt_log = member_dt_logs.filtered(lambda l: l.date == d_val)
-                            if dt_log and dt_log[0].left:
-                                check_out_time = self._format_time_12h(dt_log[0].left, user_tz)
-                    else:
-                        dt_log = member_dt_logs.filtered(lambda l: l.date == d_val)
-                        if dt_log:
-                            if dt_log[0].arrived:
-                                check_in_time = self._format_time_12h(dt_log[0].arrived, user_tz)
-                            if dt_log[0].left:
-                                check_out_time = self._format_time_12h(dt_log[0].left, user_tz)
 
                     day_data.append({
                         'date_str': d_dict['date_str'],
