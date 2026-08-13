@@ -6,7 +6,7 @@
                 <!-- Title & Month/Year Selection Form -->
                 <div class="card shadow-sm mb-4 border">
                     <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between py-3">
-                        <h4 class="mb-0 fs-5"><i class="fa fa-file-text-o me-2"></i>My Salary Payslip</h4>
+                        <h4 class="mb-0 fs-5"><i class="fa fa-file-text-o me-2"></i>My Payslip</h4>
                         <span class="badge bg-light text-dark font-monospace small"><i class="fa fa-eye me-1"></i>Screen View Only</span>
                     </div>
                     <div class="card-body bg-light p-4">
@@ -62,7 +62,7 @@
                         <i class="fa fa-exclamation-triangle fa-2x mb-2 text-warning"></i>
                         <h5 class="alert-heading fw-bold">No Payslip Found</h5>
                         <p class="mb-0 text-muted">
-                            No salary payslip record was found for 
+                            No payslip record was found for 
                             <strong>
                                 <t t-foreach="months_list" t-as="m">
                                     <t t-if="m[0] == selected_month"><t t-esc="m[1]"/></t>
