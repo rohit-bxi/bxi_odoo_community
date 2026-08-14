@@ -3,6 +3,9 @@ from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from datetime import date, timedelta
 
+# Threshold for role band applicability (inclusive lower bound)
+ROLE_BAND_THRESHOLD = 8
+
 
 class AccountAnalyticLine(models.Model):
     """
@@ -33,6 +36,15 @@ class AccountAnalyticLine(models.Model):
         current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
 
         for rec in self:
+            # Only enforce past-week lock for employees whose role_band is numeric and >= ROLE_BAND_THRESHOLD
+            try:
+                rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
+            except Exception:
+                rb_val = None
+
+            if not rb_val or rb_val < ROLE_BAND_THRESHOLD:
+                continue
+
             if rec.date and rec.date < current_week_start:
                 raise UserError(_("Timesheets for previous weeks (before %s) cannot be created, modified, or submitted.") % current_week_start.strftime('%Y-%m-%d'))
 
@@ -40,6 +52,15 @@ class AccountAnalyticLine(models.Model):
     def _check_one_entry_per_day(self):
         """Block users from creating more than 1 timesheet entry for a single day."""
         for rec in self:
+            # Only enforce for employees with role_band >= ROLE_BAND_THRESHOLD
+            try:
+                rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
+            except Exception:
+                rb_val = None
+
+            if not rb_val or rb_val < ROLE_BAND_THRESHOLD:
+                continue
+
             if rec.employee_id and rec.date:
                 existing = self.env['account.analytic.line'].sudo().search([
                     ('employee_id', '=', rec.employee_id.id),
@@ -55,6 +76,15 @@ class AccountAnalyticLine(models.Model):
     def _check_max_hours_per_day(self):
         """Block users from logging more than 9 hours for a single day."""
         for rec in self:
+            # Only enforce for employees with role_band >= ROLE_BAND_THRESHOLD
+            try:
+                rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
+            except Exception:
+                rb_val = None
+
+            if not rb_val or rb_val < ROLE_BAND_THRESHOLD:
+                continue
+
             if rec.employee_id and rec.date:
                 day_lines = self.env['account.analytic.line'].sudo().search([
                     ('employee_id', '=', rec.employee_id.id),
@@ -77,9 +107,16 @@ class AccountAnalyticLine(models.Model):
         submitted_recs = self.filtered(lambda r: r.state == 'draft')
         for rec in self:
             if rec.date and rec.date < current_week_start:
-                is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
-                if not (is_admin or is_hr or is_manager):
-                    raise UserError(_("Timesheets for previous weeks cannot be submitted for approval."))
+                # Only enforce past-week submission restriction for employees with role_band >= ROLE_BAND_THRESHOLD
+                try:
+                    rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
+                except Exception:
+                    rb_val = None
+
+                if rb_val and rb_val >= ROLE_BAND_THRESHOLD:
+                    is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
+                    if not (is_admin or is_hr or is_manager):
+                        raise UserError(_("Timesheets for previous weeks cannot be submitted for approval."))
 
             # Check if another timesheet for the same employee & date is already submitted or approved
             if rec.state == 'draft':
@@ -197,6 +234,14 @@ class AccountAnalyticLine(models.Model):
         employees = self.env['hr.employee'].sudo().search([('active', '=', True)])
 
         for emp in employees:
+            # Apply auto-LWP only for employees with role_band >= ROLE_BAND_THRESHOLD
+            try:
+                emp_rb = int(emp.role_band) if emp.role_band else None
+            except Exception:
+                emp_rb = None
+
+            if not emp_rb or emp_rb < ROLE_BAND_THRESHOLD:
+                continue
             # Search by exact leave code 'LOP': company-specific first, then global
             unpaid_type = self.env['hr.leave.type'].sudo().search([
                 ('company_id', '=', emp.company_id.id),
