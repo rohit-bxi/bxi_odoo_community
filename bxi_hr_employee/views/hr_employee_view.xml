@@ -104,11 +104,17 @@
                         <field name="is_fnf_done" string="Is FNF Done"/>
                         <field name="date_of_leaving" string="Date of Leaving"/>
                     </group>
-                    <button name="action_send_registration_link"
-                        type="object"
-                        string="Send Portal Access"
-                        class="btn-primary"
-                        style="margin-left:10px;" />
+                    <group string="Experience &amp; Relieving Letter">
+                        <button name="action_generate_experience_letter"
+                                string="Generate / Download Experience Letter"
+                                type="object"
+                                class="btn-primary"/>
+                        <field name="experience_letter_attachment_id"
+                            string="Generated Experience Letter"/>
+                        <field name="signed_experience_letter"
+                            filename="signed_experience_letter_filename"
+                            string="Upload Signed Experience Letter"/>
+                    </group>
                 </page>
             </xpath>
         </field>

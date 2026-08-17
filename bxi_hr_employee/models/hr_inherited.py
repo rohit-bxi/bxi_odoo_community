@@ -1,3 +1,4 @@
+import base64
 import random
 import secrets
 import token
@@ -52,6 +53,56 @@ class HrEmployee(models.Model):
     l10n_in_tds = fields.Monetary(string="Monthly TDS Amount", currency_field="currency_id")
     date_of_leaving = fields.Date(string="Date of Leaving")
     is_fnf_done = fields.Boolean(string="Is FNF Done", default=False)
+
+    experience_letter_attachment_id = fields.Many2one(
+        "ir.attachment",
+        string="Generated Experience Letter",
+        copy=False,
+    )
+    experience_letter_filename = fields.Char(
+        string="Generated Experience Letter Filename",
+        copy=False,
+    )
+
+    signed_experience_letter = fields.Binary(
+        string="Signed Experience Letter",
+        attachment=True,
+        copy=False,
+    )
+
+    signed_experience_letter_filename = fields.Char(
+        string="Signed Experience Letter Filename",
+        copy=False,
+    )
+
+    def action_generate_experience_letter(self):
+        self.ensure_one()
+
+        if not self.date_of_leaving:
+            raise UserError(
+                _("Relieving date is required to generate the Experience Letter.")
+            )
+
+        pdf_content, _ = self.env["ir.actions.report"].sudo()._render_qweb_pdf(
+            "bxi_hr_employee.action_report_employee_experience_letter",
+            [self.id],
+        )
+        if self.experience_letter_attachment_id:
+            self.experience_letter_attachment_id.unlink()
+        attachment = self.env["ir.attachment"].sudo().create({
+            "name": "Experience and Relieving Letter - %s.pdf" % self.name,
+            "type": "binary",
+            "datas": base64.b64encode(pdf_content),
+            "res_model": "hr.employee",
+            "res_id": self.id,
+            "mimetype": "application/pdf",
+        })
+        self.experience_letter_attachment_id = attachment.id
+        return {
+            "type": "ir.actions.act_url",
+            "url": "/web/content/%s?download=true" % attachment.id,
+            "target": "self",
+        }
 
     @api.depends('epf_number')
     def _compute_pf_number(self):
@@ -317,6 +368,52 @@ class HrEmployee(models.Model):
         if employee.portal_password != password:
             return False
         return employee
+
+    def action_(self):
+        self.ensure_one()
+        appraisal = self.appraisal_id.sudo()
+        employee = appraisal.employee_id.sudo()
+        if not employee.work_email:
+            raise UserError(_("The selected employee does not have a work email address."))
+
+        if not appraisal.template_company_id:
+            raise UserError(_("Please Selected The Template Company"))
+
+        letter_type = appraisal.letter_type
+        report_xmlid = False
+        letter_name = ""
+
+        if letter_type == 'bonus_letter':
+            report_xmlid = 'bxi_hr_performance_bonus.action_report_employee_bonus_letter'
+            letter_name = "Bonus_Letter"
+        elif letter_type == 'appraisal_promotion_letter':
+            report_xmlid = 'bxi_hr_performance_bonus.action_report_appraisal_letter'
+            letter_name = "Appraisal_and_Promotion_Letter"
+        elif letter_type == 'appraisal_letter':
+            report_xmlid = 'bxi_hr_performance_bonus.action_report_appraisal_letter'
+            letter_name = "Appraisal_Letter"
+        elif letter_type == 'promotion_letter':
+            report_xmlid = 'bxi_hr_performance_bonus.action_report_promotion_letter'
+            letter_name = "Promotion_Letter"
+
+        if not report_xmlid:
+            raise UserError(_("No report configured for this letter type."))
+
+        try:
+            report = self.env.ref(report_xmlid)
+        except ValueError:
+            raise UserError(_("Report Not Found."))
+
+        pdf_content, dummy = report.sudo()._render_qweb_pdf(report_xmlid, res_ids=[appraisal.id])
+
+        attachment = self.env['ir.attachment'].sudo().create({
+            'name': f"{letter_name}_{employee.name}.pdf",
+            'type': 'binary',
+            'datas': base64.b64encode(pdf_content),
+            'res_model': 'hr.employee.appraisal',
+            'res_id': appraisal.id,
+            'mimetype': 'application/pdf'
+        })
 
 
 class HrEmployeePublic(models.Model):
