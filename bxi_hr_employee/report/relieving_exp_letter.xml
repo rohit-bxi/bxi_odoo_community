@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_experience_letter_letter_a4" model="report.paperformat">
+        <field name="name">Employee Experience Letter A4</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">2</field>
+        <field name="margin_bottom">15</field>
+        <field name="margin_left">5</field>
+        <field name="margin_right">5</field>
+        <field name="header_spacing">5</field>
+    </record>
+    <record id="action_report_employee_experience_letter" model="ir.actions.report">
+        <field name="name">Experience and Relieving Letter</field>
+        <field name="model">hr.employee</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_hr_employee.report_experience_relieving_letter</field>
+        <field name="report_file">bxi_hr_employee.report_experience_relieving_letter</field>
+        <field name="binding_model_id" ref="hr.model_hr_employee"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="paperformat_experience_letter_letter_a4" />
+        <field name="print_report_name">'Experience and Relieving Letter - %s' % (object.name or '')</field>
+    </record>
+   <template id="report_experience_relieving_letter">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="company" t-value="o.template_company_id"/>
+                <t t-if="o.template_company_id and o.template_company_id.id == 1">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_employee._experience_relieving_letter_content"/>
+                    </t>
+                </t>
+                <t t-elif="o.template_company_id and o.template_company_id.id == 2">
+                    <t t-call="custom_template.bxi_n01_layout">
+                        <t t-call="bxi_hr_employee._experience_relieving_letter_content"/>
+                    </t>
+                </t>
+                <t t-elif="o.template_company_id and o.template_company_id.id == 3">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_employee._experience_relieving_letter_content"/>
+                    </t>
+                </t>
+                <t t-elif="o.template_company_id and o.template_company_id.id == 4">
+                    <t t-call="custom_template.bxi_n01_layout">
+                        <t t-call="bxi_hr_employee._experience_relieving_letter_content"/>
+                    </t>
+                </t>
+                <t t-elif="o.template_company_id and o.template_company_id.id == 5">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_employee._experience_relieving_letter_content"/>
+                    </t>
+                </t>
+                <t t-else="">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_employee._experience_relieving_letter_content"/>
+                    </t>
+                </t>
+            </t>
+        </t>
+    </template>
+    <template id="_experience_relieving_letter_content">
+        <div class="page"
+             style="
+                padding: 45px 55px;
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+             ">
+
+            <div style="text-align:center; margin-bottom:35px;">
+                <h2 style="
+                    margin:0;
+                    font-size:22px;
+                    font-weight:bold;
+                ">
+                    Experience and Relieving Letter
+                </h2>
+            </div>
+
+            <div style="margin-bottom:35px;">
+                <strong>Date - </strong>
+                <span t-field="o.write_date"/>
+            </div>
+            <div style="margin-bottom:25px;">
+                <strong>
+                    To whomsoever it may concern
+                </strong>
+            </div>
+
+            <p style="text-align:justify; margin-bottom:22px;">This is to certify that
+                <strong>
+                    <span t-field="o.name"/>
+                </strong>
+                was working with us as a
+                <strong>
+                    <span t-field="o.job_id.name"/>
+                </strong>
+                from
+                <strong>
+                    <span t-field="o.emp_date_of_joining"/>
+                </strong>
+                to
+                <strong>
+                    <span t-field="o.date_of_leaving"/>
+                </strong>.
+                He/She was relieved from his/her duties effective by
+                the closing hours of
+                <strong>
+                    <span t-field="o.date_of_leaving"/>
+                </strong>.
+            </p>
+            <p style="text-align:justify; margin-bottom:45px;">
+                We found him/her sincere, hardworking and result
+                oriented during the tenure. We take this opportunity
+                to thank him/her for the contribution and wish him/her
+                success in future endeavors.
+            </p>
+            <div style="margin-top:60px;">
+                <p style="margin-bottom:35px;">
+                    For
+                    <strong>
+                        <span t-field="o.template_company_id.name"/>
+                    </strong>
+                </p>
+                <div style="margin-top:20px;">
+                    <strong>
+                        Pallavi Paliwal
+                    </strong>
+                    <br/>
+                    <strong>
+                        CHIEF PEOPLE OFFICER
+                    </strong>
+                </div>
+            </div>
+            <div style="
+                position:absolute;
+                bottom:35px;
+                left:55px;
+                right:55px;
+                font-size:10px;
+                line-height:1.4;
+            ">
+                <strong>
+                    <span t-field="o.template_company_id.name"/>
+                </strong>
+                <br/>
+                <span t-field="o.template_company_id.street"/>
+                <t t-if="o.template_company_id.street2">
+                    <br/>
+                    <span t-field="o.template_company_id.street2"/>
+                </t>
+                <br/>
+                <span t-field="o.template_company_id.city"/>
+                <t t-if="o.template_company_id.state_id">
+                    ,
+                    <span t-field="o.template_company_id.state_id.name"/>
+                </t>
+                <t t-if="o.template_company_id.zip">
+                    -
+                    <span t-field="o.template_company_id.zip"/>
+                </t>
+                <br/>
+                <t t-if="o.template_company_id.country_id">
+                    <span t-field="o.template_company_id.country_id.name"/>
+                </t>
+                <br/>
+                <t t-if="o.template_company_id.company_registry">
+                    Corporate Identification Number:
+                    <span t-field="o.template_company_id.company_registry"/>
+                </t>
+            </div>
+        </div>
+    </template>
+</odoo>

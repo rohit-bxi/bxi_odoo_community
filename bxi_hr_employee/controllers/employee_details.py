@@ -1,3 +1,4 @@
+import base64
 from datetime import timedelta
 import email
 import secrets
@@ -359,3 +360,142 @@ class EmployeeAPIController(http.Controller):
             ),
         ]
         return request.make_response(pdf, headers=headers)
+
+    import base64
+    from odoo import http
+    from odoo.http import request
+
+    @http.route(
+        "/api/employee/signed_experience_letter_view",
+        type="http",
+        auth="public",
+        methods=["GET"],
+        csrf=False,
+    )
+    def signed_experience_letter_view(self, **kw):
+
+        employee_id = kw.get("employee_id")
+
+        if not employee_id:
+            return request.make_response(
+                "employee_id is required",
+                headers=[("Content-Type", "text/plain")],
+                status=400,
+            )
+
+        try:
+            employee_id = int(employee_id)
+        except (TypeError, ValueError):
+            return request.make_response(
+                "Invalid employee_id",
+                headers=[("Content-Type", "text/plain")],
+                status=400,
+            )
+
+        employee = request.env["hr.employee"].sudo().browse(employee_id)
+
+        if not employee.exists():
+            return request.make_response(
+                "Employee not found",
+                headers=[("Content-Type", "text/plain")],
+                status=404,
+            )
+
+        # Get uploaded signed document
+        signed_document = employee.signed_experience_letter
+
+        if not signed_document:
+            return request.make_response(
+                "Signed Experience Letter is not uploaded.",
+                headers=[("Content-Type", "text/plain")],
+                status=404,
+            )
+
+        try:
+            pdf_content = base64.b64decode(signed_document)
+        except Exception:
+            return request.make_response(
+                "Unable to read the signed Experience Letter.",
+                headers=[("Content-Type", "text/plain")],
+                status=500,
+            )
+
+        filename = (
+            employee.signed_experience_letter_filename
+            or "Signed_Experience_Letter.pdf"
+        )
+
+        return request.make_response(
+            pdf_content,
+            headers=[
+                ("Content-Type", "application/pdf"),
+                (
+                    "Content-Disposition",
+                    f'inline; filename="{filename}"',
+                ),
+            ],
+        )
+    
+    @http.route(
+        "/api/employee/signed_experience_letter_download",
+        type="http",
+        auth="public",
+        methods=["GET"],
+        csrf=False,
+    )
+    def signed_experience_letter_download(self, **kw):
+
+        email = kw.get("email")
+
+        if not email:
+            return request.make_response(
+                "Email is required.",
+                headers=[("Content-Type", "text/plain")],
+                status=400,
+            )
+
+        employee = request.env["hr.employee"].sudo().search([
+            ("private_email", "=", email),
+            ("active", "=", False),
+        ], limit=1)
+
+        if not employee:
+            return request.make_response(
+                "Employee not found.",
+                headers=[("Content-Type", "text/plain")],
+                status=404,
+            )
+
+        if not employee.signed_experience_letter:
+            return request.make_response(
+                "Signed Experience Letter is not available.",
+                headers=[("Content-Type", "text/plain")],
+                status=404,
+            )
+
+        try:
+            pdf_content = base64.b64decode(
+                employee.signed_experience_letter
+            )
+        except Exception:
+            return request.make_response(
+                "Invalid signed Experience Letter file.",
+                headers=[("Content-Type", "text/plain")],
+                status=500,
+            )
+
+        filename = (
+            employee.signed_experience_letter_filename
+            or "Signed_Experience_Letter.pdf"
+        )
+
+        return request.make_response(
+            pdf_content,
+            headers=[
+                ("Content-Type", "application/pdf"),
+                (
+                    "Content-Disposition",
+                    f'attachment; filename="{filename}"',
+                ),
+            ],
+        )
