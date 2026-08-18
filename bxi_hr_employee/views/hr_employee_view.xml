@@ -115,6 +115,11 @@
                             filename="signed_experience_letter_filename"
                             string="Upload Signed Experience Letter"/>
                     </group>
+                    <button name="action_send_registration_link"
+                        type="object"
+                        string="Send Almunu Portal Access"
+                        class="btn-primary"
+                        style="margin-left:10px;" />
                 </page>
             </xpath>
         </field>
