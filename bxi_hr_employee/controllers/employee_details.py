@@ -131,8 +131,9 @@ class EmployeeAPIController(http.Controller):
             "email_from": "hrsupport@bxitech.com",
             "body_html": f"""
                 <p>Hello {employee.name},</p>
-                <p>Your OTP is:</p>
+                <p>Your OTP for BXI Employee Alumni Portal:</p>
                 <h2>{otp}</h2>
+                <p>Please use this OTP to complete your registration.</p>
                 <p>This OTP is valid for 10 minutes.</p>
             """
         }).send()
@@ -276,7 +277,6 @@ class EmployeeAPIController(http.Controller):
         payslips = request.env["hr.payslip"].sudo().search(
             [("employee_id", "=", employee.id)],
             order="date_to desc",
-            limit=3
         )
         data = []
         for slip in payslips:
@@ -361,28 +361,15 @@ class EmployeeAPIController(http.Controller):
         ]
         return request.make_response(pdf, headers=headers)
 
-    import base64
-    from odoo import http
-    from odoo.http import request
-
-    @http.route(
-        "/api/employee/signed_experience_letter_view",
-        type="http",
-        auth="public",
-        methods=["GET"],
-        csrf=False,
-    )
+    @http.route("/api/employee/signed_experience_letter_view",type="http",auth="public",methods=["GET"],csrf=False,)
     def signed_experience_letter_view(self, **kw):
-
         employee_id = kw.get("employee_id")
-
         if not employee_id:
             return request.make_response(
                 "employee_id is required",
                 headers=[("Content-Type", "text/plain")],
                 status=400,
             )
-
         try:
             employee_id = int(employee_id)
         except (TypeError, ValueError):
@@ -401,16 +388,13 @@ class EmployeeAPIController(http.Controller):
                 status=404,
             )
 
-        # Get uploaded signed document
         signed_document = employee.signed_experience_letter
-
         if not signed_document:
             return request.make_response(
                 "Signed Experience Letter is not uploaded.",
                 headers=[("Content-Type", "text/plain")],
                 status=404,
             )
-
         try:
             pdf_content = base64.b64decode(signed_document)
         except Exception:
@@ -436,43 +420,36 @@ class EmployeeAPIController(http.Controller):
             ],
         )
     
-    @http.route(
-        "/api/employee/signed_experience_letter_download",
-        type="http",
-        auth="public",
-        methods=["GET"],
-        csrf=False,
-    )
+    @http.route("/api/employee/signed_experience_letter_download",type="http",auth="public",methods=["GET"],csrf=False,)
     def signed_experience_letter_download(self, **kw):
-
-        email = kw.get("email")
-
-        if not email:
+        employee_id = kw.get("employee_id")
+        if not employee_id:
             return request.make_response(
-                "Email is required.",
+                "employee_id is required",
                 headers=[("Content-Type", "text/plain")],
                 status=400,
             )
-
-        employee = request.env["hr.employee"].sudo().search([
-            ("private_email", "=", email),
-            ("active", "=", False),
-        ], limit=1)
-
-        if not employee:
+        try:
+            employee_id = int(employee_id)
+        except (TypeError, ValueError):
+            return request.make_response(
+                "Invalid employee_id",
+                headers=[("Content-Type", "text/plain")],
+                status=400,
+            )
+        employee = request.env["hr.employee"].sudo().browse(employee_id)
+        if not employee.exists():
             return request.make_response(
                 "Employee not found.",
                 headers=[("Content-Type", "text/plain")],
                 status=404,
             )
-
         if not employee.signed_experience_letter:
             return request.make_response(
                 "Signed Experience Letter is not available.",
                 headers=[("Content-Type", "text/plain")],
                 status=404,
             )
-
         try:
             pdf_content = base64.b64decode(
                 employee.signed_experience_letter
@@ -488,7 +465,6 @@ class EmployeeAPIController(http.Controller):
             employee.signed_experience_letter_filename
             or "Signed_Experience_Letter.pdf"
         )
-
         return request.make_response(
             pdf_content,
             headers=[
@@ -499,3 +475,121 @@ class EmployeeAPIController(http.Controller):
                 ),
             ],
         )
+ 
+    @http.route("/api/employee/forgot_password",type="json",auth="public",methods=["POST"],csrf=False,)
+    def forgot_password(self, **post):
+        email = (post.get("email") or "").strip().lower()
+        if not email:
+            return {
+                "status": False,
+                "message": "Personal email is required.",
+            }
+        employee = request.env["hr.employee"].sudo().search([
+            ("private_email", "=ilike", email),
+            ("active", "=", False),
+        ], limit=1)
+        if not employee:
+            return {
+                "status": False,
+                "message": "Please enter your registered personal email.",
+            }
+        reset_token = secrets.token_urlsafe(32)
+        expiry = fields.Datetime.now() + timedelta(hours=24)
+        employee.sudo().write({
+            "portal_reset_token": reset_token,
+            "portal_reset_token_expiry": expiry,
+        })
+        reset_link = (
+            f"https://alumni.bxiventures.com/reset-password"
+            f"?token={reset_token}"
+        )
+        mail = request.env["mail.mail"].sudo().create({
+            "subject": "Reset Your Employee Alumni Portal Password",
+            "email_to": employee.private_email,
+            "body_html": f"""
+                <p>Dear {employee.name},</p>
+                <p>
+                    We received a request to reset your Employee Alumni Portal
+                    password.
+                </p>
+                <p>
+                    Please click the button below to reset your password:
+                </p>
+                <p>
+                    <a href="{reset_link}"
+                    style="
+                        background:#875A7B;
+                        color:white;
+                        padding:10px 20px;
+                        text-decoration:none;
+                        border-radius:5px;
+                        display:inline-block;
+                    ">
+                        Reset Password
+                    </a>
+                </p>
+                <p>
+                    This password reset link is valid for
+                    <strong>24 hours</strong>.
+                </p>
+                <p>
+                    If you did not request a password reset,
+                    please ignore this email.
+                </p>
+                <p>
+                    Best regards,<br/>
+                    HR Team
+                </p>
+            """,
+        })
+        mail.send()
+        return {
+            "status": True,
+            "message": "Password reset link has been sent to your personal email.",
+        }
+
+    @http.route("/api/employee/reset_password",type="json",auth="public",methods=["POST"],csrf=False,)
+    def reset_password(self, **post):
+        token = (post.get("token") or "").strip()
+        password = post.get("password")
+        if not token:
+            return {
+                "status": False,
+                "message": "Reset token is required.",
+            }
+        if not password:
+            return {
+                "status": False,
+                "message": "New password is required.",
+            }
+        if len(password) < 8:
+            return {
+                "status": False,
+                "message": "Password must contain at least 8 characters.",
+            }
+        employee = request.env["hr.employee"].sudo().search([
+            ("portal_reset_token", "=", token),
+            ("active", "=", False),
+        ], limit=1)
+        if not employee:
+            return {
+                "status": False,
+                "message": "Invalid or expired reset link.",
+            }
+        if (
+            not employee.portal_reset_token_expiry
+            or employee.portal_reset_token_expiry < fields.Datetime.now()
+        ):
+            return {
+                "status": False,
+                "message": "Reset link has expired. Please request a new link.",
+            }
+        employee.sudo().write({
+            "portal_password": password,
+            "portal_reset_token": False,
+            "portal_reset_token_expiry": False,
+        })
+        return {
+            "status": True,
+            "message": "Password reset successfully.",
+        }

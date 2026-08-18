@@ -53,6 +53,8 @@ class HrEmployee(models.Model):
     l10n_in_tds = fields.Monetary(string="Monthly TDS Amount", currency_field="currency_id")
     date_of_leaving = fields.Date(string="Date of Leaving")
     is_fnf_done = fields.Boolean(string="Is FNF Done", default=False)
+    re_hire = fields.Boolean(string="Re-Hire", default=False)
+    rehire_not_description = fields.Text(string="Rehire Remarks")
 
     experience_letter_attachment_id = fields.Many2one(
         "ir.attachment",
@@ -72,6 +74,14 @@ class HrEmployee(models.Model):
 
     signed_experience_letter_filename = fields.Char(
         string="Signed Experience Letter Filename",
+        copy=False,
+    )
+    portal_reset_token = fields.Char(
+        string="Portal Reset Token",
+        copy=False,
+    )
+    portal_reset_token_expiry = fields.Datetime(
+        string="Portal Reset Token Expiry",
         copy=False,
     )
 
@@ -338,24 +348,65 @@ class HrEmployee(models.Model):
         base_url = "https://alumni.bxiventures.com/verify-email"
         registration_link = f"{base_url}?token={token}"
         self.env["mail.mail"].sudo().create({
-            "subject": "Employee Document Portal",
+            "subject": "Complete Your Employee Alumni Portal Registration",
             "email_to": self.private_email,
             "email_from": "hrsupport@bxitech.com",
             "body_html": f"""
-                <p>Hello {self.name},</p>
-                <p>Please click below to register.</p>
-                <p>After further verification, you will be able to access your documents.</p>
-                <p>employee = {self.employee_code}.</p>
-                <p>employee name = {self.name}.</p>
-                <p>employee email = {self.private_email}.</p>
-                <p> your registration token is "{token}" remember it for future use.</p>
+                <p>Dear {self.name},</p>
                 <p>
-                    <a href="{registration_link}">
-                        Click here to Verify token and register your account.
+                    We are pleased to invite you to register for the
+                    <strong>BXI Employee Alumni Portal</strong>.
+                </p>
+                <p>
+                    The portal will allow you to securely access your
+                    employee-related documents and other relevant information.
+                </p>
+                <p>
+                    To complete your registration, please click the button below:
+                </p>
+                <p>
+                    <a href="{registration_link}"
+                    style="
+                        background-color:#875A7B;
+                        color:#ffffff;
+                        padding:10px 20px;
+                        text-decoration:none;
+                        border-radius:5px;
+                        display:inline-block;
+                        font-weight:bold;
+                    ">
+                        Verify &amp; Complete Registration
                     </a>
                 </p>
-                <p>This link is valid for 24 hours.</p>
-            """
+                <p>
+                    <strong>Employee Details:</strong>
+                </p>
+                <p>
+                    Employee Code: {self.employee_code}<br/>
+                    Employee Name: {self.name}<br/>
+                    Registered Email: {self.private_email}
+                </p>
+                <p>
+                    <strong>Registration Token:</strong> {token}
+                </p>
+                <p>
+                    Please keep this token secure and do not share it with anyone.
+                </p>
+                <p>
+                    This registration link is valid for <strong>24 hours</strong>.
+                    If the link expires, please contact the HR Support team
+                    for assistance.
+                </p>
+                <p>
+                    If you did not expect to receive this email, please ignore it
+                    or contact HR Support.
+                </p>
+                <p>
+                    Regards,<br/>
+                    <strong>HR Support Team</strong><br/>
+                    BXI Technology
+                </p>
+            """,
         }).send()
         return True
     
