@@ -53,6 +53,8 @@ class HrEmployee(models.Model):
     l10n_in_tds = fields.Monetary(string="Monthly TDS Amount", currency_field="currency_id")
     date_of_leaving = fields.Date(string="Date of Leaving")
     is_fnf_done = fields.Boolean(string="Is FNF Done", default=False)
+    re_hire = fields.Boolean(string="Re-Hire", default=False)
+    rehire_not_description = fields.Text(string="Rehire Remarks")
 
     experience_letter_attachment_id = fields.Many2one(
         "ir.attachment",

@@ -277,7 +277,6 @@ class EmployeeAPIController(http.Controller):
         payslips = request.env["hr.payslip"].sudo().search(
             [("employee_id", "=", employee.id)],
             order="date_to desc",
-            limit=3
         )
         data = []
         for slip in payslips:

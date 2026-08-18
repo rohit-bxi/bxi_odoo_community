@@ -99,27 +99,34 @@
         <field name="inherit_id" ref="hr.view_employee_form" />
         <field name="arch" type="xml">
             <xpath expr="//page[@name='hr_settings']" position="after">
-                <page string="Final Settlement">
+                <field name="active" invisible="1"/>
+                <page string="Final Settlement" invisible="active">
                     <group>
                         <field name="is_fnf_done" string="Is FNF Done"/>
                         <field name="date_of_leaving" string="Date of Leaving"/>
+                        <field name="re_hire" string="Re-Hire"/>
+                        <field name="rehire_not_description" string="Rehire Remarks"/>
+                    </group>
+                    <group>
+                    <button name="action_send_registration_link"
+                            type="object"
+                            string="Send Alumni Portal Access"
+                            class="btn-primary"
+                            style="margin-left:10px;"/>
                     </group>
                     <group string="Experience &amp; Relieving Letter">
-                        <button name="action_generate_experience_letter"
+                        <group>
+                                <button name="action_generate_experience_letter"
                                 string="Generate / Download Experience Letter"
                                 type="object"
-                                class="btn-primary"/>
-                        <field name="experience_letter_attachment_id"
-                            string="Generated Experience Letter"/>
-                        <field name="signed_experience_letter"
-                            filename="signed_experience_letter_filename"
-                            string="Upload Signed Experience Letter"/>
+                                class="btn btn-primary"/>
+                        </group>
+                            <group>
+                                <field name="signed_experience_letter"
+                                string="Upload Signed Experience Letter"/>
+                            </group>
+                            
                     </group>
-                    <button name="action_send_registration_link"
-                        type="object"
-                        string="Send Almunu Portal Access"
-                        class="btn-primary"
-                        style="margin-left:10px;" />
                 </page>
             </xpath>
         </field>
