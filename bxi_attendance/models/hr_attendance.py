@@ -64,17 +64,34 @@ class HrAttendance(models.Model):
             ))
 
     @api.model
-    def create(self, vals):
-        employee_id = vals.get('employee_id')
-        self._validate_attendance_eligibility(employee_id)
-        self._validate_location_access(vals)
-        return super().create(vals)
+    def create(self, vals_list):
+        if not vals_list:
+            return super().create(vals_list)
+
+        if isinstance(vals_list, dict):
+            vals_list = [vals_list]
+
+        for vals in vals_list:
+            employee_id = vals.get('employee_id')
+            self._validate_attendance_eligibility(employee_id)
+            self._validate_location_access(vals)
+
+        return super().create(vals_list)
 
     def write(self, vals):
-        employee_id = vals.get('employee_id')
-        if employee_id:
-            self._validate_attendance_eligibility(employee_id)
-        self._validate_location_access(vals)
+        if 'employee_id' in vals and vals.get('employee_id'):
+            for rec in self:
+                rec._validate_attendance_eligibility(vals.get('employee_id'))
+
+        if any(field in vals for field in ('check_in', 'check_out', 'latitude', 'longitude')):
+            for rec in self:
+                update_vals = dict(vals)
+                if 'latitude' not in update_vals and rec.latitude:
+                    update_vals['latitude'] = rec.latitude
+                if 'longitude' not in update_vals and rec.longitude:
+                    update_vals['longitude'] = rec.longitude
+                rec._validate_location_access(update_vals)
+
         return super().write(vals)
 
     @api.model
