@@ -15,6 +15,11 @@
         'data/cron_data.xml',
         'views/hr_attendance_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'bxi_attendance/static/src/js/location_guard.js',
+        ],
+    },
     'installable': True,
     'application': False,
     'auto_install': False,
