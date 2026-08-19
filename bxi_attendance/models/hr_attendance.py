@@ -8,6 +8,8 @@ ATTENDANCE_ROLE_BAND_THRESHOLD = 8
 class HrAttendance(models.Model):
     _inherit = 'hr.attendance'
 
+    latitude = fields.Float(string='Latitude', digits=(16, 8))
+    longitude = fields.Float(string='Longitude', digits=(16, 8))
     is_auto_checkout = fields.Boolean(string='Auto Check-out', default=False)
 
     def _is_role_band_eligible_for_attendance(self, employee):
@@ -37,16 +39,42 @@ class HrAttendance(models.Model):
                 "This employee is not eligible for attendance."
             ) % ATTENDANCE_ROLE_BAND_THRESHOLD)
 
+    def _validate_location_access(self, vals=None):
+        """Require browser location permission before manual check-in/check-out."""
+        if vals is None:
+            vals = {}
+
+        if vals.get('is_auto_checkout') is True:
+            return
+
+        if 'check_in' not in vals and 'check_out' not in vals:
+            return
+
+        latitude = vals.get('latitude')
+        longitude = vals.get('longitude')
+
+        if latitude is None and self.latitude:
+            latitude = self.latitude
+        if longitude is None and self.longitude:
+            longitude = self.longitude
+
+        if latitude in (None, False, 0.0) or longitude in (None, False, 0.0):
+            raise UserError(_(
+                "Please enable location access in Chrome or your browser before checking in or checking out."
+            ))
+
     @api.model
     def create(self, vals):
         employee_id = vals.get('employee_id')
         self._validate_attendance_eligibility(employee_id)
+        self._validate_location_access(vals)
         return super().create(vals)
 
     def write(self, vals):
         employee_id = vals.get('employee_id')
         if employee_id:
             self._validate_attendance_eligibility(employee_id)
+        self._validate_location_access(vals)
         return super().write(vals)
 
     @api.model
