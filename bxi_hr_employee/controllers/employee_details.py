@@ -593,3 +593,96 @@ class EmployeeAPIController(http.Controller):
             "status": True,
             "message": "Password reset successfully.",
         }
+
+    @http.route("/api/employee/form16/view",type="http",auth="public",methods=["GET"],csrf=False,)
+    def view_form16(self, **kw):
+        email = (kw.get("email") or "").strip()
+        if not email:
+            return request.make_response(
+                "Email is required.",
+                headers=[("Content-Type", "text/plain")],
+                status=400,
+            )
+        employee = request.env["hr.employee"].sudo().search([
+            ("private_email", "=ilike", email),
+            ("active", "=", False),
+        ], limit=1)
+        if not employee:
+            return request.make_response(
+                "Employee not found.",
+                headers=[("Content-Type", "text/plain")],
+                status=404,
+            )
+        if not employee.form_16:
+            return request.make_response(
+                "Form 16 is not available.",
+                headers=[("Content-Type", "text/plain")],
+                status=404,
+            )
+        try:
+            pdf_content = base64.b64decode(employee.form_16)
+        except Exception:
+            return request.make_response(
+                "Invalid Form 16 file.",
+                headers=[("Content-Type", "text/plain")],
+                status=500,
+            )
+        filename = employee.form_16_filename or "Form_16.pdf"
+        return request.make_response(
+            pdf_content,
+            headers=[
+                ("Content-Type", "application/pdf"),
+                (
+                    "Content-Disposition",
+                    f'inline; filename="{filename}"',
+                ),
+            ],
+        )
+
+    @http.route("/api/employee/form16/download",type="http",auth="public",methods=["GET"],csrf=False,)
+    def download_form16(self, **kw):
+        email = (kw.get("email") or "").strip()
+        if not email:
+            return request.make_response(
+                "Email is required.",
+                headers=[("Content-Type", "text/plain")],
+                status=400,
+            )
+        employee = request.env["hr.employee"].sudo().search([
+            ("private_email", "=ilike", email),
+            ("active", "=", False),
+        ], limit=1)
+        if not employee:
+            return request.make_response(
+                "Employee not found.",
+                headers=[("Content-Type", "text/plain")],
+                status=404,
+            )
+        if not employee.form_16:
+            return request.make_response(
+                "Form 16 is not available.",
+                headers=[("Content-Type", "text/plain")],
+                status=404,
+            )
+        try:
+            pdf_content = base64.b64decode(employee.form_16)
+        except Exception:
+            return request.make_response(
+                "Invalid Form 16 file.",
+                headers=[("Content-Type", "text/plain")],
+                status=500,
+            )
+        filename = (
+            employee.form_16_filename
+            or "Form_16.pdf"
+        )
+        return request.make_response(
+            pdf_content,
+            headers=[
+                ("Content-Type", "application/pdf"),
+                (
+                    "Content-Disposition",
+                    f'attachment; filename="{filename}"',
+                ),
+            ],
+        )

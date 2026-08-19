@@ -84,6 +84,16 @@ class HrEmployee(models.Model):
         string="Portal Reset Token Expiry",
         copy=False,
     )
+    form_16 = fields.Binary(
+        string="Form 16",
+        attachment=True,
+        copy=False,
+    )
+
+    form_16_filename = fields.Char(
+        string="Form 16 Filename",
+        copy=False,
+    )
 
     def action_generate_experience_letter(self):
         self.ensure_one()
