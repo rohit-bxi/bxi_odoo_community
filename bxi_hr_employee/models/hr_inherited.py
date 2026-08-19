@@ -1,6 +1,11 @@
+import base64
+import random
+import secrets
+import token
+
 from odoo import models, fields, _, api
 from odoo.exceptions import UserError
-from datetime import date
+from datetime import date, timedelta
 
 class HrEmployee(models.Model):
     _inherit = 'hr.employee'
@@ -46,6 +51,78 @@ class HrEmployee(models.Model):
     l10n_in_fixed_allowance = fields.Monetary(string="Flexible / Special Allowance", currency_field="currency_id")
     l10n_in_pf_employer_amount = fields.Monetary(string="Employer EPF Monthly", currency_field="currency_id")
     l10n_in_tds = fields.Monetary(string="Monthly TDS Amount", currency_field="currency_id")
+    date_of_leaving = fields.Date(string="Date of Leaving")
+    is_fnf_done = fields.Boolean(string="Is FNF Done", default=False)
+    re_hire = fields.Boolean(string="Re-Hire", default=False)
+    rehire_not_description = fields.Text(string="Rehire Remarks")
+
+    experience_letter_attachment_id = fields.Many2one(
+        "ir.attachment",
+        string="Generated Experience Letter",
+        copy=False,
+    )
+    experience_letter_filename = fields.Char(
+        string="Generated Experience Letter Filename",
+        copy=False,
+    )
+
+    signed_experience_letter = fields.Binary(
+        string="Signed Experience Letter",
+        attachment=True,
+        copy=False,
+    )
+
+    signed_experience_letter_filename = fields.Char(
+        string="Signed Experience Letter Filename",
+        copy=False,
+    )
+    portal_reset_token = fields.Char(
+        string="Portal Reset Token",
+        copy=False,
+    )
+    portal_reset_token_expiry = fields.Datetime(
+        string="Portal Reset Token Expiry",
+        copy=False,
+    )
+    form_16 = fields.Binary(
+        string="Form 16",
+        attachment=True,
+        copy=False,
+    )
+
+    form_16_filename = fields.Char(
+        string="Form 16 Filename",
+        copy=False,
+    )
+
+    def action_generate_experience_letter(self):
+        self.ensure_one()
+
+        if not self.date_of_leaving:
+            raise UserError(
+                _("Relieving date is required to generate the Experience Letter.")
+            )
+
+        pdf_content, _ = self.env["ir.actions.report"].sudo()._render_qweb_pdf(
+            "bxi_hr_employee.action_report_employee_experience_letter",
+            [self.id],
+        )
+        if self.experience_letter_attachment_id:
+            self.experience_letter_attachment_id.unlink()
+        attachment = self.env["ir.attachment"].sudo().create({
+            "name": "Experience and Relieving Letter - %s.pdf" % self.name,
+            "type": "binary",
+            "datas": base64.b64encode(pdf_content),
+            "res_model": "hr.employee",
+            "res_id": self.id,
+            "mimetype": "application/pdf",
+        })
+        self.experience_letter_attachment_id = attachment.id
+        return {
+            "type": "ir.actions.act_url",
+            "url": "/web/content/%s?download=true" % attachment.id,
+            "target": "self",
+        }
 
     @api.depends('epf_number')
     def _compute_pf_number(self):
@@ -251,6 +328,153 @@ class HrEmployee(models.Model):
 
             if bank_account not in rec.bank_account_ids:
                 rec.write({'bank_account_ids': [(4, bank_account.id)]})
+    # portal usage
+    portal_token = fields.Char(copy=False)
+    portal_token_expiry = fields.Datetime(copy=False)
+    portal_otp = fields.Char(copy=False)
+    portal_otp_expiry = fields.Datetime(copy=False)
+    portal_otp_verified = fields.Boolean(default=False)
+    portal_password = fields.Char(copy=False)
+
+    def _generate_registration_token(self):
+        self.ensure_one()
+        token = secrets.token_urlsafe(32)
+        self.write({
+            "portal_token": token,
+            "portal_token_expiry": fields.Datetime.now() + timedelta(hours=24),
+            "portal_otp": False,
+            "portal_otp_expiry": False,
+            "portal_otp_verified": False,
+        })
+        return token
+    
+    def action_send_registration_link(self):
+        self.ensure_one()
+        if self.active:
+            raise UserError(_("Portal access is only available for archived employees."))
+        if not self.private_email:
+            raise UserError(_("Personal email is not configured."))
+        token = self._generate_registration_token()
+        base_url = "https://alumni.bxiventures.com/verify-email"
+        registration_link = f"{base_url}?token={token}"
+        self.env["mail.mail"].sudo().create({
+            "subject": "Complete Your Employee Alumni Portal Registration",
+            "email_to": self.private_email,
+            "email_from": "hrsupport@bxitech.com",
+            "body_html": f"""
+                <p>Dear {self.name},</p>
+                <p>
+                    We are pleased to invite you to register for the
+                    <strong>BXI Employee Alumni Portal</strong>.
+                </p>
+                <p>
+                    The portal will allow you to securely access your
+                    employee-related documents and other relevant information.
+                </p>
+                <p>
+                    To complete your registration, please click the button below:
+                </p>
+                <p>
+                    <a href="{registration_link}"
+                    style="
+                        background-color:#875A7B;
+                        color:#ffffff;
+                        padding:10px 20px;
+                        text-decoration:none;
+                        border-radius:5px;
+                        display:inline-block;
+                        font-weight:bold;
+                    ">
+                        Verify &amp; Complete Registration
+                    </a>
+                </p>
+                <p>
+                    <strong>Employee Details:</strong>
+                </p>
+                <p>
+                    Employee Code: {self.employee_code}<br/>
+                    Employee Name: {self.name}<br/>
+                    Registered Email: {self.private_email}
+                </p>
+                <p>
+                    <strong>Registration Token:</strong> {token}
+                </p>
+                <p>
+                    Please keep this token secure and do not share it with anyone.
+                </p>
+                <p>
+                    This registration link is valid for <strong>24 hours</strong>.
+                    If the link expires, please contact the HR Support team
+                    for assistance.
+                </p>
+                <p>
+                    If you did not expect to receive this email, please ignore it
+                    or contact HR Support.
+                </p>
+                <p>
+                    Regards,<br/>
+                    <strong>HR Support Team</strong><br/>
+                    BXI Technology
+                </p>
+            """,
+        }).send()
+        return True
+    
+    def _portal_login(self, email, password):
+        employee = self.search([
+            ("private_email", "=", email)
+        ], limit=1)
+        if not employee:
+            return False
+        if employee.portal_password != password:
+            return False
+        return employee
+
+    def action_(self):
+        self.ensure_one()
+        appraisal = self.appraisal_id.sudo()
+        employee = appraisal.employee_id.sudo()
+        if not employee.work_email:
+            raise UserError(_("The selected employee does not have a work email address."))
+
+        if not appraisal.template_company_id:
+            raise UserError(_("Please Selected The Template Company"))
+
+        letter_type = appraisal.letter_type
+        report_xmlid = False
+        letter_name = ""
+
+        if letter_type == 'bonus_letter':
+            report_xmlid = 'bxi_hr_performance_bonus.action_report_employee_bonus_letter'
+            letter_name = "Bonus_Letter"
+        elif letter_type == 'appraisal_promotion_letter':
+            report_xmlid = 'bxi_hr_performance_bonus.action_report_appraisal_letter'
+            letter_name = "Appraisal_and_Promotion_Letter"
+        elif letter_type == 'appraisal_letter':
+            report_xmlid = 'bxi_hr_performance_bonus.action_report_appraisal_letter'
+            letter_name = "Appraisal_Letter"
+        elif letter_type == 'promotion_letter':
+            report_xmlid = 'bxi_hr_performance_bonus.action_report_promotion_letter'
+            letter_name = "Promotion_Letter"
+
+        if not report_xmlid:
+            raise UserError(_("No report configured for this letter type."))
+
+        try:
+            report = self.env.ref(report_xmlid)
+        except ValueError:
+            raise UserError(_("Report Not Found."))
+
+        pdf_content, dummy = report.sudo()._render_qweb_pdf(report_xmlid, res_ids=[appraisal.id])
+
+        attachment = self.env['ir.attachment'].sudo().create({
+            'name': f"{letter_name}_{employee.name}.pdf",
+            'type': 'binary',
+            'datas': base64.b64encode(pdf_content),
+            'res_model': 'hr.employee.appraisal',
+            'res_id': appraisal.id,
+            'mimetype': 'application/pdf'
+        })
 
 
 class HrEmployeePublic(models.Model):
@@ -298,5 +522,5 @@ class HrEmployeePublic(models.Model):
     total_amount = fields.Float(related='employee_id.total_amount')
     template_company_id = fields.Many2one(related='employee_id.template_company_id')
     month_year = fields.Date(related='employee_id.month_year')
-    employee_location_id = fields.Many2one('stock.location', string='Location', readonly=True)
+    # employee_location_id = fields.Many2one('stock.location', string='Location', readonly=True)
     struct_id = fields.Many2one('hr.payroll.structure', string='Salary Structure', readonly=True)

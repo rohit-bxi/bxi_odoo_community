@@ -615,7 +615,7 @@ class HrPayslipLine(models.Model):
     salary_rule_id = fields.Many2one('hr.salary.rule', string='Rule', required=True)
     employee_id = fields.Many2one('hr.employee', string='Employee', required=True)
     # MIGRATION: Contract to Version
-    version_id = fields.Many2one('hr.version', string='Version/Contract', required=True, index=True)
+    version_id = fields.Many2one('hr.version', string='Version/Contract', required=False, index=True)
     rate = fields.Float(string='Rate (%)', default=100.0)
     amount = fields.Float()
     quantity = fields.Float(default=1.0)
@@ -651,7 +651,7 @@ class HrPayslipWorkedDays(models.Model):
     number_of_days = fields.Float(string='Number of Days')
     number_of_hours = fields.Float(string='Number of Hours')
     # MIGRATION: Contract to Version
-    version_id = fields.Many2one('hr.version', string='Version/Contract', required=True,
+    version_id = fields.Many2one('hr.version', string='Version/Contract', required=False,
                                  help="The version for which applied this input")
 
 
@@ -666,7 +666,7 @@ class HrPayslipInput(models.Model):
     code = fields.Char(required=True, help="The code that can be used in the salary rules")
     amount = fields.Float(help="Amount used in computation")
     # MIGRATION: Contract to Version
-    version_id = fields.Many2one('hr.version', string='Version/Contract', required=True,
+    version_id = fields.Many2one('hr.version', string='Version/Contract', required=False,
                                  help="The version for which applied this input")
 
 

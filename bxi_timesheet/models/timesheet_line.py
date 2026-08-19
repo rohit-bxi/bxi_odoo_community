@@ -3,6 +3,9 @@ from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from datetime import date, timedelta
 
+# Threshold for role band applicability (inclusive lower bound)
+ROLE_BAND_THRESHOLD = 8
+
 
 class AccountAnalyticLine(models.Model):
     """
@@ -33,6 +36,15 @@ class AccountAnalyticLine(models.Model):
         current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
 
         for rec in self:
+            # Only enforce past-week lock for employees whose role_band is numeric and >= ROLE_BAND_THRESHOLD
+            try:
+                rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
+            except Exception:
+                rb_val = None
+
+            if not rb_val or rb_val < ROLE_BAND_THRESHOLD:
+                continue
+
             if rec.date and rec.date < current_week_start:
                 raise UserError(_("Timesheets for previous weeks (before %s) cannot be created, modified, or submitted.") % current_week_start.strftime('%Y-%m-%d'))
 
@@ -40,6 +52,15 @@ class AccountAnalyticLine(models.Model):
     def _check_one_entry_per_day(self):
         """Block users from creating more than 1 timesheet entry for a single day."""
         for rec in self:
+            # Only enforce for employees with role_band >= ROLE_BAND_THRESHOLD
+            try:
+                rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
+            except Exception:
+                rb_val = None
+
+            if not rb_val or rb_val < ROLE_BAND_THRESHOLD:
+                continue
+
             if rec.employee_id and rec.date:
                 existing = self.env['account.analytic.line'].sudo().search([
                     ('employee_id', '=', rec.employee_id.id),
@@ -55,6 +76,15 @@ class AccountAnalyticLine(models.Model):
     def _check_max_hours_per_day(self):
         """Block users from logging more than 9 hours for a single day."""
         for rec in self:
+            # Only enforce for employees with role_band >= ROLE_BAND_THRESHOLD
+            try:
+                rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
+            except Exception:
+                rb_val = None
+
+            if not rb_val or rb_val < ROLE_BAND_THRESHOLD:
+                continue
+
             if rec.employee_id and rec.date:
                 day_lines = self.env['account.analytic.line'].sudo().search([
                     ('employee_id', '=', rec.employee_id.id),
@@ -77,9 +107,16 @@ class AccountAnalyticLine(models.Model):
         submitted_recs = self.filtered(lambda r: r.state == 'draft')
         for rec in self:
             if rec.date and rec.date < current_week_start:
-                is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
-                if not (is_admin or is_hr or is_manager):
-                    raise UserError(_("Timesheets for previous weeks cannot be submitted for approval."))
+                # Only enforce past-week submission restriction for employees with role_band >= ROLE_BAND_THRESHOLD
+                try:
+                    rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
+                except Exception:
+                    rb_val = None
+
+                if rb_val and rb_val >= ROLE_BAND_THRESHOLD:
+                    is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
+                    if not (is_admin or is_hr or is_manager):
+                        raise UserError(_("Timesheets for previous weeks cannot be submitted for approval."))
 
             # Check if another timesheet for the same employee & date is already submitted or approved
             if rec.state == 'draft':
@@ -173,19 +210,38 @@ class AccountAnalyticLine(models.Model):
     @api.model
     def _cron_check_unpaid_leaves(self):
         """
-        Daily check for employees who haven't logged timesheets for 7 consecutive days.
-        Creates a 1-day Leave Without Pay on the 8th day (today).
+        Daily check for employees who haven't logged timesheets for 6 consecutive days.
+        Creates a 1-day Leave Without Pay on the 7th day (today).
         """
         import logging
         _logger = logging.getLogger(__name__)
         
         today = fields.Date.today()
-        start_date = today - timedelta(days=7)
-        end_date = today - timedelta(days=1)
         
+        # Do not auto-apply leave on weekends; only apply on weekdays
+        if today.weekday() >= 5:  # 5 = Saturday, 6 = Sunday
+            _logger.info("BXI Timesheet Cron: Weekend detected (%s), skipping auto LWP creation.", today.strftime('%A'))
+            return True
+
+        # Build the last 6 working days excluding Sundays
+        working_days = []
+        check_date = today - timedelta(days=1)
+        while len(working_days) < 6:
+            if check_date.weekday() != 6:  # Sunday excluded
+                working_days.append(check_date)
+            check_date -= timedelta(days=1)
+
         employees = self.env['hr.employee'].sudo().search([('active', '=', True)])
-        
+
         for emp in employees:
+            # Apply auto-LWP only for employees with role_band >= ROLE_BAND_THRESHOLD
+            try:
+                emp_rb = int(emp.role_band) if emp.role_band else None
+            except Exception:
+                emp_rb = None
+
+            if not emp_rb or emp_rb < ROLE_BAND_THRESHOLD:
+                continue
             # Search by exact leave code 'LOP': company-specific first, then global
             unpaid_type = self.env['hr.leave.type'].sudo().search([
                 ('company_id', '=', emp.company_id.id),
@@ -198,14 +254,17 @@ class AccountAnalyticLine(models.Model):
                 ], limit=1)
 
             if not unpaid_type:
-                _logger.warning("LOP leave type (code='LOP') not found for employee %s (company: %s). Please configure it.", emp.name, emp.company_id.name)
+                _logger.warning(
+                    "LOP leave type (code='LOP') not found for employee %s (company: %s). Please configure it.",
+                    emp.name,
+                    emp.company_id.name,
+                )
                 continue
 
             logged_days = self.env['account.analytic.line'].sudo().search([
                 ('employee_id', '=', emp.id),
-                ('date', '>=', start_date),
-                ('date', '<=', end_date),
-                ('unit_amount', '>', 0.0)
+                ('date', 'in', working_days),
+                ('unit_amount', '>', 0.0),
             ])
             
             distinct_logged_dates = set(logged_days.mapped('date'))
@@ -219,7 +278,7 @@ class AccountAnalyticLine(models.Model):
                 
                 if not existing_leave:
                     try:
-                        self.env['hr.leave'].sudo().with_context(
+                        leave = self.env['hr.leave'].sudo().with_context(
                             allowed_company_ids=[emp.company_id.id]
                         ).create({
                             'employee_id': emp.id,
@@ -228,11 +287,26 @@ class AccountAnalyticLine(models.Model):
                             'request_date_to': today,
                             'number_of_days': 1.0,
                             'company_id': emp.company_id.id,
-                            'name': 'Auto-created: Leave Without Pay (No timesheet logged for 7 days)',
+                            'name': 'Auto-created: Leave Without Pay (No timesheet logged for 6 working days)',
                         })
-                        _logger.info(f"Auto-created Unpaid Leave for employee {emp.name} on {today}")
+                        if hasattr(leave, 'action_submit'):
+                            leave.action_submit()
+                        elif hasattr(leave, 'action_confirm'):
+                            leave.action_confirm()
+                        try:
+                            if hasattr(leave, 'action_approve'):
+                                leave.action_approve()
+                            elif hasattr(leave, 'action_validate'):
+                                leave.action_validate()
+                        except Exception:
+                            pass
+                        _logger.info(
+                            f"Auto-created and auto-approved Unpaid Leave for employee {emp.name} on {today}"
+                        )
                     except Exception as e:
-                        _logger.error(f"Failed to auto-create Unpaid Leave for employee {emp.name}: {str(e)}")
+                        _logger.error(
+                            f"Failed to auto-create Unpaid Leave for employee {emp.name}: {str(e)}"
+                        )
         return True
 
     @api.model
@@ -281,19 +355,9 @@ class AccountAnalyticLine(models.Model):
             manager_email = (manager.work_email or (manager.user_id and manager.user_id.email)) if manager else False
 
             if not manager_email:
-                # Fallback to HR / Timesheet Approver users if manager has no email or manager is not set
-                hr_users = self.env['res.users'].sudo().search([
-                    ('groups_id', 'in', [
-                        self.env.ref('hr_timesheet.group_hr_timesheet_approver').id,
-                        self.env.ref('hr_timesheet.group_timesheet_manager').id
-                    ]),
-                    ('email', '!=', False)
-                ], limit=5)
-                emails = [u.email for u in hr_users if u.email]
-                manager_email = ','.join(emails) if emails else False
-
-            if not manager_email:
-                _logger.warning(f"BXI Timesheet Cron: No email found to send consolidated timesheet notification for manager {manager_name}")
+                _logger.warning(
+                    f"BXI Timesheet Cron: Direct manager {manager_name} has no configured email. Skipping consolidated notification for their team."
+                )
                 continue
 
             # Build HTML table rows for all employees under this manager

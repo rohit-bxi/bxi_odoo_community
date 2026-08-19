@@ -5,6 +5,7 @@ from odoo.exceptions import UserError
 import logging
 
 _logger = logging.getLogger(__name__)
+ROLE_BAND_THRESHOLD = 8
 
 
 class BxiTimesheetDashboard(models.AbstractModel):
@@ -545,8 +546,14 @@ class BxiTimesheetDashboard(models.AbstractModel):
         current_week_start = self._get_current_week_start()
         is_manager = is_timesheet_admin or is_timesheet_approver or (current_employee and target_emp_id in subordinates.ids)
 
-        # Past week lock check
-        if target_date < current_week_start:
+        # Only enforce past-week lock for employees with role_band >= ROLE_BAND_THRESHOLD
+        try:
+            target_emp = self.env['hr.employee'].browse(target_emp_id)
+            target_rb = int(target_emp.role_band) if target_emp and target_emp.role_band else None
+        except Exception:
+            target_rb = None
+
+        if target_date < current_week_start and target_rb and target_rb >= ROLE_BAND_THRESHOLD:
             raise UserError(_("Once a week is crossed, timesheets for the previous week cannot be modified or submitted."))
 
         # Check if timesheet for this employee and date is already submitted or approved
@@ -555,7 +562,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
             ('date', '=', target_date),
             ('state', 'in', ['submitted', 'approved']),
         ], limit=1)
-        if already_submitted and not is_manager:
+        # Only block edits when the target employee is within the role_band scope
+        if already_submitted and not is_manager and (target_rb and target_rb >= ROLE_BAND_THRESHOLD):
             status_str = "submitted for approval" if already_submitted.state == 'submitted' else "approved"
             raise UserError(_("Timesheet for %s has already been %s. You cannot add or modify entries for a date that has already been submitted or approved.") % (target_date.strftime('%Y-%m-%d'), status_str))
 
@@ -825,25 +833,15 @@ class BxiTimesheetDashboard(models.AbstractModel):
 
         try:
             if action_type == 'submit':
-                # Notify Manager (with fallback to HR / Timesheet Approvers if manager email missing)
+                # Notify direct manager only; do not fallback to higher-level approvers
                 manager = employee.parent_id
                 manager_name = manager.name if manager else 'Manager'
                 manager_email = (manager.work_email or (manager.user_id and manager.user_id.email)) if manager else False
 
                 if not manager_email:
-                    # Fallback to HR / Timesheet Approver users if manager has no email
-                    hr_users = self.env['res.users'].sudo().search([
-                        ('groups_id', 'in', [
-                            self.env.ref('hr_timesheet.group_hr_timesheet_approver').id,
-                            self.env.ref('hr_timesheet.group_timesheet_manager').id
-                        ]),
-                        ('email', '!=', False)
-                    ], limit=5)
-                    emails = [u.email for u in hr_users if u.email]
-                    manager_email = ','.join(emails) if emails else False
-
-                if not manager_email:
-                    _logger.warning(f"BXI Timesheet: No email found to send submission notification for {employee.name}")
+                    _logger.warning(
+                        f"BXI Timesheet: Direct manager {manager_name} has no configured email for employee {employee.name}. Skipping submission notification."
+                    )
                     return
 
                 subject = f"[Timesheet Submission] {employee.name} submitted timesheet for {date_range_str}"
