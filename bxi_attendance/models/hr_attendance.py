@@ -40,7 +40,7 @@ class HrAttendance(models.Model):
             ) % ATTENDANCE_ROLE_BAND_THRESHOLD)
 
     def _validate_location_access(self, vals=None):
-        """Require browser location permission before manual check-in/check-out."""
+        """Only block when attendance is explicitly submitted without usable geolocation."""
         if vals is None:
             vals = {}
 
@@ -50,18 +50,33 @@ class HrAttendance(models.Model):
         if 'check_in' not in vals and 'check_out' not in vals:
             return
 
+        geo_keys = ('latitude', 'longitude', 'location', 'geo_location', 'geoip')
+        if not any(key in vals for key in geo_keys):
+            return
+
         latitude = vals.get('latitude')
         longitude = vals.get('longitude')
+        location = vals.get('location')
 
-        if latitude is None and self.latitude:
-            latitude = self.latitude
-        if longitude is None and self.longitude:
-            longitude = self.longitude
+        if location:
+            if isinstance(location, dict):
+                latitude = location.get('latitude', latitude)
+                longitude = location.get('longitude', longitude)
+            elif isinstance(location, (list, tuple)) and len(location) >= 2:
+                latitude, longitude = location[0], location[1]
 
-        if latitude in (None, False, 0.0) or longitude in (None, False, 0.0):
+        if latitude in (None, False, '') or longitude in (None, False, ''):
             raise UserError(_(
                 "Please enable location access in Chrome or your browser before checking in or checking out."
             ))
+
+        try:
+            if float(latitude) == 0.0 and float(longitude) == 0.0:
+                raise UserError(_(
+                    "Please enable location access in Chrome or your browser before checking in or checking out."
+                ))
+        except (TypeError, ValueError):
+            return
 
     @api.model
     def create(self, vals_list):
