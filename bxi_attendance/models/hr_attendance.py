@@ -50,12 +50,20 @@ class HrAttendance(models.Model):
         if 'check_in' not in vals and 'check_out' not in vals:
             return
 
-        geo_keys = ('latitude', 'longitude', 'location', 'geo_location', 'geoip')
+        geo_keys = (
+            'latitude', 'longitude', 'location', 'geo_location', 'geoip',
+            'in_latitude', 'in_longitude', 'out_latitude', 'out_longitude'
+        )
         if not any(key in vals for key in geo_keys):
             return
 
-        latitude = vals.get('latitude')
-        longitude = vals.get('longitude')
+        latitude = vals.get('latitude', vals.get('in_latitude'))
+        longitude = vals.get('longitude', vals.get('in_longitude'))
+        if 'out_latitude' in vals and not latitude:
+            latitude = vals.get('out_latitude')
+        if 'out_longitude' in vals and not longitude:
+            longitude = vals.get('out_longitude')
+
         location = vals.get('location')
 
         if location:
