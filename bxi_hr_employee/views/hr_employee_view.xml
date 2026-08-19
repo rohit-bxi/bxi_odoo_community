@@ -126,7 +126,11 @@
                                 <field name="signed_experience_letter"
                                 string="Upload Signed Experience Letter"/>
                             </group>
-                            
+                    </group>
+                    <group string="Form 16 Document">
+                            <field name="form_16"
+                                filename="form_16_filename"
+                                string="Form 16"/>
                     </group>
                 </page>
             </xpath>
