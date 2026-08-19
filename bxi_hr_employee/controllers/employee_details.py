@@ -506,6 +506,7 @@ class EmployeeAPIController(http.Controller):
         mail = request.env["mail.mail"].sudo().create({
             "subject": "Reset Your Employee Alumni Portal Password",
             "email_to": employee.private_email,
+            "email_from":"hrsupport@bxitech.com",
             "body_html": f"""
                 <p>Dear {employee.name},</p>
                 <p>
