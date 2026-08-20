@@ -314,7 +314,7 @@ class EmployeeAPIController(http.Controller):
         if not payslip:
             return request.not_found()
         pdf, _ = request.env["ir.actions.report"].sudo()._render_qweb_pdf(
-            "om_hr_payroll.action_report_payslip",
+            "custom_payslip_report.action_custom_payslip_pdf",
             [payslip.id],
         )
         headers = [
@@ -348,7 +348,7 @@ class EmployeeAPIController(http.Controller):
         if not payslip:
             return request.not_found()
         pdf, _ = request.env["ir.actions.report"].sudo()._render_qweb_pdf(
-            "om_hr_payroll.action_report_payslip",
+            "custom_payslip_report.action_custom_payslip_pdf",
             [payslip.id],
         )
         filename = f"{payslip.name}.pdf"
