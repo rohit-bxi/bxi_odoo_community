@@ -687,3 +687,37 @@ class EmployeeAPIController(http.Controller):
                 ),
             ],
         )
+
+    @http.route(
+        "/api/employee/archived",
+        type="json",
+        auth="public",
+        methods=["POST"],
+        csrf=False,
+    )
+    def archived_employee_list(self, **post):
+        employees = request.env["hr.employee"].sudo().search([
+            ("active", "=", False),
+        ])
+        employee_data = []
+        for employee in employees:
+            employee_data.append({
+                "id": employee.id,
+                "name": employee.name or False,
+                "email": employee.private_email or False,
+                "phone": employee.private_phone or False,
+                "employee_code": employee.employee_code or False,
+                "job_title": employee.job_title or False,
+                "company": employee.company_id.name or False,
+                "manager": employee.parent_id.name or False,
+                "date_of_joining": (
+                    employee.emp_date_of_joining.strftime("%Y-%m-%d")
+                    if employee.emp_date_of_joining
+                    else False
+                ),
+            })
+        return {
+            "status": True,
+            "count": len(employee_data),
+            "employees": employee_data,
+        }
