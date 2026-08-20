@@ -56,7 +56,7 @@
                             <field name="l10n_in_hra"/>
                             <field name="l10n_in_fixed_allowance"/>
                             <field name="l10n_in_pf_employer_amount"/>
-                            <field name="nps_contribution"/>
+                            <field name="l10n_in_pf_employee_amount"/>
                             <field name="l10n_in_tds"/>
                         </group>
                     </group>

@@ -50,6 +50,7 @@ class HrEmployee(models.Model):
     l10n_in_hra = fields.Monetary(string="HRA Amount", currency_field="currency_id")
     l10n_in_fixed_allowance = fields.Monetary(string="Flexible / Special Allowance", currency_field="currency_id")
     l10n_in_pf_employer_amount = fields.Monetary(string="Employer EPF Monthly", currency_field="currency_id")
+    l10n_in_pf_employee_amount = fields.Monetary(string="Employee EPF Monthly", currency_field="currency_id")
     l10n_in_tds = fields.Monetary(string="Monthly TDS Amount", currency_field="currency_id")
     date_of_leaving = fields.Date(string="Date of Leaving")
     is_fnf_done = fields.Boolean(string="Is FNF Done", default=False)
