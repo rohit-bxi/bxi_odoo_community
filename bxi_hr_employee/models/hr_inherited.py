@@ -56,7 +56,13 @@ class HrEmployee(models.Model):
     is_fnf_done = fields.Boolean(string="Is FNF Done", default=False)
     re_hire = fields.Boolean(string="Re-Hire", default=False)
     rehire_not_description = fields.Text(string="Rehire Remarks")
-
+    departure_reason_id = fields.Many2one(
+        "hr.departure.reason",
+        string="Departure Reason",
+    )
+    departure_description = fields.Text(
+        string="Departure Description",
+    )
     experience_letter_attachment_id = fields.Many2one(
         "ir.attachment",
         string="Generated Experience Letter",
