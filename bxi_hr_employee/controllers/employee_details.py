@@ -710,6 +710,9 @@ class EmployeeAPIController(http.Controller):
                 "job_title": employee.job_title or False,
                 "company": employee.company_id.name or False,
                 "manager": employee.parent_id.name or False,
+                "is_fnf_done" : employee.is_fnf_done or False,
+                "re_hire" : employee.re_hire or False,
+                "rehire_not_description": employee.rehire_not_description or False,
                 "date_of_joining": (
                     employee.emp_date_of_joining.strftime("%Y-%m-%d")
                     if employee.emp_date_of_joining
