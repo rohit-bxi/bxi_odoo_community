@@ -3,6 +3,7 @@ from datetime import timedelta
 import email
 import secrets
 import random
+from venv import logger
 
 from odoo import http, fields
 from odoo.http import request
@@ -753,4 +754,120 @@ class EmployeeAPIController(http.Controller):
             "status": True,
             "count": len(employee_data),
             "employees": employee_data,
+        }
+
+    @http.route(
+        "/api/employee/verify_aadhar",
+        type="json",
+        auth="public",
+        methods=["POST"],
+        csrf=False,
+    )
+    def verify_aadhar(self, **post):
+        aadhar_card = (post.get("aadhar_card") or "").strip()
+        if not aadhar_card:
+            return {
+                "status": False,
+                "message": "Aadhar card number is required.",
+            }
+        employee = request.env["hr.employee"].sudo().search([
+            ("aadhar_card", "=", aadhar_card),
+            ("active", "=", False),
+        ], limit=1)
+        if not employee:
+            return {
+                "status": False,
+                "message": "Aadhar card number does not match our records.",
+            }
+        return {
+            "status": True,
+            "message": "Aadhar card verified successfully.",
+            "employee_id": employee.id,
+        }
+    
+    @http.route(
+        "/api/employee/create_new_credentials",
+        type="json",
+        auth="public",
+        methods=["POST"],
+        csrf=False,
+    )
+    def create_new_credentials(self, **post):
+        aadhar_card = (post.get("aadhar_card") or "").strip()
+        new_email = (post.get("new_email") or "").strip()
+        password = post.get("password")
+        confirm_password = post.get("confirm_password")
+        if not aadhar_card:
+            return {
+                "status": False,
+                "message": "Aadhar card number is required.",
+            }
+        if not new_email:
+            return {
+                "status": False,
+                "message": "New email is required.",
+            }
+        if not password:
+            return {
+                "status": False,
+                "message": "Password is required.",
+            }
+
+        if not confirm_password:
+            return {
+                "status": False,
+                "message": "Confirm password is required.",
+            }
+
+        if password != confirm_password:
+            return {
+                "status": False,
+                "message": "Passwords do not match.",
+            }
+        employee = request.env["hr.employee"].sudo().search([
+            ("aadhar_card", "=ilike", aadhar_card),
+            ("active", "=", False),
+        ], limit=1)
+
+        if not employee:
+            return {
+                "status": False,
+                "message": "Employee not found.",
+            }
+        existing_employee = request.env["hr.employee"].sudo().search([
+            ("private_email", "=ilike", new_email),
+            ("id", "!=", employee.id),
+        ], limit=1)
+
+        if existing_employee:
+            return {
+                "status": False,
+                "message": "This email address is already registered.",
+            }
+        employee.sudo().write({
+            "private_email": new_email,
+            "portal_password": password,
+        })
+        try:
+            employee.sudo().action_send_registration_link()
+
+        except Exception:
+            logger.exception(
+                "Failed to send registration link to %s",
+                new_email,
+            )
+            return {
+                "status": False,
+                "message": (
+                    "Email and password were updated, "
+                    "but the registration link could not be sent."
+                ),
+            }
+        return {
+            "status": True,
+            "message": (
+                "Your email and password have been updated successfully. "
+                "A registration link has been sent to your new email address."
+            ),
+            "email": new_email,
         }
