@@ -715,6 +715,36 @@ class EmployeeAPIController(http.Controller):
                     if employee.emp_date_of_joining
                     else False
                 ),
+                "hr_responsible": (
+                    employee.hr_responsible_id.name
+                    if employee.hr_responsible_id
+                    else False
+                ),
+                "department": (
+                    employee.department_id.name
+                    if employee.department_id
+                    else False
+                ),
+                "date_of_joining": (
+                    str(employee.emp_date_of_joining)
+                    if employee.emp_date_of_joining
+                    else False
+                ),
+                "date_of_leaving": (
+                    str(employee.date_of_leaving)
+                    if employee.date_of_leaving
+                    else False
+                ),
+                "departure_reason": (
+                    employee.departure_reason_id.name
+                    if employee.departure_reason_id
+                    else False
+                ),
+                "departure_description": (
+                    employee.departure_description
+                    if employee.departure_description
+                    else False
+                ),
             })
         return {
             "status": True,

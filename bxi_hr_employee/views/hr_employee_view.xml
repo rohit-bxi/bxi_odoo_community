@@ -107,6 +107,8 @@
                         <field name="date_of_leaving" string="Date of Leaving"/>
                         <field name="re_hire" string="Re-Hire"/>
                         <field name="rehire_not_description" string="Rehire Remarks"/>
+                        <field name="departure_reason_id"/>
+                        <field name="departure_description"/>
                     </group>
                     <group>
                     <button name="action_send_registration_link"
