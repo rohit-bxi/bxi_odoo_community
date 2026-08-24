@@ -871,3 +871,57 @@ class EmployeeAPIController(http.Controller):
             ),
             "email": new_email,
         }
+
+    @http.route(
+        "/api/employee/edit_profile",
+        type="json",
+        auth="public",
+        methods=["POST"],
+        csrf=False,
+    )
+    def edit_employee_profile(self, **post):
+        email = (post.get("email") or "").strip()
+        if not email:
+            return {
+                "status": False,
+                "message": "Email is required.",
+            }
+        employee = request.env["hr.employee"].sudo().search([
+            ("private_email", "=ilike", email),
+            ("active", "=", False),
+        ], limit=1)
+        if not employee:
+            return {
+                "status": False,
+                "message": "Employee not found.",
+            }
+
+        vals = {}
+        if "private_street" in post:
+            vals["private_street"] = (post.get("private_street") or "").strip()
+        if "emergency_contact" in post:
+            vals["emergency_contact"] = (
+                post.get("emergency_contact") or ""
+            ).strip()
+        if "emergency_phone" in post:
+            vals["emergency_phone"] = (
+                post.get("emergency_phone") or ""
+            ).strip()
+        if not vals:
+            return {
+                "status": False,
+                "message": "No profile information provided to update.",
+            }
+        employee.write(vals)
+        return {
+            "status": True,
+            "message": "Profile updated successfully.",
+            "employee": {
+                "id": employee.id,
+                "name": employee.name,
+                "email": employee.private_email,
+                "private_street": employee.private_street or False,
+                "emergency_contact": employee.emergency_contact or False,
+                "emergency_phone": employee.emergency_phone or False,
+            },
+        }
