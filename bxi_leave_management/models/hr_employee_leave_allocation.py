@@ -1,5 +1,5 @@
 from odoo import models, fields, api, _
-from datetime import date
+from datetime import date, datetime, timedelta
 
 
 class HrEmployee(models.Model):
@@ -66,77 +66,96 @@ class HrEmployee(models.Model):
     # =========================================================
     # EL CRON (RUN MONTHLY - 1ST DAY)
     # =========================================================
+    @api.model
     def cron_allocate_el(self):
 
         today = date.today()
 
-        # Ensure it runs only on 1st
+        # Cron should run only on the 1st day of the month
         if today.day != 1:
             return
 
-        el_type = self.env['hr.leave.type'].search([('time_off_code', '=', 'EL')], limit=1)
+        # ---------------------------------------------------------
+        # Get Earned Leave type
+        # ---------------------------------------------------------
+        el_type = self.env['hr.leave.type'].search([
+            ('time_off_code', '=', 'EL')
+        ], limit=1)
+
         if not el_type:
             return
 
-        employees = self.search([('active', '=', True)])
+        # ---------------------------------------------------------
+        # Previous month date range
+        # ---------------------------------------------------------
+        first_day_current_month = today.replace(day=1)
+        last_day_previous_month = first_day_current_month - timedelta(days=1)
+        first_day_previous_month = last_day_previous_month.replace(day=1)
+        start_datetime = datetime.combine(
+            first_day_previous_month,
+            datetime.min.time()
+        )
+
+        end_datetime = datetime.combine(
+            first_day_current_month,
+            datetime.min.time()
+        )
+
+        employees = self.search([
+            ('active', '=', True),
+            ('work_email', '!=', False),
+            ('emp_date_of_joining', '!=', False),
+        ])
 
         for emp in employees:
 
-            if not emp.emp_date_of_joining:
+            # -----------------------------------------------------
+            # Find attendance using employee work email
+            # -----------------------------------------------------
+            attendances = self.env['hr.attendance'].search([
+                ('employee_id.work_email', '=', emp.work_email),
+                ('check_in', '>=', start_datetime),
+                ('check_in', '<', end_datetime),
+            ])
+
+            # -----------------------------------------------------
+            # Count UNIQUE attendance dates
+            # -----------------------------------------------------
+            attendance_dates = set()
+
+            for attendance in attendances:
+                if attendance.check_in:
+                    attendance_date = attendance.check_in.date()
+                    attendance_dates.add(attendance_date)
+
+            attendance_days = len(attendance_dates)
+
+            # -----------------------------------------------------
+            # Check whether employee already received EL
+            # for this attendance month
+            # -----------------------------------------------------
+            month_key = first_day_previous_month.strftime('%Y-%m')
+            existing = self.env['hr.leave.allocation'].search([
+                ('employee_id', '=', emp.id),
+                ('holiday_status_id', '=', el_type.id),
+                ('name', '=', f'EL Monthly {month_key}'),
+            ], limit=1)
+
+            if existing:
                 continue
+            # -----------------------------------------------------
+            # Attendance >= 15 days
+            # → Allocate 1.5 EL
+            # Attendance < 15 days
+            # → No allocation
+            # -----------------------------------------------------
+            if attendance_days >= 15:
 
-            doj = emp.emp_date_of_joining
-            days_since_doj = (today - doj).days
+                allocation = self.env['hr.leave.allocation'].create({
+                    'name': f'EL Monthly {month_key}',
+                    'employee_id': emp.id,
+                    'holiday_status_id': el_type.id,
+                    'number_of_days': 1.5,
+                })
 
-            # =========================================
-            # FIRST MONTH LOGIC
-            # =========================================
-            if days_since_doj < 30:
-
-                existing = self.env['hr.leave.allocation'].search([
-                    ('employee_id', '=', emp.id),
-                    ('holiday_status_id', '=', el_type.id),
-                    ('name', '=', 'EL First Month Allocation')
-                ], limit=1)
-
-                if not existing:
-
-                    if 1 <= doj.day <= 7:
-                        allocation = 1.5
-                    elif 8 <= doj.day <= 14:
-                        allocation = 1.0
-                    elif 15 <= doj.day <= 21:
-                        allocation = 0.5
-                    else:
-                        allocation = 0
-
-                    if allocation > 0:
-                        record = self.env['hr.leave.allocation'].create({
-                            'name': 'EL First Month Allocation',
-                            'employee_id': emp.id,
-                            'holiday_status_id': el_type.id,
-                            'number_of_days': allocation,
-                        })
-                        record.action_approve()
-
-            # =========================================
-            # MONTHLY EL AFTER FIRST MONTH
-            # =========================================
-            else:
-
-                month_key = today.strftime('%Y-%m')
-
-                existing = self.env['hr.leave.allocation'].search([
-                    ('employee_id', '=', emp.id),
-                    ('holiday_status_id', '=', el_type.id),
-                    ('name', '=', f'EL Monthly {month_key}')
-                ], limit=1)
-
-                if not existing:
-                    record = self.env['hr.leave.allocation'].create({
-                        'name': f'EL Monthly {month_key}',
-                        'employee_id': emp.id,
-                        'holiday_status_id': el_type.id,
-                        'number_of_days': 1.5,
-                    })
-                    record.action_approve()
+                allocation.action_approve()
