@@ -240,6 +240,9 @@ class EmployeeAPIController(http.Controller):
                 "name": employee.name,
                 "email": employee.private_email,
                 "job_title": employee.job_title,
+                "private_street": employee.private_street or False,
+                "emergency_contact": employee.emergency_contact or False,
+                "emergency_phone": employee.emergency_phone or False,
                 "hr_responsible": (
                     employee.hr_responsible_id.name
                     if employee.hr_responsible_id
