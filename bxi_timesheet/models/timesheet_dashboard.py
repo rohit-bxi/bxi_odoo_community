@@ -844,6 +844,31 @@ class BxiTimesheetDashboard(models.AbstractModel):
                     )
                     return
 
+                # Create an Odoo activity for the direct manager, similar to time-off approval tasks.
+                if manager and manager.user_id:
+                    try:
+                        activity_type = self.env.ref('mail.mail_activity_data_todo', raise_if_not_found=False)
+                        if activity_type:
+                            existing_activity = self.env['mail.activity'].sudo().search([
+                                ('res_model', '=', 'hr.employee'),
+                                ('res_id', '=', employee.id),
+                                ('activity_type_id', '=', activity_type.id),
+                                ('user_id', '=', manager.user_id.id),
+                                ('summary', '=', f"Timesheet approval for {employee.name}"),
+                            ], limit=1)
+                            if not existing_activity:
+                                self.env['mail.activity'].sudo().create({
+                                    'res_model_id': self.env['ir.model']._get('hr.employee').id,
+                                    'res_id': employee.id,
+                                    'activity_type_id': activity_type.id,
+                                    'user_id': manager.user_id.id,
+                                    'summary': f"Timesheet approval for {employee.name}",
+                                    'note': f"{employee.name} submitted a timesheet for {date_range_str} ({total_hours} hrs). Please review and approve.",
+                                    'date_deadline': fields.Date.today() + timedelta(days=1),
+                                })
+                    except Exception as e:
+                        _logger.warning(f"BXI Timesheet: Failed to create approval activity for manager {manager_name}: {str(e)}")
+
                 subject = f"[Timesheet Submission] {employee.name} submitted timesheet for {date_range_str}"
                 body_html = f"""
                     <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; padding: 25px; color: #1e293b; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
