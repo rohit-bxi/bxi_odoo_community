@@ -546,14 +546,14 @@ class BxiTimesheetDashboard(models.AbstractModel):
         current_week_start = self._get_current_week_start()
         is_manager = is_timesheet_admin or is_timesheet_approver or (current_employee and target_emp_id in subordinates.ids)
 
-        # Only enforce past-week lock for employees with role_band >= ROLE_BAND_THRESHOLD
+        # Only enforce past-week lock for employees with role_band < 8.
         try:
             target_emp = self.env['hr.employee'].browse(target_emp_id)
             target_rb = int(target_emp.role_band) if target_emp and target_emp.role_band else None
         except Exception:
             target_rb = None
 
-        if target_date < current_week_start and target_rb and target_rb >= ROLE_BAND_THRESHOLD:
+        if target_date < current_week_start and target_rb is not None and target_rb < ROLE_BAND_THRESHOLD:
             raise UserError(_("Once a week is crossed, timesheets for the previous week cannot be modified or submitted."))
 
         # Check if timesheet for this employee and date is already submitted or approved
@@ -562,8 +562,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
             ('date', '=', target_date),
             ('state', 'in', ['submitted', 'approved']),
         ], limit=1)
-        # Only block edits when the target employee is within the role_band scope
-        if already_submitted and not is_manager and (target_rb and target_rb >= ROLE_BAND_THRESHOLD):
+        # Only block edits when the target employee is in the role_band < 8 scope.
+        if already_submitted and not is_manager and (target_rb is not None and target_rb < ROLE_BAND_THRESHOLD):
             status_str = "submitted for approval" if already_submitted.state == 'submitted' else "approved"
             raise UserError(_("Timesheet for %s has already been %s. You cannot add or modify entries for a date that has already been submitted or approved.") % (target_date.strftime('%Y-%m-%d'), status_str))
 
