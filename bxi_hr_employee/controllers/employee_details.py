@@ -3,6 +3,7 @@ from datetime import timedelta
 import email
 import secrets
 import random
+from venv import logger
 
 from odoo import http, fields
 from odoo.http import request
@@ -239,6 +240,9 @@ class EmployeeAPIController(http.Controller):
                 "name": employee.name,
                 "email": employee.private_email,
                 "job_title": employee.job_title,
+                "private_street": employee.private_street or False,
+                "emergency_contact": employee.emergency_contact or False,
+                "emergency_phone": employee.emergency_phone or False,
                 "hr_responsible": (
                     employee.hr_responsible_id.name
                     if employee.hr_responsible_id
@@ -314,7 +318,7 @@ class EmployeeAPIController(http.Controller):
         if not payslip:
             return request.not_found()
         pdf, _ = request.env["ir.actions.report"].sudo()._render_qweb_pdf(
-            "om_hr_payroll.action_report_payslip",
+            "custom_payslip_report.action_custom_payslip_pdf",
             [payslip.id],
         )
         headers = [
@@ -348,7 +352,7 @@ class EmployeeAPIController(http.Controller):
         if not payslip:
             return request.not_found()
         pdf, _ = request.env["ir.actions.report"].sudo()._render_qweb_pdf(
-            "om_hr_payroll.action_report_payslip",
+            "custom_payslip_report.action_custom_payslip_pdf",
             [payslip.id],
         )
         filename = f"{payslip.name}.pdf"
@@ -687,3 +691,240 @@ class EmployeeAPIController(http.Controller):
                 ),
             ],
         )
+
+    @http.route(
+        "/api/employee/archived",
+        type="json",
+        auth="public",
+        methods=["POST"],
+        csrf=False,
+    )
+    def archived_employee_list(self, **post):
+        employees = request.env["hr.employee"].sudo().search([
+            ("active", "=", False),
+        ])
+        employee_data = []
+        for employee in employees:
+            employee_data.append({
+                "id": employee.id,
+                "name": employee.name or False,
+                "email": employee.private_email or False,
+                "phone": employee.private_phone or False,
+                "employee_code": employee.employee_code or False,
+                "job_title": employee.job_title or False,
+                "company": employee.company_id.name or False,
+                "manager": employee.parent_id.name or False,
+                "is_fnf_done" : employee.is_fnf_done or False,
+                "re_hire" : employee.re_hire or False,
+                "rehire_not_description": employee.rehire_not_description or False,
+                "date_of_joining": (
+                    employee.emp_date_of_joining.strftime("%Y-%m-%d")
+                    if employee.emp_date_of_joining
+                    else False
+                ),
+                "hr_responsible": (
+                    employee.hr_responsible_id.name
+                    if employee.hr_responsible_id
+                    else False
+                ),
+                "department": (
+                    employee.department_id.name
+                    if employee.department_id
+                    else False
+                ),
+                "date_of_joining": (
+                    str(employee.emp_date_of_joining)
+                    if employee.emp_date_of_joining
+                    else False
+                ),
+                "date_of_leaving": (
+                    str(employee.date_of_leaving)
+                    if employee.date_of_leaving
+                    else False
+                ),
+                "departure_reason": (
+                    employee.departure_reason_id.name
+                    if employee.departure_reason_id
+                    else False
+                ),
+                "departure_description": (
+                    employee.departure_description
+                    if employee.departure_description
+                    else False
+                ),
+            })
+        return {
+            "status": True,
+            "count": len(employee_data),
+            "employees": employee_data,
+        }
+
+    @http.route(
+        "/api/employee/verify_aadhar",
+        type="json",
+        auth="public",
+        methods=["POST"],
+        csrf=False,
+    )
+    def verify_aadhar(self, **post):
+        aadhar_card = (post.get("aadhar_card") or "").strip()
+        if not aadhar_card:
+            return {
+                "status": False,
+                "message": "Aadhar card number is required.",
+            }
+        employee = request.env["hr.employee"].sudo().search([
+            ("aadhar_card", "=", aadhar_card),
+            ("active", "=", False),
+        ], limit=1)
+        if not employee:
+            return {
+                "status": False,
+                "message": "Aadhar card number does not match our records.",
+            }
+        return {
+            "status": True,
+            "message": "Aadhar card verified successfully.",
+            "employee_id": employee.id,
+        }
+    
+    @http.route(
+        "/api/employee/create_new_credentials",
+        type="json",
+        auth="public",
+        methods=["POST"],
+        csrf=False,
+    )
+    def create_new_credentials(self, **post):
+        aadhar_card = (post.get("aadhar_card") or "").strip()
+        new_email = (post.get("new_email") or "").strip()
+        password = post.get("password")
+        confirm_password = post.get("confirm_password")
+        if not aadhar_card:
+            return {
+                "status": False,
+                "message": "Aadhar card number is required.",
+            }
+        if not new_email:
+            return {
+                "status": False,
+                "message": "New email is required.",
+            }
+        if not password:
+            return {
+                "status": False,
+                "message": "Password is required.",
+            }
+
+        if not confirm_password:
+            return {
+                "status": False,
+                "message": "Confirm password is required.",
+            }
+
+        if password != confirm_password:
+            return {
+                "status": False,
+                "message": "Passwords do not match.",
+            }
+        employee = request.env["hr.employee"].sudo().search([
+            ("aadhar_card", "=ilike", aadhar_card),
+            ("active", "=", False),
+        ], limit=1)
+
+        if not employee:
+            return {
+                "status": False,
+                "message": "Employee not found.",
+            }
+        existing_employee = request.env["hr.employee"].sudo().search([
+            ("private_email", "=ilike", new_email),
+            ("id", "!=", employee.id),
+        ], limit=1)
+
+        if existing_employee:
+            return {
+                "status": False,
+                "message": "This email address is already registered.",
+            }
+        employee.sudo().write({
+            "private_email": new_email,
+            "portal_password": password,
+        })
+        try:
+            employee.sudo().action_send_registration_link()
+
+        except Exception:
+            logger.exception(
+                "Failed to send registration link to %s",
+                new_email,
+            )
+            return {
+                "status": False,
+                "message": (
+                    "Email and password were updated, "
+                    "but the registration link could not be sent."
+                ),
+            }
+        return {
+            "status": True,
+            "message": (
+                "Your email and password have been updated successfully. "
+                "A registration link has been sent to your new email address."
+            ),
+            "email": new_email,
+        }
+
+    @http.route(
+        "/api/employee/edit_profile",
+        type="json",
+        auth="public",
+        methods=["POST"],
+        csrf=False,
+    )
+    def edit_employee_profile(self, **post):
+        email = (post.get("email") or "").strip()
+        if not email:
+            return {
+                "status": False,
+                "message": "Email is required.",
+            }
+        employee = request.env["hr.employee"].sudo().search([
+            ("private_email", "=ilike", email),
+            ("active", "=", False),
+        ], limit=1)
+        if not employee:
+            return {
+                "status": False,
+                "message": "Employee not found.",
+            }
+
+        vals = {}
+        if "private_street" in post:
+            vals["private_street"] = (post.get("private_street") or "").strip()
+        if "emergency_contact" in post:
+            vals["emergency_contact"] = (
+                post.get("emergency_contact") or ""
+            ).strip()
+        if "emergency_phone" in post:
+            vals["emergency_phone"] = (
+                post.get("emergency_phone") or ""
+            ).strip()
+        if not vals:
+            return {
+                "status": False,
+                "message": "No profile information provided to update.",
+            }
+        employee.write(vals)
+        return {
+            "status": True,
+            "message": "Profile updated successfully.",
+            "employee": {
+                "id": employee.id,
+                "name": employee.name,
+                "email": employee.private_email,
+                "private_street": employee.private_street or False,
+                "emergency_contact": employee.emergency_contact or False,
+                "emergency_phone": employee.emergency_phone or False,
+            },
+        }

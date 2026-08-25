@@ -5,8 +5,8 @@
         <field name="default" eval="False"/>
         <field name="format">A4</field>
         <field name="orientation">Portrait</field>
-        <field name="margin_top">2</field>
-        <field name="margin_bottom">15</field>
+        <field name="margin_top">7</field>
+        <field name="margin_bottom">25</field>
         <field name="margin_left">5</field>
         <field name="margin_right">5</field>
         <field name="header_spacing">5</field>
@@ -61,34 +61,42 @@
     </template>
     <template id="_experience_relieving_letter_content">
         <div class="page"
-             style="
-                padding: 45px 55px;
-                font-family: Arial, sans-serif;
-                font-size: 14px;
-                line-height: 1.6;
-             ">
-
-            <div style="text-align:center; margin-bottom:35px;">
-                <h2 style="
-                    margin:0;
-                    font-size:22px;
-                    font-weight:bold;
-                ">
-                    Experience and Relieving Letter
-                </h2>
+            style="padding:40px;
+                    font-size:14px;
+                    font-family:Arial, sans-serif;">
+            <div style="text-align:center;">
+                <h2>Experience and Relieving Letter</h2>
             </div>
-
-            <div style="margin-bottom:35px;">
-                <strong>Date - </strong>
-                <span t-field="o.write_date"/>
-            </div>
-            <div style="margin-bottom:25px;">
+             <table style="width:100%; border-collapse:collapse;">
+                <tr>
+                    <td>
+                        <strong>Date of Leaving:</strong>
+                        <span t-field="o.date_of_leaving" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong>Employee Name:</strong>
+                        <span t-field="o.name" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong>Employee. Code:</strong>
+                        <span t-field="o.employee_code" />
+                    </td>
+                </tr>
+            </table>
+            <br />
+            <br />
+            <div style="text-align:center; margin-bottom:25px;">
                 <strong>
                     To whomsoever it may concern
                 </strong>
             </div>
 
-            <p style="text-align:justify; margin-bottom:22px;">This is to certify that
+            <p style="text-align:justify;margin-bottom:22px;">
+                This is to certify that
                 <strong>
                     <span t-field="o.name"/>
                 </strong>
@@ -98,48 +106,57 @@
                 </strong>
                 from
                 <strong>
-                    <span t-field="o.emp_date_of_joining"/>
+                    <span t-field="o.emp_date_of_joining"
+                        t-options='{"widget": "date", "format": "MMM dd, yyyy"}'/>
                 </strong>
                 to
                 <strong>
-                    <span t-field="o.date_of_leaving"/>
+                    <span t-field="o.date_of_leaving"
+                        t-options='{"widget": "date", "format": "MMM dd, yyyy"}'/>
                 </strong>.
+
                 He/She was relieved from his/her duties effective by
                 the closing hours of
+
                 <strong>
-                    <span t-field="o.date_of_leaving"/>
+                    <span t-field="o.date_of_leaving"
+                        t-options='{"widget": "date", "format": "MMM dd, yyyy"}'/>
                 </strong>.
             </p>
-            <p style="text-align:justify; margin-bottom:45px;">
+
+            <p style="text-align:justify;margin-bottom:40px;">
                 We found him/her sincere, hardworking and result
                 oriented during the tenure. We take this opportunity
                 to thank him/her for the contribution and wish him/her
                 success in future endeavors.
             </p>
-            <div style="margin-top:60px;">
-                <p style="margin-bottom:35px;">
-                    For
+
+            <div style="margin-top:55px;width:250px;">
+                <div style="margin-bottom:10px;font-size:13px;">
                     <strong>
+                        For
                         <span t-field="o.template_company_id.name"/>
                     </strong>
-                </p>
-                <div style="margin-top:20px;">
-                    <strong>
-                        Pallavi Paliwal
-                    </strong>
-                    <br/>
-                    <strong>
-                        CHIEF PEOPLE OFFICER
-                    </strong>
+                </div>
+
+                <div style="height:55px;margin-bottom:5px;">
+                    <img
+                        src="/bxi_hr_employee/static/src/img/pallavi_signature.png"
+                        style="
+                            width:95px;
+                            height:auto;
+                            display:block;
+                        "
+                    />
                 </div>
             </div>
-            <div style="
+             <div style="
                 position:absolute;
-                bottom:35px;
-                left:55px;
-                right:55px;
-                font-size:10px;
-                line-height:1.4;
+                bottom:25px;
+                left:40px;
+                right:40px;
+                font-size:9px;
+                line-height:1.35;
             ">
                 <strong>
                     <span t-field="o.template_company_id.name"/>
@@ -153,7 +170,6 @@
                 <br/>
                 <span t-field="o.template_company_id.city"/>
                 <t t-if="o.template_company_id.state_id">
-                    ,
                     <span t-field="o.template_company_id.state_id.name"/>
                 </t>
                 <t t-if="o.template_company_id.zip">
@@ -164,8 +180,8 @@
                 <t t-if="o.template_company_id.country_id">
                     <span t-field="o.template_company_id.country_id.name"/>
                 </t>
-                <br/>
                 <t t-if="o.template_company_id.company_registry">
+                    <br/>
                     Corporate Identification Number:
                     <span t-field="o.template_company_id.company_registry"/>
                 </t>

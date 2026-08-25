@@ -36,13 +36,14 @@ class AccountAnalyticLine(models.Model):
         current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
 
         for rec in self:
-            # Only enforce past-week lock for employees whose role_band is numeric and >= ROLE_BAND_THRESHOLD
+            # Only enforce past-week lock for employees whose role_band is below the threshold.
+            # Employees with role_band >= 8 are exempt from these restrictions.
             try:
                 rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
             except Exception:
                 rb_val = None
 
-            if not rb_val or rb_val < ROLE_BAND_THRESHOLD:
+            if rb_val is not None and rb_val >= ROLE_BAND_THRESHOLD:
                 continue
 
             if rec.date and rec.date < current_week_start:
@@ -52,13 +53,13 @@ class AccountAnalyticLine(models.Model):
     def _check_one_entry_per_day(self):
         """Block users from creating more than 1 timesheet entry for a single day."""
         for rec in self:
-            # Only enforce for employees with role_band >= ROLE_BAND_THRESHOLD
+            # Only enforce the one-entry-per-day restriction for employees with role_band < 8.
             try:
                 rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
             except Exception:
                 rb_val = None
 
-            if not rb_val or rb_val < ROLE_BAND_THRESHOLD:
+            if rb_val is not None and rb_val >= ROLE_BAND_THRESHOLD:
                 continue
 
             if rec.employee_id and rec.date:
@@ -76,13 +77,13 @@ class AccountAnalyticLine(models.Model):
     def _check_max_hours_per_day(self):
         """Block users from logging more than 9 hours for a single day."""
         for rec in self:
-            # Only enforce for employees with role_band >= ROLE_BAND_THRESHOLD
+            # Only enforce the per-day hours cap for employees with role_band < 8.
             try:
                 rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
             except Exception:
                 rb_val = None
 
-            if not rb_val or rb_val < ROLE_BAND_THRESHOLD:
+            if rb_val is not None and rb_val >= ROLE_BAND_THRESHOLD:
                 continue
 
             if rec.employee_id and rec.date:
@@ -107,13 +108,13 @@ class AccountAnalyticLine(models.Model):
         submitted_recs = self.filtered(lambda r: r.state == 'draft')
         for rec in self:
             if rec.date and rec.date < current_week_start:
-                # Only enforce past-week submission restriction for employees with role_band >= ROLE_BAND_THRESHOLD
+                # Only enforce past-week submission restriction for employees with role_band < 8.
                 try:
                     rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
                 except Exception:
                     rb_val = None
 
-                if rb_val and rb_val >= ROLE_BAND_THRESHOLD:
+                if rb_val is not None and rb_val < ROLE_BAND_THRESHOLD:
                     is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
                     if not (is_admin or is_hr or is_manager):
                         raise UserError(_("Timesheets for previous weeks cannot be submitted for approval."))
@@ -234,13 +235,13 @@ class AccountAnalyticLine(models.Model):
         employees = self.env['hr.employee'].sudo().search([('active', '=', True)])
 
         for emp in employees:
-            # Apply auto-LWP only for employees with role_band >= ROLE_BAND_THRESHOLD
+            # Apply auto-LWP only for employees with role_band < 8.
             try:
                 emp_rb = int(emp.role_band) if emp.role_band else None
             except Exception:
                 emp_rb = None
 
-            if not emp_rb or emp_rb < ROLE_BAND_THRESHOLD:
+            if emp_rb is not None and emp_rb >= ROLE_BAND_THRESHOLD:
                 continue
             # Search by exact leave code 'LOP': company-specific first, then global
             unpaid_type = self.env['hr.leave.type'].sudo().search([
@@ -289,19 +290,18 @@ class AccountAnalyticLine(models.Model):
                             'company_id': emp.company_id.id,
                             'name': 'Auto-created: Leave Without Pay (No timesheet logged for 6 working days)',
                         })
-                        if hasattr(leave, 'action_submit'):
+                        # Auto-create the LOP and validate it immediately so it is not held for
+                        # a separate manager/HR approval step.
+                        if hasattr(leave, 'action_validate'):
+                            leave.action_validate()
+                        elif hasattr(leave, 'action_approve'):
+                            leave.action_approve()
+                        elif hasattr(leave, 'action_submit'):
                             leave.action_submit()
                         elif hasattr(leave, 'action_confirm'):
                             leave.action_confirm()
-                        try:
-                            if hasattr(leave, 'action_approve'):
-                                leave.action_approve()
-                            elif hasattr(leave, 'action_validate'):
-                                leave.action_validate()
-                        except Exception:
-                            pass
                         _logger.info(
-                            f"Auto-created and auto-approved Unpaid Leave for employee {emp.name} on {today}"
+                            f"Auto-created and validated Unpaid Leave for employee {emp.name} on {today}"
                         )
                     except Exception as e:
                         _logger.error(
