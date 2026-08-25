@@ -651,58 +651,67 @@ class BxiTimesheetDashboard(models.AbstractModel):
     @api.model
     def submit_weekly_timesheet(self, employee_id, start_date_str):
         """Submit all draft timesheets for this employee and week."""
-        user = self.env.user
-        allowed_company_ids = self.env.companies.ids
-        current_employee = self.env['hr.employee'].search([
-            ('user_id', '=', user.id),
-            ('company_id', 'in', allowed_company_ids),
-        ], limit=1)
-        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager') or user.has_group('hr_timesheet.group_timesheet_manager')
-        is_approver = user.has_group('hr_timesheet.group_hr_timesheet_approver')
-        has_own_timesheets_only = user.has_group('hr_timesheet.group_hr_timesheet_user') and not is_approver and not is_admin
+        _logger.info("submit_weekly_timesheet called with employee_id=%s start_date_str=%s", employee_id, start_date_str)
+        try:
+            user = self.env.user
+            allowed_company_ids = self.env.companies.ids
+            current_employee = self.env['hr.employee'].search([
+                ('user_id', '=', user.id),
+                ('company_id', 'in', allowed_company_ids),
+            ], limit=1)
+            is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager') or user.has_group('hr_timesheet.group_timesheet_manager')
+            is_approver = user.has_group('hr_timesheet.group_hr_timesheet_approver')
+            has_own_timesheets_only = user.has_group('hr_timesheet.group_hr_timesheet_user') and not is_approver and not is_admin
 
-        target_emp_id = False
-        if employee_id:
-            try:
-                target_emp_id = int(employee_id)
-            except (ValueError, TypeError):
-                target_emp_id = False
-        if not target_emp_id and current_employee:
-            target_emp_id = current_employee.id
+            target_emp_id = False
+            if employee_id:
+                try:
+                    target_emp_id = int(employee_id)
+                except (ValueError, TypeError):
+                    target_emp_id = False
+            if not target_emp_id and current_employee:
+                target_emp_id = current_employee.id
 
-        if not target_emp_id:
-            raise UserError(_('Employee not specified or found.'))
+            if not target_emp_id:
+                raise UserError(_('Employee not specified or found.'))
 
-        if has_own_timesheets_only and current_employee and target_emp_id != current_employee.id:
-            raise UserError(_('You are not authorized to submit timesheets for another employee.'))
+            if has_own_timesheets_only and current_employee and target_emp_id != current_employee.id:
+                raise UserError(_('You are not authorized to submit timesheets for another employee.'))
 
-        # Verify target employee belongs to an allowed company
-        target_emp = self.env['hr.employee'].browse(target_emp_id)
-        if target_emp.company_id.id not in allowed_company_ids:
-            raise UserError(_('You are not authorized to submit timesheets for this employee.'))
+            # Verify target employee belongs to an allowed company
+            target_emp = self.env['hr.employee'].browse(target_emp_id)
+            if target_emp.company_id.id not in allowed_company_ids:
+                raise UserError(_('You are not authorized to submit timesheets for this employee.'))
 
-        is_manager = is_admin or is_approver or (current_employee and target_emp_id in self.env['hr.employee'].search([
-            ('parent_id', '=', current_employee.id),
-            ('company_id', 'in', allowed_company_ids),
-        ]).ids)
+            is_manager = is_admin or is_approver or (current_employee and target_emp_id in self.env['hr.employee'].search([
+                ('parent_id', '=', current_employee.id),
+                ('company_id', 'in', allowed_company_ids),
+            ]).ids)
 
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        current_week_start = self._get_current_week_start()
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            current_week_start = self._get_current_week_start()
 
-        if start_date < current_week_start and not is_manager:
-            raise UserError(_("Once a week is crossed, timesheets for the previous week cannot be submitted."))
+            if start_date < current_week_start and not is_manager:
+                raise UserError("Once a week is crossed, timesheets for the previous week cannot be submitted.")
 
-        end_date = start_date + timedelta(days=6)
-        lines = self.env['account.analytic.line'].search([
-            ('employee_id', '=', target_emp_id),
-            ('company_id', 'in', allowed_company_ids),
-            ('date', '>=', start_date),
-            ('date', '<=', end_date),
-            ('state', '=', 'draft'),
-        ])
-        if lines:
-            lines.action_submit()
-        return True
+            end_date = start_date + timedelta(days=6)
+            lines = self.env['account.analytic.line'].search([
+                ('employee_id', '=', target_emp_id),
+                ('company_id', 'in', allowed_company_ids),
+                ('date', '>=', start_date),
+                ('date', '<=', end_date),
+                ('state', '=', 'draft'),
+            ])
+            if lines:
+                lines.action_submit()
+            return True
+        except UserError:
+            # Let explicit user errors pass through unchanged
+            raise
+        except Exception as e:
+            _logger.exception("submit_weekly_timesheet failed for employee_id=%s start_date_str=%s", employee_id, start_date_str)
+            # Surface a concise message to the UI while logging full traceback server-side
+            raise UserError(_('Failed to submit weekly timesheet: %s') % (str(e) or 'Unknown error'))
 
     @api.model
     def approve_weekly_timesheet(self, employee_id, start_date_str):
