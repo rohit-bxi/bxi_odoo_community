@@ -150,42 +150,6 @@
                     />
                 </div>
             </div>
-             <div style="
-                position:absolute;
-                bottom:25px;
-                left:40px;
-                right:40px;
-                font-size:9px;
-                line-height:1.35;
-            ">
-                <strong>
-                    <span t-field="o.template_company_id.name"/>
-                </strong>
-                <br/>
-                <span t-field="o.template_company_id.street"/>
-                <t t-if="o.template_company_id.street2">
-                    <br/>
-                    <span t-field="o.template_company_id.street2"/>
-                </t>
-                <br/>
-                <span t-field="o.template_company_id.city"/>
-                <t t-if="o.template_company_id.state_id">
-                    <span t-field="o.template_company_id.state_id.name"/>
-                </t>
-                <t t-if="o.template_company_id.zip">
-                    -
-                    <span t-field="o.template_company_id.zip"/>
-                </t>
-                <br/>
-                <t t-if="o.template_company_id.country_id">
-                    <span t-field="o.template_company_id.country_id.name"/>
-                </t>
-                <t t-if="o.template_company_id.company_registry">
-                    <br/>
-                    Corporate Identification Number:
-                    <span t-field="o.template_company_id.company_registry"/>
-                </t>
-            </div>
         </div>
     </template>
 </odoo>
