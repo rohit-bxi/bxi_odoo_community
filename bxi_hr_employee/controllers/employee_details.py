@@ -789,7 +789,8 @@ class EmployeeAPIController(http.Controller):
             "aadhar_card": employee.aadhar_card,
             "redirect_url": (
                 "https://alumni.bxiventures.com/create-credentials"
-                f"?aadhar_card={employee.aadhar_card}"f"?employee_id={employee.employee_id}"
+                f"?aadhar_card={employee.aadhar_card}"
+                f"&employee_id={employee.employee_id.id}"
             ),
         }
     
