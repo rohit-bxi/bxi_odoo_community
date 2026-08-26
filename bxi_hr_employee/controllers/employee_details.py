@@ -803,8 +803,6 @@ class EmployeeAPIController(http.Controller):
     def create_new_credentials(self, **post):
         employee_id = post.get("employee_id")
         new_email = (post.get("new_email") or "").strip()
-        password = post.get("password")
-        confirm_password = post.get("confirm_password")
         if not employee_id:
             return {
                 "status": False,
@@ -815,23 +813,7 @@ class EmployeeAPIController(http.Controller):
                 "status": False,
                 "message": "New email is required.",
             }
-        if not password:
-            return {
-                "status": False,
-                "message": "Password is required.",
-            }
-
-        if not confirm_password:
-            return {
-                "status": False,
-                "message": "Confirm password is required.",
-            }
-
-        if password != confirm_password:
-            return {
-                "status": False,
-                "message": "Passwords do not match.",
-            }
+    
         employee = request.env["hr.employee"].sudo().search([
             ("id", "=", int(employee_id)),
             ("active", "=", False),
@@ -854,7 +836,6 @@ class EmployeeAPIController(http.Controller):
             }
         employee.sudo().write({
             "private_email": new_email,
-            "portal_password": password,
         })
         try:
             employee.sudo().action_send_registration_link()
@@ -874,7 +855,7 @@ class EmployeeAPIController(http.Controller):
         return {
             "status": True,
             "message": (
-                "Your email and password have been updated successfully. "
+                "Your email have been updated successfully. "
                 "A registration link has been sent to your new email address."
             ),
             "email": new_email,
