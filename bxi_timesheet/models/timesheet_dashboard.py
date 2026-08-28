@@ -188,10 +188,11 @@ class BxiTimesheetDashboard(models.AbstractModel):
             ]
             ts_lines = self.env['account.analytic.line'].sudo().search(domain)
 
-            draft_count = len(ts_lines.filtered(lambda l: l.state == 'draft'))
-            submitted_count = len(ts_lines.filtered(lambda l: l.state == 'submitted'))
-            approved_count = len(ts_lines.filtered(lambda l: l.state == 'approved'))
-            refused_count = len(ts_lines.filtered(lambda l: l.state == 'refused'))
+            work_ts_lines = ts_lines.filtered(lambda l: not (hasattr(l, 'holiday_id') and l.holiday_id))
+            draft_count = len(work_ts_lines.filtered(lambda l: l.state == 'draft'))
+            submitted_count = len(work_ts_lines.filtered(lambda l: l.state == 'submitted'))
+            approved_count = len(work_ts_lines.filtered(lambda l: l.state == 'approved'))
+            refused_count = len(work_ts_lines.filtered(lambda l: l.state == 'refused'))
 
             # Group timesheets by project, task & description
             for line in ts_lines:
@@ -693,13 +694,16 @@ class BxiTimesheetDashboard(models.AbstractModel):
             raise UserError(_("Once a week is crossed, timesheets for the previous week cannot be submitted."))
 
         end_date = start_date + timedelta(days=6)
-        lines = self.env['account.analytic.line'].search([
+        domain = [
             ('employee_id', '=', target_emp_id),
             ('company_id', 'in', allowed_company_ids),
             ('date', '>=', start_date),
             ('date', '<=', end_date),
             ('state', '=', 'draft'),
-        ])
+        ]
+        if 'holiday_id' in self.env['account.analytic.line']._fields:
+            domain.append(('holiday_id', '=', False))
+        lines = self.env['account.analytic.line'].search(domain)
         if lines:
             lines.action_submit()
         return True
@@ -747,13 +751,16 @@ class BxiTimesheetDashboard(models.AbstractModel):
 
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = start_date + timedelta(days=6)
-        lines = self.env['account.analytic.line'].search([
+        domain = [
             ('employee_id', '=', target_emp_id),
             ('company_id', 'in', allowed_company_ids),
             ('date', '>=', start_date),
             ('date', '<=', end_date),
             ('state', '=', 'submitted'),
-        ])
+        ]
+        if 'holiday_id' in self.env['account.analytic.line']._fields:
+            domain.append(('holiday_id', '=', False))
+        lines = self.env['account.analytic.line'].search(domain)
         if lines:
             lines.action_approve()
             total_hours = sum(lines.mapped('unit_amount'))
@@ -805,13 +812,16 @@ class BxiTimesheetDashboard(models.AbstractModel):
 
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = start_date + timedelta(days=6)
-        lines = self.env['account.analytic.line'].search([
+        domain = [
             ('employee_id', '=', target_emp_id),
             ('company_id', 'in', allowed_company_ids),
             ('date', '>=', start_date),
             ('date', '<=', end_date),
             ('state', '=', 'submitted'),
-        ])
+        ]
+        if 'holiday_id' in self.env['account.analytic.line']._fields:
+            domain.append(('holiday_id', '=', False))
+        lines = self.env['account.analytic.line'].search(domain)
         if lines:
             lines.action_refuse()
             total_hours = sum(lines.mapped('unit_amount'))

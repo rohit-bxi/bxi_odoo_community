@@ -28,6 +28,7 @@
         'views/timesheet_line_views.xml',
         'views/desktime_config_views.xml',
         'views/desktime_log_views.xml',
+        'views/monthly_attendance_timesheet_wizard_views.xml',
         'views/menu.xml',
     ],
     'assets': {
