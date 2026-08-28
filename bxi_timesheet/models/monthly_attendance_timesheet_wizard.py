@@ -125,7 +125,17 @@ class BxiMonthlyAttendanceTimesheetWizard(models.TransientModel):
                 emp_leave_dates.add((leave.employee_id.id, curr))
                 curr += timedelta(days=1)
 
-        # 6. Build Excel Workbook with xlsxwriter
+        # 6. Batch fetch Public Holidays (resource.calendar.leaves with resource_id == False)
+        public_holidays = self.env['resource.calendar.leaves']
+        if 'resource.calendar.leaves' in self.env:
+            public_holidays = self.env['resource.calendar.leaves'].sudo().search([
+                '|', ('company_id', '=', False), ('company_id', '=', self.company_id.id),
+                ('resource_id', '=', False),
+                ('date_from', '<=', end_dt_utc),
+                ('date_to', '>=', start_dt_utc),
+            ])
+
+        # 7. Build Excel Workbook with xlsxwriter
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         sheet_name = f"{month_name[:3]}_{year_int}"
@@ -171,28 +181,139 @@ class BxiMonthlyAttendanceTimesheetWizard(models.TransientModel):
             'font_size': 10,
         })
 
+        # Light Blue Formats for Employee Name, Shift, and Total Summary Columns
+        blue_header_format = workbook.add_format({
+            'bold': True,
+            'align': 'center',
+            'valign': 'vcenter',
+            'bg_color': '#BDD7EE',  # Light Blue
+            'font_color': '#000000',
+            'border': 1,
+            'font_name': 'Calibri',
+            'font_size': 11,
+        })
+
+        blue_sub_header_format = workbook.add_format({
+            'bold': True,
+            'align': 'center',
+            'valign': 'vcenter',
+            'bg_color': '#BDD7EE',  # Light Blue
+            'font_color': '#000000',
+            'border': 1,
+            'font_name': 'Calibri',
+            'font_size': 10,
+        })
+
+        blue_cell_left_format = workbook.add_format({
+            'align': 'left',
+            'valign': 'vcenter',
+            'bg_color': '#D9E1F2',  # Light Blue Column Tint
+            'font_color': '#000000',
+            'border': 1,
+            'font_name': 'Calibri',
+            'font_size': 10,
+        })
+
+        total_cell_format = workbook.add_format({
+            'bold': True,
+            'align': 'center',
+            'valign': 'vcenter',
+            'bg_color': '#D9E1F2',  # Light Blue Column Tint
+            'font_color': '#000000',
+            'border': 1,
+            'font_name': 'Calibri',
+            'font_size': 10,
+        })
+
+        # Public Holiday Format: Green Background
+        ph_cell_format = workbook.add_format({
+            'bold': True,
+            'align': 'center',
+            'valign': 'vcenter',
+            'bg_color': '#A9D08E',  # Green
+            'font_color': '#000000',
+            'border': 1,
+            'font_name': 'Calibri',
+            'font_size': 10,
+        })
+
+        # Yes: Light Green Background (Applied to all columns)
+        yes_cell_format = workbook.add_format({
+            'align': 'center',
+            'valign': 'vcenter',
+            'bg_color': '#D5E8D4',  # Light Green
+            'font_color': '#000000',
+            'border': 1,
+            'font_name': 'Calibri',
+            'font_size': 10,
+        })
+
+        # No: Light Red Background (Applied to all columns)
+        no_cell_format = workbook.add_format({
+            'align': 'center',
+            'valign': 'vcenter',
+            'bg_color': '#F8CECC',  # Light Red
+            'font_color': '#000000',
+            'border': 1,
+            'font_name': 'Calibri',
+            'font_size': 10,
+        })
+
+        # Week-Off: Light Purple Background
+        week_off_cell_format = workbook.add_format({
+            'align': 'center',
+            'valign': 'vcenter',
+            'bg_color': '#E1D5E7',  # Light Purple
+            'font_color': '#000000',
+            'border': 1,
+            'font_name': 'Calibri',
+            'font_size': 10,
+        })
+
         # Set row heights
         sheet.set_row(0, 26)
         sheet.set_row(1, 22)
 
-        # Top-level headers (Row 0 & 1 merged for Employee Name & Shift)
-        sheet.merge_range(0, 0, 1, 0, 'Employee Name', header_format)
-        sheet.merge_range(0, 1, 1, 1, 'Shift', header_format)
+        # Top-level headers (Row 0 & 1 merged for Employee Name & Shift - Light Blue)
+        sheet.merge_range(0, 0, 1, 0, 'Employee Name', blue_header_format)
+        sheet.merge_range(0, 1, 1, 1, 'Shift', blue_header_format)
 
-        # Day column headers
+        # Total Summary Header right beside Shift (Columns 2, 3, 4, 5 - Light Blue)
+        sheet.merge_range(0, 2, 0, 5, 'Total Summary', blue_header_format)
+        sheet.write(1, 2, 'Total Working Days', blue_sub_header_format)
+        sheet.write(1, 3, 'Total Attendance', blue_sub_header_format)
+        sheet.write(1, 4, 'Total Timesheet', blue_sub_header_format)
+        sheet.write(1, 5, 'Total Leave', blue_sub_header_format)
+
+        # Day column headers (Columns 6 onwards)
         dates_list = []
         for i in range(num_days):
             d = start_date + timedelta(days=i)
             dates_list.append(d)
             # Format date like: 1-Aug-26, 2-Aug-26 ...
             date_label = f"{d.day}-{d.strftime('%b')}-{d.strftime('%y')}"
-            start_col = 2 + (i * 3)
+            start_col = 6 + (i * 3)
             end_col = start_col + 2
 
             sheet.merge_range(0, start_col, 0, end_col, date_label, header_format)
             sheet.write(1, start_col, 'Attendance', sub_header_format)
             sheet.write(1, start_col + 1, 'Timesheet', sub_header_format)
             sheet.write(1, start_col + 2, 'Leave', sub_header_format)
+
+        # Helper to test if a date is a Public Holiday for the employee's calendar
+        def is_public_holiday(emp, target_date):
+            if not public_holidays:
+                return False
+            emp_cal = emp.resource_calendar_id
+            for h in public_holidays:
+                if not h.calendar_id or (emp_cal and h.calendar_id.id == emp_cal.id):
+                    h_start = pytz.utc.localize(h.date_from).astimezone(user_tz).date() if h.date_from else False
+                    h_end = pytz.utc.localize(h.date_to).astimezone(user_tz).date() if h.date_to else False
+                    if h_start and h_end and (h_start <= target_date <= h_end):
+                        return True
+                    elif h_start and h_start == target_date:
+                        return True
+            return False
 
         # Helper to test if a date is a Week-Off for the employee
         def is_employee_week_off(emp, target_date):
@@ -210,38 +331,75 @@ class BxiMonthlyAttendanceTimesheetWizard(models.TransientModel):
         # Fill Data Rows
         for row_idx, emp in enumerate(employees, start=2):
             sheet.set_row(row_idx, 20)
-            sheet.write(row_idx, 0, emp.name, cell_left_format)
+            # Employee Name and Shift columns in Light Blue
+            sheet.write(row_idx, 0, emp.name, blue_cell_left_format)
             shift_name = emp.resource_calendar_id.name if emp.resource_calendar_id else 'Working Schedule Name'
-            sheet.write(row_idx, 1, shift_name, cell_left_format)
+            sheet.write(row_idx, 1, shift_name, blue_cell_left_format)
 
-            for i, d in enumerate(dates_list):
-                col_att = 2 + (i * 3)
-                col_ts = col_att + 1
-                col_lv = col_att + 2
+            day_values = []
+            total_working_days = 0
+            total_att_count = 0
+            total_ts_count = 0
+            total_lv_count = 0
 
-                if is_employee_week_off(emp, d):
+            for d in dates_list:
+                if is_public_holiday(emp, d):
+                    att_val = 'PH'
+                    ts_val = 'PH'
+                    lv_val = 'PH'
+                elif is_employee_week_off(emp, d):
                     att_val = 'Week-Off'
                     ts_val = 'Week-Off'
                     lv_val = 'Week-Off'
                 else:
+                    total_working_days += 1
                     att_val = 'Yes' if (emp.id, d) in emp_att_dates else 'No'
                     ts_val = 'Yes' if (emp.id, d) in emp_ts_dates else 'No'
                     lv_val = 'Yes' if ((emp.id, d) in emp_leave_dates or (emp.id, d) in emp_holiday_ts_dates) else 'No'
 
-                sheet.write(row_idx, col_att, att_val, cell_center_format)
-                sheet.write(row_idx, col_ts, ts_val, cell_center_format)
-                sheet.write(row_idx, col_lv, lv_val, cell_center_format)
+                    if att_val == 'Yes':
+                        total_att_count += 1
+                    if ts_val == 'Yes':
+                        total_ts_count += 1
+                    if lv_val == 'Yes':
+                        total_lv_count += 1
+
+                day_values.append((att_val, ts_val, lv_val))
+
+            # Write Summary Total counts next to Shift in Light Blue (Columns 2, 3, 4, 5)
+            sheet.write(row_idx, 2, total_working_days, total_cell_format)
+            sheet.write(row_idx, 3, total_att_count, total_cell_format)
+            sheet.write(row_idx, 4, total_ts_count, total_cell_format)
+            sheet.write(row_idx, 5, total_lv_count, total_cell_format)
+
+            # Write individual day values (Columns 6 onwards)
+            for i, (att_val, ts_val, lv_val) in enumerate(day_values):
+                col_att = 6 + (i * 3)
+                col_ts = col_att + 1
+                col_lv = col_att + 2
+
+                att_fmt = ph_cell_format if att_val == 'PH' else (week_off_cell_format if att_val == 'Week-Off' else (yes_cell_format if att_val == 'Yes' else no_cell_format))
+                ts_fmt = ph_cell_format if ts_val == 'PH' else (week_off_cell_format if ts_val == 'Week-Off' else (yes_cell_format if ts_val == 'Yes' else no_cell_format))
+                lv_fmt = ph_cell_format if lv_val == 'PH' else (week_off_cell_format if lv_val == 'Week-Off' else (yes_cell_format if lv_val == 'Yes' else no_cell_format))
+
+                sheet.write(row_idx, col_att, att_val, att_fmt)
+                sheet.write(row_idx, col_ts, ts_val, ts_fmt)
+                sheet.write(row_idx, col_lv, lv_val, lv_fmt)
 
         # Set column widths
         sheet.set_column(0, 0, 24)  # Employee Name
         sheet.set_column(1, 1, 26)  # Shift
+        sheet.set_column(2, 2, 18)  # Total Working Days
+        sheet.set_column(3, 3, 16)  # Total Attendance
+        sheet.set_column(4, 4, 16)  # Total Timesheet
+        sheet.set_column(5, 5, 14)  # Total Leave
         total_data_cols = num_days * 3
-        sheet.set_column(2, 2 + total_data_cols - 1, 12)  # Data sub-columns
+        sheet.set_column(6, 6 + total_data_cols - 1, 12)  # Day sub-columns
 
         workbook.close()
         output.seek(0)
 
-        # 7. Create temporary attachment for immediate download
+        # 8. Create temporary attachment for immediate download
         report_filename = f"Monthly_Attendance_Timesheet_Report_{month_name}_{year_int}.xlsx"
         attachment = self.env['ir.attachment'].sudo().create({
             'name': report_filename,
