@@ -390,9 +390,10 @@ class BxiTimesheetDashboard extends Component {
             }
         } catch (error) {
             console.error("Error submitting timesheet:", error);
+            const errorMessage = error?.data?.message || error?.data?.debug || error?.message || "Error submitting timesheet.";
             if (this.notification) {
                 this.notification.add(
-                    error.message || "Error submitting timesheet.",
+                    errorMessage,
                     { title: "Error", type: "danger" }
                 );
             }

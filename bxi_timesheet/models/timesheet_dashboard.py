@@ -652,6 +652,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
     @api.model
     def submit_weekly_timesheet(self, employee_id, start_date_str):
         """Submit all draft timesheets for this employee and week."""
+        _logger.info("submit_weekly_timesheet called with employee_id=%s start_date_str=%s", employee_id, start_date_str)
         user = self.env.user
         allowed_company_ids = self.env.companies.ids
         current_employee = self.env['hr.employee'].search([
@@ -853,6 +854,31 @@ class BxiTimesheetDashboard(models.AbstractModel):
                         f"BXI Timesheet: Direct manager {manager_name} has no configured email for employee {employee.name}. Skipping submission notification."
                     )
                     return
+
+                # Create an Odoo activity for the direct manager, similar to time-off approval tasks.
+                if manager and manager.user_id:
+                    try:
+                        activity_type = self.env.ref('mail.mail_activity_data_todo', raise_if_not_found=False)
+                        if activity_type:
+                            existing_activity = self.env['mail.activity'].sudo().search([
+                                ('res_model', '=', 'hr.employee'),
+                                ('res_id', '=', employee.id),
+                                ('activity_type_id', '=', activity_type.id),
+                                ('user_id', '=', manager.user_id.id),
+                                ('summary', '=', f"Timesheet approval for {employee.name}"),
+                            ], limit=1)
+                            if not existing_activity:
+                                self.env['mail.activity'].sudo().create({
+                                    'res_model_id': self.env['ir.model']._get('hr.employee').id,
+                                    'res_id': employee.id,
+                                    'activity_type_id': activity_type.id,
+                                    'user_id': manager.user_id.id,
+                                    'summary': f"Timesheet approval for {employee.name}",
+                                    'note': f"{employee.name} submitted a timesheet for {date_range_str} ({total_hours} hrs). Please review and approve.",
+                                    'date_deadline': fields.Date.today() + timedelta(days=1),
+                                })
+                    except Exception as e:
+                        _logger.warning(f"BXI Timesheet: Failed to create approval activity for manager {manager_name}: {str(e)}")
 
                 subject = f"[Timesheet Submission] {employee.name} submitted timesheet for {date_range_str}"
                 body_html = f"""

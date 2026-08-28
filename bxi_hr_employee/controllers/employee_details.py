@@ -786,6 +786,12 @@ class EmployeeAPIController(http.Controller):
             "status": True,
             "message": "Aadhar card verified successfully.",
             "employee_id": employee.id,
+            "aadhar_card": employee.aadhar_card,
+            "redirect_url": (
+                "https://alumni.bxiventures.com/create-credentials"
+                f"?aadhar_card={employee.aadhar_card}"
+                f"&employee_id={employee.employee_id.id}"
+            ),
         }
     
     @http.route(
@@ -796,39 +802,21 @@ class EmployeeAPIController(http.Controller):
         csrf=False,
     )
     def create_new_credentials(self, **post):
-        aadhar_card = (post.get("aadhar_card") or "").strip()
+        employee_id = post.get("employee_id")
         new_email = (post.get("new_email") or "").strip()
-        password = post.get("password")
-        confirm_password = post.get("confirm_password")
-        if not aadhar_card:
+        if not employee_id:
             return {
                 "status": False,
-                "message": "Aadhar card number is required.",
+                "message": "Employee ID is required.",
             }
         if not new_email:
             return {
                 "status": False,
                 "message": "New email is required.",
             }
-        if not password:
-            return {
-                "status": False,
-                "message": "Password is required.",
-            }
-
-        if not confirm_password:
-            return {
-                "status": False,
-                "message": "Confirm password is required.",
-            }
-
-        if password != confirm_password:
-            return {
-                "status": False,
-                "message": "Passwords do not match.",
-            }
+    
         employee = request.env["hr.employee"].sudo().search([
-            ("aadhar_card", "=ilike", aadhar_card),
+            ("id", "=", int(employee_id)),
             ("active", "=", False),
         ], limit=1)
 
@@ -849,7 +837,6 @@ class EmployeeAPIController(http.Controller):
             }
         employee.sudo().write({
             "private_email": new_email,
-            "portal_password": password,
         })
         try:
             employee.sudo().action_send_registration_link()
@@ -869,10 +856,11 @@ class EmployeeAPIController(http.Controller):
         return {
             "status": True,
             "message": (
-                "Your email and password have been updated successfully. "
+                "Your email have been updated successfully. "
                 "A registration link has been sent to your new email address."
             ),
             "email": new_email,
+            "employee_id": employee.id,
         }
 
     @http.route(
