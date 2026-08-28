@@ -248,7 +248,6 @@ class HrAttendance(models.Model):
                 rec._validate_location_access(update_vals)
 
         return super().write(vals)
->>>>>>> production
 
     @api.model
     def _cron_auto_checkout(self):
