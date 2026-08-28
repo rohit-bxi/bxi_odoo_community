@@ -100,13 +100,11 @@
 
                     <!-- Action Buttons -->
                     <div class="d-flex align-items-center gap-2">
-                        <!-- Submit Button (Disabled if past week) -->
-                        <t t-if="state.draft_count > 0 and !state.is_past_week">
-                            <button type="button" class="btn btn-primary btn-sm px-4 rounded-pill text-white shadow-sm fw-bold"
-                                    t-on-click="submitTimesheet">
-                                Submit for Approval
-                            </button>
-                        </t>
+                        <!-- Submit Button (Condition removed) -->
+                        <button type="button" class="btn btn-primary btn-sm px-4 rounded-pill text-white shadow-sm fw-bold"
+                                t-on-click="submitTimesheet">
+                            Submit for Approval
+                        </button>
                         
                         <!-- Manager / HR / Admin Actions -->
                         <t t-if="state.submitted_count > 0 and (state.is_target_employee_manager or state.is_hr or state.is_admin)">

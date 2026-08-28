@@ -10,6 +10,7 @@
         'base',
         'hr',
         'hr_attendance',
+        'bxi_hr_employee',
     ],
     'data': [
         'data/cron_data.xml',

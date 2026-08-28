@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Monthly Attendance/Timesheet Report Wizard Form View -->
+    <record id="view_bxi_monthly_attendance_timesheet_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.monthly.attendance.timesheet.wizard.form</field>
+        <field name="model">bxi.monthly.attendance.timesheet.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Monthly Attendance/Timesheet Report">
+                <sheet>
+                    <div class="text-muted mb-3">
+                        Select the month, year, and company to generate the monthly attendance and timesheet report.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="month" widget="selection"/>
+                            <field name="year" widget="selection"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_generate_report" string="Generate Report" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard Action -->
+    <record id="action_bxi_monthly_attendance_timesheet_wizard" model="ir.actions.act_window">
+        <field name="name">Monthly Attendance/Timesheet Report</field>
+        <field name="res_model">bxi.monthly.attendance.timesheet.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="view_bxi_monthly_attendance_timesheet_wizard_form"/>
+    </record>
+
+    <!-- Reporting Parent Menu (Admin Only) -->
+    <menuitem id="menu_bxi_timesheet_reporting"
+              name="Reporting"
+              parent="hr_timesheet.timesheet_menu_root"
+              groups="base.group_erp_manager,base.group_system"
+              sequence="70"/>
+
+    <!-- Monthly Attendance/Timesheet Report Sub-menu -->
+    <menuitem id="menu_bxi_monthly_attendance_timesheet_report"
+              name="Monthly Attendance/Timesheet Report"
+              parent="menu_bxi_timesheet_reporting"
+              action="action_bxi_monthly_attendance_timesheet_wizard"
+              groups="base.group_erp_manager,base.group_system"
+              sequence="10"/>
+
+</odoo>
