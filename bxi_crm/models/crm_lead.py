@@ -1,16 +1,20 @@
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class CrmLead(models.Model):
     _inherit = "crm.lead"
 
+    company_currency = fields.Many2one(
+        "res.currency",
+        string="Currency",
+        compute="_compute_company_currency",
+        readonly=True,
+    )
+
     presales_poc_id = fields.Many2one(
         "presales.poc",
         string="Presales POC",
     )
-
-    from odoo import api, fields, models
-
 
     contract_ids = fields.One2many(
         "project.contract.management",
@@ -22,6 +26,16 @@ class CrmLead(models.Model):
         compute="_compute_contract_count",
         string="Contracts",
     )
+
+    @api.depends("company_id")
+    def _compute_company_currency(self):
+        usd_currency = (
+            self.env.ref("base.USD", raise_if_not_found=False)
+            or self.env["res.currency"].search([("name", "=", "USD")], limit=1)
+            or self.env.company.currency_id
+        )
+        for lead in self:
+            lead.company_currency = usd_currency
 
     @api.depends("contract_ids")
     def _compute_contract_count(self):
