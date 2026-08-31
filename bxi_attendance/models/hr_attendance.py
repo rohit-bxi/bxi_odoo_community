@@ -262,4 +262,3 @@ class HrAttendance(models.Model):
                 'check_out': now,
                 'is_auto_checkout': True,
             })
-
