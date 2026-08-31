@@ -204,8 +204,11 @@
                     </tr>
                     <!-- Row 2: Company & Quarters -->
                     <tr>
-                        <th class="sub-main-header" style="text-align: left;">
-                            <t t-esc="state.report_data.company_name"/>
+                        <th class="sub-main-header" style="text-align: left; padding-top: 6px; padding-bottom: 6px;">
+                            <div style="font-weight: 700; font-size: 13px;"><t t-esc="state.report_data.company_name_only or state.report_data.company_name"/></div>
+                            <t t-if="state.report_data.country_code">
+                                <div style="font-weight: 600; font-size: 11px; color: #475569; margin-top: 2px;">(<t t-esc="state.report_data.country_code"/>)</div>
+                            </t>
                         </th>
                         <!-- Year 1 Quarters -->
                         <th class="text-center">Q1</th>
@@ -378,9 +381,9 @@
                         <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.cash_flow)"/></td>
                     </tr>
 
-                    <!-- Calibration -->
+                    <!-- Investors -->
                     <tr class="metric-row">
-                        <td class="row-label">Calibration</td>
+                        <td class="row-label">Investors</td>
                         <!-- Y1 -->
                         <td><t t-out="formatAmt(state.report_data.data.y1.q1.calibration)"/></td>
                         <td><t t-out="formatAmt(state.report_data.data.y1.q2.calibration)"/></td>
@@ -402,7 +405,7 @@
 
 
 
-            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Revenue</div>
+            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Revenue <span style="font-size: 14px; font-weight: 600; color: #64748b; margin-left: 8px;">(Top 5 + Others)</span></div>
             <table class="fbook-table">
                 <thead>
                     <!-- Row 1: FY Labels -->
@@ -431,10 +434,10 @@
                 <tbody>
                     <t t-foreach="state.report_data.contracts_data" t-as="c" t-key="c.customers">
                         <tr class="metric-row">
-                            <td style="text-align: left;"><t t-esc="c.customers"/></td>
-                            <td style="text-align: left;"><t t-esc="c.industry"/></td>
-                            <td style="text-align: left;"><t t-esc="c.business"/></td>
-                            <td style="text-align: left;"><t t-esc="c.engagement"/></td>
+                            <td style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-weight: 700; color: #475569; font-style: italic;' : ''"><t t-esc="c.customers"/></td>
+                            <td style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-style: italic; color: #64748b;' : ''"><t t-esc="c.industry"/></td>
+                            <td style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-style: italic; color: #64748b;' : ''"><t t-esc="c.business"/></td>
+                            <td style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-style: italic; color: #64748b;' : ''"><t t-esc="c.engagement"/></td>
                             <td><t t-out="formatAmt(c.contract_value)"/></td>
                             <!-- Year 1 -->
                             <td><t t-out="formatAmt(c.y1_booking)"/></td>
@@ -557,71 +560,310 @@
                 </tbody>
             </table>
 
-            <!-- FIFTH TABLE: CALIBRATION / INVESTOR REPORT -->
-            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Calibration / Investor</div>
+            <!-- FIFTH TABLE: INVESTORS REPORT -->
+            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Investors</div>
             <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-                <table class="fbook-table" style="min-width: 1400px;">
+                <table class="fbook-table" style="min-width: 950px;">
                     <thead>
                         <!-- Row 1: Main Headers -->
                         <tr>
-                            <th class="main-header" style="text-align: left; min-width: 180px;"><t t-esc="state.report_data.currency_symbol"/></th>
-                            <th style="text-align: left; min-width: 140px;"/>
-                            <th colspan="5" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year1_label"/></th>
-                            <th colspan="5" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year2_label"/></th>
+                            <th class="main-header" style="text-align: left; min-width: 240px;"><t t-esc="state.report_data.currency_symbol"/></th>
+                            <th colspan="3" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year1_label"/></th>
+                            <th colspan="3" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year2_label"/></th>
+                            <th rowspan="2" style="text-align: right; width: 130px; background: #0284c7; color: white; font-weight: 700; vertical-align: middle;">Total Net Invested</th>
                         </tr>
-                        <!-- Row 2: Quarter Headers -->
+                        <!-- Row 2: Sub Headers (Received / Repaid / Net Invested) -->
                         <tr>
-                            <th style="text-align: left; min-width: 180px;">Investor Name</th>
-                            <th style="text-align: left; min-width: 140px;">Category</th>
-                            <!-- FY Quarters -->
-                            <th style="text-align: right; width: 100px; background: #f1f5f9; font-weight: 700;">Q1</th>
-                            <th style="text-align: right; width: 100px; background: #f1f5f9; font-weight: 700;">Q2</th>
-                            <th style="text-align: right; width: 100px; background: #f1f5f9; font-weight: 700;">Q3</th>
-                            <th style="text-align: right; width: 100px; background: #f1f5f9; font-weight: 700;">Q4</th>
-                            <th style="text-align: right; width: 110px; background: #e2e8f0; font-weight: 700;">Total</th>
-                            <!-- CY Quarters -->
-                            <th style="text-align: right; width: 100px; background: #f1f5f9; font-weight: 700;">Q1</th>
-                            <th style="text-align: right; width: 100px; background: #f1f5f9; font-weight: 700;">Q2</th>
-                            <th style="text-align: right; width: 100px; background: #f1f5f9; font-weight: 700;">Q3</th>
-                            <th style="text-align: right; width: 100px; background: #f1f5f9; font-weight: 700;">Q4</th>
-                            <th style="text-align: right; width: 110px; background: #e2e8f0; font-weight: 700;">Total</th>
+                            <th style="text-align: left; min-width: 240px; background: #f8fafc; font-weight: 700;">Partner / Investor</th>
+                            <!-- Year 1 -->
+                            <th style="text-align: right; width: 110px; background: #f0fdf4; font-weight: 700; color: #166534;">Received</th>
+                            <th style="text-align: right; width: 110px; background: #fef2f2; font-weight: 700; color: #991b1b;">Repaid</th>
+                            <th style="text-align: right; width: 115px; background: #f1f5f9; font-weight: 700; color: #0f172a;">Net Invested</th>
+                            <!-- Year 2 -->
+                            <th style="text-align: right; width: 110px; background: #f0fdf4; font-weight: 700; color: #166534;">Received</th>
+                            <th style="text-align: right; width: 110px; background: #fef2f2; font-weight: 700; color: #991b1b;">Repaid</th>
+                            <th style="text-align: right; width: 115px; background: #f1f5f9; font-weight: 700; color: #0f172a;">Net Invested</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <t t-foreach="state.report_data.investor_rows" t-as="inv" t-key="inv.investor">
-                            <tr class="metric-row">
-                                <td style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="inv.investor"/></td>
-                                <td style="text-align: left;"><t t-esc="inv.category"/></td>
-                                <!-- FY -->
-                                <td><t t-out="formatAmt(inv.y1_q1)"/></td>
-                                <td><t t-out="formatAmt(inv.y1_q2)"/></td>
-                                <td><t t-out="formatAmt(inv.y1_q3)"/></td>
-                                <td><t t-out="formatAmt(inv.y1_q4)"/></td>
-                                <td style="font-weight: 600; background: #fafafa;"><t t-out="formatAmt(inv.y1_tot)"/></td>
-                                <!-- CY -->
-                                <td><t t-out="formatAmt(inv.y2_q1)"/></td>
-                                <td><t t-out="formatAmt(inv.y2_q2)"/></td>
-                                <td><t t-out="formatAmt(inv.y2_q3)"/></td>
-                                <td><t t-out="formatAmt(inv.y2_q4)"/></td>
-                                <td style="font-weight: 600; background: #fafafa;"><t t-out="formatAmt(inv.y2_tot)"/></td>
+                        <t t-if="state.report_data.investor_rows and state.report_data.investor_rows.length">
+                            <t t-foreach="state.report_data.investor_rows" t-as="inv" t-key="inv.investor">
+                                <tr class="metric-row">
+                                    <td style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="inv.investor"/></td>
+                                    <!-- Year 1 -->
+                                    <td><t t-out="formatAmt(inv.y1_received)"/></td>
+                                    <td><t t-out="formatAmt(inv.y1_repaid)"/></td>
+                                    <td class="total-cell"><t t-out="formatAmt(inv.y1_net)"/></td>
+                                    <!-- Year 2 -->
+                                    <td><t t-out="formatAmt(inv.y2_received)"/></td>
+                                    <td><t t-out="formatAmt(inv.y2_repaid)"/></td>
+                                    <td class="total-cell"><t t-out="formatAmt(inv.y2_net)"/></td>
+                                    <!-- Cumulative Total -->
+                                    <td style="font-weight: 700; background: #f0f9ff; color: #0369a1;"><t t-out="formatAmt(inv.total_net)"/></td>
+                                </tr>
+                            </t>
+                            <!-- Totals row -->
+                            <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
+                                <td style="text-align: left;">Total</td>
+                                <!-- Year 1 Totals -->
+                                <td><t t-out="formatAmt(state.report_data.investor_totals.y1_received)"/></td>
+                                <td><t t-out="formatAmt(state.report_data.investor_totals.y1_repaid)"/></td>
+                                <td class="total-cell"><t t-out="formatAmt(state.report_data.investor_totals.y1_net)"/></td>
+                                <!-- Year 2 Totals -->
+                                <td><t t-out="formatAmt(state.report_data.investor_totals.y2_received)"/></td>
+                                <td><t t-out="formatAmt(state.report_data.investor_totals.y2_repaid)"/></td>
+                                <td class="total-cell"><t t-out="formatAmt(state.report_data.investor_totals.y2_net)"/></td>
+                                <!-- Cumulative Total -->
+                                <td style="font-weight: 700; background: #bae6fd; color: #0369a1;"><t t-out="formatAmt(state.report_data.investor_totals.total_net)"/></td>
                             </tr>
                         </t>
-                        <!-- Totals row -->
-                        <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
-                            <td style="text-align: left;" colspan="2">Total</td>
-                            <!-- FY Totals -->
-                            <td><t t-out="formatAmt(state.report_data.investor_totals.y1_q1)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.investor_totals.y1_q2)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.investor_totals.y1_q3)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.investor_totals.y1_q4)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.investor_totals.y1_tot)"/></td>
-                            <!-- CY Totals -->
-                            <td><t t-out="formatAmt(state.report_data.investor_totals.y2_q1)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.investor_totals.y2_q2)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.investor_totals.y2_q3)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.investor_totals.y2_q4)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.investor_totals.y2_tot)"/></td>
+                        <t t-else="">
+                            <tr>
+                                <td colspan="8" class="text-center text-muted" style="padding: 16px;">
+                                    No investor transactions found.
+                                </td>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- SIXTH TABLE: VENDOR EXPENSES -->
+            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Vendor Expenses <span style="font-size: 14px; font-weight: 600; color: #64748b; margin-left: 8px;">(Top 5 of the year)</span></div>
+            <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <table class="fbook-table" style="min-width: 1100px;">
+                    <thead>
+                        <!-- Row 1: Main Headers -->
+                        <tr>
+                            <th class="main-header" style="text-align: left; min-width: 260px;">
+                                <t t-esc="state.report_data.currency_symbol"/>
+                            </th>
+                            <th colspan="5" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'">
+                                <t t-esc="state.report_data.year1_label"/>
+                            </th>
+                            <th colspan="5" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'">
+                                <t t-esc="state.report_data.year2_label"/>
+                            </th>
                         </tr>
+                        <!-- Row 2: Quarter Headers -->
+                        <tr>
+                            <th style="text-align: left; min-width: 260px; background: #f8fafc; font-weight: 700;">Vendor</th>
+                            <!-- Year 1 Quarters -->
+                            <th class="text-center" style="width: 85px;">Q1</th>
+                            <th class="text-center" style="width: 85px;">Q2</th>
+                            <th class="text-center" style="width: 85px;">Q3</th>
+                            <th class="text-center" style="width: 85px;">Q4</th>
+                            <th class="text-center" style="width: 95px; background: #bae6fd; font-weight: 700;">Total</th>
+                            <!-- Year 2 Quarters -->
+                            <th class="text-center" style="width: 85px;">Q1</th>
+                            <th class="text-center" style="width: 85px;">Q2</th>
+                            <th class="text-center" style="width: 85px;">Q3</th>
+                            <th class="text-center" style="width: 85px;">Q4</th>
+                            <th class="text-center" style="width: 95px; background: #bae6fd; font-weight: 700;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-if="state.report_data.vendor_rows and state.report_data.vendor_rows.length">
+                            <t t-foreach="state.report_data.vendor_rows" t-as="v" t-key="v.vendor">
+                                <tr class="metric-row">
+                                    <td style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="v.vendor"/></td>
+                                    <!-- Year 1 -->
+                                    <td><t t-out="formatAmt(v.y1_q1)"/></td>
+                                    <td><t t-out="formatAmt(v.y1_q2)"/></td>
+                                    <td><t t-out="formatAmt(v.y1_q3)"/></td>
+                                    <td><t t-out="formatAmt(v.y1_q4)"/></td>
+                                    <td class="total-cell"><t t-out="formatAmt(v.y1_total)"/></td>
+                                    <!-- Year 2 -->
+                                    <td><t t-out="formatAmt(v.y2_q1)"/></td>
+                                    <td><t t-out="formatAmt(v.y2_q2)"/></td>
+                                    <td><t t-out="formatAmt(v.y2_q3)"/></td>
+                                    <td><t t-out="formatAmt(v.y2_q4)"/></td>
+                                    <td class="total-cell"><t t-out="formatAmt(v.y2_total)"/></td>
+                                </tr>
+                            </t>
+                            <!-- Totals row -->
+                            <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
+                                <td style="text-align: left;">Total</td>
+                                <!-- Year 1 Totals -->
+                                <td><t t-out="formatAmt(state.report_data.vendor_totals.y1_q1)"/></td>
+                                <td><t t-out="formatAmt(state.report_data.vendor_totals.y1_q2)"/></td>
+                                <td><t t-out="formatAmt(state.report_data.vendor_totals.y1_q3)"/></td>
+                                <td><t t-out="formatAmt(state.report_data.vendor_totals.y1_q4)"/></td>
+                                <td class="total-cell"><t t-out="formatAmt(state.report_data.vendor_totals.y1_total)"/></td>
+                                <!-- Year 2 Totals -->
+                                <td><t t-out="formatAmt(state.report_data.vendor_totals.y2_q1)"/></td>
+                                <td><t t-out="formatAmt(state.report_data.vendor_totals.y2_q2)"/></td>
+                                <td><t t-out="formatAmt(state.report_data.vendor_totals.y2_q3)"/></td>
+                                <td><t t-out="formatAmt(state.report_data.vendor_totals.y2_q4)"/></td>
+                                <td class="total-cell"><t t-out="formatAmt(state.report_data.vendor_totals.y2_total)"/></td>
+                            </tr>
+                        </t>
+                        <t t-else="">
+                            <tr>
+                                <td colspan="11" class="text-center text-muted" style="padding: 16px;">
+                                    No vendor bills found for the selected period.
+                                </td>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- SEVENTH TABLE: ASSETS -->
+            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Assets</div>
+            <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <table class="fbook-table" style="min-width: 1200px;">
+                    <thead>
+                        <!-- Row 1: Header with Currency and Main Metric Groups -->
+                        <tr>
+                            <th class="main-header" colspan="2" style="text-align: left; min-width: 250px;">
+                                <t t-esc="state.report_data.currency_symbol"/>
+                            </th>
+                            <th colspan="5" class="fbook-header-cy" style="text-align: center;">
+                                Assets Count
+                            </th>
+                            <th colspan="3" class="fbook-header-fy" style="text-align: center;">
+                                Purchase / Depreciation
+                            </th>
+                        </tr>
+                        <!-- Row 2: Sub-headers for each status bucket and metric -->
+                        <tr>
+                            <th style="text-align: left; min-width: 140px; background: #f8fafc; font-weight: 700;">Category</th>
+                            <th style="text-align: left; min-width: 200px; background: #f8fafc; font-weight: 700;">Description</th>
+                            <!-- Assets Count -->
+                            <th class="text-center" style="width: 70px; background: #f1f5f9; font-weight: 700;">Total</th>
+                            <th class="text-center" style="width: 75px; background: #f1f5f9; font-weight: 700;">In Store</th>
+                            <th class="text-center" style="width: 75px; background: #f1f5f9; font-weight: 700;">In Use</th>
+                            <th class="text-center" style="width: 90px; background: #f1f5f9; font-weight: 700;">Cust. Loc</th>
+                            <th class="text-center" style="width: 75px; background: #f1f5f9; font-weight: 700;">Scrapped</th>
+                            <!-- Purchase / Depreciation -->
+                            <th class="text-center" style="width: 130px; background: #fef3c7; font-weight: 700;">Purchase Value</th>
+                            <th class="text-center" style="width: 140px; background: #e0e7ff; font-weight: 700;">Depreciation Value</th>
+                            <th class="text-center" style="width: 170px; background: #f1f5f9; font-weight: 700;">Last Depreciated Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-if="state.report_data.asset_rows and state.report_data.asset_rows.length">
+                            <t t-foreach="state.report_data.asset_rows" t-as="a" t-key="a.category">
+                                <tr class="metric-row">
+                                    <td style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="a.category"/></td>
+                                    <td style="text-align: left; color: #475569; font-size: 12px;"><t t-esc="a.description"/></td>
+                                    <!-- Assets Count -->
+                                    <td class="text-center total-cell"><t t-esc="a.count_total"/></td>
+                                    <td class="text-center"><t t-esc="a.count_in_store"/></td>
+                                    <td class="text-center"><t t-esc="a.count_in_use"/></td>
+                                    <td class="text-center"><t t-esc="a.count_customer"/></td>
+                                    <td class="text-center"><t t-esc="a.count_scrapped"/></td>
+                                    <!-- Purchase / Depreciation -->
+                                    <td class="total-cell"><t t-out="formatAmt(a.purchase_total)"/></td>
+                                    <td style="background: #eef2ff;"><t t-out="formatAmt(a.depr_total)"/></td>
+                                    <td><t t-out="formatAmt(a.stop_depr_total)"/></td>
+                                </tr>
+                            </t>
+                            <!-- Totals row -->
+                            <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
+                                <td style="text-align: left;">Total</td>
+                                <td></td>
+                                <!-- Assets Count Totals -->
+                                <td class="text-center total-cell"><t t-esc="state.report_data.asset_totals.count_total"/></td>
+                                <td class="text-center"><t t-esc="state.report_data.asset_totals.count_in_store"/></td>
+                                <td class="text-center"><t t-esc="state.report_data.asset_totals.count_in_use"/></td>
+                                <td class="text-center"><t t-esc="state.report_data.asset_totals.count_customer"/></td>
+                                <td class="text-center"><t t-esc="state.report_data.asset_totals.count_scrapped"/></td>
+                                <!-- Purchase / Depreciation Totals -->
+                                <td class="total-cell"><t t-out="formatAmt(state.report_data.asset_totals.purchase_total)"/></td>
+                                <td style="background: #e0e7ff;"><t t-out="formatAmt(state.report_data.asset_totals.depr_total)"/></td>
+                                <td><t t-out="formatAmt(state.report_data.asset_totals.stop_depr_total)"/></td>
+                            </tr>
+                        </t>
+                        <t t-else="">
+                            <tr>
+                                <td colspan="10" class="text-center text-muted" style="padding: 16px;">
+                                    No assets found.
+                                </td>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- EIGHTH TABLE: CSR FUND -->
+            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">CSR Fund</div>
+            <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <table class="fbook-table" style="min-width: 1100px;">
+                    <thead>
+                        <!-- Row 1: Main Headers -->
+                        <tr>
+                            <th class="main-header" style="text-align: left; min-width: 260px;">
+                                <t t-esc="state.report_data.currency_symbol"/>
+                            </th>
+                            <th colspan="5" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'">
+                                <t t-esc="state.report_data.year1_label"/>
+                            </th>
+                            <th colspan="5" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'">
+                                <t t-esc="state.report_data.year2_label"/>
+                            </th>
+                        </tr>
+                        <!-- Row 2: Quarter Headers -->
+                        <tr>
+                            <th style="text-align: left; min-width: 260px; background: #f8fafc; font-weight: 700;">Particulars</th>
+                            <!-- Year 1 Quarters -->
+                            <th class="text-center" style="width: 85px;">Q1</th>
+                            <th class="text-center" style="width: 85px;">Q2</th>
+                            <th class="text-center" style="width: 85px;">Q3</th>
+                            <th class="text-center" style="width: 85px;">Q4</th>
+                            <th class="text-center" style="width: 95px; background: #bae6fd; font-weight: 700;">Total</th>
+                            <!-- Year 2 Quarters -->
+                            <th class="text-center" style="width: 85px;">Q1</th>
+                            <th class="text-center" style="width: 85px;">Q2</th>
+                            <th class="text-center" style="width: 85px;">Q3</th>
+                            <th class="text-center" style="width: 85px;">Q4</th>
+                            <th class="text-center" style="width: 95px; background: #bae6fd; font-weight: 700;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-if="state.report_data.csr_rows and state.report_data.csr_rows.length">
+                            <t t-foreach="state.report_data.csr_rows" t-as="csr" t-key="csr.particulars">
+                                <tr class="metric-row">
+                                    <td style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="csr.particulars"/></td>
+                                    <!-- Year 1 -->
+                                    <td><t t-out="formatAmt(csr.y1_q1)"/></td>
+                                    <td><t t-out="formatAmt(csr.y1_q2)"/></td>
+                                    <td><t t-out="formatAmt(csr.y1_q3)"/></td>
+                                    <td><t t-out="formatAmt(csr.y1_q4)"/></td>
+                                    <td class="total-cell"><t t-out="formatAmt(csr.y1_total)"/></td>
+                                    <!-- Year 2 -->
+                                    <td><t t-out="formatAmt(csr.y2_q1)"/></td>
+                                    <td><t t-out="formatAmt(csr.y2_q2)"/></td>
+                                    <td><t t-out="formatAmt(csr.y2_q3)"/></td>
+                                    <td><t t-out="formatAmt(csr.y2_q4)"/></td>
+                                    <td class="total-cell"><t t-out="formatAmt(csr.y2_total)"/></td>
+                                </tr>
+                            </t>
+                            <!-- Totals row -->
+                            <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
+                                <td style="text-align: left;">Total</td>
+                                <!-- Year 1 Totals -->
+                                <td><t t-out="formatAmt(state.report_data.csr_totals.y1_q1)"/></td>
+                                <td><t t-out="formatAmt(state.report_data.csr_totals.y1_q2)"/></td>
+                                <td><t t-out="formatAmt(state.report_data.csr_totals.y1_q3)"/></td>
+                                <td><t t-out="formatAmt(state.report_data.csr_totals.y1_q4)"/></td>
+                                <td class="total-cell"><t t-out="formatAmt(state.report_data.csr_totals.y1_total)"/></td>
+                                <!-- Year 2 Totals -->
+                                <td><t t-out="formatAmt(state.report_data.csr_totals.y2_q1)"/></td>
+                                <td><t t-out="formatAmt(state.report_data.csr_totals.y2_q2)"/></td>
+                                <td><t t-out="formatAmt(state.report_data.csr_totals.y2_q3)"/></td>
+                                <td><t t-out="formatAmt(state.report_data.csr_totals.y2_q4)"/></td>
+                                <td class="total-cell"><t t-out="formatAmt(state.report_data.csr_totals.y2_total)"/></td>
+                            </tr>
+                        </t>
+                        <t t-else="">
+                            <tr>
+                                <td colspan="11" class="text-center text-muted" style="padding: 16px;">
+                                    No CSR Fund transfers found for the selected period.
+                                </td>
+                            </tr>
+                        </t>
                     </tbody>
                 </table>
             </div>

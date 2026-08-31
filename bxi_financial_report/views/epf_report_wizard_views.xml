@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- EPF Report Wizard Form View -->
+    <record id="view_epf_report_wizard_form" model="ir.ui.view">
+        <field name="name">epf.report.wizard.form</field>
+        <field name="model">epf.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="EPF Report">
+                <sheet>
+                    <div class="oe_title">
+                        <h2>EPF Report Parameters</h2>
+                        <p class="text-muted">Select month, year, and company to generate the EPF Excel Report.</p>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="month"/>
+                            <field name="year"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_generate_excel" string="Download EPF Report" type="object" class="btn-primary" icon="fa-download"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- EPF Report Wizard Action -->
+    <record id="action_epf_report_wizard" model="ir.actions.act_window">
+        <field name="name">EPF Report</field>
+        <field name="res_model">epf.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- EPF Report Menu under BXI Reports -->
+    <menuitem id="menu_epf_report"
+              name="EPF Report"
+              parent="menu_bxi_reports"
+              action="action_epf_report_wizard"
+              sequence="20"/>
+</odoo>

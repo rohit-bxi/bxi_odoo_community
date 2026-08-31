@@ -3,7 +3,7 @@
               name="Contract Management"
               sequence="10"
               web_icon="project_contract_management,static/description/icon.png"
-              groups="account.group_account_manager"/>
+              />
 
 
     <menuitem id="menu_contract"
