@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- TDS (Employee) Report Wizard Form View -->
+    <record id="view_tds_report_wizard_form" model="ir.ui.view">
+        <field name="name">tds.report.wizard.form</field>
+        <field name="model">tds.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="TDS (Employee) Report">
+                <sheet>
+                    <div class="oe_title">
+                        <h2>TDS (Employee) Report Parameters</h2>
+                        <p class="text-muted">Select month, year, and company to generate the TDS Excel Report.</p>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="month"/>
+                            <field name="year"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_generate_excel" string="Download TDS Report" type="object" class="btn-primary" icon="fa-download"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- TDS (Employee) Report Wizard Action -->
+    <record id="action_tds_report_wizard" model="ir.actions.act_window">
+        <field name="name">TDS (Employee) Report</field>
+        <field name="res_model">tds.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- TDS (Employee) Report Menu under BXI Reports -->
+    <menuitem id="menu_tds_report"
+              name="TDS (Employee) Report"
+              parent="menu_bxi_reports"
+              action="action_tds_report_wizard"
+              sequence="30"/>
+</odoo>

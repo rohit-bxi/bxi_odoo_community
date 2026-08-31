@@ -11,3 +11,5 @@ class ResPartner(models.Model):
         ('travel', 'Travel'),
         ('administration', 'Administration'),
     ], string='Vendor Category', default='miscellaneous')
+    is_partner_investor = fields.Boolean(string='Partner Check(Investor)')
+

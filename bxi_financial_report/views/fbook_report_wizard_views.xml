@@ -6,7 +6,7 @@
         <field name="arch" type="xml">
             <form string="Fbook Report Filter">
                 <group>
-                    <field name="company_ids" widget="many2many_tags" options="{'no_open': True, 'no_create': True}"/>
+                    <field name="company_ids" widget="many2many_tags" domain="[('id', 'in', allowed_company_ids)]" options="{'no_open': True, 'no_create': True}"/>
 
                     <field name="start_financial_year"/>
                     <field name="currency_id" options="{'no_open': True, 'no_create': True}"/>
