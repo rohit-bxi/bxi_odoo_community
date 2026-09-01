@@ -1,0 +1,730 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="asset_management.DashboardTemplate">
+        <div class="o_asset_dashboard_container">
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 LEFT SIDEBAR NAVIGATION
+            ════════════════════════════════════════════════════════════════ -->
+            <div class="o_dashboard_sidebar">
+                <!-- Company Logo & Brand Area -->
+                <div class="o_sidebar_brand">
+                    <div class="o_brand_logo_circle">
+                        <img t-att-src="'/web/image/res.company/' + (state.data.company_id or 1) + '/logo'"
+                             alt="Company Logo"
+                             class="o_brand_logo_img"/>
+                    </div>
+                    <div class="o_brand_title" t-esc="state.data.company_name or 'Asset Management'"/>
+                </div>
+
+                <!-- Navigation Tabs Matching Image -->
+                <div class="o_sidebar_nav">
+                    <button class="o_nav_item" t-att-class="{ 'active': state.active_tab === 'overview' }"
+                            t-on-click="() => this.switchTab('overview')">
+                        <i class="fa fa-th-large"/>
+                        <span>Overview</span>
+                    </button>
+
+                    <button class="o_nav_item" t-att-class="{ 'active': state.active_tab === 'summary' }"
+                            t-on-click="() => this.switchTab('summary')">
+                        <i class="fa fa-list-alt"/>
+                        <span>Asset Summary</span>
+                    </button>
+
+                    <button class="o_nav_item" t-att-class="{ 'active': state.active_tab === 'department' }"
+                            t-on-click="() => this.switchTab('department')">
+                        <i class="fa fa-building-o"/>
+                        <span>Department Analysis</span>
+                    </button>
+
+                    <button class="o_nav_item" t-att-class="{ 'active': state.active_tab === 'vendor' }"
+                            t-on-click="() => this.switchTab('vendor')">
+                        <i class="fa fa-handshake-o"/>
+                        <span>Vendor Analysis</span>
+                    </button>
+
+                    <button class="o_nav_item" t-att-class="{ 'active': state.active_tab === 'trends' }"
+                            t-on-click="() => this.switchTab('trends')">
+                        <i class="fa fa-line-chart"/>
+                        <span>Monthly Trends</span>
+                    </button>
+                </div>
+
+                <!-- Footer Quick Links -->
+                <div class="o_sidebar_footer">
+                    <div class="o_footer_icon_btn" title="Asset Records" t-on-click="onOpenAssetList">
+                        <i class="fa fa-cubes"/>
+                    </div>
+                    <div class="o_footer_icon_btn" title="Accounting Entries" t-on-click="onOpenJournalEntries">
+                        <i class="fa fa-book"/>
+                    </div>
+                    <div class="o_footer_icon_btn" title="Depreciation" t-on-click="onOpenDepreciationEntries">
+                        <i class="fa fa-balance-scale"/>
+                    </div>
+                    <div class="o_footer_icon_btn" title="Configuration" t-on-click="onOpenSettings">
+                        <i class="fa fa-cog"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 MAIN DASHBOARD VIEW AREA
+            ════════════════════════════════════════════════════════════════ -->
+            <div class="o_dashboard_main">
+
+                <!-- Header Title Banner -->
+                <div class="o_dashboard_header_banner">
+                    <h1 class="o_banner_title">
+                        <i class="fa fa-pie-chart me-2"/>
+                        Office Asset Management Dashboard
+                    </h1>
+                    <div class="o_banner_actions">
+                        <button class="btn_action" t-on-click="onRefreshData" title="Reload Dashboard">
+                            <i class="fa fa-refresh"/> Refresh
+                        </button>
+                        <button class="btn_action" t-on-click="onCreateNewAsset" title="Create New Asset">
+                            <i class="fa fa-plus"/> New Asset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     TOP FILTER BAR: 2 STRUCTURED ROWS
+                ════════════════════════════════════════════════════════════ -->
+                <div class="o_dashboard_filter_card">
+                    <!-- Filter Row 1: Department, Asset Type, Assigned To -->
+                    <div class="o_filter_row row_1">
+                        <div class="o_filter_group">
+                            <label><i class="fa fa-building-o"/> Department</label>
+                            <select t-on-change="(ev) => this.onFilterChange('department_id', ev.target.value)"
+                                    t-att-value="state.filters.department_id">
+                                <option value="">All</option>
+                                <t t-foreach="state.filter_options.departments or []" t-as="dept" t-key="dept.id">
+                                    <option t-att-value="dept.id" t-esc="dept.name"/>
+                                </t>
+                            </select>
+                        </div>
+
+                        <div class="o_filter_group">
+                            <label><i class="fa fa-tag"/> Asset Type</label>
+                            <select t-on-change="(ev) => this.onFilterChange('asset_type_id', ev.target.value)"
+                                    t-att-value="state.filters.asset_type_id">
+                                <option value="">All</option>
+                                <t t-foreach="state.filter_options.asset_types or []" t-as="at" t-key="at.id">
+                                    <option t-att-value="at.id" t-esc="at.name"/>
+                                </t>
+                            </select>
+                        </div>
+
+                        <div class="o_filter_group">
+                            <label><i class="fa fa-user-o"/> Assigned To</label>
+                            <select t-on-change="(ev) => this.onFilterChange('employee_id', ev.target.value)"
+                                    t-att-value="state.filters.employee_id">
+                                <option value="">All</option>
+                                <t t-foreach="state.filter_options.employees or []" t-as="emp" t-key="emp.id">
+                                    <option t-att-value="emp.id" t-esc="emp.name"/>
+                                </t>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Filter Row 2: Location, Vendor, Status, and Reset -->
+                    <div class="o_filter_row row_2">
+                        <div class="o_filter_group">
+                            <label><i class="fa fa-map-marker"/> Location</label>
+                            <select t-on-change="(ev) => this.onFilterChange('location', ev.target.value)"
+                                    t-att-value="state.filters.location">
+                                <option value="">All</option>
+                                <t t-foreach="state.filter_options.locations or []" t-as="loc" t-key="loc.id">
+                                    <option t-att-value="loc.id" t-esc="loc.name"/>
+                                </t>
+                            </select>
+                        </div>
+
+                        <div class="o_filter_group">
+                            <label><i class="fa fa-truck"/> Vendor</label>
+                            <select t-on-change="(ev) => this.onFilterChange('vendor_id', ev.target.value)"
+                                    t-att-value="state.filters.vendor_id">
+                                <option value="">All</option>
+                                <t t-foreach="state.filter_options.vendors or []" t-as="ven" t-key="ven.id">
+                                    <option t-att-value="ven.id" t-esc="ven.name"/>
+                                </t>
+                            </select>
+                        </div>
+
+                        <div class="o_filter_group">
+                            <label><i class="fa fa-info-circle"/> Status</label>
+                            <select t-on-change="(ev) => this.onFilterChange('status', ev.target.value)"
+                                    t-att-value="state.filters.status">
+                                <option value="all">All</option>
+                                <t t-foreach="state.filter_options.statuses or []" t-as="st" t-key="st.id">
+                                    <option t-att-value="st.id" t-esc="st.name"/>
+                                </t>
+                            </select>
+                        </div>
+
+                        <button class="o_filter_btn_reset" t-on-click="onResetFilters" title="Clear Filters">
+                            <i class="fa fa-undo"/> Reset Filters
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     TAB 1: OVERVIEW
+                ════════════════════════════════════════════════════════════ -->
+                <t t-if="state.active_tab === 'overview'">
+                    <!-- Top 5 Primary KPI Cards Row -->
+                    <div class="o_kpi_cards_row">
+                        <div class="o_kpi_card card_purple" t-on-click="() => this.onCardClick('all')">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-cubes"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="state.data.total_count or 0"/>
+                                <span class="o_kpi_label"># of Assets</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_violet" t-on-click="() => this.onCardClick('active')">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-check-circle"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="state.data.active_count or 0"/>
+                                <span class="o_kpi_label">Active Asset</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_blue" t-on-click="() => this.onCardClick('all')">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-usd"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="this.formatCurrency(state.data.total_cost or 0)"/>
+                                <span class="o_kpi_label">Total Cost (USD)</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_amber" t-on-click="onOpenDepreciationEntries">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-line-chart"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="this.formatCurrency(state.data.total_depreciation or 0)"/>
+                                <span class="o_kpi_label">Depreciation (USD)</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_emerald" t-on-click="() => this.onCardClick('confirmed')">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-balance-scale"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="this.formatCurrency(state.data.total_nbv or 0)"/>
+                                <span class="o_kpi_label">Net Book Value (USD)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Grid -->
+                    <div class="o_charts_grid">
+                        <!-- Chart 1: Net Book Value by Vendor -->
+                        <div class="o_chart_card col_6">
+                            <div class="o_chart_card_header">
+                                <h3 class="o_chart_title"><i class="fa fa-bar-chart"/> Net Book Value (USD) by Vendor</h3>
+                                <span class="o_chart_badge">Top Vendors</span>
+                            </div>
+                            <div class="o_chart_canvas_wrapper">
+                                <canvas t-ref="vendorNbvChart"/>
+                            </div>
+                        </div>
+
+                        <!-- Chart 2: Avg. Warranty Left by Vendor -->
+                        <div class="o_chart_card col_6">
+                            <div class="o_chart_card_header">
+                                <h3 class="o_chart_title"><i class="fa fa-shield"/> Avg. Warranty Left (Days) by Vendor</h3>
+                                <span class="o_chart_badge">Warranty Health</span>
+                            </div>
+                            <div class="o_chart_canvas_wrapper">
+                                <canvas t-ref="vendorWarrantyChart"/>
+                            </div>
+                        </div>
+
+                        <!-- Chart 3: Avg. Asset Status by Department -->
+                        <div class="o_chart_card col_7">
+                            <div class="o_chart_card_header">
+                                <h3 class="o_chart_title"><i class="fa fa-sitemap"/> Avg. Asset Status by Department</h3>
+                                <span class="o_chart_badge">Department Allocation</span>
+                            </div>
+                            <div class="o_chart_canvas_wrapper">
+                                <canvas t-ref="deptStatusChart"/>
+                            </div>
+                        </div>
+
+                        <!-- Chart 4: Asset Condition Breakdown -->
+                        <div class="o_chart_card col_5">
+                            <div class="o_chart_card_header">
+                                <h3 class="o_chart_title"><i class="fa fa-pie-chart"/> Asset Condition Breakdown</h3>
+                                <span class="o_chart_badge">Physical State</span>
+                            </div>
+                            <div class="o_chart_canvas_wrapper">
+                                <canvas t-ref="conditionChart"/>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     TAB 2: ASSET SUMMARY (DASHBOARD + TABLE)
+                ════════════════════════════════════════════════════════════ -->
+                <t t-if="state.active_tab === 'summary'">
+                    <!-- Summary KPI Cards Row -->
+                    <div class="o_kpi_cards_row">
+                        <div class="o_kpi_card card_purple">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-cubes"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="state.data.total_count or 0"/>
+                                <span class="o_kpi_label">Total Assets</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_violet">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-building"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="state.data.in_warehouse_count or 0"/>
+                                <span class="o_kpi_label">In Stock / Warehouse</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_blue">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-user-check"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="state.data.active_count or 0"/>
+                                <span class="o_kpi_label">Assigned to Users</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_amber">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-wrench"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="state.data.in_repair_count or 0"/>
+                                <span class="o_kpi_label">Under Repair</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_emerald">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-percent"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value"><t t-esc="state.data.utilization_rate or 0"/>%</span>
+                                <span class="o_kpi_label">Utilization Rate</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Asset Summary Charts -->
+                    <div class="o_charts_grid">
+                        <div class="o_chart_card col_7">
+                            <div class="o_chart_card_header">
+                                <h3 class="o_chart_title"><i class="fa fa-tags"/> Asset Count by Asset Type</h3>
+                                <span class="o_chart_badge">Category Breakdown</span>
+                            </div>
+                            <div class="o_chart_canvas_wrapper">
+                                <canvas t-ref="typeCountChart"/>
+                            </div>
+                        </div>
+
+                        <div class="o_chart_card col_5">
+                            <div class="o_chart_card_header">
+                                <h3 class="o_chart_title"><i class="fa fa-money"/> Valuation by Asset Type</h3>
+                                <span class="o_chart_badge">Capitalization</span>
+                            </div>
+                            <div class="o_chart_canvas_wrapper">
+                                <canvas t-ref="typeValChart"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Searchable Data Table -->
+                    <div class="o_summary_table_card">
+                        <div class="o_table_header">
+                            <h3 class="o_table_title">
+                                <i class="fa fa-table me-2 text-primary"/>
+                                Asset Inventory Records (<t t-esc="(this.filteredTableRows() || []).length"/>)
+                            </h3>
+                            <div class="o_table_search">
+                                <i class="fa fa-search"/>
+                                <input type="text" placeholder="Search asset name, ref, custodian..."
+                                       t-att-value="state.table_search_query"
+                                       t-on-input="(ev) => this.onTableSearch(ev.target.value)"/>
+                            </div>
+                        </div>
+
+                        <div class="o_table_responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Ref</th>
+                                        <th>Asset Name</th>
+                                        <th>Type</th>
+                                        <th>Department</th>
+                                        <th>Custodian</th>
+                                        <th>Vendor</th>
+                                        <th>Cost</th>
+                                        <th>Net Book Value</th>
+                                        <th>Depr. %</th>
+                                        <th>Status</th>
+                                        <th>Warranty Expiry</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="this.filteredTableRows() || []" t-as="row" t-key="row.id">
+                                        <tr class="clickable_row" t-on-click="() => this.onOpenAssetRecord(row.id)">
+                                            <td><strong class="text-primary" t-esc="row.name"/></td>
+                                            <td><strong t-esc="row.asset_name"/></td>
+                                            <td><span t-esc="row.type"/></td>
+                                            <td><span t-esc="row.department"/></td>
+                                            <td><span t-esc="row.employee"/></td>
+                                            <td><span t-esc="row.vendor"/></td>
+                                            <td><strong><t t-esc="this.formatCurrency(row.cost)"/></strong></td>
+                                            <td><strong class="text-success"><t t-esc="this.formatCurrency(row.nbv)"/></strong></td>
+                                            <td><span t-esc="row.dep_pct"/>%</td>
+                                            <td>
+                                                <span t-attf-class="o_badge_status status_#{row.status}"
+                                                      t-esc="row.status_label"/>
+                                            </td>
+                                            <td><span t-esc="row.warranty_date"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="!(this.filteredTableRows() || []).length">
+                                        <tr>
+                                            <td colspan="11" class="text-center py-4 text-muted">
+                                                No asset records match the applied filters.
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     TAB 3: DEPARTMENT ANALYSIS
+                ════════════════════════════════════════════════════════════ -->
+                <t t-if="state.active_tab === 'department'">
+                    <!-- Department KPIs -->
+                    <div class="o_kpi_cards_row grid_4">
+                        <div class="o_kpi_card card_purple">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-sitemap"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="(state.data.department_summary || []).length"/>
+                                <span class="o_kpi_label">Active Departments</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_blue">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-trophy"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="(state.data.department_summary and state.data.department_summary[0]) ? state.data.department_summary[0].name : '—'"/>
+                                <span class="o_kpi_label">Top Capitalized Dept</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_emerald">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-balance-scale"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="this.formatCurrency(state.data.total_nbv or 0)"/>
+                                <span class="o_kpi_label">Total Department NBV</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_amber">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-percent"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value"><t t-esc="state.data.utilization_rate or 0"/>%</span>
+                                <span class="o_kpi_label">Overall Utilization</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Department Charts -->
+                    <div class="o_charts_grid">
+                        <div class="o_chart_card col_6">
+                            <div class="o_chart_card_header">
+                                <h3 class="o_chart_title"><i class="fa fa-money"/> Net Book Value by Department</h3>
+                                <span class="o_chart_badge">Valuation</span>
+                            </div>
+                            <div class="o_chart_canvas_wrapper">
+                                <canvas t-ref="deptNbvChart"/>
+                            </div>
+                        </div>
+
+                        <div class="o_chart_card col_6">
+                            <div class="o_chart_card_header">
+                                <h3 class="o_chart_title"><i class="fa fa-cubes"/> Asset Quantity by Department</h3>
+                                <span class="o_chart_badge">Distribution</span>
+                            </div>
+                            <div class="o_chart_canvas_wrapper">
+                                <canvas t-ref="deptCountChart"/>
+                            </div>
+                        </div>
+
+                        <div class="o_chart_card col_12">
+                            <div class="o_chart_card_header">
+                                <h3 class="o_chart_title"><i class="fa fa-tasks"/> Department Operational Status Matrix</h3>
+                                <span class="o_chart_badge">Status Breakdown</span>
+                            </div>
+                            <div class="o_chart_canvas_wrapper" style="min-height: 320px;">
+                                <canvas t-ref="deptStatusMatrixChart"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Department Summary Table -->
+                    <div class="o_summary_table_card">
+                        <div class="o_table_header">
+                            <h3 class="o_table_title"><i class="fa fa-building me-2 text-primary"/> Department Performance Breakdown</h3>
+                        </div>
+                        <div class="o_table_responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Department Name</th>
+                                        <th>Total Assets</th>
+                                        <th>Active (In Use)</th>
+                                        <th>Purchase Cost</th>
+                                        <th>Net Book Value</th>
+                                        <th>Depreciation</th>
+                                        <th>Maintenance Cost</th>
+                                        <th>Utilization</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="state.data.department_summary or []" t-as="dept" t-key="dept.id">
+                                        <tr>
+                                            <td><strong><t t-esc="dept.name"/></strong></td>
+                                            <td><span class="badge bg-light text-dark border" t-esc="dept.count"/></td>
+                                            <td><span class="badge bg-success" t-esc="dept.active_count"/></td>
+                                            <td><strong t-esc="this.formatCurrency(dept.cost)"/></td>
+                                            <td><strong class="text-success" t-esc="this.formatCurrency(dept.nbv)"/></td>
+                                            <td><span class="text-danger" t-esc="this.formatCurrency(dept.dep)"/></td>
+                                            <td><span t-esc="this.formatCurrency(dept.maint)"/></td>
+                                            <td><strong><t t-esc="dept.utilization"/>%</strong></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     TAB 4: VENDOR ANALYSIS
+                ════════════════════════════════════════════════════════════ -->
+                <t t-if="state.active_tab === 'vendor'">
+                    <!-- Vendor KPIs -->
+                    <div class="o_kpi_cards_row grid_4">
+                        <div class="o_kpi_card card_purple">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-truck"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="(state.data.vendor_summary || []).length"/>
+                                <span class="o_kpi_label">Active Vendors</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_blue">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-trophy"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="(state.data.vendor_summary and state.data.vendor_summary[0]) ? state.data.vendor_summary[0].name : '—'"/>
+                                <span class="o_kpi_label">Top Vendor by Spend</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_amber">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-shield"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="state.data.warranty_expiring_30 or 0"/>
+                                <span class="o_kpi_label">Warranty Expiring (30d)</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_emerald">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-money"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="this.formatCurrency(state.data.total_nbv or 0)"/>
+                                <span class="o_kpi_label">Total Vendor NBV</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vendor Charts -->
+                    <div class="o_charts_grid">
+                        <div class="o_chart_card col_6">
+                            <div class="o_chart_card_header">
+                                <h3 class="o_chart_title"><i class="fa fa-bar-chart"/> Net Book Value by Vendor</h3>
+                                <span class="o_chart_badge">Capitalization</span>
+                            </div>
+                            <div class="o_chart_canvas_wrapper">
+                                <canvas t-ref="vendorAnalysisNbvChart"/>
+                            </div>
+                        </div>
+
+                        <div class="o_chart_card col_6">
+                            <div class="o_chart_card_header">
+                                <h3 class="o_chart_title"><i class="fa fa-clock-o"/> Average Remaining Warranty Days</h3>
+                                <span class="o_chart_badge">Warranty Health</span>
+                            </div>
+                            <div class="o_chart_canvas_wrapper">
+                                <canvas t-ref="vendorAnalysisWarrantyChart"/>
+                            </div>
+                        </div>
+
+                        <div class="o_chart_card col_12">
+                            <div class="o_chart_card_header">
+                                <h3 class="o_chart_title"><i class="fa fa-wrench"/> Maintenance Expenditure by Vendor</h3>
+                                <span class="o_chart_badge">Repair Costs</span>
+                            </div>
+                            <div class="o_chart_canvas_wrapper" style="min-height: 280px;">
+                                <canvas t-ref="vendorMaintChart"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vendor Performance Table -->
+                    <div class="o_summary_table_card">
+                        <div class="o_table_header">
+                            <h3 class="o_table_title"><i class="fa fa-handshake-o me-2 text-primary"/> Vendor Performance Directory</h3>
+                        </div>
+                        <div class="o_table_responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Vendor Name</th>
+                                        <th>Supplied Assets</th>
+                                        <th>Total Purchase Value</th>
+                                        <th>Current Net Book Value</th>
+                                        <th>Avg. Warranty Days Left</th>
+                                        <th>Total Maintenance Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="state.data.vendor_summary or []" t-as="ven" t-key="ven.id">
+                                        <tr>
+                                            <td><strong><t t-esc="ven.name"/></strong></td>
+                                            <td><span class="badge bg-light text-dark border" t-esc="ven.count"/></td>
+                                            <td><strong t-esc="this.formatCurrency(ven.cost)"/></td>
+                                            <td><strong class="text-success" t-esc="this.formatCurrency(ven.nbv)"/></td>
+                                            <td>
+                                                <span t-attf-class="badge #{ven.avg_warranty_days > 180 ? 'bg-success' : ven.avg_warranty_days > 30 ? 'bg-warning text-dark' : 'bg-danger'}">
+                                                    <t t-esc="ven.avg_warranty_days"/> Days
+                                                </span>
+                                            </td>
+                                            <td><span class="text-danger" t-esc="this.formatCurrency(ven.maint)"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- ═══════════════════════════════════════════════════════════
+                     TAB 5: MONTHLY TRENDS
+                ════════════════════════════════════════════════════════════ -->
+                <t t-if="state.active_tab === 'trends'">
+                    <!-- Trends KPIs -->
+                    <div class="o_kpi_cards_row grid_4">
+                        <div class="o_kpi_card card_blue">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-shopping-cart"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="this.formatCurrency(state.data.acq_this_month or 0)"/>
+                                <span class="o_kpi_label">Acquisitions (This Month)</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_amber">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-line-chart"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="this.formatCurrency(state.data.dep_this_month or 0)"/>
+                                <span class="o_kpi_label">Depreciation (This Month)</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_purple">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-balance-scale"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="this.formatCurrency(state.data.total_depreciation or 0)"/>
+                                <span class="o_kpi_label">Total Depreciation</span>
+                            </div>
+                        </div>
+
+                        <div class="o_kpi_card card_emerald">
+                            <div class="o_kpi_icon_wrapper"><i class="fa fa-shield"/></div>
+                            <div class="o_kpi_content">
+                                <span class="o_kpi_value" t-esc="this.formatCurrency(state.data.total_nbv or 0)"/>
+                                <span class="o_kpi_label">Current Net Book Value</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trends Charts -->
+                    <div class="o_charts_grid">
+                        <div class="o_chart_card col_12">
+                            <div class="o_chart_card_header">
+                                <h3 class="o_chart_title"><i class="fa fa-area-chart"/> Acquisitions vs. Depreciation Trend (Last 12 Months)</h3>
+                                <span class="o_chart_badge">Time Series</span>
+                            </div>
+                            <div class="o_chart_canvas_wrapper" style="min-height: 320px;">
+                                <canvas t-ref="trendsDualChart"/>
+                            </div>
+                        </div>
+
+                        <div class="o_chart_card col_6">
+                            <div class="o_chart_card_header">
+                                <h3 class="o_chart_title"><i class="fa fa-line-chart"/> Net Book Value Trajectory</h3>
+                                <span class="o_chart_badge">Asset Valuation</span>
+                            </div>
+                            <div class="o_chart_canvas_wrapper">
+                                <canvas t-ref="trendsNbvChart"/>
+                            </div>
+                        </div>
+
+                        <div class="o_chart_card col_6">
+                            <div class="o_chart_card_header">
+                                <h3 class="o_chart_title"><i class="fa fa-wrench"/> Monthly Maintenance Expense</h3>
+                                <span class="o_chart_badge">Repairs</span>
+                            </div>
+                            <div class="o_chart_canvas_wrapper">
+                                <canvas t-ref="trendsMaintChart"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Monthly Table -->
+                    <div class="o_summary_table_card">
+                        <div class="o_table_header">
+                            <h3 class="o_table_title"><i class="fa fa-calendar me-2 text-primary"/> Monthly Financial &amp; Depreciation Log</h3>
+                        </div>
+                        <div class="o_table_responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Period / Month</th>
+                                        <th>Acquisitions</th>
+                                        <th>Depreciation</th>
+                                        <th>Maintenance</th>
+                                        <th>Closing Net Book Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="state.data.monthly_summary or []" t-as="m" t-key="m.month">
+                                        <tr>
+                                            <td><strong><t t-esc="m.month"/></strong></td>
+                                            <td><span class="text-primary fw-bold" t-esc="this.formatCurrency(m.acquisitions)"/></td>
+                                            <td><span class="text-danger" t-esc="this.formatCurrency(m.depreciation)"/></td>
+                                            <td><span class="text-warning text-dark" t-esc="this.formatCurrency(m.maintenance)"/></td>
+                                            <td><strong class="text-success" t-esc="this.formatCurrency(m.nbv)"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </t>
+
+            </div>
+        </div>
+    </t>
+
+</templates>

@@ -9,7 +9,7 @@
         with a menu item "Fbook Report" which opens a parameters wizard and displays the comparative report.
     """,
     'author': 'BXI',
-    'depends': ['base', 'account', 'sale', 'project_contract_management'],
+    'depends': ['base', 'account', 'sale', 'project_contract_management', 'l10n_in'],
     'data': [
         'security/ir.model.access.csv',
         'views/res_partner_views.xml',

@@ -456,7 +456,7 @@ class FbookReportWizard(models.TransientModel):
                     ('parent_state', '=', 'posted'),
                     ('date', '>=', qdef['start']),
                     ('date', '<=', effective_end),
-                    ('partner_id.is_partner_investor', '=', True),
+                    ('partner_id.is_partner_investor', 'in', ['yes', True]),
                 ])
                 q_inv_in = 0.0
                 q_inv_out = 0.0
@@ -480,7 +480,7 @@ class FbookReportWizard(models.TransientModel):
                     ('date', '>=', qdef['start']),
                     ('date', '<=', effective_end),
                     ('account_id.account_type', '!=', 'asset_cash'),
-                    '|', ('partner_id', '=', False), ('partner_id.is_partner_investor', '=', False),
+                    '|', ('partner_id', '=', False), ('partner_id.is_partner_investor', 'in', ['no', False]),
                 ])
                 for line in cash_lines:
                     if line.credit > 0:
@@ -1044,9 +1044,9 @@ class FbookReportWizard(models.TransientModel):
         investor_data_map = {}
 
         if 'account.move' in self.env and 'res.partner' in self.env:
-            # Only partners marked with is_partner_investor as True
+            # Only partners marked with is_partner_investor as Yes
             investor_partners = self.env['res.partner'].sudo().search([
-                ('is_partner_investor', '=', True)
+                ('is_partner_investor', 'in', ['yes', True])
             ])
 
             for partner in investor_partners:
@@ -1663,6 +1663,135 @@ class FbookReportWizard(models.TransientModel):
             'y2_total': target_currency.round(sum(r['y2_total'] for r in csr_rows)),
         }
 
+        # ──────────────────────────────────────────────────────────────────────
+        # LAST THREE FINANCIAL YEARS SUMMARY CALCULATION
+        # ──────────────────────────────────────────────────────────────────────
+        y0_start = y1_start - 1
+        y0_start_str = f"{y0_start}-04-01"
+        y0_end_str = f"{y0_start+1}-03-31"
+
+        y0_billed = 0.0
+        if 'account.move' in self.env:
+            invoices_y0 = self.env['account.move'].sudo().search([
+                ('company_id', 'in', company_ids),
+                ('move_type', '=', 'out_invoice'),
+                ('state', '=', 'posted'),
+                ('invoice_date', '>=', y0_start_str),
+                ('invoice_date', '<=', y0_end_str),
+            ])
+            for inv in invoices_y0:
+                if 'project.contract.management' in self.env and not is_linked_to_contract(inv):
+                    continue
+                y0_billed += custom_convert(
+                    inv.amount_total, inv.currency_id, target_currency,
+                    date_val=inv.invoice_date, year_key='y1', record=inv
+                )
+
+        y0_expenses = 0.0
+        if 'hr.expense' in self.env:
+            expenses_y0 = self.env['hr.expense'].sudo().search([
+                ('company_id', 'in', company_ids),
+                ('date', '>=', y0_start_str),
+                ('date', '<=', y0_end_str),
+            ])
+            for exp in expenses_y0:
+                y0_expenses += custom_convert(
+                    exp.total_amount_currency, exp.currency_id, target_currency,
+                    date_val=exp.date, year_key='y1', record=exp
+                )
+
+        if 'account.move' in self.env:
+            bills_y0 = self.env['account.move'].sudo().search([
+                ('company_id', 'in', company_ids),
+                ('move_type', 'in', ('in_invoice', 'in_receipt', 'in_refund')),
+                ('expense_ids', '=', False),
+                ('invoice_date', '>=', y0_start_str),
+                ('invoice_date', '<=', y0_end_str),
+            ])
+            for bill in bills_y0:
+                sign = -1.0 if bill.move_type == 'in_refund' else 1.0
+                y0_expenses += sign * custom_convert(
+                    bill.amount_total, bill.currency_id, target_currency,
+                    date_val=bill.invoice_date, year_key='y1', record=bill
+                )
+
+        if 'hr.payslip' in self.env:
+            payslips_y0 = self.env['hr.payslip'].sudo().search([
+                ('company_id', 'in', company_ids),
+                ('date_to', '>=', y0_start_str),
+                ('date_to', '<=', y0_end_str),
+            ])
+            for slip in payslips_y0:
+                net_amt = 0.0
+                if hasattr(slip, 'get_salary_line_total'):
+                    net_amt = slip.get_salary_line_total('NET')
+                else:
+                    line = slip.line_ids.filtered(lambda l: l.code == 'NET')
+                    if line:
+                        net_amt = line[0].total
+                y0_expenses += custom_convert(
+                    net_amt, slip.company_id.currency_id, target_currency,
+                    date_val=slip.date_to, year_key='y1', record=slip
+                )
+
+        y0_profit = y0_billed - y0_expenses
+        y0_margin = (y0_profit / y0_billed * 100) if y0_billed > 0 else 0.0
+
+        y1_billed = data['y1']['total']['billed']
+        y1_expenses = data['y1']['total']['expenses']
+        y1_profit = data['y1']['total']['profit']
+        y1_margin = data['y1']['total']['margin']
+
+        y2_billed = data['y2']['total']['billed']
+        y2_expenses = data['y2']['total']['expenses']
+        y2_profit = data['y2']['total']['profit']
+        y2_margin = data['y2']['total']['margin']
+
+        y0_prefix = 'CY' if y0_start == current_fy_start else 'FY'
+        y1_prefix = 'CY' if y1_start == current_fy_start else 'FY'
+        y2_prefix = 'CY' if y2_start == current_fy_start else 'FY'
+
+        total_3y_revenue = y0_billed + y1_billed + y2_billed
+        total_3y_expenses = y0_expenses + y1_expenses + y2_expenses
+        total_3y_profit = total_3y_revenue - total_3y_expenses
+        total_3y_margin = (total_3y_profit / total_3y_revenue * 100) if total_3y_revenue > 0 else 0.0
+
+        three_year_summary = {
+            'years': [
+                {
+                    'label': f"{y0_prefix}{y0_start - 2000 + 1} - {y0_start} -{y0_start + 1}",
+                    'short_label': f"{y0_prefix}{y0_start - 2000 + 1}",
+                    'prefix': y0_prefix,
+                    'revenue': target_currency.round(y0_billed),
+                    'expenses': target_currency.round(y0_expenses),
+                    'profit': target_currency.round(y0_profit),
+                    'margin': round(y0_margin, 2),
+                },
+                {
+                    'label': f"{y1_prefix}{y1_start - 2000 + 1} - {y1_start} -{y1_start + 1}",
+                    'short_label': f"{y1_prefix}{y1_start - 2000 + 1}",
+                    'prefix': y1_prefix,
+                    'revenue': target_currency.round(y1_billed),
+                    'expenses': target_currency.round(y1_expenses),
+                    'profit': target_currency.round(y1_profit),
+                    'margin': round(y1_margin, 2),
+                },
+                {
+                    'label': f"{y2_prefix}{y2_start - 2000 + 1} - {y2_start} -{y2_start + 1}",
+                    'short_label': f"{y2_prefix}{y2_start - 2000 + 1}",
+                    'prefix': y2_prefix,
+                    'revenue': target_currency.round(y2_billed),
+                    'expenses': target_currency.round(y2_expenses),
+                    'profit': target_currency.round(y2_profit),
+                    'margin': round(y2_margin, 2),
+                },
+            ],
+            'total_revenue': target_currency.round(total_3y_revenue),
+            'total_expenses': target_currency.round(total_3y_expenses),
+            'total_profit': target_currency.round(total_3y_profit),
+            'total_margin': round(total_3y_margin, 2),
+        }
+
         y1_prefix = 'CY' if y1_start == current_fy_start else 'FY'
         y2_prefix = 'CY' if y2_start == current_fy_start else 'FY'
 
@@ -1671,6 +1800,7 @@ class FbookReportWizard(models.TransientModel):
             'company_name_only': company_name_only,
             'country_code': country_code_str,
             'currency_symbol': f"{target_currency.symbol} {target_currency.name}" if target_currency.symbol else target_currency.name,
+            'three_year_summary': three_year_summary,
             'year1_label': f'{y1_prefix}{y1_start - 2000 + 1} - {y1_start} -{y1_start + 1}',
             'year2_label': f'{y2_prefix}{y2_start - 2000 + 1} - {y2_start} -{y2_start + 1}',
             'y1_prefix': y1_prefix,

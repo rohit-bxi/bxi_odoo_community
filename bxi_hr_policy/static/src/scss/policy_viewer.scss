@@ -1,0 +1,102 @@
+/* ═════════════════════════════════════════════════════════════════════════════
+   COMPANY POLICY IN-SCREEN VIEWER STYLES
+   ═════════════════════════════════════════════════════════════════════════════ */
+
+.o_policy_card_kanban {
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background: #ffffff;
+
+    &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+        border-color: #7c3aed;
+    }
+}
+
+.o_policy_viewer_sheet {
+    max-width: 100% !important;
+    padding: 20px 24px !important;
+
+    .o_policy_banner_header {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px 18px;
+    }
+
+    .o_policy_viewer_body {
+        width: 100%;
+        margin-top: 10px;
+    }
+}
+
+.o_policy_viewer_container {
+    width: 100%;
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+
+    .o_policy_viewer_header {
+        background: #1e293b;
+        color: #ffffff;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .o_policy_badge {
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .o_policy_title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+    }
+
+    .o_policy_pdf_frame {
+        width: 100%;
+        height: 82vh;
+        min-height: 600px;
+        border: none;
+        background: #525659;
+        display: block;
+    }
+
+    .o_policy_image_wrapper {
+        padding: 24px;
+        text-align: center;
+        background: #f8fafc;
+        max-height: 82vh;
+        overflow: auto;
+
+        .o_policy_preview_img {
+            max-width: 100%;
+            max-height: 75vh;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+    }
+}
+
+.o_policy_no_doc_alert {
+    text-align: center;
+    padding: 40px 20px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 2px dashed #cbd5e1;
+}
