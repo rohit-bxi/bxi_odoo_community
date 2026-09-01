@@ -80,7 +80,8 @@ class FbookDashboard extends Component {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `Fbook_Report_${this.company_name || 'Report'}_${this.start_financial_year || ''}.xls`;
+        const compName = (this.state.report_data && this.state.report_data.company_name) || this.company_name || 'Report';
+        a.download = `Fbook_Report_${compName}_${this.start_financial_year || ''}.xls`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

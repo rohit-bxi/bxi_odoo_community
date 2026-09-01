@@ -56,7 +56,7 @@
                             <field name="l10n_in_hra"/>
                             <field name="l10n_in_fixed_allowance"/>
                             <field name="l10n_in_pf_employer_amount"/>
-                            <field name="nps_contribution"/>
+                            <field name="l10n_in_pf_employee_amount"/>
                             <field name="l10n_in_tds"/>
                         </group>
                     </group>
@@ -100,16 +100,41 @@
         <field name="inherit_id" ref="hr.view_employee_form" />
         <field name="arch" type="xml">
             <xpath expr="//page[@name='hr_settings']" position="after">
-                <page string="Final Settlement">
+                <field name="active" invisible="1"/>
+                <page string="Final Settlement" invisible="active">
                     <group>
+                        <field name="template_company_id"/>
                         <field name="is_fnf_done" string="Is FNF Done"/>
                         <field name="date_of_leaving" string="Date of Leaving"/>
+                        <field name="re_hire" string="Re-Hire"/>
+                        <field name="rehire_not_description" string="Rehire Remarks"/>
+                        <field name="departure_reason_id"/>
+                        <field name="departure_description"/>
                     </group>
+                    <group>
                     <button name="action_send_registration_link"
-                        type="object"
-                        string="Send Portal Access"
-                        class="btn-primary"
-                        style="margin-left:10px;" />
+                            type="object"
+                            string="Send Alumni Portal Access"
+                            class="btn-primary"
+                            style="margin-left:10px;"/>
+                    </group>
+                    <group string="Experience &amp; Relieving Letter">
+                        <group>
+                                <button name="action_generate_experience_letter"
+                                string="Generate / Download Experience Letter"
+                                type="object"
+                                class="btn btn-primary"/>
+                        </group>
+                            <group>
+                                <field name="signed_experience_letter"
+                                string="Upload Signed Experience Letter"/>
+                            </group>
+                    </group>
+                    <group string="Form 16 Document">
+                            <field name="form_16"
+                                filename="form_16_filename"
+                                string="Form 16"/>
+                    </group>
                 </page>
             </xpath>
         </field>

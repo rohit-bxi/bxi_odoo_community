@@ -9,11 +9,14 @@
         with a menu item "Fbook Report" which opens a parameters wizard and displays the comparative report.
     """,
     'author': 'BXI',
-    'depends': ['base', 'account', 'sale', 'project_contract_management'],
+    'depends': ['base', 'account', 'sale', 'project_contract_management', 'l10n_in'],
     'data': [
         'security/ir.model.access.csv',
         'views/res_partner_views.xml',
+        'views/res_country_views.xml',
         'views/fbook_report_wizard_views.xml',
+        'views/epf_report_wizard_views.xml',
+        'views/tds_report_wizard_views.xml',
         'views/fbook_report_views.xml',
     ],
     'assets': {

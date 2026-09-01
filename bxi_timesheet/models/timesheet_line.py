@@ -3,6 +3,9 @@ from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from datetime import date, timedelta
 
+# Threshold for role band applicability (inclusive lower bound)
+ROLE_BAND_THRESHOLD = 8
+
 
 class AccountAnalyticLine(models.Model):
     """
@@ -33,6 +36,20 @@ class AccountAnalyticLine(models.Model):
         current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
 
         for rec in self:
+            # Time off requests / holidays are managed via the Time Off app; skip past-week lock check
+            if hasattr(rec, 'holiday_id') and rec.holiday_id:
+                continue
+
+            # Only enforce past-week lock for employees whose role_band is below the threshold.
+            # Employees with role_band >= 8 are exempt from these restrictions.
+            try:
+                rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
+            except Exception:
+                rb_val = None
+
+            if rb_val is not None and rb_val >= ROLE_BAND_THRESHOLD:
+                continue
+
             if rec.date and rec.date < current_week_start:
                 raise UserError(_("Timesheets for previous weeks (before %s) cannot be created, modified, or submitted.") % current_week_start.strftime('%Y-%m-%d'))
 
@@ -40,12 +57,28 @@ class AccountAnalyticLine(models.Model):
     def _check_one_entry_per_day(self):
         """Block users from creating more than 1 timesheet entry for a single day."""
         for rec in self:
+            # Time off requests / holidays are managed via the Time Off app; skip one-entry check
+            if hasattr(rec, 'holiday_id') and rec.holiday_id:
+                continue
+
+            # Only enforce the one-entry-per-day restriction for employees with role_band < 8.
+            try:
+                rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
+            except Exception:
+                rb_val = None
+
+            if rb_val is not None and rb_val >= ROLE_BAND_THRESHOLD:
+                continue
+
             if rec.employee_id and rec.date:
-                existing = self.env['account.analytic.line'].sudo().search([
+                domain = [
                     ('employee_id', '=', rec.employee_id.id),
                     ('date', '=', rec.date),
                     ('id', '!=', rec.id),
-                ], limit=1)
+                ]
+                if 'holiday_id' in self.env['account.analytic.line']._fields:
+                    domain.append(('holiday_id', '=', False))
+                existing = self.env['account.analytic.line'].sudo().search(domain, limit=1)
                 if existing:
                     raise UserError(_("Only one timesheet entry is allowed per day (%s) for employee %s.") % (
                         rec.date.strftime('%Y-%m-%d'), rec.employee_id.name
@@ -55,14 +88,52 @@ class AccountAnalyticLine(models.Model):
     def _check_max_hours_per_day(self):
         """Block users from logging more than 9 hours for a single day."""
         for rec in self:
+            # Skip check for time off lines
+            if hasattr(rec, 'holiday_id') and rec.holiday_id:
+                continue
+
+            # Only enforce the per-day hours cap for employees with role_band < 8.
+            try:
+                rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
+            except Exception:
+                rb_val = None
+
+            if rb_val is not None and rb_val >= ROLE_BAND_THRESHOLD:
+                continue
+
             if rec.employee_id and rec.date:
-                day_lines = self.env['account.analytic.line'].sudo().search([
+                domain = [
                     ('employee_id', '=', rec.employee_id.id),
                     ('date', '=', rec.date),
-                ])
+                ]
+                if 'holiday_id' in self.env['account.analytic.line']._fields:
+                    domain.append(('holiday_id', '=', False))
+                day_lines = self.env['account.analytic.line'].sudo().search(domain)
                 total_hours = sum(day_lines.mapped('unit_amount'))
                 if total_hours > 9.0:
                     raise UserError(_("You cannot log more than 9 hours for a single day (%s).") % rec.date.strftime('%Y-%m-%d'))
+
+    def _check_can_write(self, values):
+        """
+        Allow updating approval workflow fields (state, remarks) on timesheets linked
+        to time off requests, while preserving Odoo's core check against modifying hours/project/dates.
+        """
+        allowed_fields = {'state', 'remarks'}
+        if set(values.keys()).issubset(allowed_fields):
+            return True
+        if hasattr(super(), '_check_can_write'):
+            return super()._check_can_write(values)
+        return True
+
+    def write(self, values):
+        """
+        Allow approval status and remarks updates on timesheet lines linked to Time Off requests (holiday_id)
+        by using superuser mode when updating only approval fields.
+        """
+        allowed_fields = {'state', 'remarks'}
+        if set(values.keys()).issubset(allowed_fields) and any(getattr(line, 'holiday_id', False) for line in self):
+            return super(AccountAnalyticLine, self.sudo()).write(values)
+        return super().write(values)
 
     def action_submit(self):
         today = date.today()
@@ -74,26 +145,40 @@ class AccountAnalyticLine(models.Model):
         is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager') or user.has_group('hr_timesheet.group_hr_timesheet_approver')
         current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
 
-        submitted_recs = self.filtered(lambda r: r.state == 'draft')
+        submitted_recs = self.filtered(lambda r: r.state == 'draft' and not (hasattr(r, 'holiday_id') and r.holiday_id))
         for rec in self:
+            # Bypass timesheets linked to time off requests completely
+            if hasattr(rec, 'holiday_id') and rec.holiday_id:
+                continue
+
             if rec.date and rec.date < current_week_start:
-                is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
-                if not (is_admin or is_hr or is_manager):
-                    raise UserError(_("Timesheets for previous weeks cannot be submitted for approval."))
+                # Only enforce past-week submission restriction for employees with role_band < 8.
+                try:
+                    rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
+                except Exception:
+                    rb_val = None
+
+                if rb_val is not None and rb_val < ROLE_BAND_THRESHOLD:
+                    is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
+                    if not (is_admin or is_hr or is_manager):
+                        raise UserError(_("Timesheets for previous weeks cannot be submitted for approval."))
 
             # Check if another timesheet for the same employee & date is already submitted or approved
             if rec.state == 'draft':
-                already_submitted = self.env['account.analytic.line'].sudo().search([
+                domain = [
                     ('employee_id', '=', rec.employee_id.id),
                     ('date', '=', rec.date),
                     ('state', 'in', ['submitted', 'approved']),
                     ('id', '!=', rec.id)
-                ], limit=1)
+                ]
+                if 'holiday_id' in self.env['account.analytic.line']._fields:
+                    domain.append(('holiday_id', '=', False))
+                already_submitted = self.env['account.analytic.line'].sudo().search(domain, limit=1)
                 if already_submitted:
                     status_str = "submitted for approval" if already_submitted.state == 'submitted' else "approved"
                     raise UserError(_("Timesheet for %s on %s has already been %s.") % (rec.employee_id.name, rec.date.strftime('%Y-%m-%d'), status_str))
 
-                rec.state = 'submitted'
+                rec.sudo().write({'state': 'submitted'})
         return True
 
     def action_approve(self):
@@ -103,6 +188,10 @@ class AccountAnalyticLine(models.Model):
 
         approved_recs = self.env['account.analytic.line']
         for rec in self:
+            # Bypass timesheets linked to time off requests completely
+            if hasattr(rec, 'holiday_id') and rec.holiday_id:
+                continue
+
             current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
 
             # Block self-approval for non-admins
@@ -115,7 +204,7 @@ class AccountAnalyticLine(models.Model):
                 raise UserError(_("You are not authorized for the approval of timesheets for %s. Only their reporting manager can approve or refuse them.") % rec.employee_id.name)
 
             if rec.state == 'submitted':
-                rec.state = 'approved'
+                rec.sudo().write({'state': 'approved'})
                 approved_recs |= rec
 
         if approved_recs:
@@ -140,6 +229,10 @@ class AccountAnalyticLine(models.Model):
 
         refused_recs = self.env['account.analytic.line']
         for rec in self:
+            # Bypass timesheets linked to time off requests completely
+            if hasattr(rec, 'holiday_id') and rec.holiday_id:
+                continue
+
             current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
 
             # Block self-refusal for non-admins
@@ -152,7 +245,7 @@ class AccountAnalyticLine(models.Model):
                 raise UserError(_("You are not authorized for the refusal of timesheets for %s. Only their reporting manager can approve or refuse them.") % rec.employee_id.name)
 
             if rec.state == 'submitted':
-                rec.state = 'refused'
+                rec.sudo().write({'state': 'refused'})
                 refused_recs |= rec
 
         if refused_recs:
@@ -197,6 +290,14 @@ class AccountAnalyticLine(models.Model):
         employees = self.env['hr.employee'].sudo().search([('active', '=', True)])
 
         for emp in employees:
+            # Apply auto-LWP only for employees with role_band < 8.
+            try:
+                emp_rb = int(emp.role_band) if emp.role_band else None
+            except Exception:
+                emp_rb = None
+
+            if emp_rb is not None and emp_rb >= ROLE_BAND_THRESHOLD:
+                continue
             # Search by exact leave code 'LOP': company-specific first, then global
             unpaid_type = self.env['hr.leave.type'].sudo().search([
                 ('company_id', '=', emp.company_id.id),
@@ -221,9 +322,26 @@ class AccountAnalyticLine(models.Model):
                 ('date', 'in', working_days),
                 ('unit_amount', '>', 0.0),
             ])
-            
+
             distinct_logged_dates = set(logged_days.mapped('date'))
-            
+
+            # Treat approved/validated leaves as presence for that day (do not count as missing)
+            approved_leaves = self.env['hr.leave'].sudo().search([
+                ('employee_id', '=', emp.id),
+                ('request_date_from', '<=', max(working_days)),
+                ('request_date_to', '>=', min(working_days)),
+                ('state', 'not in', ('draft', 'cancel', 'refuse')),
+            ])
+            for lv in approved_leaves:
+                # Add each covered date to the distinct set
+                start_dt = lv.request_date_from
+                end_dt = lv.request_date_to
+                cur = start_dt
+                while cur <= end_dt:
+                    if cur in working_days:
+                        distinct_logged_dates.add(cur)
+                    cur = cur + timedelta(days=1)
+
             if len(distinct_logged_dates) == 0:
                 existing_leave = self.env['hr.leave'].sudo().search([
                     ('employee_id', '=', emp.id),
@@ -244,19 +362,18 @@ class AccountAnalyticLine(models.Model):
                             'company_id': emp.company_id.id,
                             'name': 'Auto-created: Leave Without Pay (No timesheet logged for 6 working days)',
                         })
-                        if hasattr(leave, 'action_submit'):
+                        # Auto-create the LOP and validate it immediately so it is not held for
+                        # a separate manager/HR approval step.
+                        if hasattr(leave, 'action_validate'):
+                            leave.action_validate()
+                        elif hasattr(leave, 'action_approve'):
+                            leave.action_approve()
+                        elif hasattr(leave, 'action_submit'):
                             leave.action_submit()
                         elif hasattr(leave, 'action_confirm'):
                             leave.action_confirm()
-                        try:
-                            if hasattr(leave, 'action_approve'):
-                                leave.action_approve()
-                            elif hasattr(leave, 'action_validate'):
-                                leave.action_validate()
-                        except Exception:
-                            pass
                         _logger.info(
-                            f"Auto-created and auto-approved Unpaid Leave for employee {emp.name} on {today}"
+                            f"Auto-created and validated Unpaid Leave for employee {emp.name} on {today}"
                         )
                     except Exception as e:
                         _logger.error(

@@ -5,6 +5,7 @@ from odoo.exceptions import UserError
 import logging
 
 _logger = logging.getLogger(__name__)
+ROLE_BAND_THRESHOLD = 8
 
 
 class BxiTimesheetDashboard(models.AbstractModel):
@@ -187,10 +188,11 @@ class BxiTimesheetDashboard(models.AbstractModel):
             ]
             ts_lines = self.env['account.analytic.line'].sudo().search(domain)
 
-            draft_count = len(ts_lines.filtered(lambda l: l.state == 'draft'))
-            submitted_count = len(ts_lines.filtered(lambda l: l.state == 'submitted'))
-            approved_count = len(ts_lines.filtered(lambda l: l.state == 'approved'))
-            refused_count = len(ts_lines.filtered(lambda l: l.state == 'refused'))
+            work_ts_lines = ts_lines.filtered(lambda l: not (hasattr(l, 'holiday_id') and l.holiday_id))
+            draft_count = len(work_ts_lines.filtered(lambda l: l.state == 'draft'))
+            submitted_count = len(work_ts_lines.filtered(lambda l: l.state == 'submitted'))
+            approved_count = len(work_ts_lines.filtered(lambda l: l.state == 'approved'))
+            refused_count = len(work_ts_lines.filtered(lambda l: l.state == 'refused'))
 
             # Group timesheets by project, task & description
             for line in ts_lines:
@@ -269,6 +271,18 @@ class BxiTimesheetDashboard(models.AbstractModel):
             else:
                 shift_hours_str = "Off (0:00)"
 
+            # Check for approved/validated leave covering this date
+            leave_rec = False
+            try:
+                leave_rec = self.env['hr.leave'].sudo().search([
+                    ('employee_id', '=', target_employee.id if target_employee else False),
+                    ('request_date_from', '<=', d),
+                    ('request_date_to', '>=', d),
+                    ('state', 'not in', ('draft', 'cancel', 'refuse')),
+                ], limit=1)
+            except Exception:
+                leave_rec = False
+
             dates_list.append({
                 'date_str': d.strftime('%Y-%m-%d'),
                 'day_name': d.strftime('%A'),
@@ -281,6 +295,12 @@ class BxiTimesheetDashboard(models.AbstractModel):
                 'prod_hours_raw': prod_h,
                 'shift_hours_raw': day_shift_h,
                 'daily_total': self._float_to_time(daily_totals_raw[i]),
+                'leave': {
+                    'id': leave_rec.id if leave_rec else False,
+                    'name': leave_rec.name if leave_rec else False,
+                    'holiday_status': leave_rec.holiday_status_id.name if leave_rec and leave_rec.holiday_status_id else False,
+                    'state': leave_rec.state if leave_rec else False,
+                } if leave_rec else False,
             })
 
         # Calculate totals
@@ -303,7 +323,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
                     'hours_raw': val['days'][i],
                     'date_str': d_dict['date_str'],
                     'is_today': d_dict['is_today'],
-                    'state': val['states'][i]
+                    'state': val['states'][i],
+                    'leave': d_dict.get('leave') if d_dict else False,
                 })
 
             grid_lines.append({
@@ -400,6 +421,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
                         'check_in': check_in_time or '-',
                         'check_out': check_out_time or '-',
                         'hours': day_hours_str[idx],
+                        'leave': False,
                         'is_today': d_dict['is_today']
                     })
 
@@ -545,8 +567,14 @@ class BxiTimesheetDashboard(models.AbstractModel):
         current_week_start = self._get_current_week_start()
         is_manager = is_timesheet_admin or is_timesheet_approver or (current_employee and target_emp_id in subordinates.ids)
 
-        # Past week lock check
-        if target_date < current_week_start:
+        # Only enforce past-week lock for employees with role_band < 8.
+        try:
+            target_emp = self.env['hr.employee'].browse(target_emp_id)
+            target_rb = int(target_emp.role_band) if target_emp and target_emp.role_band else None
+        except Exception:
+            target_rb = None
+
+        if target_date < current_week_start and target_rb is not None and target_rb < ROLE_BAND_THRESHOLD:
             raise UserError(_("Once a week is crossed, timesheets for the previous week cannot be modified or submitted."))
 
         # Check if timesheet for this employee and date is already submitted or approved
@@ -555,7 +583,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
             ('date', '=', target_date),
             ('state', 'in', ['submitted', 'approved']),
         ], limit=1)
-        if already_submitted and not is_manager:
+        # Only block edits when the target employee is in the role_band < 8 scope.
+        if already_submitted and not is_manager and (target_rb is not None and target_rb < ROLE_BAND_THRESHOLD):
             status_str = "submitted for approval" if already_submitted.state == 'submitted' else "approved"
             raise UserError(_("Timesheet for %s has already been %s. You cannot add or modify entries for a date that has already been submitted or approved.") % (target_date.strftime('%Y-%m-%d'), status_str))
 
@@ -643,6 +672,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
     @api.model
     def submit_weekly_timesheet(self, employee_id, start_date_str):
         """Submit all draft timesheets for this employee and week."""
+        _logger.info("submit_weekly_timesheet called with employee_id=%s start_date_str=%s", employee_id, start_date_str)
         user = self.env.user
         allowed_company_ids = self.env.companies.ids
         current_employee = self.env['hr.employee'].search([
@@ -685,13 +715,16 @@ class BxiTimesheetDashboard(models.AbstractModel):
             raise UserError(_("Once a week is crossed, timesheets for the previous week cannot be submitted."))
 
         end_date = start_date + timedelta(days=6)
-        lines = self.env['account.analytic.line'].search([
+        domain = [
             ('employee_id', '=', target_emp_id),
             ('company_id', 'in', allowed_company_ids),
             ('date', '>=', start_date),
             ('date', '<=', end_date),
             ('state', '=', 'draft'),
-        ])
+        ]
+        if 'holiday_id' in self.env['account.analytic.line']._fields:
+            domain.append(('holiday_id', '=', False))
+        lines = self.env['account.analytic.line'].search(domain)
         if lines:
             lines.action_submit()
         return True
@@ -739,13 +772,16 @@ class BxiTimesheetDashboard(models.AbstractModel):
 
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = start_date + timedelta(days=6)
-        lines = self.env['account.analytic.line'].search([
+        domain = [
             ('employee_id', '=', target_emp_id),
             ('company_id', 'in', allowed_company_ids),
             ('date', '>=', start_date),
             ('date', '<=', end_date),
             ('state', '=', 'submitted'),
-        ])
+        ]
+        if 'holiday_id' in self.env['account.analytic.line']._fields:
+            domain.append(('holiday_id', '=', False))
+        lines = self.env['account.analytic.line'].search(domain)
         if lines:
             lines.action_approve()
             total_hours = sum(lines.mapped('unit_amount'))
@@ -797,13 +833,16 @@ class BxiTimesheetDashboard(models.AbstractModel):
 
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = start_date + timedelta(days=6)
-        lines = self.env['account.analytic.line'].search([
+        domain = [
             ('employee_id', '=', target_emp_id),
             ('company_id', 'in', allowed_company_ids),
             ('date', '>=', start_date),
             ('date', '<=', end_date),
             ('state', '=', 'submitted'),
-        ])
+        ]
+        if 'holiday_id' in self.env['account.analytic.line']._fields:
+            domain.append(('holiday_id', '=', False))
+        lines = self.env['account.analytic.line'].search(domain)
         if lines:
             lines.action_refuse()
             total_hours = sum(lines.mapped('unit_amount'))
@@ -835,6 +874,31 @@ class BxiTimesheetDashboard(models.AbstractModel):
                         f"BXI Timesheet: Direct manager {manager_name} has no configured email for employee {employee.name}. Skipping submission notification."
                     )
                     return
+
+                # Create an Odoo activity for the direct manager, similar to time-off approval tasks.
+                if manager and manager.user_id:
+                    try:
+                        activity_type = self.env.ref('mail.mail_activity_data_todo', raise_if_not_found=False)
+                        if activity_type:
+                            existing_activity = self.env['mail.activity'].sudo().search([
+                                ('res_model', '=', 'hr.employee'),
+                                ('res_id', '=', employee.id),
+                                ('activity_type_id', '=', activity_type.id),
+                                ('user_id', '=', manager.user_id.id),
+                                ('summary', '=', f"Timesheet approval for {employee.name}"),
+                            ], limit=1)
+                            if not existing_activity:
+                                self.env['mail.activity'].sudo().create({
+                                    'res_model_id': self.env['ir.model']._get('hr.employee').id,
+                                    'res_id': employee.id,
+                                    'activity_type_id': activity_type.id,
+                                    'user_id': manager.user_id.id,
+                                    'summary': f"Timesheet approval for {employee.name}",
+                                    'note': f"{employee.name} submitted a timesheet for {date_range_str} ({total_hours} hrs). Please review and approve.",
+                                    'date_deadline': fields.Date.today() + timedelta(days=1),
+                                })
+                    except Exception as e:
+                        _logger.warning(f"BXI Timesheet: Failed to create approval activity for manager {manager_name}: {str(e)}")
 
                 subject = f"[Timesheet Submission] {employee.name} submitted timesheet for {date_range_str}"
                 body_html = f"""

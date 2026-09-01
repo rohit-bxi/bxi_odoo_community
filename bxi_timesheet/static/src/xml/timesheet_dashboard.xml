@@ -100,13 +100,11 @@
 
                     <!-- Action Buttons -->
                     <div class="d-flex align-items-center gap-2">
-                        <!-- Submit Button (Disabled if past week) -->
-                        <t t-if="state.draft_count > 0 and !state.is_past_week">
-                            <button type="button" class="btn btn-primary btn-sm px-4 rounded-pill text-white shadow-sm fw-bold"
-                                    t-on-click="submitTimesheet">
-                                Submit for Approval
-                            </button>
-                        </t>
+                        <!-- Submit Button (Condition removed) -->
+                        <button type="button" class="btn btn-primary btn-sm px-4 rounded-pill text-white shadow-sm fw-bold"
+                                t-on-click="submitTimesheet">
+                            Submit for Approval
+                        </button>
                         
                         <!-- Manager / HR / Admin Actions -->
                         <t t-if="state.submitted_count > 0 and (state.is_target_employee_manager or state.is_hr or state.is_admin)">
@@ -221,12 +219,19 @@
                                                     day.is_today ? 'today-column-cell' : ''
                                                 )
                                             }">
-                                                <input type="text" 
-                                                       t-att-value="day.hours" 
-                                                       class="cell-time-input fw-semibold" 
-                                                       t-att-placeholder="'0:00'"
-                                                       t-att-disabled="state.is_past_week or day.state === 'submitted' or day.state === 'approved' or day.state === 'refused'"
-                                                       t-on-blur="(ev) => this.onCellBlur(ev, line, day.date_str)"/>
+                                                <t t-if="day.leave">
+                                                    <div class="d-flex justify-content-center align-items-center h-100">
+                                                        <span class="badge bg-info text-white rounded-pill px-3 py-1">Leave</span>
+                                                    </div>
+                                                </t>
+                                                <t t-else="">
+                                                    <input type="text" 
+                                                           t-att-value="day.hours" 
+                                                           class="cell-time-input fw-semibold" 
+                                                           t-att-placeholder="'0:00'"
+                                                           t-att-disabled="state.is_past_week or day.state === 'submitted' or day.state === 'approved' or day.state === 'refused'"
+                                                           t-on-blur="(ev) => this.onCellBlur(ev, line, day.date_str)"/>
+                                                </t>
                                             </td>
                                         </t>
 

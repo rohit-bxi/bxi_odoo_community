@@ -1,0 +1,136 @@
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ASSET KPI DASHBOARD VIEW
+    ══════════════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_asset_kpi_dashboard_form" model="ir.ui.view">
+        <field name="name">asset.management.dashboard</field>
+        <field name="model">asset.management</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <list>
+                <!-- This is a placeholder; actual dashboard is the pivot + search combo -->
+            </list>
+        </field>
+    </record>
+
+    <!-- Custom Interactive OWL KPI Dashboard Client Action -->
+    <record id="action_asset_management_dashboard" model="ir.actions.client">
+        <field name="name">Asset Dashboard</field>
+        <field name="tag">asset_management_dashboard_tag</field>
+        <field name="target">main</field>
+    </record>
+
+    <!-- ─── Graph View (by Asset Type) ──────────────────────────────────────── -->
+    <record id="view_asset_graph" model="ir.ui.view">
+        <field name="name">asset.management.graph</field>
+        <field name="model">asset.management</field>
+        <field name="arch" type="xml">
+            <graph string="Assets Overview" type="bar" stacked="1">
+                <field name="asset_type_id"/>
+                <field name="amount" type="measure" string="Total Cost"/>
+                <field name="current_amount" type="measure" string="Net Book Value"/>
+                <field name="total_depreciation_amount" type="measure"
+                       string="Accumulated Depreciation"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- ─── Pivot View ───────────────────────────────────────────────────────── -->
+    <record id="view_asset_pivot" model="ir.ui.view">
+        <field name="name">asset.management.pivot</field>
+        <field name="model">asset.management</field>
+        <field name="arch" type="xml">
+            <pivot string="Asset Analysis" disable_linking="0">
+                <field name="asset_type_id" type="row"/>
+                <field name="state" type="col"/>
+                <field name="amount" type="measure" string="Purchase Cost"/>
+                <field name="current_amount" type="measure" string="Net Book Value"/>
+                <field name="total_depreciation_amount" type="measure"
+                       string="Accumulated Depreciation"/>
+                <field name="total_maintenance_amount" type="measure"
+                       string="Maintenance Cost"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ─── Depreciation Pivot ───────────────────────────────────────────────── -->
+    <record id="view_depreciation_pivot" model="ir.ui.view">
+        <field name="name">asset.depreciation.entry.pivot</field>
+        <field name="model">asset.depreciation.entry</field>
+        <field name="arch" type="xml">
+            <pivot string="Depreciation Analysis">
+                <field name="entry_date" type="row" interval="month"/>
+                <field name="depreciation_method" type="col"/>
+                <field name="depreciation_amount" type="measure" string="Amount"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ─── Depreciation Graph ───────────────────────────────────────────────── -->
+    <record id="view_depreciation_graph" model="ir.ui.view">
+        <field name="name">asset.depreciation.entry.graph</field>
+        <field name="model">asset.depreciation.entry</field>
+        <field name="arch" type="xml">
+            <graph string="Depreciation Over Time" type="line">
+                <field name="entry_date" interval="month"/>
+                <field name="depreciation_amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- ─── Maintenance Pivot ────────────────────────────────────────────────── -->
+    <record id="view_maintenance_pivot" model="ir.ui.view">
+        <field name="name">asset.maintenance.entry.pivot</field>
+        <field name="model">asset.maintenance.entry</field>
+        <field name="arch" type="xml">
+            <pivot string="Maintenance Cost Analysis">
+                <field name="assign_date" type="row" interval="month"/>
+                <field name="maintenance_type" type="col"/>
+                <field name="maintenance_amount" type="measure" string="Cost"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ─── Maintenance Graph ────────────────────────────────────────────────── -->
+    <record id="view_maintenance_graph" model="ir.ui.view">
+        <field name="name">asset.maintenance.entry.graph</field>
+        <field name="model">asset.maintenance.entry</field>
+        <field name="arch" type="xml">
+            <graph string="Maintenance Cost" type="bar">
+                <field name="assign_date" interval="month"/>
+                <field name="maintenance_amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- ─── Depreciation Action with graph/pivot (extends base action) ────────── -->
+    <!-- Note: base action defined in asset_views.xml; view_mode updated here -->
+
+    <!-- ─── Asset Depreciation Schedule Report Action ────────────────────────── -->
+    <record id="action_asset_depreciation_schedule_report" model="ir.actions.act_window">
+        <field name="name">Depreciation Schedule</field>
+        <field name="res_model">asset.management</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="domain">[('depreciation_apply', '=', True), ('state', '=', 'confirmed')]</field>
+        <field name="context">{'search_default_confirmed': 1}</field>
+    </record>
+
+    <!-- Dashboard Menu -->
+    <menuitem id="menu_asset_dashboard"
+              name="Dashboard"
+              parent="menu_asset_root"
+              action="action_asset_management_dashboard"
+              sequence="5"
+              groups="assets_user_group,assets_admin_group,base.group_system"/>
+
+    <!-- Depreciation Schedule Menu -->
+    <menuitem id="menu_depreciation_schedule"
+              name="Depreciation Schedule"
+              parent="menu_asset_root"
+              action="action_asset_depreciation_schedule_report"
+              groups="depreciation_user_group,depreciation_admin_group,base.group_system"
+              sequence="55"/>
+
+</odoo>

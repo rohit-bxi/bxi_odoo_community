@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_country_form_inherit_country_code_3" model="ir.ui.view">
+        <field name="name">res.country.form.inherit.country.code.3</field>
+        <field name="model">res.country</field>
+        <field name="inherit_id" ref="base.view_country_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='code']" position="after">
+                <field name="country_code_3" required="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_country_tree_inherit_country_code_3" model="ir.ui.view">
+        <field name="name">res.country.tree.inherit.country.code.3</field>
+        <field name="model">res.country</field>
+        <field name="inherit_id" ref="base.view_country_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='code']" position="after">
+                <field name="country_code_3"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

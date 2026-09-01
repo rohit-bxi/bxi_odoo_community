@@ -12,6 +12,7 @@
         'security/hr_employee_security.xml',
         'views/hr_employee_view.xml',
         'report/payslip_contact_employee.xml',
+        'report/relieving_exp_letter.xml'
     ],
     'installable': True,
     'application': False,

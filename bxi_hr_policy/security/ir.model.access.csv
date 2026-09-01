@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hr_company_policy_user,hr.company.policy.user,model_hr_company_policy,base.group_user,1,0,0,0
+access_hr_company_policy_officer,hr.company.policy.officer,model_hr_company_policy,hr.group_hr_user,1,1,1,1
+access_hr_company_policy_manager,hr.company.policy.manager,model_hr_company_policy,hr.group_hr_manager,1,1,1,1
+access_hr_company_policy_admin,hr.company.policy.admin,model_hr_company_policy,base.group_system,1,1,1,1

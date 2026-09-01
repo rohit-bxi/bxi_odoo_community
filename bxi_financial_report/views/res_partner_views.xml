@@ -1,12 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Base Partner Form Requirements -->
     <record id="view_partner_form_inherit_vendor_category" model="ir.ui.view">
         <field name="name">res.partner.form.inherit.vendor.category</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="priority" eval="90"/>
         <field name="arch" type="xml">
+            <!-- Functional Name above Company field -->
+            <xpath expr="//field[@name='parent_id']" position="before">
+                <field name="functional_name" placeholder="Functional Name..." required="1"/>
+            </xpath>
+
+            <!-- Contact & Address Fields Required -->
+            <xpath expr="//field[@name='email']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='phone']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='street']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='city']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='state_id']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='zip']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='country_id']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
+
+            <!-- Right Column Fields Required -->
+            <xpath expr="//field[@name='website']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='category_id']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
+
+            <!-- Custom Category, Investor, and Partner Fields -->
             <xpath expr="//field[@name='category_id']" position="after">
                 <field name="vendor_category" string="Vendor Category" required="1"/>
+                <field name="is_partner_investor" string="Investor" required="1"/>
+                <field name="is_partner" string="Partner" required="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- GST & Tax Fields Required (l10n_in) -->
+    <record id="view_partner_form_inherit_l10n_in_required" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.l10n_in.required</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="l10n_in.l10n_in_view_partner_form"/>
+        <field name="priority" eval="95"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='l10n_in_gst_treatment']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='vat']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='l10n_in_pan_entity_id']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='l10n_in_tan']" position="attributes">
+                <attribute name="required">1</attribute>
             </xpath>
         </field>
     </record>

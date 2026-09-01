@@ -54,7 +54,7 @@ class BxiTimesheetDashboard extends Component {
             const sunday = new Date(today);
             sunday.setDate(today.getDate() - today.getDay());
             this.state.start_date_str = this.formatDateStr(sunday);
-            
+
             await this.loadData();
         });
     }
@@ -127,10 +127,10 @@ class BxiTimesheetDashboard extends Component {
         const year = parseInt(parts[0], 10);
         const month = parseInt(parts[1], 10) - 1;
         const day = parseInt(parts[2], 10);
-        
+
         let currentDate = new Date(year, month, day);
         currentDate.setDate(currentDate.getDate() + (offset * 7));
-        
+
         this.state.start_date_str = this.formatDateStr(currentDate);
         await this.loadData();
     }
@@ -139,7 +139,7 @@ class BxiTimesheetDashboard extends Component {
         const today = new Date();
         const sunday = new Date(today);
         sunday.setDate(today.getDate() - today.getDay());
-        
+
         this.state.start_date_str = this.formatDateStr(sunday);
         await this.loadData();
     }
@@ -156,7 +156,7 @@ class BxiTimesheetDashboard extends Component {
 
     async onCellBlur(ev, line, dateStr) {
         const value = ev.target.value.trim();
-        
+
         // Optimistic local feedback if format is wrong, or save to backend
         try {
             await this.orm.call(
@@ -280,13 +280,13 @@ class BxiTimesheetDashboard extends Component {
         const day = parseInt(parts[2], 10);
         const targetDate = new Date(year, month, day);
         targetDate.setHours(0, 0, 0, 0);
-        
+
         // Find preceding Sunday for today
         const today = new Date();
         const sunday = new Date(today);
         sunday.setDate(today.getDate() - today.getDay());
         sunday.setHours(0, 0, 0, 0);
-        
+
         if (targetDate < sunday) {
             return "Timesheets for previous weeks cannot be created or modified.";
         }
@@ -361,15 +361,7 @@ class BxiTimesheetDashboard extends Component {
     }
 
     async submitTimesheet() {
-        if (this.state.is_past_week && !(this.state.is_target_employee_manager || this.state.is_hr || this.state.is_admin)) {
-            if (this.notification) {
-                this.notification.add(
-                    "Once a week is crossed, timesheets for the previous week cannot be submitted.",
-                    { title: "Submission Blocked", type: "danger" }
-                );
-            }
-            return;
-        }
+        // Rely on server-side validation (including approved leaves/overrides)
 
         try {
             await this.orm.call(
@@ -390,9 +382,10 @@ class BxiTimesheetDashboard extends Component {
             }
         } catch (error) {
             console.error("Error submitting timesheet:", error);
+            const errorMessage = error?.data?.message || error?.data?.debug || error?.message || "Error submitting timesheet.";
             if (this.notification) {
                 this.notification.add(
-                    error.message || "Error submitting timesheet.",
+                    errorMessage,
                     { title: "Error", type: "danger" }
                 );
             }

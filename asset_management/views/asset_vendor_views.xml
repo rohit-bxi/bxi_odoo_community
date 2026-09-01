@@ -66,6 +66,13 @@
         </field>
     </record>
 
+    <!-- Alias for configuration menu reference -->
+    <record id="action_asset_vendors" model="ir.actions.act_window">
+        <field name="name">Vendors</field>
+        <field name="res_model">asset.vendor</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
     <!-- Menu Item for Asset Vendor -->
     <menuitem id="menu_asset_vendor_root"
               name="Vendors"
@@ -73,5 +80,12 @@
               parent="menu_asset_root"
               action="action_asset_vendor"
               sequence="20"/>
+
+    <menuitem id="asset_vendor_menu"
+              name="Vendors"
+              parent="asset_configuration"
+              action="action_asset_vendor"
+              groups="assets_admin_group,base.group_system"
+              sequence="15"/>
 
 </odoo>

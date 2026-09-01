@@ -4,3 +4,4 @@ from . import desktime_log
 from . import sync_wizard
 from . import timesheet_dashboard
 from . import timesheet_line
+from . import monthly_attendance_timesheet_wizard

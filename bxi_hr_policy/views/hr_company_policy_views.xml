@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         1. UPLOAD MENU VIEWS (MANAGEMENT: LIST & FORM)
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Upload List View -->
+    <record id="view_hr_company_policy_upload_list" model="ir.ui.view">
+        <field name="name">hr.company.policy.upload.list</field>
+        <field name="model">hr.company.policy</field>
+        <field name="arch" type="xml">
+            <list string="Company Policy Documents" sample="1">
+                <field name="name" string="Policy Document Name" class="fw-bold text-primary"/>
+                <field name="policy_filename" string="File Name"/>
+                <field name="file_type" string="Format" widget="badge" decoration-info="file_type == 'PDF'" decoration-success="file_type in ['PNG', 'JPG', 'JPEG']"/>
+                <field name="upload_date" string="Upload Date"/>
+                <field name="uploaded_by_id" string="Uploaded By" widget="many2one_avatar_user"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Upload Form View (2 Primary Fields + Details) -->
+    <record id="view_hr_company_policy_upload_form" model="ir.ui.view">
+        <field name="name">hr.company.policy.upload.form</field>
+        <field name="model">hr.company.policy</field>
+        <field name="arch" type="xml">
+            <form string="Upload Company Policy">
+                <sheet>
+                    <div class="oe_title mb-4">
+                        <label for="name" string="Policy Document Name" class="oe_edit_only fw-bold text-uppercase fs-6 text-muted"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Employee Code of Conduct 2026..." required="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Document Attachment">
+                            <field name="policy_filename" invisible="1"/>
+                            <field name="policy_document" 
+                                   string="Policy Document" 
+                                   filename="policy_filename" 
+                                   widget="binary"
+                                   required="1"/>
+                            <field name="file_type" string="Format" readonly="1" invisible="not policy_filename"/>
+                        </group>
+                        <group string="Publication Information">
+                            <field name="upload_date" readonly="1"/>
+                            <field name="uploaded_by_id" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Policy Summary / Notes">
+                            <field name="description" placeholder="Add any relevant notes, version history, or applicability guidelines for this policy..."/>
+                        </page>
+                        <page string="Document Preview" invisible="not policy_document">
+                            <field name="preview_html" widget="html" nolabel="1" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         2. POLICIES MENU VIEWS (EMPLOYEE VIEW-ONLY: KANBAN & IN-SCREEN VIEWER)
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Policies Kanban View -->
+    <record id="view_hr_company_policy_viewer_kanban" model="ir.ui.view">
+        <field name="name">hr.company.policy.viewer.kanban</field>
+        <field name="model">hr.company.policy</field>
+        <field name="arch" type="xml">
+            <kanban sample="1" create="0" edit="0" delete="0">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="policy_filename"/>
+                <field name="file_type"/>
+                <field name="upload_date"/>
+                <field name="uploaded_by_id"/>
+                <templates>
+                    <t t-name="card" class="flex-column p-3 o_policy_card_kanban">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span t-attf-class="badge #{record.file_type.raw_value == 'PDF' ? 'bg-danger' : 'bg-primary'} px-2 py-1">
+                                <i t-attf-class="fa #{record.file_type.raw_value == 'PDF' ? 'fa-file-pdf-o' : 'fa-file-text-o'} me-1" title="Document Format"/>
+                                <t t-esc="record.file_type.value or 'DOCUMENT'"/>
+                            </span>
+                            <span class="text-muted small">
+                                <i class="fa fa-calendar-o me-1" title="Upload Date"/> <t t-esc="record.upload_date.value"/>
+                            </span>
+                        </div>
+                        <h4 class="fw-bold text-dark text-truncate mb-2" t-att-title="record.name.value">
+                            <t t-esc="record.name.value"/>
+                        </h4>
+                        <div class="text-muted small mb-3">
+                            <i class="fa fa-paperclip me-1" title="File Name"/> <t t-esc="record.policy_filename.value or 'Attached Document'"/>
+                        </div>
+                        <div class="mt-auto pt-2 border-top d-flex justify-content-between align-items-center">
+                            <span class="small text-muted">
+                                <i class="fa fa-eye me-1 text-success" title="View-Only"/> View Only Mode
+                            </span>
+                            <button type="object" name="action_open_viewer" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                <i class="fa fa-book me-1" title="Open Document"/> Open Policy
+                            </button>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Policies In-Screen View-Only Form View -->
+    <record id="view_hr_company_policy_viewer_form" model="ir.ui.view">
+        <field name="name">hr.company.policy.viewer.form</field>
+        <field name="model">hr.company.policy</field>
+        <field name="arch" type="xml">
+            <form string="Company Policy Viewer" create="0" edit="0" delete="0">
+                <sheet class="o_policy_viewer_sheet">
+                    <!-- Policy Header Banner -->
+                    <div class="o_policy_banner_header mb-3">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <span class="badge bg-secondary mb-1">
+                                    <i class="fa fa-lock me-1" title="View Only Protected"/> View-Only Protected Document
+                                </span>
+                                <h2 class="fw-bold text-dark m-0">
+                                    <field name="name" readonly="1"/>
+                                </h2>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 text-muted small">
+                                <span><i class="fa fa-calendar me-1" title="Upload Date"/> <field name="upload_date" readonly="1"/></span>
+                                <span>•</span>
+                                <span><i class="fa fa-paperclip me-1" title="File Name"/> <field name="policy_filename" readonly="1"/></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Embedded View-Only Document Frame (Fills Screen) -->
+                    <div class="o_policy_viewer_body">
+                        <field name="preview_html" widget="html" nolabel="1" readonly="1"/>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_hr_company_policy_search" model="ir.ui.view">
+        <field name="name">hr.company.policy.search</field>
+        <field name="model">hr.company.policy</field>
+        <field name="arch" type="xml">
+            <search string="Company Policies">
+                <field name="name" string="Policy Document Name"/>
+                <field name="policy_filename" string="File Name"/>
+                <field name="uploaded_by_id" string="Uploaded By"/>
+                <filter string="PDF Documents" name="filter_pdf" domain="[('file_type', '=', 'PDF')]"/>
+                <separator/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         3. WINDOW ACTIONS
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Action for 'Policies' Menu (View-Only In-Screen) -->
+    <record id="action_hr_company_policy_viewer" model="ir.actions.act_window">
+        <field name="name">Company Policies</field>
+        <field name="res_model">hr.company.policy</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('view_hr_company_policy_viewer_kanban')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_hr_company_policy_upload_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_hr_company_policy_viewer_form')})]"/>
+        <field name="search_view_id" ref="view_hr_company_policy_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No company policies available to view.
+            </p>
+            <p>
+                HR administrators can upload organizational policies under the 'Upload' menu.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action for 'Upload' Menu (Management: List & Form) -->
+    <record id="action_hr_company_policy_upload" model="ir.actions.act_window">
+        <field name="name">Upload Company Policy</field>
+        <field name="res_model">hr.company.policy</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_hr_company_policy_upload_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_hr_company_policy_upload_form')})]"/>
+        <field name="search_view_id" ref="view_hr_company_policy_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Upload your first company policy document!
+            </p>
+            <p>
+                Provide the Policy Document Name and attach the PDF or document file.
+            </p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         4. MENU HIERARCHY UNDER EMPLOYEES
+         ═══════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Parent Menu: Company Policy (Child of Employees) -->
+    <menuitem id="menu_hr_company_policy_root"
+              name="Company Policy"
+              parent="hr.menu_hr_root"
+              sequence="25"/>
+
+    <!-- Sub-menu 1: Policies (In-Screen View-Only) -->
+    <menuitem id="menu_hr_company_policy_viewer_menu"
+              name="Policies"
+              parent="menu_hr_company_policy_root"
+              action="action_hr_company_policy_viewer"
+              sequence="10"/>
+
+    <!-- Sub-menu 2: Upload (List & Form Upload) -->
+    <menuitem id="menu_hr_company_policy_upload_menu"
+              name="Upload"
+              parent="menu_hr_company_policy_root"
+              action="action_hr_company_policy_upload"
+              sequence="20"/>
+
+</odoo>
