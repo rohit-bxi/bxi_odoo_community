@@ -236,6 +236,7 @@ class EmployeeAPIController(http.Controller):
             "status": True,
             "message": "Login successful.",
             "employee": {
+                "employee_id": employee.id,
                 "employee_code": employee.employee_code,
                 "name": employee.name,
                 "email": employee.private_email,
