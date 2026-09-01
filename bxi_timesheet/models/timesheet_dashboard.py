@@ -271,6 +271,18 @@ class BxiTimesheetDashboard(models.AbstractModel):
             else:
                 shift_hours_str = "Off (0:00)"
 
+            # Check for approved/validated leave covering this date
+            leave_rec = False
+            try:
+                leave_rec = self.env['hr.leave'].sudo().search([
+                    ('employee_id', '=', target_employee.id if target_employee else False),
+                    ('request_date_from', '<=', d),
+                    ('request_date_to', '>=', d),
+                    ('state', 'not in', ('draft', 'cancel', 'refuse')),
+                ], limit=1)
+            except Exception:
+                leave_rec = False
+
             dates_list.append({
                 'date_str': d.strftime('%Y-%m-%d'),
                 'day_name': d.strftime('%A'),
@@ -283,6 +295,12 @@ class BxiTimesheetDashboard(models.AbstractModel):
                 'prod_hours_raw': prod_h,
                 'shift_hours_raw': day_shift_h,
                 'daily_total': self._float_to_time(daily_totals_raw[i]),
+                'leave': {
+                    'id': leave_rec.id if leave_rec else False,
+                    'name': leave_rec.name if leave_rec else False,
+                    'holiday_status': leave_rec.holiday_status_id.name if leave_rec and leave_rec.holiday_status_id else False,
+                    'state': leave_rec.state if leave_rec else False,
+                } if leave_rec else False,
             })
 
         # Calculate totals
@@ -305,7 +323,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
                     'hours_raw': val['days'][i],
                     'date_str': d_dict['date_str'],
                     'is_today': d_dict['is_today'],
-                    'state': val['states'][i]
+                    'state': val['states'][i],
+                    'leave': d_dict.get('leave') if d_dict else False,
                 })
 
             grid_lines.append({
@@ -402,6 +421,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
                         'check_in': check_in_time or '-',
                         'check_out': check_out_time or '-',
                         'hours': day_hours_str[idx],
+                        'leave': False,
                         'is_today': d_dict['is_today']
                     })
 
