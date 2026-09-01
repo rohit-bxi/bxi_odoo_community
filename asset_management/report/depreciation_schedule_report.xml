@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Depreciation Schedule Report Template -->
+    <template id="depreciation_schedule_template">
+        <t t-call="web.html_container">
+            <t t-foreach="report_data" t-as="data">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <!-- Header -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h2 class="text-center">Asset Depreciation Schedule</h2>
+                                <h4 class="text-center text-muted">
+                                    <t t-esc="data['asset'].asset_name or data['asset'].name"/>
+                                    — <t t-esc="data['asset'].name"/>
+                                </h4>
+                            </div>
+                        </div>
+
+                        <!-- Asset Summary -->
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <table class="table table-sm table-bordered">
+                                    <tr>
+                                        <th class="bg-light">Asset Reference</th>
+                                        <td><t t-esc="data['asset'].name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Asset Name</th>
+                                        <td><t t-esc="data['asset'].asset_name or '—'"/></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Asset Type</th>
+                                        <td><t t-esc="data['asset'].asset_type_id.name or '—'"/></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Serial Number</th>
+                                        <td><t t-esc="data['asset'].serial_number or '—'"/></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Department</th>
+                                        <td><t t-esc="data['asset'].department_id.name or '—'"/></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Custodian</th>
+                                        <td><t t-esc="data['asset'].employee_id.name or '—'"/></td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-6">
+                                <table class="table table-sm table-bordered">
+                                    <tr>
+                                        <th class="bg-light">Purchase Cost</th>
+                                        <td class="text-end">
+                                            <t t-esc="data['asset'].amount"
+                                               t-options="{'widget': 'float', 'precision': 2}"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Salvage Value</th>
+                                        <td class="text-end">
+                                            <t t-esc="data['asset'].salvage_value"
+                                               t-options="{'widget': 'float', 'precision': 2}"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Depreciable Amount</th>
+                                        <td class="text-end">
+                                            <t t-esc="data['asset'].depreciable_amount"
+                                               t-options="{'widget': 'float', 'precision': 2}"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Depreciation Method</th>
+                                        <td><t t-esc="data['asset'].asset_type_id.depreciation_method or '—'"/></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Capitalized Date</th>
+                                        <td>
+                                            <t t-esc="data['asset'].capitalized_date"
+                                               t-options="{'widget': 'date'}"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Net Book Value (Today)</th>
+                                        <td class="text-end fw-bold text-success">
+                                            <t t-esc="data['asset'].current_amount"
+                                               t-options="{'widget': 'float', 'precision': 2}"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Posted Depreciation Entries -->
+                        <h5 class="mt-3">Posted Depreciation Entries</h5>
+                        <table class="table table-sm table-bordered table-striped mb-4">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Date</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>State</th>
+                                    <th>Journal Entry</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="data['asset'].depreciation_ids" t-as="dep">
+                                    <tr t-attf-class="#{dep.state == 'posted' ? '' : 'text-muted'}">
+                                        <td><t t-esc="dep_index + 1"/></td>
+                                        <td><t t-esc="dep.entry_date" t-options="{'widget': 'date'}"/></td>
+                                        <td class="text-end">
+                                            <t t-esc="dep.depreciation_amount"
+                                               t-options="{'widget': 'float', 'precision': 2}"/>
+                                        </td>
+                                        <td>
+                                            <span t-attf-class="badge #{dep.state == 'posted' ? 'bg-success' : 'bg-warning text-dark'}">
+                                                <t t-esc="dep.state"/>
+                                            </span>
+                                        </td>
+                                        <td><t t-esc="dep.move_id.name or '—'"/></td>
+                                        <td><t t-esc="dep.notes or ''"/></td>
+                                    </tr>
+                                </t>
+                                <tr class="table-dark fw-bold">
+                                    <td colspan="2">Total Posted</td>
+                                    <td class="text-end">
+                                        <t t-esc="data['asset'].total_depreciation_amount"
+                                           t-options="{'widget': 'float', 'precision': 2}"/>
+                                    </td>
+                                    <td colspan="3"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Future Schedule -->
+                        <h5 class="mt-3">Future Depreciation Schedule (Projected)</h5>
+                        <t t-if="data['schedule']">
+                            <table class="table table-sm table-bordered table-striped">
+                                <thead class="table-primary">
+                                    <tr>
+                                        <th>Period</th>
+                                        <th>Date</th>
+                                        <th class="text-end">Opening NBV</th>
+                                        <th class="text-end">Depreciation</th>
+                                        <th class="text-end">Cumulative Dep.</th>
+                                        <th class="text-end">Closing NBV</th>
+                                        <th class="text-end">Dep. %</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="data['schedule']" t-as="row">
+                                        <tr>
+                                            <td><t t-esc="row['period']"/></td>
+                                            <td>
+                                                <t t-esc="row['date']"
+                                                   t-options="{'widget': 'date'}"/>
+                                            </td>
+                                            <td class="text-end">
+                                                <t t-esc="row['opening_nbv']"
+                                                   t-options="{'widget': 'float', 'precision': 2}"/>
+                                            </td>
+                                            <td class="text-end text-danger">
+                                                (<t t-esc="row['dep_amount']"
+                                                   t-options="{'widget': 'float', 'precision': 2}"/>)
+                                            </td>
+                                            <td class="text-end">
+                                                <t t-esc="row['cumulative_dep']"
+                                                   t-options="{'widget': 'float', 'precision': 2}"/>
+                                            </td>
+                                            <td class="text-end fw-bold">
+                                                <t t-esc="row['closing_nbv']"
+                                                   t-options="{'widget': 'float', 'precision': 2}"/>
+                                            </td>
+                                            <td class="text-end">
+                                                <t t-esc="row['dep_pct']"
+                                                   t-options="{'widget': 'float', 'precision': 1}"/>%
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+                        <t t-else="">
+                            <p class="text-muted">No future depreciation schedule available.</p>
+                        </t>
+
+                        <!-- Signature Line -->
+                        <div class="row mt-5">
+                            <div class="col-4 text-center border-top pt-2">
+                                <p>Prepared By</p>
+                            </div>
+                            <div class="col-4"></div>
+                            <div class="col-4 text-center border-top pt-2">
+                                <p>Approved By</p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- Report Action -->
+    <record id="action_depreciation_schedule_report" model="ir.actions.report">
+        <field name="name">Depreciation Schedule</field>
+        <field name="model">asset.management</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">asset_management.depreciation_schedule_template</field>
+        <field name="report_file">asset_management.depreciation_schedule_template</field>
+        <field name="binding_model_id" ref="model_asset_management"/>
+        <field name="binding_type">report</field>
+    </record>
+
+</odoo>

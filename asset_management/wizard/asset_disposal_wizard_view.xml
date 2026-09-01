@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Asset Disposal Wizard View -->
+    <record id="view_asset_disposal_wizard_form" model="ir.ui.view">
+        <field name="name">asset.disposal.wizard.form</field>
+        <field name="model">asset.disposal.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Dispose Asset">
+                <sheet>
+                    <div class="alert alert-warning" role="alert">
+                        <strong>
+                            <i class="fa fa-exclamation-triangle"/> Warning:
+                        </strong>
+                        Disposing an asset will post an irreversible accounting journal entry.
+                        Please verify all details before confirming.
+                    </div>
+
+                    <group string="Asset Summary">
+                        <group>
+                            <field name="asset_id" readonly="1"/>
+                            <field name="asset_name" readonly="1"/>
+                            <field name="purchase_cost" widget="monetary" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="accumulated_depreciation" widget="monetary" readonly="1"/>
+                            <field name="net_book_value" widget="monetary" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Disposal Details">
+                        <group>
+                            <field name="disposal_date"/>
+                            <field name="disposal_type"/>
+                            <field name="sale_proceeds" widget="monetary"
+                                   invisible="disposal_type != 'sale'"/>
+                            <field name="proceeds_account_id"
+                                   invisible="disposal_type != 'sale'"/>
+                        </group>
+                        <group>
+                            <field name="loss_on_disposal_account_id"/>
+                            <field name="gain_on_disposal_account_id"
+                                   invisible="disposal_type != 'sale'"/>
+                        </group>
+                    </group>
+
+                    <group string="Accounting Entries Preview" class="mt-2">
+                        <div class="alert alert-info" role="alert">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Account</th>
+                                        <th>Debit</th>
+                                        <th>Credit</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Accumulated Depreciation Account</td>
+                                        <td><field name="accumulated_depreciation" widget="monetary" readonly="1"/></td>
+                                        <td>—</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Fixed Asset Account</td>
+                                        <td>—</td>
+                                        <td><field name="purchase_cost" widget="monetary" readonly="1"/></td>
+                                    </tr>
+                                    <tr invisible="disposal_type != 'sale'">
+                                        <td>Proceeds Account (Cash/Bank)</td>
+                                        <td><field name="sale_proceeds" widget="monetary" readonly="1"/></td>
+                                        <td>—</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Loss / Gain on Disposal</td>
+                                        <td>Loss (if NBV &gt; Proceeds)</td>
+                                        <td>Gain (if Proceeds &gt; NBV)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </group>
+
+                    <group string="Notes">
+                        <field name="notes" nolabel="1" colspan="2"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_confirm_disposal" type="object"
+                            string="Confirm Disposal" class="btn-danger"
+                            icon="fa-trash"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

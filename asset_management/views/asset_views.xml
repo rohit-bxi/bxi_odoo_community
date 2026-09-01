@@ -1,432 +1,66 @@
 <odoo>
-    <!-- Form View for Asset Management -->
-    <record id="view_asset_form" model="ir.ui.view">
-        <field name="name">asset.management.form</field>
-        <field name="model">asset.management</field>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ASSET TYPE VIEWS
+    ══════════════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_asset_type_form" model="ir.ui.view">
+        <field name="name">asset.type.form</field>
+        <field name="model">asset.type</field>
         <field name="arch" type="xml">
-            <form>
-                <header>
-                    <!-- Status bar at the top of the form -->
-                    <field name="status" widget="statusbar" options="{'clickable': '1'}"/>
-                    <!-- <button string="Print Label" name="action_open_label_layout"
-                            type="object" class="oe_highlight" icon="fa-print"
-                            groups="asset_management.assets_user_group,asset_management.assets_admin_group,base.group_system"/> -->
-                    <button name="action_generate_qr"
-                                type="object"
-                                string="Generate QR"
-                                class="btn-primary"
-                                icon="fa-qrcode"
-                                groups="asset_management.assets_user_group,asset_management.assets_admin_group,base.group_system"
-                                />
-                </header>
+            <form string="Asset Type">
                 <sheet>
-                    <!-- Title section with asset name -->
                     <div class="oe_title">
-                        <h1>
-                            <field name="name" readonly="1"/>
-                        </h1>
+                        <h1><field name="name" placeholder="Asset Type Name"/></h1>
                     </div>
-                    <!-- Main content organized in groups -->
-                    <group string="QR" invisible='1'>
-                        <field name="qr_payload" readonly="1"/>
-                        <field name="qr_image" widget="image" class="oe_avatar"
-                               options="{'preview_image': 'qr_image'}"/>
-                        <field name="qr_generated_on" readonly="1"/>
-                    </group>
                     <group>
-                        <!-- Basic Information group -->
-                        <group string="Basic Information">
-                            <field name="product_id"/>
-                            <field name="asset_type_id"/>
-                            <field name="transfer_count"/>
-                            <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
-                            <field name="model_type" widget="radio"/>
-                            <field name="initial_stock" invisible="model_type == 'single'"
-                                   required="model_type == 'multiple'"/>
-                            <field name="current_stock" invisible="model_type == 'single'"/>
-                            <field name="active_transfers" invisible="model_type == 'single'"/>
-                            <field name="asset_configuration"/>
+                        <group string="Depreciation Rules">
+                            <field name="color" widget="color_picker"/>
+                            <field name="depreciation_frequency"/>
+                            <field name="depreciation_method"/>
+                            <field name="depreciation_rate"
+                                   string="Rate / Amount"
+                                   invisible="depreciation_method in ('straight_line',)"/>
+                            <field name="depreciation_start_delay"/>
+                            <field name="depreciation_basis"
+                                   invisible="depreciation_method in ('straight_line', 'declining_balance')"/>
+                            <field name="maximum_depreciation_entries"/>
+                            <field name="salvage_value_rate"/>
                         </group>
-                        <!-- Financial Information group -->
-                        <group string="Financial Information">
-                            <field name="amount"/>
-                            <field name="invoice_id"/>
-                            <field name="invoice_date"/>
-                            <field name="current_amount" readonly="1"/>
-                        </group>
-                        <!-- Depreciation Settings group -->
-                        <group string="Depreciation Settings">
-                            <field name="depreciation_apply"/>
-                            <field name="total_depreciation_amount"/>
-                            <field name="last_depreciation_date"/>
-                            <field name="depreciation_count"/>
-                        </group>
-                        <!-- Maintenance Information group -->
-                        <group string="Maintenance Information">
-                            <field name="total_maintenance_amount" readonly="1"/>
-                            <field name="maintenance_count"/>
-                        </group>
-                        <!-- Vendor And Warranty group -->
-                        <group string="Vendor And Warranty">
-                            <field name="expired_warranty_date"/>
-                            <field name="warranty_date"/>
-                            <field name="vendor_id"/>
-                        </group>
-                        <!-- Documentation group -->
-                        <group string="Documentation">
-                            <field name="document_ids" widget="many2many_binary"/>
+                        <group string="Default Accounting Accounts">
+                            <field name="fixed_asset_account_id"/>
+                            <field name="asset_clearing_account_id"/>
+                            <field name="depreciation_expense_account_id"/>
+                            <field name="accumulated_depreciation_account_id"/>
+                            <field name="asset_journal_id"/>
                         </group>
                     </group>
-                    <!-- Notebook for additional details -->
-                    <notebook>
-                        <!-- Transfer Page -->
-                        <page string="Transfer" groups="asset_management.transfer_user_group,base.group_system">
-                            <field name="transfer_ids">
-                                <list editable="bottom">
-                                    <field name="transfer_code"/>
-                                    <field name="transfer_employee_id"/>
-                                    <field name="assign_date"/>
-                                    <field name="assign_by"/>
-                                    <field name="location"/>
-                                    <field name="return_date"/>
-                                    <field name="stock_qty"/>
-                                    <field name="status"/>
-                                </list>
-                            </field>
-                        </page>
-
-                        <!-- Maintenance Page -->
-                        <page string="Maintenance / Repair"
-                              groups="asset_management.maintenance_user_group,base.group_system">
-                            <field name="maintenance_ids">
-                                <list editable="bottom">
-                                    <field name="maintenance_vendor_id"/>
-                                    <field name="assign_date"/>
-                                    <field name="return_date"/>
-                                    <field name="assign_by"/>
-                                    <field name="invoice_id"/>
-                                    <field name="file_name" column_invisible="1"/>
-                                    <field name="document" filename="file_name"
-                                           widget="binary"/>
-                                    <field name="maintenance_amount"/>
-                                    <field name="maintenance_status"/>
-                                </list>
-                            </field>
-                        </page>
-
-                        <!-- Depreciation Page -->
-                        <page string="Depreciation" groups="asset_management.depreciation_user_group,base.group_system">
-                            <field name="depreciation_ids">
-                                <list editable="bottom">
-                                    <field name="depreciation_amount"/>
-                                    <field name="created_by"/>
-                                    <field name="entry_date"/>
-                                    <field name="notes"/>
-                                </list>
-                            </field>
-                        </page>
-                    </notebook>
                 </sheet>
             </form>
         </field>
     </record>
 
-    <!-- Tree View for Asset Management -->
-    <record id="view_asset_tree" model="ir.ui.view">
-        <field name="name">asset.management.tree</field>
-        <field name="model">asset.management</field>
+    <record id="view_asset_type_tree" model="ir.ui.view">
+        <field name="name">asset.type.tree</field>
+        <field name="model">asset.type</field>
         <field name="arch" type="xml">
             <list>
-                <header>
-                    <button string="Print Labels" name="action_open_label_layout"
-                            type="object"
-                            icon="fa-print"
-                            class="oe_highlight"
-                            groups="asset_management.assets_user_group,asset_management.assets_admin_group,base.group_system"/>
-                </header>
-                <!-- Fields to display in the tree view -->
                 <field name="name"/>
-                <field name="product_id"/>
-                <field name="tag_ids" widget="many2many_tags" optional="show"/>
-                <field name="model_type"/>
-                <field name="initial_stock" optional="show"/>
-                <field name="current_stock" optional="show"/>
-                <field name="active_transfers" optional="show"/>
-                <field name="assigned_user"/>
-                <field name="invoice_date"/>
-                <field name="total_depreciation_amount"/>
-                <field name="total_maintenance_amount"/>
-                <field name="expired_warranty_date"/>
-                <field name="remaining_warranty"/>
-                <field name="depreciation_count"/>
-                <field name="maintenance_count"/>
-                <field name="transfer_count"/>
-                <field name="asset_configuration"/>
-                <field name="status"/>
+                <field name="color" widget="color_picker"/>
+                <field name="depreciation_frequency"/>
+                <field name="depreciation_method"/>
+                <field name="depreciation_rate"/>
+                <field name="maximum_depreciation_entries"/>
+                <field name="fixed_asset_account_id"/>
+                <field name="depreciation_expense_account_id"/>
             </list>
         </field>
     </record>
 
-    <!-- Search View for Asset Management -->
-    <record id="view_asset_search" model="ir.ui.view">
-        <field name="name">asset.management.search</field>
-        <field name="model">asset.management</field>
-        <field name="arch" type="xml">
-            <search string="Assets">
-                <field name="name"/>
-                <field name="product_id"/>
-                <field name="tag_ids"/>
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ASSET TAG VIEWS
+    ══════════════════════════════════════════════════════════════════════════ -->
 
-                <filter string="Assigned" name="assigned" domain="[('status', '=', 'assign')]"/>
-                <filter string="Returned" name="returned" domain="[('status', '=', 'return')]"/>
-                <filter string="On Hold" name="on_hold" domain="[('status', '=', 'on_hold')]"/>
-                <filter string="In Warehouse" name="in_warehouse" domain="[('status', '=', 'in_warehouse')]"/>
-                <filter string="In Repair" name="repair" domain="[('status', '=', 'repair')]"/>
-                <filter string="Destroyed" name="destroyed" domain="[('status', '=', 'destroyed')]"/>
-
-                <filter string="Single Assets" name="single_assets" domain="[('model_type', '=', 'single')]"/>
-                <filter string="Multiple Assets" name="multiple_assets" domain="[('model_type', '=', 'multiple')]"/>
-                <filter string="Out of Stock" name="out_of_stock"
-                        domain="[('model_type', '=', 'multiple'), ('current_stock', '&lt;=', 0)]"/>
-                <filter string="In Stock" name="in_stock"
-                        domain="[('model_type', '=', 'multiple'), ('current_stock', '&gt;', 0)]"/>
-
-                <group>
-                    <filter string="Status" name="group_by_status" context="{'group_by': 'status'}"/>
-                    <filter string="Asset Type" name="group_by_asset_type" context="{'group_by': 'asset_type_id'}"/>
-                    <filter string="Vendor" name="group_by_vendor" context="{'group_by': 'vendor_id'}"/>
-                    <filter string="Tags" name="group_by_tags" context="{'group_by': 'tag_ids'}"/>
-                    <filter string="Model Type" name="group_by_model_type" context="{'group_by': 'model_type'}"/>
-                </group>
-
-            </search>
-        </field>
-    </record>
-
-    <!-- Kanban View for Asset Management -->
-    <record id="view_asset_kanban" model="ir.ui.view">
-        <field name="name">asset.management.kanban</field>
-        <field name="model">asset.management</field>
-        <field name="arch" type="xml">
-            <kanban default_group_by="status" class="o_kanban_dashboard" multi_selection="1" create="1">
-                <field name="id"/>
-                <field name="name"/>
-                <field name="status"/>
-                <field name="asset_type_id"/>
-                <field name="barcode"/>
-                <field name="amount"/>
-                <field name="current_amount"/>
-                <field name="invoice_date"/>
-                <field name="expired_warranty_date"/>
-                <field name="depreciation_count"/>
-                <field name="maintenance_count"/>
-                <field name="transfer_count"/>
-                <field name="assigned_user"/>
-                <field name="warranty_status"/>
-                <field name="remaining_warranty"/>
-                <field name="total_depreciation_amount"/>
-                <field name="total_maintenance_amount"/>
-                <field name="tag_ids"/>
-                <field name="model_type"/>
-                <field name="initial_stock"/>
-                <field name="current_stock"/>
-                <field name="active_transfers"/>
-                <field name="product_id"/>
-                <field name="vendor_id"/>
-                <progressbar field="status" colors='{"assign":"success","return":"info","on_hold":"warning","in_warehouse":"primary","repair":"danger","destroyed":"muted"}'/>
-                <templates>
-                    <t t-name="card">
-                        <div class="oe_kanban_global_click o_kanban_card oe_kanban_content" role="article">
-                            <!-- Card Header with Asset Name and Status -->
-                            <div class="o_kanban_card_header">
-                                <div class="o_kanban_card_header_title">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <div class="o_primary flex-grow-1">
-                                            <strong class="text-truncate d-block" style="font-size: 1.1em;">
-                                                <field name="name"/>
-                                            </strong>
-                                        </div>
-                                        <div class="ms-2">
-                                            <span t-attf-class="badge rounded-pill text-white lh-1 px-2 py-1 
-                                                #{record.status.raw_value == 'assign' ? 'bg-success' : 
-                                                  record.status.raw_value == 'return' ? 'bg-info' : 
-                                                  record.status.raw_value == 'on_hold' ? 'bg-warning' : 
-                                                  record.status.raw_value == 'in_warehouse' ? 'bg-primary' :
-                                                  record.status.raw_value == 'repair' ? 'bg-danger' :
-                                                  record.status.raw_value == 'destroyed' ? 'bg-secondary' : 'bg-secondary'}">
-                                                <field name="status"/>
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Card Body -->
-                            <div class="o_kanban_card_content">
-
-                                <div class="mb-2" t-if="record.product_id">
-                                    <field name="product_id"/>
-                                </div>
-                                <!-- Asset Type Badge -->
-                                <div class="mb-2" t-if="record.asset_type_id.raw_value">
-                                    <span class="badge rounded-pill" 
-                                          t-attf-class="badge rounded-pill #{record.asset_type_id.color and record.asset_type_id.color.raw_value ? 'o_tag_color_' + record.asset_type_id.color.raw_value : 'bg-secondary'} text-white">
-                                        <i class="fa fa-tag me-1" title="Asset Type"></i>
-                                        <field name="asset_type_id"/>
-                                    </span>
-                                </div>
-                                
-                                <!-- Tags -->
-                                <div class="mb-2" t-if="record.tag_ids.raw_value">
-                                    <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
-                                </div>
-                                
-                                <!-- Assigned User -->
-                                <div class="mb-2" t-if="record.assigned_user.raw_value">
-                                    <div class="d-flex align-items-center text-muted">
-                                        <i class="fa fa-user me-2"></i>
-                                        <span class="text-truncate">
-                                            <field name="assigned_user"/>
-                                        </span>
-                                    </div>
-                                </div>
-                                
-                                <!-- Stock Information for Multiple Assets -->
-                                <div class="mb-2" t-if="record.model_type.raw_value == 'multiple'">
-                                    <div class="d-flex gap-2 flex-wrap">
-                                        <span class="badge bg-info">
-                                            <i class="fa fa-cubes me-1"></i>
-                                            Stock: <field name="current_stock"/>/<field name="initial_stock"/>
-                                        </span>
-                                        <span class="badge bg-warning text-dark" t-if="record.active_transfers.raw_value">
-                                            <i class="fa fa-exchange me-1"></i>
-                                            Active: <field name="active_transfers"/>
-                                        </span>
-                                    </div>
-                                </div>
-                                
-                                <!-- Financial Information -->
-                                <div class="mb-2">
-                                    <div class="d-flex flex-column gap-1">
-                                        <div class="d-flex justify-content-between align-items-center" t-if="record.amount.raw_value">
-                                            <span class="text-muted small">
-                                                <i class="fa fa-dollar-sign me-1"></i>Purchase Price:
-                                            </span>
-                                            <strong><field name="amount" widget="monetary"/></strong>
-                                        </div>
-                                        <div class="d-flex justify-content-between align-items-center" t-if="record.current_amount.raw_value">
-                                            <span class="text-muted small">
-                                                <i class="fa fa-chart-line me-1"></i>Book Value:
-                                            </span>
-                                            <strong class="text-primary"><field name="current_amount" widget="monetary"/></strong>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Dates -->
-                                <div class="mb-2">
-                                    <div class="d-flex flex-column gap-1 small">
-                                        <div t-if="record.invoice_date.raw_value" class="text-muted">
-                                            <i class="fa fa-calendar me-1"></i>
-                                            Purchase: <field name="invoice_date"/>
-                                        </div>
-                                        <div t-if="record.expired_warranty_date.raw_value" 
-                                             t-attf-class="text-#{record.warranty_status.raw_value == 'expired' ? 'danger' : 'muted'}">
-                                            <i class="fa fa-shield-alt me-1" title="Warranty"></i>
-                                            Warranty: <field name="expired_warranty_date"/>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Card Footer with Statistics -->
-                            <div class="o_kanban_record_bottom">
-                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-2 border-top">
-                                    <div class="d-flex gap-2 flex-wrap">
-                                        <span class="badge bg-light text-dark border" title="Depreciation Entries">
-                                            <i class="fa fa-chart-line me-1"></i>
-                                            <field name="depreciation_count"/>
-                                        </span>
-                                        <span class="badge bg-light text-dark border" title="Maintenance Records">
-                                            <i class="fa fa-wrench me-1"></i>
-                                            <field name="maintenance_count"/>
-                                        </span>
-                                        <span class="badge bg-light text-dark border" title="Transfer History">
-                                            <i class="fa fa-exchange me-1"></i>
-                                            <field name="transfer_count"/>
-                                        </span>
-                                    </div>
-                                    <div t-if="record.remaining_warranty.raw_value">
-                                        <span t-attf-class="badge 
-                                            #{record.warranty_status.raw_value == 'expired' ? 'bg-danger' : 
-                                              record.warranty_status.raw_value == 'expiring_soon' ? 'bg-warning text-dark' : 
-                                              'bg-success'}">
-                                            <i class="fa fa-shield-alt me-1" title="Remaining Warranty"></i>
-                                            <field name="remaining_warranty"/>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </t>
-                </templates>
-            </kanban>
-        </field>
-    </record>
-
-    <!-- Tree View for Asset Transfer Entries -->
-    <record id="view_asset_transfer_tree" model="ir.ui.view">
-        <field name="name">asset.transfer.tree</field>
-        <field name="model">asset.transfer.entry</field>
-        <field name="arch" type="xml">
-            <list editable="bottom">
-                <!-- Fields displayed in the tree view for asset transfers -->
-                <field name="transfer_code"/>
-                <field name="asset_id"/>
-                <field name="transfer_employee_id"/>
-                <field name="assign_date"/>
-                <field name="assign_by"/>
-                <field name="return_date"/>
-                <field name="stock_qty"/>
-                <field name="status"/>
-            </list>
-        </field>
-    </record>
-
-    <!-- Tree View for Asset Maintenance Entries -->
-    <record id="view_asset_maintenance_tree" model="ir.ui.view">
-        <field name="name">asset.maintenance.tree</field>
-        <field name="model">asset.maintenance.entry</field>
-        <field name="arch" type="xml">
-            <list editable="bottom">
-                <field name="asset_id"/>
-                <field name="maintenance_vendor_id"/>
-                <field name="maintenance_amount"/>
-                <field name="assign_date"/>
-                <field name="assign_by"/>
-                <field name="return_date"/>
-                <field name="maintenance_status"/>
-            </list>
-        </field>
-    </record>
-
-    <!-- Tree View for Asset Depreciation Entries -->
-    <record id="view_asset_depreciation_tree" model="ir.ui.view">
-        <field name="name">asset.depreciation.tree</field>
-        <field name="model">asset.depreciation.entry</field>
-        <field name="arch" type="xml">
-            <list editable="bottom">
-                <!-- Fields displayed in the tree view for asset depreciation -->
-                <field name="asset_id"/>
-                <field name="created_by"/>
-                <field name="depreciation_amount"/>
-                <field name="entry_date"/>
-                <field name="notes"/>
-            </list>
-        </field>
-    </record>
-
-    <!-- Tree View for Asset Tags -->
     <record id="view_asset_tag_tree" model="ir.ui.view">
         <field name="name">asset.tag.tree</field>
         <field name="model">asset.tag</field>
@@ -438,152 +72,777 @@
         </field>
     </record>
 
-    <!-- Form View for Asset Type -->
-    <record id="view_asset_type_form" model="ir.ui.view">
-        <field name="name">asset.type.form</field>
-        <field name="model">asset.type</field>
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ASSET MANAGEMENT — FORM VIEW (Advanced)
+    ══════════════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_asset_form" model="ir.ui.view">
+        <field name="name">asset.management.form</field>
+        <field name="model">asset.management</field>
         <field name="arch" type="xml">
-            <form string="Asset Type">
+            <form>
+                <header>
+                    <!-- State Buttons -->
+                    <button name="action_confirm_asset"
+                            string="Confirm &amp; Capitalize"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-check"
+                            invisible="state != 'draft'"
+                            groups="asset_management.assets_admin_group,base.group_system"/>
+                    <button name="action_open_disposal_wizard"
+                            string="Dispose Asset"
+                            type="object"
+                            class="btn-danger"
+                            icon="fa-trash"
+                            invisible="state != 'confirmed'"
+                            groups="asset_management.assets_admin_group,base.group_system"/>
+                    <button name="action_generate_qr"
+                            type="object"
+                            string="Generate QR"
+                            class="btn-secondary"
+                            icon="fa-qrcode"
+                            invisible="state == 'disposed'"
+                            groups="asset_management.assets_user_group,asset_management.assets_admin_group,base.group_system"/>
+                    <!-- Status Bars -->
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,confirmed,disposed"/>
+                    <field name="status" widget="statusbar"
+                           options="{'clickable': '1'}"
+                           invisible="state == 'disposed'"/>
+                </header>
                 <sheet>
+
+                    <!-- Smart Buttons -->
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object"
+                                name="action_view_journal_entries"
+                                icon="fa-book"
+                                groups="account.group_account_user,base.group_system">
+                            <field name="journal_entry_count" widget="statinfo"
+                                   string="Journal Entries"/>
+                        </button>
+                        <button class="oe_stat_button" type="object"
+                                name="action_view_account_asset"
+                                icon="fa-balance-scale"
+                                invisible="not account_asset_id_int"
+                                groups="account.group_account_user,base.group_system">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Fixed Asset</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-exchange"
+                                type="object" name="action_view_transfers">
+                            <field name="transfer_count" widget="statinfo"
+                                   string="Transfers"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-wrench"
+                                type="object" name="action_view_maintenance">
+                            <field name="maintenance_count" widget="statinfo"
+                                   string="Maintenance"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-line-chart"
+                                type="object" name="action_view_depreciation">
+                            <field name="depreciation_count" widget="statinfo"
+                                   string="Depreciation"/>
+                        </button>
+                    </div>
+
+                    <!-- Asset Image -->
+                    <field name="asset_image" widget="image" class="oe_avatar"
+                           options="{'preview_image': 'asset_image'}"/>
+
+                    <!-- Title -->
+                    <div class="oe_title">
+                        <label for="asset_name" string="Asset Name"/>
+                        <h1>
+                            <field name="asset_name" placeholder="e.g. Dell Laptop XPS 15"
+                                   readonly="state == 'disposed'"/>
+                        </h1>
+                        <h4 class="text-muted">
+                            <field name="name" readonly="1"/>
+                        </h4>
+                    </div>
+
+                    <!-- Tags -->
+                    <field name="tag_ids" widget="many2many_tags"
+                           options="{'color_field': 'color'}"
+                           readonly="state == 'disposed'"/>
+
+                    <!-- Main Groups -->
                     <group>
-                        <!-- Fields for defining asset type characteristics -->
-                        <field name="name"/>
-                        <field name="color" widget="color_picker"/>
-                        <field name="depreciation_frequency"/>
-                        <field name="depreciation_method"/>
-                        <field name="depreciation_rate"/>
-                        <field name="depreciation_start_delay"/>
-                        <field name="depreciation_basis"/>
-                        <field name="maximum_depreciation_entries"/>
+                        <!-- Left: Asset Details -->
+                        <group string="Asset Details">
+                            <field name="asset_type_id"/>
+                            <field name="product_id"/>
+                            <field name="serial_number"/>
+                            <field name="barcode"/>
+                            <field name="asset_condition" widget="priority"
+                                   invisible="1"/>
+                            <field name="asset_condition"/>
+                            <field name="department_id"/>
+                            <field name="employee_id"/>
+                            <field name="location_description"/>
+                            <field name="model_type" widget="radio"/>
+                            <field name="initial_stock"
+                                   invisible="model_type == 'single'"
+                                   required="model_type == 'multiple'"/>
+                            <field name="current_stock"
+                                   invisible="model_type == 'single'"/>
+                            <field name="active_transfers"
+                                   invisible="model_type == 'single'"/>
+                        </group>
+
+                        <!-- Right: Financial Info -->
+                        <group string="Financial Information">
+                            <field name="currency_id" invisible="1"/>
+                            <field name="amount" widget="monetary"
+                                   readonly="state != 'draft'"/>
+                            <field name="salvage_value" widget="monetary"
+                                   readonly="state == 'disposed'"/>
+                            <field name="depreciable_amount" widget="monetary" readonly="1"/>
+                            <field name="useful_life_years"
+                                   invisible="asset_type_id and asset_type_id.depreciation_method not in ('straight_line',)"/>
+                            <field name="invoice_date"/>
+                            <field name="capitalized_date"/>
+                            <field name="invoice_id"/>
+                            <field name="current_amount" widget="monetary" readonly="1"
+                                   class="fw-bold text-success"/>
+                            <field name="total_depreciation_amount" widget="monetary" readonly="1"/>
+                            <field name="depreciation_percentage" widget="percentage" readonly="1"/>
+                        </group>
                     </group>
+
+                    <notebook>
+                        <!-- ── Accounting Tab ──────────────────────────────── -->
+                        <page string="Accounting"
+                              groups="account.group_account_user,base.group_system">
+                            <group>
+                                <group string="Chart of Accounts">
+                                    <field name="fixed_asset_account_id"
+                                           readonly="state == 'disposed'"/>
+                                    <field name="asset_clearing_account_id"
+                                           readonly="state == 'disposed'"/>
+                                    <field name="depreciation_expense_account_id"
+                                           readonly="state == 'disposed'"/>
+                                    <field name="accumulated_depreciation_account_id"
+                                           readonly="state == 'disposed'"/>
+                                    <field name="asset_journal_id"
+                                           readonly="state == 'disposed'"/>
+                                </group>
+                                <group string="Linked Records">
+                                    <field name="account_asset_display" readonly="1"
+                                           string="Fixed Asset Record"/>
+                                    <field name="acquisition_move_id" readonly="1"/>
+                                    <field name="disposal_move_id" readonly="1"/>
+                                    <field name="disposal_date" readonly="1"/>
+                                    <field name="invoice_id" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- ── Depreciation Tab ────────────────────────────── -->
+                        <page string="Depreciation Schedule"
+                              groups="asset_management.depreciation_user_group,base.group_system">
+                            <group>
+                                <group>
+                                    <field name="depreciation_apply"/>
+                                    <field name="last_depreciation_date"/>
+                                </group>
+                                <group>
+                                    <field name="total_maintenance_amount" readonly="1"
+                                           widget="monetary"/>
+                                </group>
+                            </group>
+                            <field name="depreciation_ids">
+                                <list editable="bottom" decoration-success="state == 'posted'"
+                                      decoration-warning="state == 'draft'">
+                                    <field name="entry_date"/>
+                                    <field name="depreciation_amount" widget="monetary"/>
+                                    <field name="depreciation_method" optional="show"/>
+                                    <field name="created_by"/>
+                                    <field name="state" readonly="1"/>
+                                    <field name="move_id" readonly="1" optional="show"/>
+                                    <field name="notes"/>
+                                    <button name="action_post_depreciation"
+                                            type="object"
+                                            string="Post"
+                                            class="btn-sm btn-primary"
+                                            invisible="state == 'posted'"
+                                            groups="account.group_account_user,base.group_system"/>
+                                    <button name="action_reset_to_draft"
+                                            type="object"
+                                            string="Reset"
+                                            class="btn-sm btn-warning"
+                                            invisible="state == 'draft'"
+                                            groups="account.group_account_manager,base.group_system"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- ── Transfer Tab ────────────────────────────────── -->
+                        <page string="Transfer History"
+                              groups="asset_management.transfer_user_group,base.group_system">
+                            <field name="transfer_ids">
+                                <list editable="bottom">
+                                    <field name="transfer_code" readonly="1"/>
+                                    <field name="transfer_employee_id"/>
+                                    <field name="assign_date"/>
+                                    <field name="assign_by"/>
+                                    <field name="location"/>
+                                    <field name="return_date"/>
+                                    <field name="stock_qty"/>
+                                    <field name="status"/>
+                                    <field name="notes" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- ── Maintenance Tab ─────────────────────────────── -->
+                        <page string="Maintenance / Repair"
+                              groups="asset_management.maintenance_user_group,base.group_system">
+                            <field name="maintenance_ids">
+                                <list editable="bottom">
+                                    <field name="maintenance_type"/>
+                                    <field name="maintenance_vendor_id"/>
+                                    <field name="assign_date"/>
+                                    <field name="return_date"/>
+                                    <field name="assign_by"/>
+                                    <field name="maintenance_amount" widget="monetary"/>
+                                    <field name="maintenance_status"/>
+                                    <field name="invoice_id" optional="show"/>
+                                    <field name="description" optional="show"/>
+                                    <field name="file_name" column_invisible="1"/>
+                                    <field name="document" filename="file_name"
+                                           widget="binary" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- ── Warranty &amp; Insurance Tab ────────────────── -->
+                        <page string="Warranty &amp; Insurance">
+                            <group>
+                                <group string="Warranty">
+                                    <field name="warranty_date"/>
+                                    <field name="expired_warranty_date"
+                                           string="Warranty Expiry Date"/>
+                                    <field name="remaining_warranty" readonly="1"/>
+                                    <field name="vendor_id"/>
+                                </group>
+                                <group string="Insurance">
+                                    <field name="insurance_policy_no"/>
+                                    <field name="insurance_provider"/>
+                                    <field name="insurance_expiry_date"/>
+                                </group>
+                            </group>
+                            <group string="Lifecycle">
+                                <field name="expected_replacement_date"/>
+                            </group>
+                        </page>
+
+                        <!-- ── Documents &amp; QR Tab ──────────────────────── -->
+                        <page string="Documents &amp; QR">
+                            <group>
+                                <group string="QR Code">
+                                    <field name="qr_payload" readonly="1"/>
+                                    <field name="qr_image" widget="image"
+                                           options="{'preview_image': 'qr_image'}"/>
+                                    <field name="qr_generated_on" readonly="1"/>
+                                </group>
+                                <group string="Configuration">
+                                    <field name="asset_configuration"/>
+                                </group>
+                            </group>
+                            <group string="Attachments">
+                                <field name="document_ids" widget="many2many_binary"
+                                       nolabel="1"/>
+                            </group>
+                        </page>
+                    </notebook>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>
 
-    <!-- Tree View for Asset Types -->
-    <record id="view_asset_type_tree" model="ir.ui.view">
-        <field name="name">asset.type.tree</field>
-        <field name="model">asset.type</field>
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ASSET MANAGEMENT — LIST VIEW
+    ══════════════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_asset_tree" model="ir.ui.view">
+        <field name="name">asset.management.tree</field>
+        <field name="model">asset.management</field>
         <field name="arch" type="xml">
-            <list>
-                <!-- Fields displayed in the tree view for asset types -->
+            <list decoration-danger="state == 'disposed'"
+                  decoration-success="state == 'confirmed'"
+                  decoration-muted="status == 'destroyed'">
+                <header>
+                    <button string="Print Labels" name="action_open_label_layout"
+                            type="object"
+                            icon="fa-print"
+                            class="oe_highlight"
+                            groups="asset_management.assets_user_group,asset_management.assets_admin_group,base.group_system"/>
+                </header>
                 <field name="name"/>
-                <field name="color" widget="color_picker"/>
-                <field name="depreciation_frequency"/>
-                <field name="depreciation_method"/>
-                <field name="depreciation_rate"/>
-                <field name="depreciation_start_delay"/>
-                <field name="depreciation_basis"/>
-                <field name="maximum_depreciation_entries"/>
+                <field name="asset_name"/>
+                <field name="asset_type_id"/>
+                <field name="serial_number" optional="show"/>
+                <field name="department_id" optional="show"/>
+                <field name="employee_id" optional="show"/>
+                <field name="asset_condition" optional="show"/>
+                <field name="tag_ids" widget="many2many_tags" optional="show"/>
+                <field name="model_type" optional="hide"/>
+                <field name="amount" widget="monetary"/>
+                <field name="current_amount" widget="monetary" string="Net Book Value"/>
+                <field name="total_depreciation_amount" widget="monetary" optional="show"/>
+                <field name="depreciation_percentage" widget="percentage" optional="show"/>
+                <field name="total_maintenance_amount" widget="monetary" optional="show"/>
+                <field name="assigned_user" optional="show"/>
+                <field name="invoice_date" optional="show"/>
+                <field name="capitalized_date" optional="show"/>
+                <field name="expired_warranty_date" optional="show"/>
+                <field name="remaining_warranty" optional="show"/>
+                <field name="insurance_expiry_date" optional="show"/>
+                <field name="depreciation_count" optional="show"/>
+                <field name="maintenance_count" optional="show"/>
+                <field name="transfer_count" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'confirmed'"
+                       decoration-warning="state == 'draft'"
+                       decoration-danger="state == 'disposed'"/>
+                <field name="status" widget="badge" optional="show"/>
+                <field name="currency_id" invisible="1"/>
             </list>
         </field>
     </record>
 
-    <!-- Server Action for Print Labels -->
-    <record id="action_print_labels" model="ir.actions.server">
-        <field name="name">Print Labels</field>
-        <field name="model_id" ref="model_asset_management"/>
-        <field name="binding_model_id" ref="model_asset_management"/>
-        <field name="binding_view_types">kanban,tree</field>
-        <field name="state">code</field>
-        <field name="code">
-            action = records.action_open_label_layout()
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ASSET MANAGEMENT — SEARCH VIEW
+    ══════════════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_asset_search" model="ir.ui.view">
+        <field name="name">asset.management.search</field>
+        <field name="model">asset.management</field>
+        <field name="arch" type="xml">
+            <search string="Assets">
+                <!-- Searchable fields -->
+                <field name="name" string="Reference"/>
+                <field name="asset_name" string="Asset Name"/>
+                <field name="product_id"/>
+                <field name="tag_ids"/>
+                <field name="serial_number"/>
+                <field name="department_id"/>
+                <field name="employee_id"/>
+                <field name="vendor_id"/>
+
+                <!-- Accounting State Filters -->
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Confirmed / Active" name="confirmed"
+                        domain="[('state', '=', 'confirmed')]"/>
+                <filter string="Disposed" name="disposed"
+                        domain="[('state', '=', 'disposed')]"/>
+                <separator/>
+
+                <!-- Operational Status -->
+                <filter string="Assigned" name="assigned"
+                        domain="[('status', '=', 'assign')]"/>
+                <filter string="In Warehouse" name="in_warehouse"
+                        domain="[('status', '=', 'in_warehouse')]"/>
+                <filter string="In Repair" name="repair"
+                        domain="[('status', '=', 'repair')]"/>
+                <separator/>
+
+                <!-- Stock -->
+                <filter string="Single Assets" name="single_assets"
+                        domain="[('model_type', '=', 'single')]"/>
+                <filter string="Multiple Assets" name="multiple_assets"
+                        domain="[('model_type', '=', 'multiple')]"/>
+                <filter string="Out of Stock" name="out_of_stock"
+                        domain="[('model_type', '=', 'multiple'), ('current_stock', '&lt;=', 0)]"/>
+                <separator/>
+
+                <!-- Alerts -->
+                <filter string="Warranty Expired" name="warranty_expired"
+                        domain="[('expired_warranty_date', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Warranty Expiring (30 days)" name="warranty_expiring_30"
+                        domain="[('expired_warranty_date', '&lt;=', (context_today() + relativedelta(days=30)).strftime('%Y-%m-%d')),
+                                  ('expired_warranty_date', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Depreciation Enabled" name="dep_enabled"
+                        domain="[('depreciation_apply', '=', True)]"/>
+                <filter string="Not Linked to Fixed Assets" name="no_account_asset"
+                        domain="[('account_asset_id_int', '=', 0), ('state', '=', 'confirmed')]"/>
+
+                <!-- Group By -->
+                <group>
+                    <filter string="Accounting State" name="group_by_state"
+                            context="{'group_by': 'state'}"/>
+                    <filter string="Operational Status" name="group_by_status"
+                            context="{'group_by': 'status'}"/>
+                    <filter string="Asset Type" name="group_by_asset_type"
+                            context="{'group_by': 'asset_type_id'}"/>
+                    <filter string="Department" name="group_by_dept"
+                            context="{'group_by': 'department_id'}"/>
+                    <filter string="Vendor" name="group_by_vendor"
+                            context="{'group_by': 'vendor_id'}"/>
+                    <filter string="Condition" name="group_by_condition"
+                            context="{'group_by': 'asset_condition'}"/>
+                    <filter string="Tags" name="group_by_tags"
+                            context="{'group_by': 'tag_ids'}"/>
+                    <filter string="Model Type" name="group_by_model_type"
+                            context="{'group_by': 'model_type'}"/>
+                    <filter string="Invoice Date" name="group_by_invoice_date"
+                            context="{'group_by': 'invoice_date:month'}"/>
+                </group>
+            </search>
         </field>
     </record>
 
-    <!-- Server Action for Print Labels -->
-    <record id="action_print_labels" model="ir.actions.server">
-        <field name="name">Print Labels</field>
-        <field name="model_id" ref="model_asset_management"/>
-        <field name="binding_model_id" ref="model_asset_management"/>
-        <field name="binding_view_types">kanban,tree</field>
-        <field name="state">code</field>
-        <field name="code">
-            action = records.action_open_label_layout()
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ASSET MANAGEMENT — KANBAN VIEW
+    ══════════════════════════════════════════════════════════════════════════ -->
+
+    <record id="view_asset_kanban" model="ir.ui.view">
+        <field name="name">asset.management.kanban</field>
+        <field name="model">asset.management</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="status" class="o_kanban_dashboard"
+                    multi_selection="1" create="1">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="asset_name"/>
+                <field name="state"/>
+                <field name="status"/>
+                <field name="asset_type_id"/>
+                <field name="barcode"/>
+                <field name="serial_number"/>
+                <field name="amount"/>
+                <field name="current_amount"/>
+                <field name="invoice_date"/>
+                <field name="capitalized_date"/>
+                <field name="expired_warranty_date"/>
+                <field name="depreciation_count"/>
+                <field name="maintenance_count"/>
+                <field name="transfer_count"/>
+                <field name="assigned_user"/>
+                <field name="warranty_status"/>
+                <field name="remaining_warranty"/>
+                <field name="total_depreciation_amount"/>
+                <field name="total_maintenance_amount"/>
+                <field name="depreciation_percentage"/>
+                <field name="tag_ids"/>
+                <field name="model_type"/>
+                <field name="initial_stock"/>
+                <field name="current_stock"/>
+                <field name="active_transfers"/>
+                <field name="product_id"/>
+                <field name="vendor_id"/>
+                <field name="department_id"/>
+                <field name="employee_id"/>
+                <field name="asset_condition"/>
+                <field name="asset_image"/>
+                <field name="currency_id"/>
+                <progressbar field="status"
+                             colors='{"assign":"success","return":"info","on_hold":"warning","in_warehouse":"primary","repair":"danger","destroyed":"muted"}'/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click o_kanban_card oe_kanban_content" role="article">
+
+                            <!-- State Badge top-right -->
+                            <div class="position-absolute top-0 end-0 m-1">
+                                <span t-attf-class="badge rounded-pill
+                                    #{record.state.raw_value == 'confirmed' ? 'bg-success' :
+                                      record.state.raw_value == 'disposed' ? 'bg-secondary' : 'bg-warning text-dark'}">
+                                    <field name="state"/>
+                                </span>
+                            </div>
+
+                            <!-- Asset Image or Icon -->
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="me-2">
+                                    <t t-if="record.asset_image.raw_value">
+                                        <img t-att-src="'/web/image/asset.management/' + record.id + '/asset_image/64x64'"
+                                             class="rounded" style="width:48px;height:48px;object-fit:cover;"
+                                             alt="Asset Image"/>
+                                    </t>
+                                    <t t-else="">
+                                        <div class="rounded d-flex align-items-center justify-content-center bg-light border"
+                                             style="width:48px;height:48px;">
+                                            <i class="fa fa-2x fa-desktop text-primary" title="Asset"/>
+                                        </div>
+                                    </t>
+                                </div>
+                                <div class="flex-grow-1 min-width-0">
+                                    <strong class="text-truncate d-block" style="font-size:1em;">
+                                        <field name="asset_name"/>
+                                    </strong>
+                                    <small class="text-muted"><field name="name"/></small>
+                                </div>
+                            </div>
+
+                            <!-- Operational Status Badge -->
+                            <div class="mb-1">
+                                <span t-attf-class="badge rounded-pill
+                                    #{record.status.raw_value == 'assign' ? 'bg-success' :
+                                      record.status.raw_value == 'return' ? 'bg-info' :
+                                      record.status.raw_value == 'on_hold' ? 'bg-warning text-dark' :
+                                      record.status.raw_value == 'in_warehouse' ? 'bg-primary' :
+                                      record.status.raw_value == 'repair' ? 'bg-danger' : 'bg-secondary'}">
+                                    <field name="status"/>
+                                </span>
+                                <t t-if="record.asset_type_id.raw_value">
+                                    <span class="badge rounded-pill bg-light text-dark border ms-1">
+                                        <i class="fa fa-tag me-1" title="Type"/>
+                                        <field name="asset_type_id"/>
+                                    </span>
+                                </t>
+                            </div>
+
+                            <!-- Tags -->
+                            <div class="mb-1" t-if="record.tag_ids.raw_value">
+                                <field name="tag_ids" widget="many2many_tags"
+                                       options="{'color_field': 'color'}"/>
+                            </div>
+
+                            <!-- Department / Employee -->
+                            <div class="mb-1 small text-muted" t-if="record.department_id.raw_value or record.employee_id.raw_value">
+                                <i class="fa fa-building me-1" t-if="record.department_id.raw_value" title="Department"/>
+                                <field name="department_id"/>
+                                <t t-if="record.employee_id.raw_value">
+                                    — <i class="fa fa-user me-1" title="Employee"/><field name="employee_id"/>
+                                </t>
+                            </div>
+
+                            <!-- Serial / Assigned User -->
+                            <div class="mb-1 small text-muted" t-if="record.serial_number.raw_value">
+                                <i class="fa fa-barcode me-1" title="Serial Number"/><field name="serial_number"/>
+                            </div>
+                            <div class="mb-1 small" t-if="record.assigned_user.raw_value">
+                                <i class="fa fa-user-check me-1 text-success" title="Assigned User"/>
+                                <span><field name="assigned_user"/></span>
+                            </div>
+
+                            <!-- Stock Info (Multiple Assets) -->
+                            <div class="mb-1" t-if="record.model_type.raw_value == 'multiple'">
+                                <span class="badge bg-info">
+                                    <i class="fa fa-cubes me-1" title="Stock"/>
+                                    Stock: <field name="current_stock"/>/<field name="initial_stock"/>
+                                </span>
+                            </div>
+
+                            <!-- Financial Info -->
+                            <div class="border-top pt-2 mt-1">
+                                <div class="d-flex justify-content-between small">
+                                    <span class="text-muted">Cost:</span>
+                                    <strong><field name="amount" widget="monetary"/></strong>
+                                </div>
+                                <div class="d-flex justify-content-between small">
+                                    <span class="text-muted">NBV:</span>
+                                    <strong class="text-success">
+                                        <field name="current_amount" widget="monetary"/>
+                                    </strong>
+                                </div>
+                                <!-- Depreciation Progress Bar -->
+                                <div class="mt-1" t-if="record.depreciation_percentage.raw_value">
+                                    <div class="d-flex justify-content-between small text-muted">
+                                        <span>Depreciated</span>
+                                        <span><field name="depreciation_percentage" widget="float" digits="[16,1]"/>%</span>
+                                    </div>
+                                    <div class="progress" style="height:4px;">
+                                        <div t-attf-class="progress-bar #{record.depreciation_percentage.raw_value > 80 ? 'bg-danger' : record.depreciation_percentage.raw_value > 50 ? 'bg-warning' : 'bg-success'}"
+                                             t-attf-style="width:#{Math.min(record.depreciation_percentage.raw_value, 100)}%"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Footer Stats -->
+                            <div class="d-flex justify-content-between align-items-center pt-2 mt-1 border-top">
+                                <div class="d-flex gap-1">
+                                    <span class="badge bg-light text-dark border" title="Depreciation Entries">
+                                        <i class="fa fa-line-chart"/>
+                                        <field name="depreciation_count"/>
+                                    </span>
+                                    <span class="badge bg-light text-dark border" title="Maintenance Records">
+                                        <i class="fa fa-wrench"/>
+                                        <field name="maintenance_count"/>
+                                    </span>
+                                    <span class="badge bg-light text-dark border" title="Transfers">
+                                        <i class="fa fa-exchange"/>
+                                        <field name="transfer_count"/>
+                                    </span>
+                                </div>
+                                <!-- Warranty Badge -->
+                                <div t-if="record.remaining_warranty.raw_value">
+                                    <span t-attf-class="badge
+                                        #{record.warranty_status.raw_value == 'expired' ? 'bg-danger' :
+                                          record.warranty_status.raw_value == 'warning' ? 'bg-warning text-dark' :
+                                          record.warranty_status.raw_value == 'danger' ? 'bg-danger' : 'bg-success'}"
+                                          title="Remaining Warranty">
+                                        <i class="fa fa-shield me-1"/>
+                                        <field name="remaining_warranty"/>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
         </field>
     </record>
 
-    <!-- Action for Assets -->
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         TRANSFER, MAINTENANCE, DEPRECIATION ENTRY VIEWS
+    ══════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Transfer Entry List -->
+    <record id="view_asset_transfer_tree" model="ir.ui.view">
+        <field name="name">asset.transfer.tree</field>
+        <field name="model">asset.transfer.entry</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" decoration-success="status == 'assigned'"
+                  decoration-muted="status == 'returned'">
+                <field name="transfer_code" readonly="1"/>
+                <field name="asset_id"/>
+                <field name="transfer_employee_id"/>
+                <field name="assign_date"/>
+                <field name="assign_by"/>
+                <field name="location" optional="show"/>
+                <field name="return_date" optional="show"/>
+                <field name="stock_qty"/>
+                <field name="status"/>
+                <field name="notes" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Maintenance Entry List -->
+    <record id="view_asset_maintenance_tree" model="ir.ui.view">
+        <field name="name">asset.maintenance.tree</field>
+        <field name="model">asset.maintenance.entry</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" decoration-success="maintenance_status == 'completed'"
+                  decoration-warning="maintenance_status == 'in_progress'"
+                  decoration-muted="maintenance_status == 'pending'">
+                <field name="asset_id"/>
+                <field name="maintenance_type"/>
+                <field name="maintenance_vendor_id"/>
+                <field name="maintenance_amount" widget="monetary"/>
+                <field name="assign_date"/>
+                <field name="assign_by"/>
+                <field name="return_date"/>
+                <field name="maintenance_status"/>
+                <field name="invoice_id" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Depreciation Entry List -->
+    <record id="view_asset_depreciation_tree" model="ir.ui.view">
+        <field name="name">asset.depreciation.tree</field>
+        <field name="model">asset.depreciation.entry</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" decoration-success="state == 'posted'"
+                  decoration-warning="state == 'draft'">
+                <field name="asset_id"/>
+                <field name="entry_date"/>
+                <field name="depreciation_amount" widget="monetary"/>
+                <field name="depreciation_method" optional="show"/>
+                <field name="created_by"/>
+                <field name="state" readonly="1" widget="badge"
+                       decoration-success="state == 'posted'"
+                       decoration-warning="state == 'draft'"/>
+                <field name="move_id" readonly="1" optional="show"/>
+                <field name="notes" optional="show"/>
+                <button name="action_post_depreciation" type="object"
+                        string="Post" class="btn-sm btn-primary"
+                        invisible="state == 'posted'"
+                        groups="account.group_account_user,base.group_system"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ACTIONS
+    ══════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Main Assets Action -->
     <record id="action_assets" model="ir.actions.act_window">
         <field name="name">Assets</field>
         <field name="res_model">asset.management</field>
         <field name="view_mode">kanban,list,form</field>
+        <field name="context">{'search_default_confirmed': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Create your first Record
+                Create your first Asset Record
             </p>
+            <p>Track assets from acquisition through disposal with full accounting integration.</p>
         </field>
     </record>
 
-    <!-- Action for Asset Tags -->
+    <!-- Asset Tags Action -->
     <record id="action_asset_tags" model="ir.actions.act_window">
         <field name="name">Tags</field>
         <field name="res_model">asset.tag</field>
         <field name="view_mode">list</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Create your first tag
-            </p>
-        </field>
     </record>
 
-    <!-- Action for Asset Maintenance Entries -->
+    <!-- Maintenance Action -->
     <record id="action_assets_maintenance_entry" model="ir.actions.act_window">
         <field name="name">Maintenance / Repair</field>
         <field name="res_model">asset.maintenance.entry</field>
-        <field name="view_mode">list</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Create your first Record
-            </p>
-        </field>
+        <field name="view_mode">list,graph,pivot,form</field>
     </record>
 
-    <!-- Action for Asset Transfer Entries -->
+    <!-- Transfer Action -->
     <record id="action_assets_transfer_entry" model="ir.actions.act_window">
         <field name="name">Transfer</field>
         <field name="res_model">asset.transfer.entry</field>
-        <field name="view_mode">list</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Create your first Record
-            </p>
-        </field>
+        <field name="view_mode">list,form</field>
     </record>
 
-    <!-- Action for Asset Depreciation Entries -->
+    <!-- Depreciation Action -->
     <record id="action_assets_depreciation_entry" model="ir.actions.act_window">
-        <field name="name">Depreciation</field>
+        <field name="name">Depreciation Entries</field>
         <field name="res_model">asset.depreciation.entry</field>
-        <field name="view_mode">list</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Create your first Record
-            </p>
-        </field>
+        <field name="view_mode">list,form</field>
     </record>
 
-    <!-- Action for Asset Types (Settings) -->
+    <!-- Asset Types Action -->
     <record id="action_assets_settings" model="ir.actions.act_window">
-        <field name="name">Types</field>
+        <field name="name">Asset Types</field>
         <field name="res_model">asset.type</field>
         <field name="view_mode">list,form</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Create your first Record
-            </p>
-        </field>
     </record>
 
-    <!-- Root menu item for Asset Management -->
+    <!-- Smart button sub-actions (for stat buttons on form) -->
+    <record id="action_asset_transfers_form" model="ir.actions.act_window">
+        <field name="name">Asset Transfers</field>
+        <field name="res_model">asset.transfer.entry</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('asset_id', '=', active_id)]</field>
+    </record>
+
+    <!-- Server Action for Print Labels -->
+    <record id="action_print_labels" model="ir.actions.server">
+        <field name="name">Print Labels</field>
+        <field name="model_id" ref="model_asset_management"/>
+        <field name="binding_model_id" ref="model_asset_management"/>
+        <field name="binding_view_types">kanban,list</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_open_label_layout()</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         MENUS
+    ══════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Root -->
     <menuitem name="Asset Management"
               id="menu_asset_root"
               sequence="10"
               web_icon="asset_management,static/description/icon.png"
               groups="asset_management.assets_user_group,asset_management.assets_admin_group,base.group_system"/>
 
-    <!-- Assets Menu: Links to the main asset list -->
+    <!-- Assets -->
     <menuitem id="menu_asset"
               name="Assets"
               parent="menu_asset_root"
@@ -591,7 +850,7 @@
               groups="assets_user_group,assets_admin_group,base.group_system"
               sequence="10"/>
 
-    <!-- Transfer Menu: For managing asset transfers -->
+    <!-- Transfer -->
     <menuitem id="menu_asset_transfer"
               name="Transfer"
               parent="menu_asset_root"
@@ -599,7 +858,7 @@
               groups="transfer_user_group,transfer_admin_group,base.group_system"
               sequence="30"/>
 
-    <!-- Maintenance Menu: For managing asset maintenance and repairs -->
+    <!-- Maintenance -->
     <menuitem id="menu_asset_maintenance"
               name="Maintenance / Repair"
               parent="menu_asset_root"
@@ -607,7 +866,7 @@
               groups="maintenance_user_group,maintenance_admin_group,base.group_system"
               sequence="40"/>
 
-    <!-- Depreciation Menu: For managing asset depreciation -->
+    <!-- Depreciation -->
     <menuitem id="menu_asset_depreciation"
               name="Depreciation"
               parent="menu_asset_root"
@@ -615,26 +874,25 @@
               groups="depreciation_user_group,depreciation_admin_group,base.group_system"
               sequence="50"/>
 
-    <!-- Configuration Menu: Parent menu for configuration options -->
+    <!-- Configuration -->
     <menuitem id="asset_configuration"
               name="Configuration"
               parent="menu_asset_root"
-              groups="assets_user_group,assets_admin_group,base.group_system"
+              groups="assets_admin_group,base.group_system"
               sequence="70"/>
 
-    <!-- Asset Types Menu: For managing different types of assets -->
     <menuitem id="asset_type_menu"
-              name="Types"
+              name="Asset Types"
               parent="asset_configuration"
               action="action_assets_settings"
-              groups="assets_user_group,assets_admin_group,base.group_system"
+              groups="assets_admin_group,base.group_system"
               sequence="10"/>
 
-    <!-- Asset Tags Menu: For managing asset tags -->
     <menuitem id="asset_tag_menu"
               name="Tags"
               parent="asset_configuration"
               action="action_asset_tags"
-              groups="assets_user_group,assets_admin_group,base.group_system"
+              groups="assets_admin_group,base.group_system"
               sequence="20"/>
+
 </odoo>

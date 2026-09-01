@@ -187,6 +187,76 @@
                 </span>
             </div>
 
+            <!-- ═══════════════════════════════════════════════════════════
+                 LAST THREE FINANCIAL YEARS PERFORMANCE TABLE
+                 ═══════════════════════════════════════════════════════════ -->
+            <t t-if="state.report_data.three_year_summary">
+                <div style="margin-top: 10px; margin-bottom: 24px; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);">
+                    <div style="background: linear-gradient(90deg, #1e293b 0%, #334155 100%); color: #ffffff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="font-weight: 800; font-size: 15px; display: flex; align-items: center; gap: 10px; letter-spacing: -0.01em;">
+                            <i class="fa fa-line-chart" style="color: #60a5fa !important; font-size: 16px;"></i>
+                            <span>Last Three Financial Years Performance</span>
+                        </div>
+                        <span style="font-size: 12px; background: rgba(255, 255, 255, 0.15); padding: 4px 12px; border-radius: 14px; font-weight: 600;">
+                            <t t-esc="state.report_data.currency_symbol"/>
+                        </span>
+                    </div>
+
+                    <table class="fbook-table" style="margin-bottom: 0;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; background: #f8fafc; font-weight: 700; width: 220px; color: #334155;">Financial Metric</th>
+                                <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
+                                    <th style="text-align: right; background: #f1f5f9; font-weight: 700;">
+                                        <span t-att-style="yr.prefix == 'CY' ? 'color: #16a34a; font-weight: 700;' : 'color: #ea580c; font-weight: 700;'">
+                                            <t t-esc="yr.label"/>
+                                        </span>
+                                    </th>
+                                </t>
+                                <th style="text-align: right; background: #e0f2fe; color: #0369a1; font-weight: 800; width: 180px;">Total (3 Years)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Row 1: Revenue -->
+                            <tr class="metric-row">
+                                <td class="row-label" style="font-weight: 700; color: #0f172a;">
+                                    <i class="fa fa-arrow-circle-o-up text-success" style="margin-right: 6px;"></i> Revenue
+                                </td>
+                                <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
+                                    <td style="font-weight: 600; color: #0f172a;"><t t-out="formatAmt(yr.revenue)"/></td>
+                                </t>
+                                <td class="total-cell" style="font-weight: 800; background: #f0fdf4; color: #166534;"><t t-out="formatAmt(state.report_data.three_year_summary.total_revenue)"/></td>
+                            </tr>
+
+                            <!-- Row 2: Expenses -->
+                            <tr class="metric-row">
+                                <td class="row-label" style="font-weight: 700; color: #0f172a;">
+                                    <i class="fa fa-arrow-circle-o-down text-danger" style="margin-right: 6px;"></i> Expenses
+                                </td>
+                                <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
+                                    <td style="font-weight: 600; color: #dc2626;"><t t-out="formatAmt(yr.expenses)"/></td>
+                                </t>
+                                <td class="total-cell" style="font-weight: 800; background: #fef2f2; color: #991b1b;"><t t-out="formatAmt(state.report_data.three_year_summary.total_expenses)"/></td>
+                            </tr>
+
+                            <!-- Row 3: Margin -->
+                            <tr class="metric-row" style="background: #f8fafc; font-weight: 700;">
+                                <td class="row-label" style="font-weight: 700; color: #0f172a;">
+                                    <i class="fa fa-percent text-primary" style="margin-right: 6px;"></i> Margin
+                                </td>
+                                <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
+                                    <td t-att-style="yr.margin >= 0 ? 'font-weight: 700; color: #15803d;' : 'font-weight: 700; color: #b91c1c;'">
+                                        <t t-esc="yr.margin"/>%
+                                    </td>
+                                </t>
+                                <td class="total-cell" t-att-style="state.report_data.three_year_summary.total_margin >= 0 ? 'font-weight: 800; background: #ecfdf5; color: #047857;' : 'font-weight: 800; background: #fef2f2; color: #b91c1c;'">
+                                    <t t-esc="state.report_data.three_year_summary.total_margin"/>%
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
 
             <table class="fbook-table">
                 <thead>
