@@ -361,15 +361,7 @@ class BxiTimesheetDashboard extends Component {
     }
 
     async submitTimesheet() {
-        if (this.state.is_past_week && !(this.state.is_target_employee_manager || this.state.is_hr || this.state.is_admin)) {
-            if (this.notification) {
-                this.notification.add(
-                    "Once a week is crossed, timesheets for the previous week cannot be submitted.",
-                    { title: "Submission Blocked", type: "danger" }
-                );
-            }
-            return;
-        }
+        // Rely on server-side validation (including approved leaves/overrides)
 
         try {
             await this.orm.call(

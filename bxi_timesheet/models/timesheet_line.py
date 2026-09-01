@@ -322,9 +322,26 @@ class AccountAnalyticLine(models.Model):
                 ('date', 'in', working_days),
                 ('unit_amount', '>', 0.0),
             ])
-            
+
             distinct_logged_dates = set(logged_days.mapped('date'))
-            
+
+            # Treat approved/validated leaves as presence for that day (do not count as missing)
+            approved_leaves = self.env['hr.leave'].sudo().search([
+                ('employee_id', '=', emp.id),
+                ('request_date_from', '<=', max(working_days)),
+                ('request_date_to', '>=', min(working_days)),
+                ('state', 'not in', ('draft', 'cancel', 'refuse')),
+            ])
+            for lv in approved_leaves:
+                # Add each covered date to the distinct set
+                start_dt = lv.request_date_from
+                end_dt = lv.request_date_to
+                cur = start_dt
+                while cur <= end_dt:
+                    if cur in working_days:
+                        distinct_logged_dates.add(cur)
+                    cur = cur + timedelta(days=1)
+
             if len(distinct_logged_dates) == 0:
                 existing_leave = self.env['hr.leave'].sudo().search([
                     ('employee_id', '=', emp.id),
