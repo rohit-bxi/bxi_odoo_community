@@ -38,4 +38,10 @@
               sequence="30"
               groups="bxi_shift_management.group_shift_hr"/>
 
+     <menuitem id="menu_shift_exception_working"
+              name="Exception Working"
+              parent="menu_shift_management_root"
+              action="action_bxi_shift_exception"
+          sequence="40"
+          groups="bxi_shift_management.group_shift_user"/>
 </odoo>

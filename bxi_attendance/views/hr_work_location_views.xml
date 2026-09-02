@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_work_location_form_inherit" model="ir.ui.view">
+        <field name="name">hr.work.location.form</field>
+        <field name="model">hr.work.location</field>
+        <field name="inherit_id" ref="hr.hr_work_location_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='location_type']" position="after">
+                <field name="latitude"/>
+                <field name="longitude"/>
+                <field name="radius_km"/>
+                <field name="resource_calendar_id"/>
+            </xpath>
+        </field>
+    </record>
+   </odoo>

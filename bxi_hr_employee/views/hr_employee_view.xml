@@ -104,6 +104,7 @@
                 <page string="Final Settlement" invisible="active">
                     <group>
                         <field name="template_company_id"/>
+                        <field name="portal_access"/>
                         <field name="is_fnf_done" string="Is FNF Done"/>
                         <field name="date_of_leaving" string="Date of Leaving"/>
                         <field name="re_hire" string="Re-Hire"/>

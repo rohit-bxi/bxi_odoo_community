@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
+from venv import logger
+
 import pytz
+import math
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
@@ -171,54 +175,484 @@ class HrAttendance(models.Model):
                 "This employee is not eligible for attendance."
             ) % ATTENDANCE_ROLE_BAND_THRESHOLD)
 
+    def _get_effective_work_location(self, employee, check_date):
+        """
+        Return the work location that should be used for geofence validation
+        for the employee on the given date.
+
+        Priority:
+
+        1. Approved Shift Exception covering this date and weekday
+        2. Employee's usual weekday work location
+
+        IMPORTANT:
+        This method DOES NOT modify the employee's normal Monday-Sunday
+        location fields.
+
+        Example:
+
+            Tuesday employee location = Udaipur
+
+            Approved exception:
+                08-Sep-2026 to 10-Sep-2026
+                Tue, Wed, Thu
+                To Location = Jaipur
+
+            Result:
+                Tuesday  -> Jaipur
+                Wednesday -> Jaipur
+                Thursday -> Jaipur
+                Friday -> employee Friday location
+        """
+
+        if not employee or not check_date:
+            return False
+
+        ShiftException = self.env["bxi.shift.exception"].sudo()
+        exceptions = ShiftException.search(
+            [
+                ("employee_id", "=", employee.id),
+                ("state", "=", "approved"),
+                ("date_from", "<=", check_date),
+                ("date_to", ">=", check_date),
+            ],
+            order="id desc",
+        )
+
+        for exception in exceptions:
+            if exception.allowed_weekdays:
+                try:
+                    allowed_weekdays = [
+                        int(value.strip())
+                        for value in exception.allowed_weekdays.split(",")
+                        if value.strip()
+                    ]
+                except (TypeError, ValueError):
+                    logger.warning(
+                        "Invalid allowed_weekdays '%s' on Shift Exception %s",
+                        exception.allowed_weekdays,
+                        exception.name,
+                    )
+                    continue
+                allowed_weekdays = [
+                    day
+                    for day in allowed_weekdays
+                    if 0 <= day <= 6
+                ]
+
+                if check_date.weekday() not in allowed_weekdays:
+                    continue
+
+            # Approved exception applies today.
+            if exception.to_location_id:
+                logger.info(
+                    "Attendance location override applied | "
+                    "employee=%s | date=%s | exception=%s | location=%s",
+                    employee.name,
+                    check_date,
+                    exception.name,
+                    exception.to_location_id.name,
+                )
+
+                return exception.to_location_id
+
+        # ---------------------------------------------------------------------
+        # 2. No applicable exception
+        #    Use employee's normal/usual weekday location.
+        # ---------------------------------------------------------------------
+        weekday_location_fields = {
+            0: "monday_location_id",
+            1: "tuesday_location_id",
+            2: "wednesday_location_id",
+            3: "thursday_location_id",
+            4: "friday_location_id",
+            5: "saturday_location_id",
+            6: "sunday_location_id",
+        }
+        field_name = weekday_location_fields.get(check_date.weekday())
+
+        if not field_name:
+            return False
+
+        if field_name not in employee._fields:
+            logger.warning(
+                "Employee model does not contain location field '%s'",
+                field_name,
+            )
+            return False
+
+        return employee[field_name]
+
+
     def _validate_location_access(self, vals=None):
-        """Only block when attendance is explicitly submitted without usable geolocation."""
+        """
+        Validate attendance GPS against the employee's effective work location.
+        Effective work location:
+            Approved Shift Exception
+                    ↓
+            Employee normal weekday location
+
+        The employee's normal location fields are NEVER changed.
+
+        Home/Remote locations bypass geofencing.
+        """
+
         if vals is None:
             vals = {}
 
-        if vals.get('is_auto_checkout') is True:
+        # ---------------------------------------------------------------------
+        # Automatic checkout should never be blocked by geofence validation.
+        # ---------------------------------------------------------------------
+
+        if vals.get("is_auto_checkout") is True:
             return
 
-        if 'check_in' not in vals and 'check_out' not in vals:
+        # ---------------------------------------------------------------------
+        # Only validate check-in/check-out operations.
+        # ---------------------------------------------------------------------
+
+        if "check_in" not in vals and "check_out" not in vals:
             return
+
+        # ---------------------------------------------------------------------
+        # Check whether geographic information was actually submitted.
+        # ---------------------------------------------------------------------
 
         geo_keys = (
-            'latitude', 'longitude', 'location', 'geo_location', 'geoip',
-            'in_latitude', 'in_longitude', 'out_latitude', 'out_longitude'
+            "latitude",
+            "longitude",
+            "location",
+            "geo_location",
+            "geoip",
+            "in_latitude",
+            "in_longitude",
+            "out_latitude",
+            "out_longitude",
         )
+
         if not any(key in vals for key in geo_keys):
             return
 
-        latitude = vals.get('latitude', vals.get('in_latitude'))
-        longitude = vals.get('longitude', vals.get('in_longitude'))
-        if 'out_latitude' in vals and not latitude:
-            latitude = vals.get('out_latitude')
-        if 'out_longitude' in vals and not longitude:
-            longitude = vals.get('out_longitude')
+        # ---------------------------------------------------------------------
+        # Read latitude / longitude.
+        # ---------------------------------------------------------------------
 
-        location = vals.get('location')
+        latitude = vals.get(
+            "latitude",
+            vals.get("in_latitude"),
+        )
+
+        longitude = vals.get(
+            "longitude",
+            vals.get("in_longitude"),
+        )
+
+        # Checkout fallback.
+        if "out_latitude" in vals and not latitude:
+            latitude = vals.get("out_latitude")
+
+        if "out_longitude" in vals and not longitude:
+            longitude = vals.get("out_longitude")
+
+        # ---------------------------------------------------------------------
+        # Support location as dict/list/tuple.
+        # ---------------------------------------------------------------------
+
+        location = vals.get("location")
 
         if location:
-            if isinstance(location, dict):
-                latitude = location.get('latitude', latitude)
-                longitude = location.get('longitude', longitude)
-            elif isinstance(location, (list, tuple)) and len(location) >= 2:
-                latitude, longitude = location[0], location[1]
 
-        if latitude in (None, False, '') or longitude in (None, False, ''):
-            raise UserError(_(
-                "Please enable location access in Chrome or your browser before checking in or checking out."
-            ))
+            if isinstance(location, dict):
+
+                latitude = location.get(
+                    "latitude",
+                    latitude,
+                )
+
+                longitude = location.get(
+                    "longitude",
+                    longitude,
+                )
+
+            elif isinstance(location, (list, tuple)) and len(location) >= 2:
+
+                latitude = location[0]
+                longitude = location[1]
+
+        # ---------------------------------------------------------------------
+        # GPS is required when geo fields were explicitly supplied.
+        # ---------------------------------------------------------------------
+
+        if latitude in (None, False, "") or longitude in (
+            None,
+            False,
+            "",
+        ):
+            raise UserError(
+                _(
+                    "Please enable location access in Chrome or your "
+                    "browser before checking in or checking out."
+                )
+            )
+
+        # ---------------------------------------------------------------------
+        # 0,0 is treated as invalid GPS.
+        # ---------------------------------------------------------------------
 
         try:
-            if float(latitude) == 0.0 and float(longitude) == 0.0:
-                raise UserError(_(
-                    "Please enable location access in Chrome or your browser before checking in or checking out."
-                ))
+            latitude = float(latitude)
+            longitude = float(longitude)
+
         except (TypeError, ValueError):
+            raise UserError(
+                _(
+                    "The GPS coordinates received from your browser "
+                    "are invalid. Please enable location access and try again."
+                )
+            )
+
+        if latitude == 0.0 and longitude == 0.0:
+            raise UserError(
+                _(
+                    "Please enable location access in Chrome or your "
+                    "browser before checking in or checking out."
+                )
+            )
+
+        # ---------------------------------------------------------------------
+        # Employee
+        # ---------------------------------------------------------------------
+
+        employee_id = vals.get("employee_id")
+
+        if not employee_id:
             return
 
-    @api.model
+        employee = (
+            self.env["hr.employee"]
+            .sudo()
+            .browse(employee_id)
+            .exists()
+        )
+
+        if not employee:
+            return
+
+        # ---------------------------------------------------------------------
+        # Determine attendance date.
+        # ---------------------------------------------------------------------
+
+        check_dt = (
+            vals.get("check_in")
+            or vals.get("check_out")
+        )
+
+        if not check_dt:
+            check_dt = fields.Datetime.now()
+
+        # Odoo normally gives a datetime object here.
+        # Add support for a string just in case an API sends one.
+        if isinstance(check_dt, str):
+
+            try:
+                check_dt = fields.Datetime.to_datetime(check_dt)
+            except Exception:
+                return
+
+        if not isinstance(check_dt, datetime):
+            return
+
+        # ---------------------------------------------------------------------
+        # Convert UTC datetime to employee's local timezone.
+        # ---------------------------------------------------------------------
+
+        tz_name = (
+            employee.tz
+            or (employee.user_id and employee.user_id.tz)
+            or self.env.user.tz
+            or "Asia/Kolkata"
+        )
+
+        try:
+            employee_tz = pytz.timezone(tz_name)
+        except Exception:
+            employee_tz = pytz.timezone("Asia/Kolkata")
+
+        if check_dt.tzinfo:
+            utc_dt = check_dt.astimezone(pytz.utc)
+        else:
+            utc_dt = pytz.utc.localize(check_dt)
+
+        local_dt = utc_dt.astimezone(employee_tz)
+
+        local_date = local_dt.date()
+
+        # ---------------------------------------------------------------------
+        # Determine effective work location.
+        # ---------------------------------------------------------------------
+
+        work_location = self._get_effective_work_location(
+            employee,
+            local_date,
+        )
+
+        # No work location configured.
+        # No geofence is enforced.
+        if not work_location:
+            logger.info(
+                "No work location configured for employee %s on %s. "
+                "Attendance allowed without geofence.",
+                employee.name,
+                local_date,
+            )
+            return
+
+        # ---------------------------------------------------------------------
+        # Home / Remote should allow attendance from anywhere.
+        # ---------------------------------------------------------------------
+
+        location_type = getattr(
+            work_location,
+            "location_type",
+            False,
+        )
+
+        if location_type and str(location_type).lower() in (
+            "home",
+            "remote",
+        ):
+            logger.info(
+                "Home/Remote location '%s' for employee %s. "
+                "Geofence skipped.",
+                work_location.name,
+                employee.name,
+            )
+            return
+
+        # ---------------------------------------------------------------------
+        # Work location master coordinates.
+        # ---------------------------------------------------------------------
+
+        location_latitude = getattr(
+            work_location,
+            "latitude",
+            None,
+        )
+
+        location_longitude = getattr(
+            work_location,
+            "longitude",
+            None,
+        )
+
+        radius_km = (
+            getattr(
+                work_location,
+                "radius_km",
+                2.5,
+            )
+            or 2.5
+        )
+
+        if location_latitude in (
+            None,
+            False,
+            "",
+        ) or location_longitude in (
+            None,
+            False,
+            "",
+        ):
+            logger.warning(
+                "Work location '%s' has no GPS coordinates. "
+                "Attendance allowed without geofence.",
+                work_location.name,
+            )
+            return
+
+        # ---------------------------------------------------------------------
+        # Haversine distance.
+        # ---------------------------------------------------------------------
+
+        def haversine(lat1, lon1, lat2, lon2):
+            radius_earth_km = 6371.0
+
+            phi1 = math.radians(float(lat1))
+            phi2 = math.radians(float(lat2))
+
+            delta_phi = math.radians(
+                float(lat2) - float(lat1)
+            )
+
+            delta_lambda = math.radians(
+                float(lon2) - float(lon1)
+            )
+
+            a = (
+                math.sin(delta_phi / 2.0) ** 2
+                + math.cos(phi1)
+                * math.cos(phi2)
+                * math.sin(delta_lambda / 2.0) ** 2
+            )
+
+            c = 2 * math.atan2(
+                math.sqrt(a),
+                math.sqrt(1 - a),
+            )
+
+            return radius_earth_km * c
+
+        try:
+            distance_km = haversine(
+                location_latitude,
+                location_longitude,
+                latitude,
+                longitude,
+            )
+
+            allowed_radius = float(radius_km)
+
+        except (TypeError, ValueError):
+            logger.exception(
+                "Unable to calculate geofence distance for employee %s",
+                employee.name,
+            )
+            return
+
+        # ---------------------------------------------------------------------
+        # BLOCK attendance if outside geofence.
+        # ---------------------------------------------------------------------
+
+        if distance_km > allowed_radius + 0.0001:
+
+            raise UserError(
+                _(
+                    "Your current location is %.2f km away from the "
+                    "assigned work location '%s' (allowed %.2f km). "
+                    "Attendance is not allowed."
+                )
+                % (
+                    distance_km,
+                    work_location.name or "work location",
+                    allowed_radius,
+                )
+            )
+
+        logger.info(
+            "Attendance location validated | employee=%s | date=%s | "
+            "location=%s | distance=%.2f km | allowed=%.2f km",
+            employee.name,
+            local_date,
+            work_location.name,
+            distance_km,
+            allowed_radius,
+        )
+
+    # -------------------------------------------------------------------------
+    # CREATE
+    # -------------------------------------------------------------------------
+
+    @api.model_create_multi
     def create(self, vals_list):
         if not vals_list:
             return super().create(vals_list)
