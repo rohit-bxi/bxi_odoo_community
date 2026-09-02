@@ -121,27 +121,46 @@ class HrEmployee(models.Model):
                 response = requests.post(
                     url,
                     json=payload,
+                    headers={
+                        "Accept": "application/json",
+                        "Content-Type": "application/json",
+                    },
                     timeout=10,
                 )
-                if response.ok:
-                    logger.info(
-                        "Portal access synced for employee %s: %s",
-                        employee.id,
-                        employee.portal_access,
-                    )
+                logger.info(
+                    "Portal access API | employee=%s | status=%s | content_type=%s | response=%s",
+                    employee.id,
+                    response.status_code,
+                    response.headers.get("Content-Type"),
+                    response.text[:500],
+                )
+                if (
+                    response.status_code == 200
+                    and "application/json" in response.headers.get("Content-Type", "")
+                ):
+                    data = response.json()
+                    if data.get("success") is True:
+                        logger.info(
+                            "Portal access successfully synced for employee %s",
+                            employee.id,
+                        )
+                    else:
+                        logger.error(
+                            "Alumni API returned failure: %s",
+                            data,
+                        )
                 else:
                     logger.error(
-                        "Portal access sync failed for employee %s. "
-                        "Status: %s, Response: %s",
-                        employee.id,
+                        "Alumni API is not returning expected JSON. "
+                        "Status=%s Content-Type=%s",
                         response.status_code,
-                        response.text,
+                        response.headers.get("Content-Type"),
                     )
-            except requests.RequestException as e:
+
+            except requests.RequestException:
                 logger.exception(
-                    "Error syncing portal access for employee %s: %s",
+                    "Failed to call Alumni portal-access API for employee %s",
                     employee.id,
-                    e,
                 )
                 
     def write(self, vals):
