@@ -2,6 +2,9 @@ import base64
 import random
 import secrets
 import token
+from venv import logger
+
+import requests
 
 from odoo import models, fields, _, api
 from odoo.exceptions import UserError
@@ -101,6 +104,51 @@ class HrEmployee(models.Model):
         string="Form 16 Filename",
         copy=False,
     )
+    portal_access = fields.Boolean(
+        string="Portal Access",
+        default=False,
+        copy=False,
+    )
+
+    def _sync_portal_access_to_alumni(self):
+        url = "https://alumni.bxiventures.com/api/employee/update-access"
+        for employee in self:
+            payload = {
+                "employee_id": employee.id,
+                "portal_access": employee.portal_access,
+            }
+            try:
+                response = requests.post(
+                    url,
+                    json=payload,
+                    timeout=10,
+                )
+                if response.ok:
+                    logger.info(
+                        "Portal access synced for employee %s: %s",
+                        employee.id,
+                        employee.portal_access,
+                    )
+                else:
+                    logger.error(
+                        "Portal access sync failed for employee %s. "
+                        "Status: %s, Response: %s",
+                        employee.id,
+                        response.status_code,
+                        response.text,
+                    )
+            except requests.RequestException as e:
+                logger.exception(
+                    "Error syncing portal access for employee %s: %s",
+                    employee.id,
+                    e,
+                )
+                
+    def write(self, vals):
+        result = super().write(vals)
+        if "portal_access" in vals:
+            self._sync_portal_access_to_alumni()
+        return result
 
     def action_generate_experience_letter(self):
         self.ensure_one()
