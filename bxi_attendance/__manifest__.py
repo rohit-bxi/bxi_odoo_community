@@ -14,6 +14,7 @@
     ],
     'data': [
         'data/cron_data.xml',
+        'views/hr_work_location_views.xml',
         'views/hr_attendance_views.xml',
     ],
     'assets': {

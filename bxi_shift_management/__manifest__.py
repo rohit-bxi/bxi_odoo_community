@@ -18,6 +18,7 @@
         'base',
         'mail',
         'hr',
+        'bxi_attendance',
     ],
     'data': [
         'security/security_groups.xml',
@@ -26,6 +27,7 @@
         'data/sequence.xml',
         'data/cron.xml',
         'views/shift_request_views.xml',
+        'views/shift_exception_views.xml',
         'views/menu.xml',
     ],
     'installable': True,
