@@ -121,48 +121,22 @@ class HrEmployee(models.Model):
                 response = requests.post(
                     url,
                     json=payload,
-                    headers={
-                        "Accept": "application/json",
-                        "Content-Type": "application/json",
-                    },
                     timeout=10,
                 )
                 logger.info(
-                    "Portal access API | employee=%s | status=%s | content_type=%s | response=%s",
+                    "Portal access API | employee=%s | status=%s | response=%s",
                     employee.id,
                     response.status_code,
-                    response.headers.get("Content-Type"),
-                    response.text[:500],
-                )
-                if (
-                    response.status_code == 200
-                    and "application/json" in response.headers.get("Content-Type", "")
-                ):
-                    data = response.json()
-                    if data.get("success") is True:
-                        logger.info(
-                            "Portal access successfully synced for employee %s",
-                            employee.id,
-                        )
-                    else:
-                        logger.error(
-                            "Alumni API returned failure: %s",
-                            data,
-                        )
-                else:
-                    logger.error(
-                        "Alumni API is not returning expected JSON. "
-                        "Status=%s Content-Type=%s",
-                        response.status_code,
-                        response.headers.get("Content-Type"),
-                    )
-
-            except requests.RequestException:
+                    response.text,
+                )   
+            except requests.RequestException as e:
                 logger.exception(
-                    "Failed to call Alumni portal-access API for employee %s",
+                    "Portal access API error for employee %s: %s",
                     employee.id,
+                    e,
                 )
-                
+
+
     def write(self, vals):
         result = super().write(vals)
         if "portal_access" in vals:
