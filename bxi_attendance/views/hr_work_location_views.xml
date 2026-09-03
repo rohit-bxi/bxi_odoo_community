@@ -7,6 +7,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='location_type']" position="after">
                 <field name="office"/>
+                <field name="home"/>
                 <field name="latitude"/>
                 <field name="longitude"/>
                 <field name="radius_km"/>

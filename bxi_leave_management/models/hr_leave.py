@@ -96,3 +96,38 @@ class HrEmployeeLeave(models.Model):
                 raise ValidationError(
                     "RH leave can only be applied on Optional Holiday dates."
                 )
+
+            # =========================
+            # RULE 3: ADVANCE NOTICE (RH)
+            # RH must be applied at least 3 days before the leave date.
+            # =========================
+            if rec.request_date_from:
+                try:
+                    days_diff = (rec.request_date_from - date.today()).days
+                    if days_diff < 3:
+                        raise ValidationError(
+                            "RH leave must be applied at least 3 days before the leave date."
+                        )
+                except TypeError:
+                    # If dates are invalid or None, let other validations handle it
+                    pass
+
+    @api.constrains('holiday_status_id', 'request_date_from', 'request_date_to')
+    def _check_el_leave_rules(self):
+        """
+        Enforce EL (Earned Leave) application window: must be applied at least 7 days before.
+        This runs in addition to any other constraints.
+        """
+        for rec in self:
+            if not rec.holiday_status_id or rec.holiday_status_id.time_off_code != 'EL':
+                continue
+
+            if rec.request_date_from:
+                try:
+                    days_diff = (rec.request_date_from - date.today()).days
+                    if days_diff < 7:
+                        raise ValidationError(
+                            "EL leave must be applied at least 7 days before the leave start date."
+                        )
+                except TypeError:
+                    pass
