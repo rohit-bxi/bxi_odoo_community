@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="data_privacy_letter_a4" model="report.paperformat">
+            <field name="name">Data Privacy Letter A4</field>
+            <field name="default" eval="False"/>
+            <field name="format">A4</field>
+            <field name="orientation">Portrait</field>
+            <field name="margin_top">7</field>
+            <field name="margin_bottom">25</field>
+            <field name="margin_left">5</field>
+            <field name="margin_right">5</field>
+            <field name="header_spacing">5</field>
+        </record>
+    <record id="action_report_data_privacy_letter" model="ir.actions.report">
+        <field name="name">Data Privacy Letter</field>
+        <field name="model">hr.employee</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_hr_employee.report_data_privacy_letter</field>
+        <field name="report_file">bxi_hr_employee.report_data_privacy_letter</field>
+        <field name="print_report_name">'Data Privacy Letter - %s' % (object.name or '')</field>
+        <field name="paperformat_id" ref="data_privacy_letter_a4" />
+    </record>
+
+    <template id="report_data_privacy_letter">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="company" t-value="o.template_company_id" />
+                <t t-if="o.template_company_id and o.template_company_id.id == 1">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_employee.report_data_security_acknowledgement" />
+                    </t>
+                </t>
+                <t t-elif="o.template_company_id and o.template_company_id.id == 2">
+                    <t t-call="custom_template.bxi_n01_layout">
+                        <t t-call="bxi_hr_employee.report_data_security_acknowledgement" />
+                    </t>
+                </t>
+                <t t-elif="o.template_company_id and o.template_company_id.id == 3">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_employee.report_data_security_acknowledgement" />
+                    </t>
+                </t>
+                <t t-elif="o.template_company_id and o.template_company_id.id == 4">
+                    <t t-call="custom_template.bxi_n01_layout">
+                        <t t-call="bxi_hr_employee.report_data_security_acknowledgement" />
+                    </t>
+                </t>
+                <t t-elif="o.template_company_id and o.template_company_id.id == 5">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_employee.report_data_security_acknowledgement" />
+                    </t>
+                </t>
+                <t t-else="">
+                    <t t-call="custom_template.bxi_custom_layout">
+                        <t t-call="bxi_hr_employee.report_data_security_acknowledgement" />
+                    </t>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_data_security_acknowledgement">
+    <t t-call="web.external_layout">
+        <div class="page"
+             style="font-family:Arial, Helvetica, sans-serif;
+                    font-size:13px;
+                    padding:20px 35px;">
+            <div style="text-align:center;margin-top:20px;margin-bottom:30px;">
+                <h3 style="color:#1b75bb;font-weight:bold;">
+                    Data Security Acknowledgement Letter
+                </h3>
+            </div>
+            <table style="width:60%;font-size:13px;border-collapse:collapse;margin-bottom:30px;">
+                <tr>
+                    <td style="width:160px;">
+                        <strong>Employee Name</strong>
+                    </td>
+                    <td>
+                        : <span t-field="o.name"/>
+                        <span style="display:inline-block;border-bottom:1px solid #000;width:220px;"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong>Employee ID</strong>
+                    </td>
+                    <td>
+                        : <span t-field="o.employee_code"/>
+                        <span style="display:inline-block;border-bottom:1px solid #000;width:220px;"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong>Designation</strong>
+                    </td>
+                    <td>
+                        : <span t-field="o.job_id.name"/>
+                        <span style="display:inline-block;border-bottom:1px solid #000;width:220px;"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong>Department</strong>
+                    </td>
+                    <td>
+                        : <span t-field="o.department_id.name"/>
+                        <span style="display:inline-block;border-bottom:1px solid #000;width:220px;"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong>Date of Joining</strong>
+                    </td>
+                    <td>
+                        :
+                        <span t-field="o.emp_date_of_joining"/>
+                        <span style="display:inline-block;border-bottom:1px solid #000;width:220px;"></span>
+                    </td>
+                </tr>
+            </table>
+            <h4 style="margin-bottom:15px;">
+                Acknowledgement &amp; Undertaking
+            </h4>
+            <p style="text-align:justify;">
+                I,
+                <strong>
+                    <span t-field="o.name"/>
+                </strong>,
+                hereby acknowledge and confirm the following upon cessation of
+                my employment with the Organisation:
+            </p>
+            <ol style="text-align:justify;line-height:1.8;">
+                <li>
+                    My employment with the Company started on
+                    <strong>
+                        <span t-field="o.emp_date_of_joining"/>
+                    </strong>.
+                </li>
+                <li>
+                    All dues, benefits, and entitlements have been settled in
+                    accordance with Company policy and applicable law.
+                </li>
+                <li>
+                    I understand and agree that all insurance, medical, and
+                    other benefits provided by the Company automatically cease
+                    on my last working day. No claims shall be admissible after
+                    cessation of employment.
+                </li>
+                <li>
+                    I confirm that I will return all Company property,
+                    including but not limited to laptops, ID cards, access
+                    cards, documents, and confidential information.
+                </li>
+                <li>
+                    I undertake that I shall not make any fraudulent, false,
+                    or misleading claims post-exit. Any such attempt shall
+                    result in recovery of costs and may lead to legal
+                    proceedings.
+                </li>
+                <li>
+                    I acknowledge that the Company reserves the right to pursue
+                    civil or criminal remedies for any misconduct, fraud, or
+                    breach of obligations discovered during or after my
+                    employment.
+                </li>
+                <li>
+                    This acknowledgement constitutes full and final settlement
+                    of my employment relationship with the Company, and I waive
+                    any further claims against the Organisation.
+                </li>
+            </ol>
+            <div style="margin-top:60px;">
+                <strong>Signatures</strong>
+                <table style="width:100%;margin-top:40px;">
+                    <tr>
+                        <td style="width:50%;">
+                            Employee Signature:
+                            _______________________
+                            <br/><br/>
+                            Date:
+                            _______________________
+                        </td>
+
+                        <td style="width:50%;text-align:right;">
+                            Authorized Signatory (HR):
+                            _______________________
+                            <br/><br/>
+                            Date:
+                            _______________________
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </t>
+</template>
+</odoo>
