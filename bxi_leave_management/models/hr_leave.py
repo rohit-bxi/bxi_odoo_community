@@ -106,7 +106,7 @@ class HrEmployeeLeave(models.Model):
                     days_diff = (rec.request_date_from - date.today()).days
                     if days_diff < 3:
                         raise ValidationError(
-                            "RH leave must be applied at least 3 days before the leave date."
+                            "RH leave must be applied at least 3 days before the leave date.You can apply for LWP for the same."
                         )
                 except TypeError:
                     # If dates are invalid or None, let other validations handle it
@@ -127,7 +127,7 @@ class HrEmployeeLeave(models.Model):
                     days_diff = (rec.request_date_from - date.today()).days
                     if days_diff < 7:
                         raise ValidationError(
-                            "EL leave must be applied at least 7 days before the leave start date."
+                            "EL leave must be applied at least 7 days before the leave start date.You can apply for LWP for the same."
                         )
                 except TypeError:
                     pass

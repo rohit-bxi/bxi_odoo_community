@@ -65,6 +65,16 @@
 
         </field>
     </record>
+    <record id="hr_employee_list_inherit_bxi" model="ir.ui.view">
+        <field name="name">hr.employee.list.bxi</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_tree" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='country_id']" position="after">
+                <field name="resource_calendar_id"/>
+            </xpath>
+        </field>
+    </record>
 
     <record id="view_employee_form_inherit_contract_payroll" model="ir.ui.view">
         <field name="name">hr.employee.form.contract.payroll</field>
