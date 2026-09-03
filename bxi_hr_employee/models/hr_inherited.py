@@ -205,6 +205,14 @@ class HrEmployee(models.Model):
         string="Onsite/Offshore"
     )
     company_code = fields.Char(string="Company Code")
+    # Weekday work locations (optional). These link to hr.work.location records.
+    monday_location_id = fields.Many2one('hr.work.location', string='Monday Location')
+    tuesday_location_id = fields.Many2one('hr.work.location', string='Tuesday Location')
+    wednesday_location_id = fields.Many2one('hr.work.location', string='Wednesday Location')
+    thursday_location_id = fields.Many2one('hr.work.location', string='Thursday Location')
+    friday_location_id = fields.Many2one('hr.work.location', string='Friday Location')
+    saturday_location_id = fields.Many2one('hr.work.location', string='Saturday Location')
+    sunday_location_id = fields.Many2one('hr.work.location', string='Sunday Location')
     employee_ctc = fields.Float(string="Employee Earning (Annual)")
 
     def get_employee_earning(self):

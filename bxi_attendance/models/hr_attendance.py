@@ -208,6 +208,19 @@ class HrAttendance(models.Model):
         if not employee or not check_date:
             return False
 
+        # 0. Per-day override created by approved exceptions
+        EmployeeDayLocation = self.env.get('bxi.shift.employee.location')
+        if EmployeeDayLocation:
+            try:
+                per_day = EmployeeDayLocation.sudo().search([
+                    ('employee_id', '=', employee.id),
+                    ('date', '=', check_date),
+                ], limit=1)
+                if per_day and per_day.location_id:
+                    return per_day.location_id
+            except Exception:
+                pass
+
         ShiftException = self.env["bxi.shift.exception"].sudo()
         exceptions = ShiftException.search(
             [
