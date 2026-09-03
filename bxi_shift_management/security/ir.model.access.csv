@@ -6,3 +6,6 @@ access_hr_version_shift_user,hr.version shift user,hr.model_hr_version,base.grou
 access_shift_exception_user,bxi.shift.exception user,model_bxi_shift_exception,bxi_shift_management.group_shift_user,1,1,1,0
 access_shift_exception_hr,bxi.shift.exception hr,model_bxi_shift_exception,bxi_shift_management.group_shift_hr,1,1,1,1
 access_shift_exception_admin,bxi.shift.exception admin,model_bxi_shift_exception,bxi_shift_management.group_shift_admin,1,1,1,1
+access_shift_employee_location_user,bxi.shift.employee.location user,model_bxi_shift_employee_location,bxi_shift_management.group_shift_user,1,0,0,0
+access_shift_employee_location_hr,bxi.shift.employee.location hr,model_bxi_shift_employee_location,bxi_shift_management.group_shift_hr,1,1,1,0
+access_shift_employee_location_admin,bxi.shift.employee.location admin,model_bxi_shift_employee_location,bxi_shift_management.group_shift_admin,1,1,1,1

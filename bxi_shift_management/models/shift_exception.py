@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from datetime import timedelta
+import json
+from datetime import timedelta, date
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
@@ -121,10 +122,9 @@ class BxiShiftException(models.Model):
         tracking=True,
     )
 
-    # -------------------------------------------------------------------------
-    # DEFAULTS
-    # -------------------------------------------------------------------------
-
+    # Store original weekday locations for the employee so we can restore them
+    # after an exception ends. JSON mapping: {"monday_location_id": <id>, ...}
+    original_weekday_locations = fields.Text(string='Original Weekday Locations', copy=False)
     @api.model
     def _default_employee_id(self):
         employee = self.env["hr.employee"].search(
@@ -135,10 +135,6 @@ class BxiShiftException(models.Model):
         )
         return employee.id or False
 
-    # -------------------------------------------------------------------------
-    # ONCHANGE
-    # -------------------------------------------------------------------------
-
     @api.onchange("employee_id")
     def _onchange_employee_id(self):
         for record in self:
@@ -148,16 +144,8 @@ class BxiShiftException(models.Model):
                     record.employee_id.company_id or self.env.company
                 )
 
-    # -------------------------------------------------------------------------
-    # CREATE
-    # -------------------------------------------------------------------------
-
     @api.model_create_multi
     def create(self, vals_list):
-        """
-        Odoo 19 create() receives a list of dictionaries.
-        """
-
         for vals in vals_list:
             vals.setdefault(
                 "name",
@@ -167,12 +155,9 @@ class BxiShiftException(models.Model):
                 or "/",
             )
 
-            # Automatically set manager from employee
             employee_id = vals.get("employee_id")
-
             if employee_id:
                 employee = self.env["hr.employee"].browse(employee_id).exists()
-
                 if employee:
                     vals.setdefault("manager_id", employee.parent_id.id or False)
                     vals.setdefault(
@@ -183,10 +168,6 @@ class BxiShiftException(models.Model):
         records = super().create(vals_list)
 
         return records
-
-    # -------------------------------------------------------------------------
-    # CONSTRAINTS
-    # -------------------------------------------------------------------------
 
     @api.constrains("date_from", "date_to")
     def _check_dates(self):
@@ -199,10 +180,6 @@ class BxiShiftException(models.Model):
                 raise UserError(
                     _("To Date cannot be earlier than From Date.")
                 )
-
-    # -------------------------------------------------------------------------
-    # SUBMIT
-    # -------------------------------------------------------------------------
 
     def action_submit(self):
         for record in self:
@@ -267,10 +244,6 @@ class BxiShiftException(models.Model):
 
         return True
 
-    # -------------------------------------------------------------------------
-    # MANAGER APPROVE
-    # -------------------------------------------------------------------------
-
     def action_manager_approve(self):
         current_employee = self.env["hr.employee"].search(
             [
@@ -304,6 +277,71 @@ class BxiShiftException(models.Model):
                     "manager_approved_date": fields.Datetime.now(),
                 }
             )
+
+            # Apply per-date overrides and update the employee's weekday
+            # location fields for the weekdays included in this exception.
+            EmployeeLocation = self.env['bxi.shift.employee.location'].sudo()
+
+            # Collect original weekday values to allow restore later.
+            orig = {}
+            weekday_field_map = {
+                0: 'monday_location_id',
+                1: 'tuesday_location_id',
+                2: 'wednesday_location_id',
+                3: 'thursday_location_id',
+                4: 'friday_location_id',
+                5: 'saturday_location_id',
+                6: 'sunday_location_id',
+            }
+
+            emp = record.employee_id.sudo()
+
+            # Save originals only once if not already stored
+            try:
+                if not record.original_weekday_locations:
+                    for idx, field_name in weekday_field_map.items():
+                        if field_name in emp._fields:
+                            orig[field_name] = emp[field_name].id if emp[field_name] else False
+                    record.original_weekday_locations = json.dumps(orig)
+            except Exception:
+                _logger.exception('Failed to capture original weekday locations for %s', record.name)
+
+            # Iterate dates and create per-day override records
+            cur = record.date_from
+            while cur <= record.date_to:
+                weekday = cur.weekday()
+
+                # If allowed_weekdays is set, skip days not included
+                if record.allowed_weekdays:
+                    try:
+                        allowed = [int(x.strip()) for x in record.allowed_weekdays.split(',') if x.strip()]
+                    except Exception:
+                        allowed = []
+                    if allowed and weekday not in allowed:
+                        cur = cur + timedelta(days=1)
+                        continue
+
+                # Create or update per-day override
+                try:
+                    EmployeeLocation.create({
+                        'employee_id': emp.id,
+                        'date': cur,
+                        'location_id': record.to_location_id.id if record.to_location_id else False,
+                        'exception_id': record.id,
+                    })
+                except Exception:
+                    # If unique constraint prevents create, skip
+                    pass
+
+                # Update employee weekday field (set to to_location_id)
+                field_name = weekday_field_map.get(weekday)
+                if field_name and field_name in emp._fields and record.to_location_id:
+                    try:
+                        emp.write({field_name: record.to_location_id.id})
+                    except Exception:
+                        _logger.exception('Failed to update employee weekday field %s for %s', field_name, emp.name)
+
+                cur = cur + timedelta(days=1)
 
             # -------------------------------------------------------------
             # Notify employee
@@ -348,9 +386,6 @@ class BxiShiftException(models.Model):
                     )
 
         return True
-    # -------------------------------------------------------------------------
-    # REFUSE
-    # -------------------------------------------------------------------------
 
     def action_refuse(self):
         for record in self:
@@ -361,9 +396,6 @@ class BxiShiftException(models.Model):
 
         return True
 
-    # -------------------------------------------------------------------------
-    # SET TO DRAFT
-    # -------------------------------------------------------------------------
 
     def action_set_draft(self):
         for record in self:
@@ -371,5 +403,155 @@ class BxiShiftException(models.Model):
 
             record.manager_approved_by = False
             record.manager_approved_date = False
+
+        return True
+
+    @api.model
+    def cron_apply_and_cleanup_exceptions(self):
+
+        today = fields.Date.context_today(self)
+
+        _logger.info(
+            "Starting BXI daily shift exception cron for %s",
+            today,
+        )
+
+        active_exceptions = self.search([
+            ("state", "=", "approved"),
+            ("date_from", "<=", today),
+            ("date_to", ">=", today),
+        ])
+
+        weekday = today.weekday()
+
+        weekday_fields = {
+            0: "monday_location_id",
+            1: "tuesday_location_id",
+            2: "wednesday_location_id",
+            3: "thursday_location_id",
+            4: "friday_location_id",
+            5: "saturday_location_id",
+            6: "sunday_location_id",
+        }
+
+        field_name = weekday_fields.get(weekday)
+
+        if not field_name:
+            return True
+
+        for exception in active_exceptions:
+            employee = exception.employee_id.sudo()
+
+            if not employee:
+                continue
+
+            # Check whether today's weekday is included
+            if exception.allowed_weekdays:
+
+                try:
+                    allowed_weekdays = [
+                        int(value.strip())
+                        for value in exception.allowed_weekdays.split(",")
+                        if value.strip()
+                    ]
+                except (TypeError, ValueError):
+
+                    _logger.warning(
+                        "Invalid allowed_weekdays '%s' "
+                        "for exception %s",
+                        exception.allowed_weekdays,
+                        exception.name,
+                    )
+
+                    continue
+
+                if weekday not in allowed_weekdays:
+                    continue
+
+            # Field must exist on employee
+            if field_name not in employee._fields:
+                _logger.warning(
+                    "Employee model does not contain %s",
+                    field_name,
+                )
+                continue
+
+            # -----------------------------------------------------
+            # Apply exception location
+            # -----------------------------------------------------
+
+            if exception.to_location_id:
+
+                employee.write({
+                    field_name: exception.to_location_id.id,
+                })
+
+                _logger.info(
+                    "Applied exception %s: employee=%s, "
+                    "date=%s, field=%s, location=%s",
+                    exception.name,
+                    employee.name,
+                    today,
+                    field_name,
+                    exception.to_location_id.name,
+                )
+
+        # ---------------------------------------------------------
+        # 3. Restore locations for expired exceptions
+        # ---------------------------------------------------------
+
+        expired_exceptions = self.search([
+            ("state", "=", "approved"),
+            ("date_to", "<", today),
+            ("original_weekday_locations", "!=", False),
+        ])
+
+        for exception in expired_exceptions:
+
+            employee = exception.employee_id.sudo()
+
+            if not employee:
+                continue
+
+            try:
+                original_locations = json.loads(
+                    exception.original_weekday_locations or "{}"
+                )
+            except Exception:
+
+                _logger.exception(
+                    "Invalid original weekday locations "
+                    "for exception %s",
+                    exception.name,
+                )
+
+                continue
+
+            for field_name, location_id in original_locations.items():
+
+                if field_name not in employee._fields:
+                    continue
+
+                employee.write({
+                    field_name: location_id or False,
+                })
+
+                _logger.info(
+                    "Restored employee=%s field=%s location=%s "
+                    "after exception %s expired",
+                    employee.name,
+                    field_name,
+                    location_id,
+                    exception.name,
+                )
+
+            exception.write({
+                "original_weekday_locations": False,
+            })
+
+        _logger.info(
+            "Completed BXI daily shift exception cron for %s",
+            today,
+        )
 
         return True
