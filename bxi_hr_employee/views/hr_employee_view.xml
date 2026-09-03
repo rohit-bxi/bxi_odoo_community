@@ -141,6 +141,84 @@
         </field>
     </record>
 
+    <record id="view_employee_inherit_document" model="ir.ui.view">
+        <field name="name">hr.employee.inherit.document</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='hr_settings']" position="after">
+                <page string="Employee Documents">
+                    <group>
+                        <button name="action_send_data_privacy_doc"
+                            string="Send Employee Addtional Documents"
+                            type="object"
+                            class="btn-primary" />
+                        <button name="action_send_employee_doc"
+                            string="Send Employee Document"
+                            type="object"
+                            class="btn-primary" />
+                    </group>
+                    <group name="name" string="Data Privacy Document">
+                        <field name="data_privacy_doc" widget="many2many_binary" />
+                    </group>
+                    <group string="Employee Documents">
+                        <group>
+                            <field name="adhar_card_front" widget="many2many_binary" />
+                            <field name="adhar_card_back" widget="many2many_binary" />
+                            <field name="pan_number_proof" widget="many2many_binary" />
+                            <field name="doc_10th_id" widget="many2many_binary" />
+                            <field name="doc_12th_id" widget="many2many_binary" />
+                        </group>
+                        <group>
+                            <field name="doc_graduation_id" widget="many2many_binary" />
+                            <field name="doc_master_id" widget="many2many_binary" />
+                            <field name="any_certificate" widget="many2many_binary" />
+                            <field name="photograph" widget="many2many_binary" />
+                        </group>
+                        <group>
+                            <field name="experience_ids"
+                               context="{'default_employee_id': id}"
+                               mode="list,form"
+                               nolabel="1">
+
+                            <list string="Experience">
+                                <field name="company_name"/>
+                                <field name="years"/>
+                            </list>
+
+                            <form string="Experience Details">
+                                <sheet>
+                                    <group>
+                                        <field name="company_name"/>
+                                        <field name="years"/>
+                                    </group>
+
+                                    <group string="Documents" col="2">
+                                        <field name="joining_letter"
+                                               filename="joining_letter_filename" widget="many2many_binary"/>
+                                        <field name="experience_certificate"
+                                               filename="experience_certificate_filename" widget="many2many_binary"/>
+
+                                        <field name="relieving_letter"
+                                               filename="relieving_letter_filename" widget="many2many_binary"/>
+
+                                        <field name="other_certificate"
+                                               filename="apprsail_letter_filename" widget="many2many_binary"/>
+                                        <field name="bank_statement_id" widget="many2many_binary"/>
+                                        <field name="salary_slip_id" widget="many2many_binary"/>
+                                    </group>
+                                </sheet>
+                            </form>
+
+                        </field>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+
     <!-- Restrict Contacts main app and all child menus to Show Hidden Menus group -->
     <menuitem id="contacts.menu_contacts" groups="bxi_hr_employee.group_show_hidden_menus"/>
     <menuitem id="contacts.res_partner_menu_contacts" groups="bxi_hr_employee.group_show_hidden_menus"/>

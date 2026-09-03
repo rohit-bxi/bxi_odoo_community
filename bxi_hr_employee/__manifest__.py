@@ -9,10 +9,12 @@
     'description': 'Employee View Modification',
     'depends': ['hr', 'custom_template', 'contacts','om_hr_payroll'],
     'data': [
+        'security/ir.model.access.csv',
         'security/hr_employee_security.xml',
         'views/hr_employee_view.xml',
         'report/payslip_contact_employee.xml',
-        'report/relieving_exp_letter.xml'
+        'report/relieving_exp_letter.xml',
+        'report/data_privacy.xml',
     ],
     'installable': True,
     'application': False,
