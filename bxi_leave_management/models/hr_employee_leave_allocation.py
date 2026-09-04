@@ -144,18 +144,72 @@ class HrEmployee(models.Model):
             if existing:
                 continue
             # -----------------------------------------------------
-            # Attendance >= 15 days
-            # → Allocate 1.5 EL
-            # Attendance < 15 days
-            # → No allocation
+            # → Allocate EL computed as 1.5 / (attendance_days + EL_applied_days_approved + RH_applied_days_approved)
+            # No minimum attendance gate — allocation computed when denom > 0.
             # -----------------------------------------------------
-            if attendance_days >= 15:
+
+            # Sum EL days already approved in the same month
+            el_leaves = self.env['hr.leave'].search([
+                ('employee_id', '=', emp.id),
+                ('holiday_status_id', '=', el_type.id),
+                ('state', '=', 'validate'),
+                ('request_date_from', '<=', last_day_previous_month),
+                ('request_date_to', '>=', first_day_previous_month),
+            ])
+
+            el_applied_days = 0.0
+            for l in el_leaves:
+                days = getattr(l, 'number_of_days', False)
+                if days:
+                    try:
+                        el_applied_days += float(days)
+                    except Exception:
+                        pass
+                else:
+                    # compute overlap days inclusive
+                    s = max(l.request_date_from, first_day_previous_month)
+                    e = min(l.request_date_to, last_day_previous_month)
+                    try:
+                        el_applied_days += (e - s).days + 1
+                    except Exception:
+                        pass
+
+            # Sum RH days already approved in the same month
+            rh_type = self.env['hr.leave.type'].search([('time_off_code', '=', 'RH')], limit=1)
+            rh_applied_days = 0.0
+            if rh_type:
+                rh_leaves = self.env['hr.leave'].search([
+                    ('employee_id', '=', emp.id),
+                    ('holiday_status_id', '=', rh_type.id),
+                    ('state', '=', 'validate'),
+                    ('request_date_from', '<=', last_day_previous_month),
+                    ('request_date_to', '>=', first_day_previous_month),
+                ])
+                for l in rh_leaves:
+                    days = getattr(l, 'number_of_days', False)
+                    if days:
+                        try:
+                            rh_applied_days += float(days)
+                        except Exception:
+                            pass
+                    else:
+                        s = max(l.request_date_from, first_day_previous_month)
+                        e = min(l.request_date_to, last_day_previous_month)
+                        try:
+                            rh_applied_days += (e - s).days + 1
+                        except Exception:
+                            pass
+
+            denom = attendance_days + el_applied_days + rh_applied_days
+
+            if denom and denom > 0:
+                alloc_days = round(1.5 / float(denom), 3)
 
                 allocation = self.env['hr.leave.allocation'].create({
                     'name': f'EL Monthly {month_key}',
                     'employee_id': emp.id,
                     'holiday_status_id': el_type.id,
-                    'number_of_days': 1.5,
+                    'number_of_days': alloc_days,
                 })
 
                 allocation.action_approve()
