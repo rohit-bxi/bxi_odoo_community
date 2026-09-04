@@ -132,42 +132,42 @@ class HrEmployeeLeave(models.Model):
                 except TypeError:
                     pass
 
-        @api.constrains('holiday_status_id', 'request_date_from', 'request_date_to')
-        def _check_ml_sl_al_rules(self):
-            """
-            Enforce advance notice rules for Maternity (ML), Surrogacy (SL), and Adoption (AL):
-            - ML: at least 60 days (approx. 2 months) before start
-            - SL: at least 28 days before start
-            - AL: at least 28 days before start
-            """
-            for rec in self:
-                if not rec.holiday_status_id or not rec.request_date_from:
-                    continue
-                code = getattr(rec.holiday_status_id, 'time_off_code', False) or ''
-                code = (code or '').strip().upper()
+    @api.constrains('holiday_status_id', 'request_date_from', 'request_date_to')
+    def _check_ml_sl_al_rules(self):
+        """
+        Enforce advance notice rules for Maternity (ML), Surrogacy (SL), and Adoption (AL):
+        - ML: at least 60 days (approx. 2 months) before start
+        - SL: at least 28 days before start
+        - AL: at least 28 days before start
+        """
+        for rec in self:
+            if not rec.holiday_status_id or not rec.request_date_from:
+                continue
+            code = getattr(rec.holiday_status_id, 'time_off_code', False) or ''
+            code = (code or '').strip().upper()
 
-                try:
-                    days_diff = (rec.request_date_from - date.today()).days
-                except Exception:
-                    days_diff = None
+            try:
+                days_diff = (rec.request_date_from - date.today()).days
+            except Exception:
+                days_diff = None
 
-                if code == 'ML':
-                    if days_diff is None or days_diff < 60:
-                        raise ValidationError(
-                            "Maternity Leave (ML) must be applied at least 2 months (60 days) before the leave start date."
-                        )
+            if code == 'ML':
+                if days_diff is None or days_diff < 60:
+                    raise ValidationError(
+                        "Maternity Leave (ML) must be applied at least 2 months (60 days) before the leave start date."
+                    )
 
-                if code == 'SL':
-                    if days_diff is None or days_diff < 28:
-                        raise ValidationError(
-                            "Surrogacy Leave (SL) must be applied at least 4 weeks (28 days) before the leave start date."
-                        )
+            if code == 'SL':
+                if days_diff is None or days_diff < 28:
+                    raise ValidationError(
+                        "Surrogacy Leave (SL) must be applied at least 4 weeks (28 days) before the leave start date."
+                    )
 
-                if code == 'AL':
-                    if days_diff is None or days_diff < 28:
-                        raise ValidationError(
-                            "Adoption Leave (AL) must be applied at least 4 weeks (28 days) before the leave start date."
-                        )
+            if code == 'AL':
+                if days_diff is None or days_diff < 28:
+                    raise ValidationError(
+                        "Adoption Leave (AL) must be applied at least 4 weeks (28 days) before the leave start date."
+                    )
 
 
     compensation_required = fields.Boolean(
