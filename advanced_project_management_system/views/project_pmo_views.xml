@@ -39,19 +39,21 @@
                     </div>
                 </button>
             </xpath>
-            <xpath expr="//field[@name='privacy_visibility']"
-                   position="after">
-                <field name="project_code" readonly="1"/>
-                <field name="business_unit_id"/>
-                <field name="department_id"/>
-                <field name="project_owner_id"/>
-                <field name="project_coordinator_id"/>
-                <field name="pmo_priority"/>
-                <field name="health_status" widget="badge"
-                       decoration-success="health_status == 'green'"
-                       decoration-warning="health_status == 'amber'"
-                       decoration-danger="health_status == 'red'"/>
-                <field name="progress_percentage" widget="progressbar"/>
+            <xpath expr="//page[@name='project_checklist']/group[1]"
+                   position="before">
+                <group string="PMO Identification">
+                    <field name="project_code" readonly="1"/>
+                    <field name="business_unit_id"/>
+                    <field name="department_id"/>
+                    <field name="project_owner_id"/>
+                    <field name="project_coordinator_id"/>
+                    <field name="pmo_priority"/>
+                    <field name="health_status" widget="badge"
+                           decoration-success="health_status == 'green'"
+                           decoration-warning="health_status == 'amber'"
+                           decoration-danger="health_status == 'red'"/>
+                    <field name="progress_percentage" widget="progressbar"/>
+                </group>
             </xpath>
             <xpath expr="//page[@name='settings']" position="before">
                 <page name="pmo_planning" string="Planning &amp; Governance">

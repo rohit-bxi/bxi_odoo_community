@@ -41,9 +41,6 @@ class ProjectProject(models.Model):
     document_count = fields.Integer(string='Documents',
                                     compute='_compute_document_count',
                                     help="For getting the document count")
-    project_stage_id = fields.Many2one('project.project.stage',
-                                       tracking=True, string='Stage',
-                                       help="Project stages")
     project_checklist_info_ids = fields.One2many('project.checklist.info',
                                                  'project_id',
                                                  help="Project checklist details",
