@@ -11,7 +11,6 @@ class HrWorkLocation(models.Model):
     longitude = fields.Float(string='Longitude', digits=(16, 8))
     radius_km = fields.Float(string='Allowed Radius (km)', default=2.5)
     company_id = fields.Many2one('res.company', string='Company')
-    resource_calendar_id = fields.Many2one('resource.calendar', string='Working Schedule')
     # Weekly enforcement: require employees assigned to this location to
     # work from office a minimum number of days per week.
     enforce_weekly_requirement = fields.Boolean(
