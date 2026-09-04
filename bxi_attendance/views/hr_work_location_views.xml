@@ -6,12 +6,17 @@
         <field name="inherit_id" ref="hr.hr_work_location_form_view"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='location_type']" position="after">
-                <field name="office"/>
-                <field name="home"/>
-                <field name="latitude"/>
-                <field name="longitude"/>
-                <field name="radius_km"/>
-                <field name="resource_calendar_id"/>
+                <group string="Location Type">
+                    <field name="office"/>
+                    <field name="home"/>
+                </group>
+                 <group
+                    string="GPS / Geofence Configuration"
+                    invisible="not office">
+                    <field name="latitude"/>
+                    <field name="longitude"/>
+                    <field name="radius_km"/>
+                </group>
             </xpath>
         </field>
     </record>
