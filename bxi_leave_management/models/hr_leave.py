@@ -1,6 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
-from datetime import date
+from datetime import date, timedelta
 
 
 class HrEmployeeLeave(models.Model):
@@ -131,3 +131,246 @@ class HrEmployeeLeave(models.Model):
                         )
                 except TypeError:
                     pass
+
+        @api.constrains('holiday_status_id', 'request_date_from', 'request_date_to')
+        def _check_ml_sl_al_rules(self):
+            """
+            Enforce advance notice rules for Maternity (ML), Surrogacy (SL), and Adoption (AL):
+            - ML: at least 60 days (approx. 2 months) before start
+            - SL: at least 28 days before start
+            - AL: at least 28 days before start
+            """
+            for rec in self:
+                if not rec.holiday_status_id or not rec.request_date_from:
+                    continue
+                code = getattr(rec.holiday_status_id, 'time_off_code', False) or ''
+                code = (code or '').strip().upper()
+
+                try:
+                    days_diff = (rec.request_date_from - date.today()).days
+                except Exception:
+                    days_diff = None
+
+                if code == 'ML':
+                    if days_diff is None or days_diff < 60:
+                        raise ValidationError(
+                            "Maternity Leave (ML) must be applied at least 2 months (60 days) before the leave start date."
+                        )
+
+                if code == 'SL':
+                    if days_diff is None or days_diff < 28:
+                        raise ValidationError(
+                            "Surrogacy Leave (SL) must be applied at least 4 weeks (28 days) before the leave start date."
+                        )
+
+                if code == 'AL':
+                    if days_diff is None or days_diff < 28:
+                        raise ValidationError(
+                            "Adoption Leave (AL) must be applied at least 4 weeks (28 days) before the leave start date."
+                        )
+
+
+    compensation_required = fields.Boolean(
+        string="Compensation Required",
+        compute="_compute_compensation_required",
+        store=True,
+        readonly=True,
+    )
+
+    compensation_date = fields.Date(
+        string="Compensation Date",
+        help=(
+            "For Earned Leave taken on Tuesday, Wednesday or Thursday, "
+            "select Monday or Friday of the same week as the compensation date."
+        ),
+    )
+
+
+    @api.depends("employee_id", "request_date_from", "holiday_status_id")
+    def _compute_compensation_required(self):
+        for leave in self:
+            leave.compensation_required = (
+                leave._is_earned_leave()
+                and leave._is_mandatory_wfo_day()
+            )
+
+    def _is_earned_leave(self):
+        """Return True when the leave type is Earned Leave."""
+        self.ensure_one()
+        leave_type = self.holiday_status_id
+        code = (
+            getattr(leave_type, "code", False)
+            or getattr(leave_type, "leave_code", False)
+        )
+        if code:
+            return code.upper() == "EL"
+        return (leave_type.name or "").strip().upper() in (
+            "EL",
+            "EARNED LEAVE",
+        )
+
+    def _is_mandatory_wfo_day(self):
+        """
+        Tuesday = 1
+        Wednesday = 2
+        Thursday = 3
+
+        Monday = 0
+        Friday = 4
+        """
+        self.ensure_one()
+
+        if not self.request_date_from:
+            return False
+
+        return self.request_date_from.weekday() in (1, 2, 3)
+
+    # ==========================================================
+    # EMPLOYEE WEEKDAY LOCATION
+    # ==========================================================
+
+    def _get_employee_day_location(self, employee, check_date):
+        """Return the employee's configured location for a particular day."""
+
+        weekday_location_fields = {
+            0: "monday_location_id",
+            1: "tuesday_location_id",
+            2: "wednesday_location_id",
+            3: "thursday_location_id",
+            4: "friday_location_id",
+            5: "saturday_location_id",
+            6: "sunday_location_id",
+        }
+
+        field_name = weekday_location_fields.get(check_date.weekday())
+
+        if not field_name:
+            return False
+
+        if field_name not in employee._fields:
+            return False
+
+        return employee[field_name]
+
+
+    def _validate_compensation_date(self):
+        for leave in self:
+
+            if not leave.compensation_required:
+                continue
+
+            if not leave.compensation_date:
+                raise ValidationError(
+                    _(
+                        "Compensation is required because you are applying "
+                        "Earned Leave on a mandatory WFO day. "
+                        "Please select a compensation date."
+                    )
+                )
+
+            leave_date = leave.request_date_from
+            compensation_date = leave.compensation_date
+
+            # --------------------------------------------------
+            # Same week
+            # --------------------------------------------------
+
+            monday = leave_date - timedelta(days=leave_date.weekday())
+            sunday = monday + timedelta(days=6)
+
+            if not (monday <= compensation_date <= sunday):
+                raise ValidationError(
+                    _(
+                        "The compensation date must be within the same "
+                        "week as the Earned Leave."
+                    )
+                )
+
+            # --------------------------------------------------
+            # Only Monday or Friday
+            # --------------------------------------------------
+
+            if compensation_date.weekday() not in (0, 4):
+                raise ValidationError(
+                    _(
+                        "For Earned Leave taken on Tuesday, Wednesday or "
+                        "Thursday, compensation can only be completed on "
+                        "Monday or Friday of the same week."
+                    )
+                )
+
+            # --------------------------------------------------
+            # Cannot be same as leave date
+            # --------------------------------------------------
+
+            if compensation_date == leave_date:
+                raise ValidationError(
+                    _("The compensation date cannot be the leave date.")
+                )
+
+            # --------------------------------------------------
+            # Employee must have a WFO location on compensation date
+            # --------------------------------------------------
+
+            compensation_location = leave._get_employee_day_location(
+                leave.employee_id,
+                compensation_date,
+            )
+
+            if not compensation_location:
+                raise ValidationError(
+                    _(
+                        "No work location is configured for %s on %s. "
+                        "Please configure the employee's work location "
+                        "before selecting this compensation date."
+                    )
+                    % (
+                        leave.employee_id.name,
+                        compensation_date,
+                    )
+                )
+
+            # --------------------------------------------------
+            # Compensation date cannot itself be leave
+            # --------------------------------------------------
+
+            existing_leave = self.env["hr.leave"].search(
+                [
+                    ("employee_id", "=", leave.employee_id.id),
+                    ("id", "!=", leave.id),
+                    ("state", "not in", ("cancel", "refuse")),
+                    ("request_date_from", "<=", compensation_date),
+                    ("request_date_to", ">=", compensation_date),
+                ],
+                limit=1,
+            )
+
+            if existing_leave:
+                raise ValidationError(
+                    _(
+                        "The selected compensation date %s already has "
+                        "a leave request for %s. Please select another "
+                        "compensation date."
+                    )
+                    % (
+                        compensation_date,
+                        leave.employee_id.name,
+                    )
+                )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._validate_compensation_date()
+        return records
+
+
+    def write(self, vals):
+        result = super().write(vals)
+        self._validate_compensation_date()
+        return result
+
+    def action_confirm(self):
+        for leave in self:
+            leave._validate_compensation_date()
+        return super().action_confirm()
