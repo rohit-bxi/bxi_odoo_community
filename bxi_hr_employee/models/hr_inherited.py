@@ -111,7 +111,7 @@ class HrEmployee(models.Model):
     )
 
     def _sync_portal_access_to_alumni(self):
-        url = "https://alumni.bxiventures.com/api/employee/update-access"
+        url = "https://alumni.bxiventures.com/api/alumni/employee/update-access"
         for employee in self:
             payload = {
                 "employee_id": employee.id,
