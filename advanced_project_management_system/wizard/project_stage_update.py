@@ -37,5 +37,5 @@ class ProjectStageUpdate(models.TransientModel):
         for project in self.env['project.project'].browse(
                 self._context['active_ids']):
             project.update({
-                'project_stage_id': self.stage_id.id
+                'stage_id': self.stage_id.id
             })

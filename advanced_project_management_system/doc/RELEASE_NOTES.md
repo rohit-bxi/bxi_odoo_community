@@ -1,6 +1,45 @@
 ## Module <advanced_project_management_system>
 
 #### 04.09.2026
+#### Version 19.0.4.0.2
+#### FIX
+
+- Moved the PMO identification fields (Project ID, Business Unit, Department,
+  Project Owner, Project Coordinator, Priority, Health Status, Overall
+  Progress %) and the Project Category / Duration fields out of the stat
+  button row and into the Checklist tab, each in its own labeled group. Both
+  had been anchored via `//field[@name='privacy_visibility']`, but core
+  Odoo auto-inserts a hidden duplicate of that field inside the button box
+  (to satisfy a stat button's `invisible` condition), and that duplicate
+  matches first — so every one of these fields was rendering as an
+  unlabeled, bare field jammed between the stat buttons instead of in the
+  sheet body.
+
+#### 04.09.2026
+#### Version 19.0.4.0.1
+#### FIX
+
+- Hid the native `stage_id` statusbar on the project form: PMO Status
+  (`pmo_state`) already covers the full lifecycle (Draft through Cancelled),
+  so keeping the generic Kanban Stage bar alongside it was still redundant.
+  Kanban board grouping, the list column and filters on `stage_id` are
+  untouched, only the form header changes.
+
+#### 04.09.2026
+#### Version 19.0.4.0.0
+#### FIX
+
+- Removed `project_stage_id`, a second Many2one to `project.project.stage`
+  that duplicated the native `stage_id` field without ever syncing to it,
+  leaving the project form with two independent, unsynced stage bars and
+  a "Mass Update Stage" wizard that only moved one of them. Existing
+  projects are realigned onto `stage_id` on upgrade.
+- Fixed a duplicate `view_project` record id in `project_project_views.xml`
+  that silently discarded the Project Category list column: the two
+  inherited views shared one external id, so the second overwrote the
+  first in the database.
+
+#### 04.09.2026
 #### Version 19.0.3.0.0
 #### ADD
 

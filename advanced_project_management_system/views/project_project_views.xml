@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <!-- Added project category -->
-    <record id="view_project" model="ir.ui.view">
+    <record id="view_project_list_category" model="ir.ui.view">
         <field name="name">
-            project.project.view.form.inherit.advanced.project.management.system
+            project.project.view.list.category.inherit.advanced.project.management.system
         </field>
         <field name="model">project.project</field>
         <field name="mode">extension</field>
@@ -48,9 +48,8 @@
         <field name="mode">extension</field>
         <field name="inherit_id" ref="project.edit_project"/>
         <field name="arch" type="xml">
-            <xpath expr="//header" position="inside">
-                <field name="project_stage_id" widget="statusbar"
-                       options="{'clickable': '1'}"/>
+            <xpath expr="//field[@name='stage_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//field[@name='partner_id']"
                    position="after">
@@ -63,12 +62,6 @@
                         type="object"
                         icon="fa-external-link" string="Add Shortcuts"/>
             </header>
-            <xpath expr="//field[@name='privacy_visibility']"
-                   position="after">
-                <field name="project_category_id"/>
-                <field name="duration_type"/>
-                <field name="duration" readonly="1"/>
-            </xpath>
             <xpath expr="//div[hasclass('oe_button_box')]"
                    position="inside">
                 <button class="oe_stat_button" name="action_document"
@@ -115,6 +108,11 @@
             <xpath expr="//page[@name='settings']"
                    position="after">
                 <page name="project_checklist" string="Checklist">
+                    <group string="Project Attributes">
+                        <field name="project_category_id"/>
+                        <field name="duration_type"/>
+                        <field name="duration" readonly="1"/>
+                    </group>
                     <group>
                         <group>
                             <field name="checklist_progress"
@@ -159,20 +157,6 @@
             <xpath expr="//field[@name='mail_template_id']"
                    position="after">
                 <field name="user_ids" widget="many2many_tags"/>
-            </xpath>
-        </field>
-    </record>
-    <!-- Added project stage fields in tree view -->
-    <record id="view_project" model="ir.ui.view">
-        <field name="name">
-            project.project.view.tree.inherit.advanced.project.management.system
-        </field>
-        <field name="model">project.project</field>
-        <field name="mode">extension</field>
-        <field name="inherit_id" ref="project.view_project"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='last_update_status']" position="after">
-                <field name="project_stage_id" widget="badge"/>
             </xpath>
         </field>
     </record>
