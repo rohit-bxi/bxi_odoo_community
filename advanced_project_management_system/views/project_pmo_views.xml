@@ -1,0 +1,454 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- ===================== PROJECT ===================== -->
+    <record id="view_project_form_pmo" model="ir.ui.view">
+        <field name="name">project.project.view.form.pmo</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_submit_for_approval" type="object"
+                        string="Submit for Approval"
+                        invisible="approval_state != 'not_required'"/>
+                <button name="action_approve" type="object" string="Approve"
+                        class="btn-primary"
+                        invisible="approval_state != 'to_approve'"
+                        groups="advanced_project_management_system.group_apms_pmo"/>
+                <button name="action_reject_approval" type="object"
+                        string="Reject"
+                        invisible="approval_state != 'to_approve'"
+                        groups="advanced_project_management_system.group_apms_pmo"/>
+                <field name="pmo_state" widget="statusbar"
+                       options="{'clickable': '1'}"/>
+            </xpath>
+            <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
+                <button class="oe_stat_button" name="action_view_risks"
+                        type="object" icon="fa-exclamation-triangle">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="open_risk_count" readonly="1"/>
+                        </span>
+                        <span class="o_stat_text">Open Risks</span>
+                    </div>
+                </button>
+                <button class="oe_stat_button" name="action_view_team"
+                        type="object" icon="fa-users">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Team</span>
+                    </div>
+                </button>
+            </xpath>
+            <xpath expr="//field[@name='privacy_visibility']"
+                   position="after">
+                <field name="project_code" readonly="1"/>
+                <field name="business_unit_id"/>
+                <field name="department_id"/>
+                <field name="project_owner_id"/>
+                <field name="project_coordinator_id"/>
+                <field name="pmo_priority"/>
+                <field name="health_status" widget="badge"
+                       decoration-success="health_status == 'green'"
+                       decoration-warning="health_status == 'amber'"
+                       decoration-danger="health_status == 'red'"/>
+                <field name="progress_percentage" widget="progressbar"/>
+            </xpath>
+            <xpath expr="//page[@name='settings']" position="before">
+                <page name="pmo_planning" string="Planning &amp; Governance">
+                    <group>
+                        <group string="Schedule">
+                            <label for="date_start" string="Planned Start Date"/>
+                            <field name="date_start" nolabel="1"/>
+                            <label for="date" string="Planned End Date"/>
+                            <field name="date" nolabel="1"/>
+                            <field name="actual_start_date"/>
+                            <field name="actual_end_date"/>
+                            <field name="schedule_variance_days"/>
+                            <field name="duration_type"/>
+                            <field name="duration" readonly="1"/>
+                        </group>
+                        <group string="Approval">
+                            <field name="approval_state"/>
+                            <field name="approved_by_id"/>
+                            <field name="approval_date"/>
+                        </group>
+                    </group>
+                    <group string="Roll-up">
+                        <group>
+                            <field name="total_milestone_count"/>
+                            <field name="completed_milestone_count"/>
+                            <field name="total_task_count"/>
+                            <field name="completed_task_count"/>
+                        </group>
+                        <group>
+                            <field name="open_issue_count"/>
+                            <field name="open_risk_count"/>
+                            <field name="red_risk_count"/>
+                        </group>
+                    </group>
+                </page>
+                <page name="pmo_team" string="Team Allocation">
+                    <field name="team_member_ids"
+                           context="{'default_project_id': id}">
+                        <list editable="bottom">
+                            <field name="user_id"/>
+                            <field name="role"/>
+                            <field name="allocation_percentage"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                        </list>
+                    </field>
+                </page>
+                <page name="pmo_risks" string="Risks">
+                    <field name="risk_ids"
+                           context="{'default_project_id': id}">
+                        <list editable="bottom">
+                            <field name="name" readonly="1"/>
+                            <field name="title"/>
+                            <field name="owner_id"/>
+                            <field name="probability"/>
+                            <field name="impact"/>
+                            <field name="risk_rating" widget="badge"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_project_list_pmo" model="ir.ui.view">
+        <field name="name">project.project.view.list.pmo</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='last_update_status']" position="after">
+                <field name="project_code" optional="show"/>
+                <field name="pmo_state" widget="badge" optional="show"/>
+                <field name="health_status" widget="badge" optional="show"
+                       decoration-success="health_status == 'green'"
+                       decoration-warning="health_status == 'amber'"
+                       decoration-danger="health_status == 'red'"/>
+                <field name="progress_percentage" widget="progressbar"
+                       optional="show"/>
+                <field name="open_risk_count" optional="hide"/>
+                <field name="open_issue_count" optional="hide"/>
+                <field name="schedule_variance_days" optional="hide"/>
+                <field name="business_unit_id" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_project_search_pmo" model="ir.ui.view">
+        <field name="name">project.project.view.search.pmo</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.view_project_project_filter"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <search position="inside">
+                <field name="project_code"/>
+                <field name="business_unit_id"/>
+                <filter string="Delayed" name="pmo_delayed"
+                        domain="[('schedule_variance_days', '&gt;', 0),
+                                 ('pmo_state', 'not in',
+                                  ['completed', 'closed', 'cancelled'])]"/>
+                <filter string="At Risk (Red)" name="pmo_red"
+                        domain="[('health_status', '=', 'red')]"/>
+                <separator/>
+                <filter string="Project Status" name="group_pmo_state"
+                        context="{'group_by': 'pmo_state'}"/>
+                <filter string="Health" name="group_health"
+                        context="{'group_by': 'health_status'}"/>
+                <filter string="Business Unit" name="group_bu"
+                        context="{'group_by': 'business_unit_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ===================== MILESTONE ===================== -->
+    <record id="project_milestone_view_form_pmo" model="ir.ui.view">
+        <field name="name">project.milestone.view.form.pmo</field>
+        <field name="model">project.milestone</field>
+        <field name="inherit_id"
+               ref="advanced_project_management_system.project_milestone_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='project_id']" position="after">
+                <field name="milestone_code" readonly="1"/>
+                <field name="owner_id"/>
+                <field name="pmo_state"/>
+                <field name="pmo_priority"/>
+                <field name="health_status" widget="badge"
+                       decoration-success="health_status == 'green'"
+                       decoration-warning="health_status == 'amber'"
+                       decoration-danger="health_status == 'red'"/>
+                <field name="actual_start_date"/>
+                <field name="actual_end_date"/>
+                <field name="target_completion_date"/>
+                <field name="completion_percentage" widget="progressbar"/>
+                <field name="total_task_count"/>
+                <field name="completed_task_count"/>
+                <field name="acceptance_required"/>
+                <field name="approved_by_id"/>
+                <field name="approval_date"/>
+                <field name="remarks"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="project_milestone_view_tree_pmo" model="ir.ui.view">
+        <field name="name">project.milestone.view.list.pmo</field>
+        <field name="model">project.milestone</field>
+        <field name="inherit_id"
+               ref="advanced_project_management_system.project_milestone_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="before">
+                <field name="milestone_code"/>
+            </xpath>
+            <xpath expr="//field[@name='is_reached']" position="before">
+                <field name="pmo_state" widget="badge"/>
+                <field name="health_status" widget="badge"
+                       decoration-success="health_status == 'green'"
+                       decoration-warning="health_status == 'amber'"
+                       decoration-danger="health_status == 'red'"/>
+                <field name="completion_percentage" widget="progressbar"/>
+                <field name="owner_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ===================== TASK / SUBTASK ===================== -->
+    <record id="view_task_form_pmo" model="ir.ui.view">
+        <field name="name">project.task.view.form.pmo</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id"
+               ref="advanced_project_management_system.view_task_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
+                <button class="oe_stat_button" name="action_view_task_risks"
+                        type="object" icon="fa-exclamation-triangle">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="risk_count" readonly="1"/>
+                        </span>
+                        <span class="o_stat_text">Risks</span>
+                    </div>
+                </button>
+                <button class="oe_stat_button" name="action_view_task_issues"
+                        type="object" icon="fa-bug">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="issue_count" readonly="1"/>
+                        </span>
+                        <span class="o_stat_text">Issues</span>
+                    </div>
+                </button>
+            </xpath>
+            <xpath expr="//field[@name='duration']" position="after">
+                <field name="task_code" readonly="1"/>
+                <field name="parent_id" invisible="1"/>
+                <field name="pmo_state" invisible="parent_id"/>
+                <field name="pmo_state" string="Sub-task Status"
+                       invisible="not parent_id"
+                       options="{'horizontal': true}"/>
+                <field name="pmo_priority"/>
+                <field name="severity"/>
+                <field name="health_status" widget="badge"
+                       decoration-success="health_status == 'green'"
+                       decoration-warning="health_status == 'amber'"
+                       decoration-danger="health_status == 'red'"/>
+                <field name="completion_percentage" widget="progressbar"/>
+            </xpath>
+            <xpath expr="//page[@name='description_page']" position="after">
+                <page name="pmo_details" string="PMO Details">
+                    <group>
+                        <group string="Ownership">
+                            <field name="category_id"/>
+                            <field name="team_id"/>
+                            <field name="reviewer_id"/>
+                            <field name="responsible_manager_id"/>
+                        </group>
+                        <group string="Schedule">
+                            <field name="actual_start_date"/>
+                            <field name="actual_end_date"/>
+                            <field name="actual_completion_date"/>
+                            <field name="sla_due_date"/>
+                            <field name="is_sla_breached"/>
+                            <field name="age_days"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Effort">
+                            <field name="allocated_hours"
+                                   string="Estimated Hours"
+                                   widget="float_time"/>
+                            <field name="effective_hours"
+                                   string="Actual Hours"
+                                   widget="float_time"/>
+                            <field name="remaining_hours"
+                                   string="Remaining Hours"
+                                   widget="float_time"/>
+                        </group>
+                        <group string="Blockers">
+                            <field name="depend_on_ids"
+                                   string="Dependency Task"
+                                   widget="many2many_tags"
+                                   groups="project.group_project_task_dependencies"/>
+                            <field name="blocked_by_id"/>
+                            <field name="is_blocked"/>
+                            <field name="blocker_reason"
+                                   invisible="not is_blocked"/>
+                        </group>
+                    </group>
+                    <group string="Quality">
+                        <group>
+                            <field name="test_required"/>
+                            <field name="test_status"
+                                   invisible="not test_required"/>
+                        </group>
+                        <group>
+                            <field name="closure_remarks"/>
+                        </group>
+                    </group>
+                    <separator string="Acceptance Criteria"/>
+                    <field name="acceptance_criteria"/>
+                </page>
+                <page name="pmo_risks_issues" string="Risks &amp; Issues">
+                    <separator string="Risks"/>
+                    <field name="risk_ids"
+                           context="{'default_project_id': project_id,
+                                     'default_task_id': id}">
+                        <list editable="bottom">
+                            <field name="title"/>
+                            <field name="owner_id"/>
+                            <field name="probability"/>
+                            <field name="impact"/>
+                            <field name="risk_rating" widget="badge"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+                    <separator string="Issues"/>
+                    <field name="issue_ids"
+                           context="{'default_project_id': project_id,
+                                     'default_task_id': id}">
+                        <list editable="bottom">
+                            <field name="summary"/>
+                            <field name="user_id"/>
+                            <field name="pmo_priority"/>
+                            <field name="severity"/>
+                            <field name="pmo_state" widget="badge"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_task_list_pmo" model="ir.ui.view">
+        <field name="name">project.task.view.list.pmo</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id"
+               ref="advanced_project_management_system.view_task_tree_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='duration']" position="after">
+                <field name="task_code" optional="hide"/>
+                <field name="pmo_state" widget="badge" optional="show"/>
+                <field name="pmo_priority" optional="hide"/>
+                <field name="severity" optional="hide"/>
+                <field name="health_status" widget="badge" optional="hide"/>
+                <field name="completion_percentage" widget="progressbar"
+                       optional="hide"/>
+                <field name="age_days" optional="hide"/>
+                <field name="is_blocked" optional="hide"/>
+                <field name="is_sla_breached" optional="hide"/>
+                <field name="sla_due_date" optional="hide"/>
+                <field name="reviewer_id" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_task_search_pmo" model="ir.ui.view">
+        <field name="name">project.task.view.search.pmo</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id"
+               ref="advanced_project_management_system.view_task_search_form"/>
+        <field name="arch" type="xml">
+            <search position="inside">
+                <field name="task_code"/>
+                <filter string="My Tasks (PMO)" name="pmo_my_tasks"
+                        domain="[('user_ids', 'in', uid), ('parent_id', '=', False)]"/>
+                <filter string="My Sub-tasks" name="pmo_my_subtasks"
+                        domain="[('user_ids', 'in', uid), ('parent_id', '!=', False)]"/>
+                <filter string="Pending My Review" name="pmo_my_reviews"
+                        domain="[('reviewer_id', '=', uid),
+                                 ('pmo_state', 'in', ['under_review', 'testing'])]"/>
+                <filter string="Overdue" name="pmo_overdue"
+                        domain="[('is_overdue', '=', True)]"/>
+                <filter string="Blocked" name="pmo_blocked"
+                        domain="[('is_blocked', '=', True)]"/>
+                <filter string="SLA Breached" name="pmo_sla"
+                        domain="[('is_sla_breached', '=', True)]"/>
+                <separator/>
+                <filter string="Status (PMO)" name="group_pmo_state"
+                        context="{'group_by': 'pmo_state'}"/>
+                <filter string="Milestone" name="group_milestone"
+                        context="{'group_by': 'milestone_id'}"/>
+                <filter string="Reviewer" name="group_reviewer"
+                        context="{'group_by': 'reviewer_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ===================== ISSUE ===================== -->
+    <record id="project_issue_view_form_pmo" model="ir.ui.view">
+        <field name="name">project.issue.view.form.pmo</field>
+        <field name="model">project.issue</field>
+        <field name="inherit_id"
+               ref="advanced_project_management_system.project_issue_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_escalate" type="object" string="Escalate"
+                        class="btn-warning"
+                        invisible="pmo_state in ['escalated', 'resolved', 'verified', 'closed', 'rejected']"/>
+                <button name="action_resolve" type="object" string="Resolve"
+                        class="btn-primary"
+                        invisible="pmo_state in ['resolved', 'verified', 'closed', 'rejected']"/>
+                <button name="action_close_issue" type="object" string="Close"
+                        invisible="pmo_state in ['closed', 'rejected']"/>
+            </xpath>
+            <xpath expr="//field[@name='task_id']" position="after">
+                <field name="milestone_id"/>
+                <field name="pmo_state"/>
+                <field name="pmo_priority"/>
+                <field name="severity"/>
+                <field name="reported_by_id"/>
+                <field name="target_resolution_date"/>
+                <field name="resolution_date"/>
+                <field name="age_days"/>
+            </xpath>
+            <xpath expr="//page[@name='extra_info']" position="after">
+                <page name="resolution" string="Resolution">
+                    <field name="resolution"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="project_issue_view_tree_pmo" model="ir.ui.view">
+        <field name="name">project.issue.view.list.pmo</field>
+        <field name="model">project.issue</field>
+        <field name="inherit_id"
+               ref="advanced_project_management_system.project_issue_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='project_id']" position="after">
+                <field name="milestone_id" optional="hide"/>
+                <field name="pmo_priority" optional="show"/>
+                <field name="severity" optional="show"/>
+                <field name="age_days" optional="hide"/>
+            </xpath>
+            <xpath expr="//field[@name='state']" position="before">
+                <field name="pmo_state" widget="badge"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

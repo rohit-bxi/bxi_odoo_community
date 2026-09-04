@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="PmoDashboard">
+        <div class="o_pmo_dashboard container-fluid p-0">
+            <div class="dashboard-header bg-primary text-white p-3 shadow-sm">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <h2 class="mb-0 fw-semibold">PMO Dashboard</h2>
+                    <div class="btn-group" role="group">
+                        <t t-foreach="state.roles" t-as="role" t-key="role">
+                            <button type="button"
+                                    t-att-class="'btn btn-sm ' + (state.role === role ? 'btn-light' : 'btn-outline-light')"
+                                    t-on-click="() => this.loadRole(role)">
+                                <t t-esc="this.roleLabel(role)"/>
+                            </button>
+                        </t>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4" style="max-height: calc(100vh - 80px); overflow-y: auto;">
+                <t t-if="state.loading">
+                    <div class="text-center text-muted py-5">
+                        <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
+                        <div class="mt-2">Loading dashboard…</div>
+                    </div>
+                </t>
+
+                <!-- ============================ CXO ============================ -->
+                <t t-if="!state.loading and state.role === 'cxo'">
+                    <div class="row g-3 mb-4">
+                        <t t-foreach="['green','amber','red']" t-as="rag" t-key="rag">
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm p-3 text-center kpi-card"
+                                     t-on-click="() => this.open('Projects', 'project.project', state.data.health_ids[rag], 'list')">
+                                    <h6 class="text-muted text-uppercase mb-2">
+                                        Portfolio Health — <t t-esc="rag"/>
+                                    </h6>
+                                    <h3 class="fw-bold mb-0">
+                                        <span t-att-class="'badge ' + this.ragClass(rag)">
+                                            <t t-esc="state.data.health[rag]"/>
+                                        </span>
+                                    </h3>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-header bg-white fw-semibold">Projects by Status</div>
+                                <div class="card-body p-0">
+                                    <table class="table table-sm mb-0">
+                                        <t t-foreach="state.data.projects_by_status" t-as="row" t-key="row.key">
+                                            <tr>
+                                                <td class="ps-3"><t t-esc="row.label"/></td>
+                                                <td class="text-end pe-3">
+                                                    <span class="badge bg-primary rounded-pill"><t t-esc="row.count"/></span>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-header bg-white fw-semibold">Delayed Projects</div>
+                                <div class="card-body p-0" style="max-height:260px;overflow-y:auto;">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <t t-foreach="state.data.delayed_projects" t-as="p" t-key="p.id">
+                                            <tr t-on-click="() => this.openRecord('project.project', p.id)" style="cursor:pointer;">
+                                                <td class="ps-3"><t t-esc="p.name"/></td>
+                                                <td class="text-end pe-3">
+                                                    <span class="badge bg-danger"><t t-esc="p.variance"/> d</span>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                        <tr t-if="!state.data.delayed_projects.length">
+                                            <td class="text-muted ps-3">No delayed project.</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-header bg-white fw-semibold">Risk Heatmap</div>
+                                <div class="card-body">
+                                    <table class="table table-bordered text-center mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-start">Probability \ Impact</th>
+                                                <th t-foreach="state.data.risk_impacts" t-as="imp" t-key="imp">
+                                                    <t t-esc="imp"/>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr t-foreach="state.data.risk_heatmap" t-as="row" t-key="row.probability">
+                                                <td class="text-start fw-semibold"><t t-esc="row.probability"/></td>
+                                                <td t-foreach="row.cells" t-as="cell" t-key="cell.impact"
+                                                    t-att-style="this.heatStyle(cell)"
+                                                    style="cursor:pointer;"
+                                                    t-on-click="() => this.open('Risks', 'project.risk', cell.ids, 'list')">
+                                                    <t t-esc="cell.count"/>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-header bg-white fw-semibold">Resource Capacity</div>
+                                <div class="card-body p-0" style="max-height:220px;overflow-y:auto;">
+                                    <table class="table table-sm mb-0">
+                                        <t t-foreach="state.data.resource_capacity" t-as="r" t-key="r.name">
+                                            <tr>
+                                                <td class="ps-3"><t t-esc="r.name"/></td>
+                                                <td class="text-end pe-3">
+                                                    <span t-att-class="'badge ' + (r.overloaded ? 'bg-danger' : 'bg-secondary')">
+                                                        <t t-esc="r.allocation"/>%
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                        <tr t-if="!state.data.resource_capacity.length">
+                                            <td class="text-muted ps-3">No team allocation recorded yet.</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white fw-semibold">Strategic Milestones</div>
+                        <div class="card-body p-0" style="max-height:320px;overflow-y:auto;">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr><th class="ps-3">Milestone</th><th>Project</th><th>Deadline</th><th>Completion</th><th class="pe-3">Health</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="state.data.strategic_milestones" t-as="m" t-key="m.id"
+                                        t-on-click="() => this.openRecord('project.milestone', m.id)" style="cursor:pointer;">
+                                        <td class="ps-3"><t t-esc="m.name"/></td>
+                                        <td><t t-esc="m.project"/></td>
+                                        <td><t t-esc="m.deadline"/></td>
+                                        <td><t t-esc="m.completion"/>%</td>
+                                        <td class="pe-3"><span t-att-class="'badge ' + this.ragClass(m.health)"><t t-esc="m.health"/></span></td>
+                                    </tr>
+                                    <tr t-if="!state.data.strategic_milestones.length">
+                                        <td colspan="5" class="text-muted ps-3">No high or critical milestone open.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- ============================ PMO ============================ -->
+                <t t-if="!state.loading and state.role === 'pmo'">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm p-3 text-center kpi-card"
+                                 t-on-click="() => this.open('Risks', 'project.risk', state.data.risk_ids, 'list')">
+                                <h6 class="text-muted mb-2">Red Risks</h6>
+                                <h3 class="fw-bold text-danger mb-0"><t t-esc="state.data.risk_summary.red"/></h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm p-3 text-center kpi-card">
+                                <h6 class="text-muted mb-2">Amber Risks</h6>
+                                <h3 class="fw-bold text-warning mb-0"><t t-esc="state.data.risk_summary.amber"/></h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm p-3 text-center kpi-card"
+                                 t-on-click="() => this.open('Issues', 'project.issue', state.data.issue_ids, 'list')">
+                                <h6 class="text-muted mb-2">Open Issues</h6>
+                                <h3 class="fw-bold mb-0"><t t-esc="state.data.issue_summary.total"/></h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm p-3 text-center kpi-card">
+                                <h6 class="text-muted mb-2">Escalated</h6>
+                                <h3 class="fw-bold text-danger mb-0">
+                                    <t t-esc="state.data.risk_summary.escalated + state.data.issue_summary.escalated"/>
+                                </h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-header bg-white fw-semibold">Project Health &amp; Schedule Variance</div>
+                        <div class="card-body p-0" style="max-height:320px;overflow-y:auto;">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr><th class="ps-3">Project</th><th>Health</th><th>Progress</th><th>Variance (d)</th><th>Risks</th><th class="pe-3">Issues</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="state.data.project_health" t-as="p" t-key="p.id"
+                                        t-on-click="() => this.openRecord('project.project', p.id)" style="cursor:pointer;">
+                                        <td class="ps-3"><t t-esc="p.name"/></td>
+                                        <td><span t-att-class="'badge ' + this.ragClass(p.health)"><t t-esc="p.health"/></span></td>
+                                        <td><t t-esc="p.progress"/>%</td>
+                                        <td><span t-att-class="p.variance > 0 ? 'text-danger fw-bold' : 'text-muted'"><t t-esc="p.variance"/></span></td>
+                                        <td><t t-esc="p.open_risks"/></td>
+                                        <td class="pe-3"><t t-esc="p.open_issues"/></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white fw-semibold">Milestone Completion</div>
+                                <div class="card-body p-0" style="max-height:280px;overflow-y:auto;">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <tr t-foreach="state.data.milestone_completion" t-as="m" t-key="m.id"
+                                            t-on-click="() => this.openRecord('project.milestone', m.id)" style="cursor:pointer;">
+                                            <td class="ps-3"><t t-esc="m.name"/></td>
+                                            <td class="text-muted"><t t-esc="m.project"/></td>
+                                            <td class="text-end pe-3">
+                                                <span t-att-class="'badge ' + (m.overdue ? 'bg-danger' : 'bg-secondary')">
+                                                    <t t-esc="m.completion"/>%
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-header bg-white fw-semibold">Cross Project Dependencies</div>
+                                <div class="card-body p-0" style="max-height:160px;overflow-y:auto;">
+                                    <table class="table table-sm mb-0">
+                                        <tr t-foreach="state.data.cross_dependencies" t-as="d" t-key="d.id">
+                                            <td class="ps-3"><t t-esc="d.name"/></td>
+                                            <td class="text-muted">blocked by <t t-esc="d.blocked_by"/></td>
+                                            <td class="text-end pe-3">
+                                                <span t-if="d.cross_project" class="badge bg-warning text-dark">cross-project</span>
+                                            </td>
+                                        </tr>
+                                        <tr t-if="!state.data.cross_dependencies.length">
+                                            <td class="text-muted ps-3">No blocked task.</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white fw-semibold">Resource Utilization (hours)</div>
+                                <div class="card-body p-0" style="max-height:160px;overflow-y:auto;">
+                                    <table class="table table-sm mb-0">
+                                        <tr t-foreach="state.data.resource_utilization" t-as="r" t-key="r.name">
+                                            <td class="ps-3"><t t-esc="r.name"/></td>
+                                            <td class="text-end pe-3"><t t-esc="r.hours"/></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- ========================== MANAGER ========================== -->
+                <t t-if="!state.loading and state.role === 'manager'">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm p-3 text-center kpi-card">
+                                <h6 class="text-muted mb-2">Tasks Done</h6>
+                                <h3 class="fw-bold mb-0"><t t-esc="state.data.task_progress.done"/> / <t t-esc="state.data.task_progress.total"/></h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm p-3 text-center kpi-card"
+                                 t-on-click="() => this.open('Overdue Tasks', 'project.task', state.data.overdue_ids, 'list')">
+                                <h6 class="text-muted mb-2">Overdue Tasks</h6>
+                                <h3 class="fw-bold text-danger mb-0"><t t-esc="state.data.overdue_ids.length"/></h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm p-3 text-center kpi-card"
+                                 t-on-click="() => this.open('Open Risks', 'project.risk', state.data.open_risk_ids, 'list')">
+                                <h6 class="text-muted mb-2">Open Risks</h6>
+                                <h3 class="fw-bold mb-0"><t t-esc="state.data.open_risk_count"/></h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm p-3 text-center kpi-card"
+                                 t-on-click="() => this.open('Open Issues', 'project.issue', state.data.open_issue_ids, 'list')">
+                                <h6 class="text-muted mb-2">Open Issues</h6>
+                                <h3 class="fw-bold mb-0"><t t-esc="state.data.open_issue_count"/></h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-lg-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white fw-semibold">Team Utilization</div>
+                                <div class="card-body p-0" style="max-height:320px;overflow-y:auto;">
+                                    <table class="table table-sm mb-0">
+                                        <thead class="table-light"><tr><th class="ps-3">Member</th><th>Open</th><th>Late</th><th class="pe-3">Hrs</th></tr></thead>
+                                        <tbody>
+                                            <tr t-foreach="state.data.team_utilization" t-as="m" t-key="m.name">
+                                                <td class="ps-3"><t t-esc="m.name"/></td>
+                                                <td><t t-esc="m.open"/></td>
+                                                <td><span t-att-class="m.overdue ? 'text-danger fw-bold' : ''"><t t-esc="m.overdue"/></span></td>
+                                                <td class="pe-3"><t t-esc="m.hours"/></td>
+                                            </tr>
+                                            <tr t-if="!state.data.team_utilization.length">
+                                                <td colspan="4" class="text-muted ps-3">No open task assigned.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white fw-semibold">Overdue Tasks</div>
+                                <div class="card-body p-0" style="max-height:320px;overflow-y:auto;">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <tr t-foreach="state.data.overdue_tasks" t-as="t" t-key="t.id"
+                                            t-on-click="() => this.openRecord('project.task', t.id)" style="cursor:pointer;">
+                                            <td class="ps-3"><t t-esc="t.name"/></td>
+                                            <td class="text-muted text-end pe-3"><t t-esc="t.deadline"/></td>
+                                        </tr>
+                                        <tr t-if="!state.data.overdue_tasks.length">
+                                            <td class="text-muted ps-3">Nothing overdue.</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white fw-semibold">Blocked Tasks</div>
+                                <div class="card-body p-0" style="max-height:320px;overflow-y:auto;">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <tr t-foreach="state.data.blocked_tasks" t-as="t" t-key="t.id"
+                                            t-on-click="() => this.openRecord('project.task', t.id)" style="cursor:pointer;">
+                                            <td class="ps-3"><t t-esc="t.name"/></td>
+                                            <td class="text-muted text-end pe-3"><t t-esc="t.reason"/></td>
+                                        </tr>
+                                        <tr t-if="!state.data.blocked_tasks.length">
+                                            <td class="text-muted ps-3">Nothing blocked.</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- =========================== USER =========================== -->
+                <t t-if="!state.loading and state.role === 'user'">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm p-3 text-center kpi-card"
+                                 t-on-click="() => this.open('My Tasks', 'project.task', state.data.my_task_ids, 'list')">
+                                <h6 class="text-muted mb-2">My Tasks</h6>
+                                <h3 class="fw-bold mb-0"><t t-esc="state.data.my_task_ids.length"/></h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm p-3 text-center kpi-card"
+                                 t-on-click="() => this.open('My Sub-tasks', 'project.task', state.data.my_subtask_ids, 'list')">
+                                <h6 class="text-muted mb-2">My Sub-tasks</h6>
+                                <h3 class="fw-bold mb-0"><t t-esc="state.data.my_subtask_ids.length"/></h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm p-3 text-center kpi-card"
+                                 t-on-click="() => this.open('Timesheets', 'account.analytic.line', state.data.logged_hours_ids, 'list')">
+                                <h6 class="text-muted mb-2">Logged Hours</h6>
+                                <h3 class="fw-bold mb-0"><t t-esc="state.data.logged_hours"/></h3>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 shadow-sm p-3 text-center kpi-card">
+                                <h6 class="text-muted mb-2">Personal Progress</h6>
+                                <h3 class="fw-bold mb-0"><t t-esc="state.data.personal_progress"/>%</h3>
+                                <small class="text-muted">
+                                    <t t-esc="state.data.done_count"/> done / <t t-esc="state.data.open_count"/> open
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-header bg-white fw-semibold">My Tasks</div>
+                                <div class="card-body p-0" style="max-height:280px;overflow-y:auto;">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <tr t-foreach="state.data.my_tasks" t-as="t" t-key="t.id"
+                                            t-on-click="() => this.openRecord('project.task', t.id)" style="cursor:pointer;">
+                                            <td class="ps-3"><t t-esc="t.name"/></td>
+                                            <td class="text-muted"><t t-esc="t.project"/></td>
+                                            <td class="text-end pe-3">
+                                                <span t-att-class="'badge ' + (t.overdue ? 'bg-danger' : 'bg-secondary')">
+                                                    <t t-esc="t.completion"/>%
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr t-if="!state.data.my_tasks.length">
+                                            <td class="text-muted ps-3">No task assigned to you.</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white fw-semibold">My Sub-tasks</div>
+                                <div class="card-body p-0" style="max-height:240px;overflow-y:auto;">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <tr t-foreach="state.data.my_subtasks" t-as="t" t-key="t.id"
+                                            t-on-click="() => this.openRecord('project.task', t.id)" style="cursor:pointer;">
+                                            <td class="ps-3"><t t-esc="t.name"/></td>
+                                            <td class="text-muted text-end pe-3"><t t-esc="t.deadline"/></td>
+                                        </tr>
+                                        <tr t-if="!state.data.my_subtasks.length">
+                                            <td class="text-muted ps-3">No sub-task assigned to you.</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-header bg-white fw-semibold">Pending Reviews</div>
+                                <div class="card-body p-0" style="max-height:240px;overflow-y:auto;">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <tr t-foreach="state.data.pending_reviews" t-as="t" t-key="t.id"
+                                            t-on-click="() => this.openRecord('project.task', t.id)" style="cursor:pointer;">
+                                            <td class="ps-3"><t t-esc="t.name"/></td>
+                                            <td class="text-muted text-end pe-3"><t t-esc="t.project"/></td>
+                                        </tr>
+                                        <tr t-if="!state.data.pending_reviews.length">
+                                            <td class="text-muted ps-3">Nothing waiting on your review.</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-white fw-semibold">Upcoming Due Dates</div>
+                                <div class="card-body p-0" style="max-height:280px;overflow-y:auto;">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <tr t-foreach="state.data.upcoming" t-as="t" t-key="t.id"
+                                            t-on-click="() => this.openRecord('project.task', t.id)" style="cursor:pointer;">
+                                            <td class="ps-3"><t t-esc="t.name"/></td>
+                                            <td class="text-end pe-3">
+                                                <span t-att-class="t.overdue ? 'text-danger fw-bold' : 'text-muted'">
+                                                    <t t-esc="t.deadline"/>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr t-if="!state.data.upcoming.length">
+                                            <td class="text-muted ps-3">No upcoming deadline.</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="ProjectDashboard">
+        <div class="oh_dashboards container-fluid p-0">
+            <!-- Header -->
+            <div class="dashboard-header bg-primary text-white p-3 shadow-sm">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0 fw-semibold">Project Performance Dashboard</h2>
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-light text-primary me-3 text-uppercase">
+                            <i class="fa fa-shield me-1"/>
+                            <t t-esc="state.accessLevelLabel"/>
+                        </span>
+                        <button class="btn btn-light btn-sm"
+                                t-on-click="() => this.reload()">
+                            <i class="fa fa-refresh me-1"/>Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content (Scrollable Area) -->
+            <div class="dashboard-content p-4"
+                 style="max-height: calc(100vh - 80px); overflow-y: auto;">
+                <!-- Filter Section -->
+                <div class="card mb-4 shadow-sm rounded-3 border-0">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="card-title mb-0 fw-semibold text-dark">
+                            <i class="fa fa-filter me-2 text-primary"/>Filter
+                            Options
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row align-items-center g-3">
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold small text-muted mb-1">Start Date</label>
+                                <input type="date"
+                                       class="form-control form-control-sm"
+                                       id="start_date"
+                                       t-ref="start_date"
+                                       t-on-change="(ev) => this.onChangeFilter(ev)"/>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold small text-muted mb-1">End Date</label>
+                                <input type="date"
+                                       class="form-control form-control-sm"
+                                       id="end_date"
+                                       t-ref="end_date"
+                                       t-on-change="(ev) => this.onChangeFilter(ev)"/>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold small text-muted mb-1">Project</label>
+                                <select class="form-select form-select-sm"
+                                        id="project_selection"
+                                        t-ref="project_selection"
+                                        t-on-change="(ev) => this.onChangeFilter(ev)">
+                                    <option value="null">All Projects</option>
+                                    <option t-foreach="state.projectOptions"
+                                            t-as="project"
+                                            t-key="project.id"
+                                            t-att-value="project.id">
+                                        <t t-esc="project.name"/>
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end justify-content-end">
+                                <button t-on-click="() => this.resetFilters()"
+                                        class="btn btn-outline-secondary btn-sm reset-btn"
+                                        style="min-width: 100px;">
+                                    <i class="fa fa-undo me-1"/>Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-2" t-on-click="() => this.openProjects()">
+                        <div class="card shadow-sm rounded-3 border-0 text-center p-3 h-100 kpi-card">
+                            <div class="card-icon bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2">
+                                <i class="fa fa-puzzle-piece fs-4"/>
+                            </div>
+                            <h6 class="text-muted mb-2">Total Projects</h6>
+                            <h4 class="fw-bold text-dark mb-0"><t t-esc="state.totalProjects"/></h4>
+                            <div class="mt-2 text-primary small">
+                                <i class="fa fa-arrow-up me-1"/>View Details
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2" t-on-click="() => this.openMilestones()">
+                        <div class="card shadow-sm rounded-3 border-0 text-center p-3 h-100 kpi-card">
+                            <div class="card-icon bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2">
+                                <i class="fa fa-flag-checkered fs-4 text-success"/>
+                            </div>
+                            <h6 class="text-muted mb-2">Milestones</h6>
+                            <h4 class="fw-bold text-dark mb-0"><t t-esc="state.totalMilestones"/></h4>
+                            <div class="mt-2 text-primary small">
+                                <i class="fa fa-arrow-up me-1"/>View Details
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2" t-on-click="() => this.openTasks()">
+                        <div class="card shadow-sm rounded-3 border-0 text-center p-3 h-100 kpi-card">
+                            <div class="card-icon bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2">
+                                <i class="fa fa-tasks fs-4 text-warning"/>
+                            </div>
+                            <h6 class="text-muted mb-2">Total Tasks</h6>
+                            <h4 class="fw-bold text-dark mb-0"><t t-esc="state.totalTasks"/></h4>
+                            <div class="mt-2 text-primary small">
+                                <i class="fa fa-arrow-up me-1"/>View Details
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2" t-on-click="() => this.openSubtasks()">
+                        <div class="card shadow-sm rounded-3 border-0 text-center p-3 h-100 kpi-card">
+                            <div class="card-icon bg-secondary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2">
+                                <i class="fa fa-sitemap fs-4 text-secondary"/>
+                            </div>
+                            <h6 class="text-muted mb-2">Sub-tasks</h6>
+                            <h4 class="fw-bold text-dark mb-0"><t t-esc="state.totalSubtasks"/></h4>
+                            <div class="mt-2 text-primary small">
+                                <i class="fa fa-arrow-up me-1"/>View Details
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2" t-on-click="() => this.openTimesheets()">
+                        <div class="card shadow-sm rounded-3 border-0 text-center p-3 h-100 kpi-card">
+                            <div class="card-icon bg-info bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2">
+                                <i class="fa fa-clock-o fs-4 text-info"/>
+                            </div>
+                            <h6 class="text-muted mb-2">Hours Recorded</h6>
+                            <h4 class="fw-bold text-dark mb-0"><t t-esc="state.totalHours"/></h4>
+                            <div class="mt-2 text-primary small">
+                                <i class="fa fa-arrow-up me-1"/>View Details
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project structure by access level -->
+                <div class="card shadow-lg rounded-3 border-0 mb-4">
+                    <div class="card-header bg-white text-dark py-3">
+                        <h5 class="card-title mb-0 fw-semibold">
+                            <i class="fa fa-list-alt me-2"/>Project Structure
+                            <small class="text-muted ms-2">
+                                Projects, milestones, tasks and sub-tasks you are allowed to see
+                            </small>
+                        </h5>
+                    </div>
+                    <div class="card-body p-0"
+                         style="max-height: 520px; overflow-y: auto;">
+                        <t t-if="!state.hierarchy.length">
+                            <div class="p-4 text-center text-muted">
+                                No project is visible at your access level yet.
+                            </div>
+                        </t>
+                        <div class="o_project_tree p-3">
+                            <t t-foreach="state.hierarchy" t-as="project"
+                               t-key="project.id">
+                                <div class="o_tree_project mb-2">
+                                    <div class="o_tree_row o_tree_project_row d-flex align-items-center"
+                                         t-on-click="() => this.toggle('project', project.id)">
+                                        <i t-att-class="'fa me-2 ' + (this.isOpen('project', project.id) ? 'fa-caret-down' : 'fa-caret-right')"/>
+                                        <i class="fa fa-puzzle-piece text-primary me-2"/>
+                                        <span class="fw-bold"><t t-esc="project.name"/></span>
+                                        <span class="badge bg-light text-dark ms-2"
+                                              t-if="project.stage">
+                                            <t t-esc="project.stage"/>
+                                        </span>
+                                        <span class="ms-auto small text-muted">
+                                            <t t-esc="project.start_date"/>
+                                            <t t-if="project.deadline"> &#8594; <t t-esc="project.deadline"/></t>
+                                            <span class="badge bg-primary ms-2">
+                                                <t t-esc="project.duration"/>
+                                                <t t-esc="this.unitLabel(project.duration_type)"/>
+                                            </span>
+                                        </span>
+                                    </div>
+
+                                    <t t-if="this.isOpen('project', project.id)">
+                                        <div class="o_tree_children">
+                                            <!-- Milestones -->
+                                            <t t-foreach="project.milestones"
+                                               t-as="milestone"
+                                               t-key="milestone.id">
+                                                <div class="o_tree_row o_tree_milestone_row d-flex align-items-center"
+                                                     t-on-click="() => this.toggle('milestone', milestone.id)">
+                                                    <i t-att-class="'fa me-2 ' + (this.isOpen('milestone', milestone.id) ? 'fa-caret-down' : 'fa-caret-right')"/>
+                                                    <i class="fa fa-flag-checkered text-success me-2"/>
+                                                    <span class="fw-semibold"><t t-esc="milestone.name"/></span>
+                                                    <span t-if="milestone.is_reached"
+                                                          class="badge bg-success ms-2">Reached</span>
+                                                    <span class="ms-auto small text-muted">
+                                                        <t t-esc="milestone.start_date"/>
+                                                        <t t-if="milestone.deadline"> &#8594; <t t-esc="milestone.deadline"/></t>
+                                                        <span class="badge bg-success ms-2">
+                                                            <t t-esc="milestone.duration"/>
+                                                            <t t-esc="this.unitLabel(milestone.duration_type)"/>
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                                <t t-if="this.isOpen('milestone', milestone.id)">
+                                                    <div class="o_tree_children">
+                                                        <t t-foreach="milestone.tasks"
+                                                           t-as="task"
+                                                           t-key="task.id">
+                                                            <t t-call="ProjectDashboard.TaskNode">
+                                                                <t t-set="node" t-value="task"/>
+                                                            </t>
+                                                        </t>
+                                                        <div t-if="!milestone.tasks.length"
+                                                             class="o_tree_row text-muted small">
+                                                            No task linked to this milestone.
+                                                        </div>
+                                                    </div>
+                                                </t>
+                                            </t>
+
+                                            <!-- Tasks without a milestone -->
+                                            <t t-foreach="project.tasks" t-as="task"
+                                               t-key="task.id">
+                                                <t t-call="ProjectDashboard.TaskNode">
+                                                    <t t-set="node" t-value="task"/>
+                                                </t>
+                                            </t>
+
+                                            <div t-if="!project.milestones.length and !project.tasks.length"
+                                                 class="o_tree_row text-muted small">
+                                                Nothing to show for this project.
+                                            </div>
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <div class="card shadow-sm rounded-3 border-0 mb-3">
+                            <div class="card-header bg-white py-3">
+                                <h5 class="card-title mb-0 fw-semibold text-dark">
+                                    <i class="fa fa-pie-chart me-2 text-primary"/>
+                                    Project Task Analysis
+                                </h5>
+                            </div>
+                            <div class="card-body py-2">
+                                <canvas id="project_doughnut"
+                                        t-ref="project_doughnut"
+                                        height="180"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card shadow-lg rounded-3 border-0">
+                            <div class="card-header bg-white text-dark py-3 shadow-sm">
+                                <h5 class="card-title mb-0 fw-semibold">
+                                    <i class="fa fa-sitemap me-2"/>Stage Wise
+                                    Total Projects
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0">
+                                        <t t-foreach="state.projectStageList"
+                                           t-as="data" t-key="data.id">
+                                            <tr>
+                                                <td class="ps-3"><t t-esc="data.name"/></td>
+                                                <td class="pe-3 text-end">
+                                                    <span class="badge bg-primary text-white rounded-pill">
+                                                        <t t-esc="data.projects"/>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- Recursive task / sub-task node -->
+    <t t-name="ProjectDashboard.TaskNode">
+        <div class="o_tree_row o_tree_task_row d-flex align-items-center"
+             t-on-click="() => this.toggle('task', node.id)">
+            <i t-if="node.subtasks.length"
+               t-att-class="'fa me-2 ' + (this.isOpen('task', node.id) ? 'fa-caret-down' : 'fa-caret-right')"/>
+            <i t-else="" class="fa fa-fw me-2"/>
+            <i class="fa fa-tasks text-warning me-2"/>
+            <span><t t-esc="node.name"/></span>
+            <span t-if="node.stage" class="badge bg-light text-dark ms-2">
+                <t t-esc="node.stage"/>
+            </span>
+            <span t-if="node.assignees" class="small text-muted ms-2">
+                <i class="fa fa-user me-1"/><t t-esc="node.assignees"/>
+            </span>
+            <span class="ms-auto small text-muted">
+                <t t-esc="node.start_date"/>
+                <t t-if="node.deadline"> &#8594; <t t-esc="node.deadline"/></t>
+                <span class="badge bg-warning text-dark ms-2">
+                    <t t-esc="node.duration"/>
+                    <t t-esc="this.unitLabel(node.duration_type)"/>
+                </span>
+            </span>
+        </div>
+        <t t-if="node.subtasks.length and this.isOpen('task', node.id)">
+            <div class="o_tree_children">
+                <t t-foreach="node.subtasks" t-as="subtask" t-key="subtask.id">
+                    <t t-call="ProjectDashboard.TaskNode">
+                        <t t-set="node" t-value="subtask"/>
+                    </t>
+                </t>
+            </div>
+        </t>
+    </t>
+</templates>

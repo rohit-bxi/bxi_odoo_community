@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Added smart buttons, start date and Days/Hours duration -->
+    <record id="view_task_form_inherit" model="ir.ui.view">
+        <field name="name">
+            project.task.view.form.inherit.advanced.project.management.system
+        </field>
+        <field name="model">project.task</field>
+        <field name="mode">extension</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('oe_button_box')]"
+                   position="inside">
+                <button class="oe_stat_button" name="action_task_document"
+                        type="object"
+                        icon="fa-book">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="document_count" readonly="1"/>
+                        </span>
+                        <span class="o_stat_text">
+                            Documents
+                        </span>
+                    </div>
+                </button>
+            </xpath>
+            <xpath expr="//label[@for='date_deadline']" position="before">
+                <field name="start_date"/>
+            </xpath>
+            <xpath expr="//div[@id='date_deadline_and_recurring_task']"
+                   position="after">
+                <field name="duration_type"/>
+                <field name="duration" widget="float" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+    <!-- Duration columns on the task list view -->
+    <record id="view_task_tree_inherit" model="ir.ui.view">
+        <field name="name">
+            project.task.view.list.inherit.advanced.project.management.system
+        </field>
+        <field name="model">project.task</field>
+        <field name="mode">extension</field>
+        <field name="inherit_id" ref="project.project_task_view_tree_base"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='date_deadline']" position="after">
+                <field name="start_date" optional="hide"/>
+                <field name="duration_type" optional="hide"/>
+                <field name="duration" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+    <!-- Customizing the search view for the Project Task model -->
+    <record id="view_task_search_form" model="ir.ui.view">
+        <field name="name">project.task.view.search.inherit.advanced.project.management.system</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id"
+               ref="project.view_task_search_form"/>
+        <field name="arch" type="xml">
+            <search string="Tasks">
+                <field name="task_type" string="Task Types"/>
+                <separator/>
+                <filter string="Task Type" name="task_type"
+                        context="{'group_by': 'task_type'}"/>
+                <filter string="Duration Unit" name="group_by_duration_type"
+                        context="{'group_by': 'duration_type'}"/>
+            </search>
+        </field>
+    </record>
+</odoo>

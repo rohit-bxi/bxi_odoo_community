@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Shared analysis views used by several reports -->
+    <record id="view_task_pivot_pmo" model="ir.ui.view">
+        <field name="name">project.task.view.pivot.pmo</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <pivot string="Task Analysis">
+                <field name="project_id" type="row"/>
+                <field name="pmo_state" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_task_graph_pmo" model="ir.ui.view">
+        <field name="name">project.task.view.graph.pmo</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <graph string="Task Analysis" type="bar">
+                <field name="project_id"/>
+                <field name="pmo_state"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_project_pivot_pmo" model="ir.ui.view">
+        <field name="name">project.project.view.pivot.pmo</field>
+        <field name="model">project.project</field>
+        <field name="arch" type="xml">
+            <pivot string="Portfolio Analysis">
+                <field name="business_unit_id" type="row"/>
+                <field name="pmo_state" type="col"/>
+                <field name="progress_percentage" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_milestone_pivot_pmo" model="ir.ui.view">
+        <field name="name">project.milestone.view.pivot.pmo</field>
+        <field name="model">project.milestone</field>
+        <field name="arch" type="xml">
+            <pivot string="Milestone Tracking">
+                <field name="project_id" type="row"/>
+                <field name="pmo_state" type="col"/>
+                <field name="completion_percentage" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_timesheet_pivot_pmo" model="ir.ui.view">
+        <field name="name">account.analytic.line.view.pivot.pmo</field>
+        <field name="model">account.analytic.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Resource Utilization">
+                <field name="user_id" type="row"/>
+                <field name="project_id" type="col"/>
+                <field name="unit_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ===================== 1. Project Status Report ===================== -->
+    <record id="action_report_project_status" model="ir.actions.act_window">
+        <field name="name">Project Status Report</field>
+        <field name="res_model">project.project</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="context">{'search_default_group_pmo_state': 1}</field>
+    </record>
+
+    <!-- ===================== 2. Portfolio Summary Report ===================== -->
+    <record id="action_report_portfolio_summary" model="ir.actions.act_window">
+        <field name="name">Portfolio Summary Report</field>
+        <field name="res_model">project.project</field>
+        <field name="view_mode">pivot,graph,list,form</field>
+        <field name="context">{'search_default_group_bu': 1}</field>
+    </record>
+
+    <!-- ===================== 3. Milestone Tracking Report ===================== -->
+    <record id="action_report_milestone_tracking" model="ir.actions.act_window">
+        <field name="name">Milestone Tracking Report</field>
+        <field name="res_model">project.milestone</field>
+        <field name="view_mode">list,pivot,form</field>
+        <field name="context">{'search_default_group_by_project': 1}</field>
+    </record>
+
+    <!-- ===================== 4. Task Aging Report ===================== -->
+    <record id="action_report_task_aging" model="ir.actions.act_window">
+        <field name="name">Task Aging Report</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="domain">[('pmo_state', 'not in', ['completed', 'closed', 'cancelled'])]</field>
+        <field name="context">{'search_default_group_pmo_state': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Sort on Age (Days) to surface the tasks that have been open longest
+            </p>
+        </field>
+    </record>
+
+    <!-- ===================== 5. Resource Utilization Report ===================== -->
+    <record id="action_report_resource_utilization" model="ir.actions.act_window">
+        <field name="name">Resource Utilization Report</field>
+        <field name="res_model">account.analytic.line</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="domain">[('project_id', '!=', False)]</field>
+    </record>
+
+    <!-- ===================== 6. Dependency Report ===================== -->
+    <record id="action_report_dependency" model="ir.actions.act_window">
+        <field name="name">Dependency Report</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">['|', ('blocked_by_id', '!=', False), ('depend_on_ids', '!=', False)]</field>
+        <field name="context">{'search_default_group_by_project': 1}</field>
+    </record>
+
+    <!-- ===================== 7. Risk Register ===================== -->
+    <record id="action_report_risk_register" model="ir.actions.act_window">
+        <field name="name">Risk Register</field>
+        <field name="res_model">project.risk</field>
+        <field name="view_mode">list,pivot,graph,kanban,form</field>
+        <field name="context">{'search_default_open': 1, 'search_default_group_project': 1}</field>
+    </record>
+
+    <!-- ===================== 8. Issue Register ===================== -->
+    <record id="action_report_issue_register" model="ir.actions.act_window">
+        <field name="name">Issue Register</field>
+        <field name="res_model">project.issue</field>
+        <field name="view_mode">list,form,kanban</field>
+        <field name="domain">[('is_open', '=', True)]</field>
+    </record>
+
+    <!-- ===================== 9. Workload Report ===================== -->
+    <record id="action_report_workload" model="ir.actions.act_window">
+        <field name="name">Workload Report</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="domain">[('pmo_state', 'not in', ['completed', 'closed', 'cancelled'])]</field>
+        <field name="context">{'search_default_group_by_assignee': 1}</field>
+    </record>
+
+    <!-- ===================== 10. SLA Compliance Report ===================== -->
+    <record id="action_report_sla_compliance" model="ir.actions.act_window">
+        <field name="name">SLA Compliance Report</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="domain">[('sla_due_date', '!=', False)]</field>
+        <field name="context">{'search_default_pmo_sla': 1}</field>
+    </record>
+
+    <!-- ===================== 11. Delay Analysis Report ===================== -->
+    <record id="action_report_delay_analysis" model="ir.actions.act_window">
+        <field name="name">Delay Analysis Report</field>
+        <field name="res_model">project.project</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="domain">[('schedule_variance_days', '&gt;', 0),
+                              ('pmo_state', 'not in',
+                               ['completed', 'closed', 'cancelled'])]</field>
+    </record>
+
+    <!-- ===================== 12. Closure Report ===================== -->
+    <record id="action_report_closure" model="ir.actions.act_window">
+        <field name="name">Closure Report</field>
+        <field name="res_model">project.project</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="domain">[('pmo_state', 'in', ['completed', 'closed'])]</field>
+    </record>
+
+    <!-- ===================== 13. Gantt Chart ===================== -->
+    <!-- Gantt is an Enterprise view type, so on Community the schedule is
+         served by the task calendar, which is the closest built-in
+         equivalent. Install web_gantt to swap the first view for a gantt. -->
+    <record id="action_report_gantt" model="ir.actions.act_window">
+        <field name="name">Schedule (Gantt)</field>
+        <field name="res_model">project.task</field>
+        <field name="view_mode">calendar,list,form</field>
+        <field name="context">{'search_default_group_by_project': 1}</field>
+    </record>
+
+    <!-- ===================== Menus ===================== -->
+    <menuitem id="menu_pmo_root" name="PMO"
+              parent="project.menu_main_pm"
+              groups="advanced_project_management_system.group_apms_manager"
+              sequence="15"/>
+
+    <menuitem id="menu_pmo_registers" name="Registers"
+              parent="menu_pmo_root" sequence="10"/>
+    <menuitem id="menu_pmo_risk_register" name="Risk Register"
+              parent="menu_pmo_registers"
+              action="advanced_project_management_system.project_risk_action"
+              sequence="10"/>
+    <menuitem id="menu_pmo_issue_register" name="Issue Register"
+              parent="menu_pmo_registers"
+              action="action_report_issue_register" sequence="20"/>
+    <menuitem id="menu_pmo_team_allocation" name="Team Allocation"
+              parent="menu_pmo_registers"
+              action="advanced_project_management_system.project_team_member_action"
+              sequence="30"/>
+
+    <menuitem id="menu_pmo_reports" name="Reports"
+              parent="menu_pmo_root" sequence="20"/>
+    <menuitem id="menu_report_project_status" name="Project Status Report"
+              parent="menu_pmo_reports" action="action_report_project_status"
+              sequence="10"/>
+    <menuitem id="menu_report_portfolio_summary" name="Portfolio Summary Report"
+              parent="menu_pmo_reports"
+              action="action_report_portfolio_summary" sequence="20"/>
+    <menuitem id="menu_report_milestone_tracking" name="Milestone Tracking Report"
+              parent="menu_pmo_reports"
+              action="action_report_milestone_tracking" sequence="30"/>
+    <menuitem id="menu_report_task_aging" name="Task Aging Report"
+              parent="menu_pmo_reports" action="action_report_task_aging"
+              sequence="40"/>
+    <menuitem id="menu_report_resource_utilization" name="Resource Utilization Report"
+              parent="menu_pmo_reports"
+              action="action_report_resource_utilization" sequence="50"/>
+    <menuitem id="menu_report_dependency" name="Dependency Report"
+              parent="menu_pmo_reports" action="action_report_dependency"
+              sequence="60"/>
+    <menuitem id="menu_report_risk_register" name="Risk Register"
+              parent="menu_pmo_reports" action="action_report_risk_register"
+              sequence="70"/>
+    <menuitem id="menu_report_issue_register" name="Issue Register"
+              parent="menu_pmo_reports" action="action_report_issue_register"
+              sequence="80"/>
+    <menuitem id="menu_report_workload" name="Workload Report"
+              parent="menu_pmo_reports" action="action_report_workload"
+              sequence="90"/>
+    <menuitem id="menu_report_sla_compliance" name="SLA Compliance Report"
+              parent="menu_pmo_reports" action="action_report_sla_compliance"
+              sequence="100"/>
+    <menuitem id="menu_report_delay_analysis" name="Delay Analysis Report"
+              parent="menu_pmo_reports" action="action_report_delay_analysis"
+              sequence="110"/>
+    <menuitem id="menu_report_closure" name="Closure Report"
+              parent="menu_pmo_reports" action="action_report_closure"
+              sequence="120"/>
+    <menuitem id="menu_report_gantt" name="Schedule (Gantt)"
+              parent="menu_pmo_reports" action="action_report_gantt"
+              sequence="130"/>
+
+    <menuitem id="menu_pmo_configuration" name="PMO Configuration"
+              parent="project.menu_project_config"
+              groups="advanced_project_management_system.group_apms_admin"
+              sequence="700"/>
+    <menuitem id="menu_pmo_business_unit" name="Business Units"
+              parent="menu_pmo_configuration"
+              action="advanced_project_management_system.project_business_unit_action"
+              sequence="10"/>
+</odoo>

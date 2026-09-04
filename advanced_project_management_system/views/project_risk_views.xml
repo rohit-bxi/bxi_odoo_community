@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="project_risk_view_list" model="ir.ui.view">
+        <field name="name">project.risk.view.list</field>
+        <field name="model">project.risk</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="risk_rating == 'red'"
+                  decoration-warning="risk_rating == 'amber'"
+                  decoration-muted="not is_open">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="project_id"/>
+                <field name="milestone_id" optional="show"/>
+                <field name="task_id" optional="hide"/>
+                <field name="owner_id"/>
+                <field name="probability"/>
+                <field name="impact"/>
+                <field name="risk_score" optional="show"/>
+                <field name="risk_rating" widget="badge"
+                       decoration-success="risk_rating == 'green'"
+                       decoration-warning="risk_rating == 'amber'"
+                       decoration-danger="risk_rating == 'red'"/>
+                <field name="target_date" optional="show"/>
+                <field name="state" widget="badge"/>
+                <field name="is_open" column_invisible="True"/>
+                <field name="company_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="project_risk_view_form" model="ir.ui.view">
+        <field name="name">project.risk.view.form</field>
+        <field name="model">project.risk</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_escalate" type="object"
+                            string="Escalate" class="btn-warning"
+                            invisible="state in ['escalated', 'closed', 'accepted']"/>
+                    <button name="action_close" type="object" string="Close"
+                            class="btn-primary"
+                            invisible="state in ['closed', 'accepted']"/>
+                    <button name="action_accept" type="object"
+                            string="Accept Risk"
+                            invisible="state in ['closed', 'accepted']"/>
+                    <field name="state" widget="statusbar"
+                           options="{'clickable': '1'}"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="title"/>
+                        <h1><field name="title" placeholder="e.g. Key vendor may miss the integration window"/></h1>
+                        <h3><field name="name" readonly="1"/></h3>
+                    </div>
+                    <group>
+                        <group string="Scope">
+                            <field name="project_id"/>
+                            <field name="milestone_id"/>
+                            <field name="task_id"/>
+                            <field name="owner_id"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Assessment">
+                            <field name="probability"/>
+                            <field name="impact"/>
+                            <field name="risk_score"/>
+                            <field name="risk_rating" widget="badge"
+                                   decoration-success="risk_rating == 'green'"
+                                   decoration-warning="risk_rating == 'amber'"
+                                   decoration-danger="risk_rating == 'red'"/>
+                            <field name="identified_date"/>
+                            <field name="target_date"/>
+                            <field name="closure_date"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page name="description" string="Description">
+                            <field name="description"/>
+                        </page>
+                        <page name="mitigation" string="Mitigation Plan">
+                            <field name="mitigation_plan"/>
+                        </page>
+                        <page name="contingency" string="Contingency Plan">
+                            <field name="contingency_plan"/>
+                        </page>
+                        <page name="closure" string="Closure">
+                            <field name="closure_remarks"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="project_risk_view_kanban" model="ir.ui.view">
+        <field name="name">project.risk.view.kanban</field>
+        <field name="model">project.risk</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="risk_rating">
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <strong><field name="title"/></strong>
+                            <div class="text-muted"><field name="project_id"/></div>
+                            <div>
+                                <field name="risk_rating" widget="badge"/>
+                                <field name="state" widget="badge"/>
+                            </div>
+                            <div class="text-muted"><field name="owner_id"/></div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="project_risk_view_pivot" model="ir.ui.view">
+        <field name="name">project.risk.view.pivot</field>
+        <field name="model">project.risk</field>
+        <field name="arch" type="xml">
+            <pivot string="Risk Heatmap">
+                <field name="probability" type="row"/>
+                <field name="impact" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="project_risk_view_graph" model="ir.ui.view">
+        <field name="name">project.risk.view.graph</field>
+        <field name="model">project.risk</field>
+        <field name="arch" type="xml">
+            <graph string="Risks" type="bar">
+                <field name="project_id"/>
+                <field name="risk_rating"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="project_risk_view_search" model="ir.ui.view">
+        <field name="name">project.risk.view.search</field>
+        <field name="model">project.risk</field>
+        <field name="arch" type="xml">
+            <search string="Risks">
+                <field name="title"/>
+                <field name="name"/>
+                <field name="project_id"/>
+                <field name="owner_id"/>
+                <filter string="Open" name="open"
+                        domain="[('is_open', '=', True)]"/>
+                <filter string="Escalated" name="escalated"
+                        domain="[('is_escalated', '=', True)]"/>
+                <filter string="Red" name="red"
+                        domain="[('risk_rating', '=', 'red')]"/>
+                <filter string="My Risks" name="my_risks"
+                        domain="[('owner_id', '=', uid)]"/>
+                <separator/>
+                <filter string="Overdue Closure" name="overdue"
+                        domain="[('target_date', '&lt;', context_today().strftime('%Y-%m-%d')), ('is_open', '=', True)]"/>
+                <group>
+                    <filter string="Project" name="group_project"
+                            context="{'group_by': 'project_id'}"/>
+                    <filter string="Milestone" name="group_milestone"
+                            context="{'group_by': 'milestone_id'}"/>
+                    <filter string="Status" name="group_state"
+                            context="{'group_by': 'state'}"/>
+                    <filter string="Rating" name="group_rating"
+                            context="{'group_by': 'risk_rating'}"/>
+                    <filter string="Owner" name="group_owner"
+                            context="{'group_by': 'owner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="project_risk_action" model="ir.actions.act_window">
+        <field name="name">Risk Register</field>
+        <field name="res_model">project.risk</field>
+        <field name="view_mode">list,kanban,form,pivot,graph</field>
+        <field name="context">{'search_default_open': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Record the first risk of your portfolio
+            </p>
+        </field>
+    </record>
+
+    <!-- Business units -->
+    <record id="project_business_unit_view_list" model="ir.ui.view">
+        <field name="name">project.business.unit.view.list</field>
+        <field name="model">project.business.unit</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="manager_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="project_business_unit_action" model="ir.actions.act_window">
+        <field name="name">Business Units</field>
+        <field name="res_model">project.business.unit</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Team allocation -->
+    <record id="project_team_member_view_list" model="ir.ui.view">
+        <field name="name">project.team.member.view.list</field>
+        <field name="model">project.team.member</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="project_id"
+                       column_invisible="context.get('default_project_id')"/>
+                <field name="user_id"/>
+                <field name="role"/>
+                <field name="allocation_percentage"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="email" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="project_team_member_view_pivot" model="ir.ui.view">
+        <field name="name">project.team.member.view.pivot</field>
+        <field name="model">project.team.member</field>
+        <field name="arch" type="xml">
+            <pivot string="Resource Capacity">
+                <field name="user_id" type="row"/>
+                <field name="project_id" type="col"/>
+                <field name="allocation_percentage" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="project_team_member_action" model="ir.actions.act_window">
+        <field name="name">Team Allocation</field>
+        <field name="res_model">project.team.member</field>
+        <field name="view_mode">list,form,pivot</field>
+    </record>
+</odoo>
