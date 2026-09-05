@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         Sale Order Form: restrict partner_id to customer_type = 'customer'
+         ================================================================ -->
+    <record id="view_order_form_customer_type_domain" model="ir.ui.view">
+        <field name="name">sale.order.form.customer.type.domain</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="attributes">
+                <attribute name="domain">[('customer_rank', '&gt;', 0), ('customer_type', '=', 'customer')]</attribute>
+            </field>
+        </field>
+    </record>
+
+</odoo>

@@ -5,7 +5,7 @@ from datetime import datetime, time
 
 class HrLeaveAPI(http.Controller):
 
-    @http.route('/leave/apply',type='json',auth='public',methods=['POST'],csrf=False)
+    @http.route('/leave/apply',type='jsonrpc',auth='public',methods=['POST'],csrf=False)
     def apply_leave(self, **data):
         try:
             employee_email = data.get('employee_email')
@@ -172,7 +172,7 @@ class HrLeaveAPI(http.Controller):
                 'error': str(e)
             }
 
-    @http.route('/api/leave/balance',type='json',auth='public',methods=['POST'],csrf=False)
+    @http.route('/api/leave/balance',type='jsonrpc',auth='public',methods=['POST'],csrf=False)
     def leave_balance(self, **kwargs):
         employee_email = kwargs.get('employee_email')
         if not employee_email:
@@ -224,7 +224,7 @@ class HrLeaveAPI(http.Controller):
             "leave_balances": result
         }
 
-    @http.route('/api/leave/history',type='json',auth='public',methods=['POST'],csrf=False)
+    @http.route('/api/leave/history',type='jsonrpc',auth='public',methods=['POST'],csrf=False)
     def leave_history(self, **kwargs):
         try:
             employee_email = kwargs.get('employee_email')
@@ -310,7 +310,7 @@ class HrLeaveAPI(http.Controller):
                 'error': str(e)
             }
 
-    @http.route('/api/leave/update',type='json',auth='public',methods=['POST'],csrf=False)
+    @http.route('/api/leave/update',type='jsonrpc',auth='public',methods=['POST'],csrf=False)
     def update_leave(self, **kwargs):
         employee_email = kwargs.get('employee_email')
         time_off_code = kwargs.get('time_off_code')
@@ -517,7 +517,7 @@ class HrLeaveAPI(http.Controller):
         }
         
 
-    @http.route('/api/leave/action',type='json',auth='public',methods=['POST'],csrf=False)
+    @http.route('/api/leave/action',type='jsonrpc',auth='public',methods=['POST'],csrf=False)
     def leave_action(self, **kwargs):
         try:
             employee_email = kwargs.get('employee_email')
@@ -827,3 +827,4 @@ class HrLeaveAPI(http.Controller):
                 "status": "error",
                 "message": str(e)
             }
+

@@ -42,6 +42,44 @@ class CrmLead(models.Model):
         for rec in self:
             rec.contract_count = len(rec.contract_ids)
 
+    # -------------------------------------------------------------------------
+    # CRM → Partner: set customer_type = 'prospect'
+    # -------------------------------------------------------------------------
+    def _handle_partner_assignment(self, force_partner_id=False, create_missing=True):
+        """Override to mark newly created CRM partners as 'prospect'."""
+        # Capture partners that already exist before the assignment
+        partners_before = {lead.partner_id for lead in self if lead.partner_id}
+
+        super()._handle_partner_assignment(
+            force_partner_id=force_partner_id,
+            create_missing=create_missing,
+        )
+
+        for lead in self:
+            partner = lead.partner_id
+            if partner and partner not in partners_before:
+                # This is a brand-new partner created from CRM
+                partner.sudo().write({'customer_type': 'prospect'})
+
+    # -------------------------------------------------------------------------
+    # Opportunity Won → set partner customer_type = 'customer'
+    # -------------------------------------------------------------------------
+    def action_set_won(self):
+        """Override to promote partner customer_type to 'customer' on won."""
+        result = super().action_set_won()
+        for lead in self:
+            if lead.partner_id:
+                lead.partner_id.sudo().write({'customer_type': 'customer'})
+        return result
+
+    def action_set_won_rainbowman(self):
+        """Override to promote partner customer_type to 'customer' on won (rainbowman path)."""
+        result = super().action_set_won_rainbowman()
+        for lead in self:
+            if lead.partner_id:
+                lead.partner_id.sudo().write({'customer_type': 'customer'})
+        return result
+
     def action_create_contract(self):
         self.ensure_one()
 

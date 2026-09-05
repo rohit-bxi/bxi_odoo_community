@@ -123,7 +123,7 @@ class EmployeeAPIController(http.Controller):
 
     @http.route(
         '/api/employee/all',
-        type='json',
+        type='jsonrpc',
         auth='public',
         methods=['POST'],
         csrf=False
@@ -251,3 +251,4 @@ class EmployeeAPIController(http.Controller):
                 'status'  : False,
                 'message' : str(e),
             }
+

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         1. Partner form view — customer_type field (visible for customers)
+         ================================================================ -->
+    <record id="view_partner_form_customer_type" model="ir.ui.view">
+        <field name="name">res.partner.form.customer.type</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <field name="company_type" position="after">
+                <field
+                    name="customer_type"
+                    widget="selection"
+                    invisible="customer_rank == 0"
+                />
+            </field>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         2. Sales Customers: dedicated action (customer_type = customer)
+         ================================================================ -->
+    <record id="action_sale_customers" model="ir.actions.act_window">
+        <field name="name">Customers</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('customer_rank', '&gt;', 0), ('customer_type', '=', 'customer')]</field>
+        <field name="context">{'default_customer_rank': 1, 'default_customer_type': 'customer'}</field>
+    </record>
+
+    <!-- ================================================================
+         3. CRM Prospects: dedicated action (customer_type = prospect)
+         ================================================================ -->
+    <record id="action_crm_prospects" model="ir.actions.act_window">
+        <field name="name">Prospects</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('customer_rank', '&gt;', 0), ('customer_type', '=', 'prospect')]</field>
+        <field name="context">{'default_customer_rank': 1, 'default_customer_type': 'prospect'}</field>
+    </record>
+
+    <!-- CRM → Customers menu (shows only prospects — replaces standard Customers menu) -->
+    <menuitem
+        id="menu_crm_prospects"
+        name="Customers"
+        parent="crm.crm_menu_sales"
+        action="action_crm_prospects"
+        sequence="5"
+    />
+
+    <!-- Sales menu item: Customers (only customer_type=customer) -->
+    <menuitem
+        id="menu_sale_bxi_customers"
+        name="Customers"
+        parent="sale.sale_order_menu"
+        action="action_sale_customers"
+        sequence="15"
+    />
+    <!-- Hide standard Sales → Customers menu (replaced by our filtered one) -->
+    <record id="sale.res_partner_menu" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <!-- Hide standard CRM → Customers menu (replaced by our filtered one) -->
+    <record id="crm.res_partner_menu_customer" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+    <!-- ================================================================
+         4. Accounting → Customers: filtered action (customer_type = customer)
+         ================================================================ -->
+    <record id="action_account_customers" model="ir.actions.act_window">
+        <field name="name">Customers</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('customer_rank', '&gt;', 0), ('customer_type', '=', 'customer')]</field>
+        <field name="context">{'default_customer_rank': 1, 'default_customer_type': 'customer'}</field>
+    </record>
+
+    <!-- Hide standard Accounting → Customers menu -->
+    <record id="account.menu_account_customer" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <!-- Accounting → Customers (filtered replacement) -->
+    <menuitem
+        id="menu_account_bxi_customers"
+        name="Customers"
+        parent="account.menu_finance_receivables"
+        action="action_account_customers"
+        sequence="110"
+    />
+
+</odoo>
