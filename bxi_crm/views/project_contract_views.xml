@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Contract Management Form: restrict client_ids dropdown to customer_type = 'customer' -->
+    <record id="view_contract_form_customer_type_domain" model="ir.ui.view">
+        <field name="name">project.contract.management.form.customer.type.domain</field>
+        <field name="model">project.contract.management</field>
+        <field name="inherit_id" ref="project_contract_management.view_contract_form"/>
+        <field name="arch" type="xml">
+            <field name="client_ids" position="attributes">
+                <attribute name="domain">[('customer_type', '=', 'customer')]</attribute>
+            </field>
+        </field>
+    </record>
+
+</odoo>

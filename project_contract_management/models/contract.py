@@ -256,6 +256,28 @@ class ProjectContract(models.Model):
             }
         }
 
+    # =========================================================================
+    # AUTO-CONVERT PROSPECT TO CUSTOMER ON CREATE / UPDATE
+    # =========================================================================
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._update_client_customer_type()
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        self._update_client_customer_type()
+        return res
+
+    def _update_client_customer_type(self):
+        for rec in self:
+            for partner in rec.client_ids:
+                partners = partner | partner.commercial_partner_id
+                for p in partners:
+                    if 'customer_type' in p._fields and p.customer_type == 'prospect':
+                        p.sudo().write({'customer_type': 'customer'})
+
 
 class ProjectProject(models.Model):
     _inherit = 'project.project'

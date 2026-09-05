@@ -43,10 +43,10 @@ class CrmLead(models.Model):
             rec.contract_count = len(rec.contract_ids)
 
     # -------------------------------------------------------------------------
-    # CRM → Partner: set customer_type = 'prospect'
+    # CRM → Partner: set customer_type = 'prospect' (or 'customer' if won)
     # -------------------------------------------------------------------------
     def _handle_partner_assignment(self, force_partner_id=False, create_missing=True):
-        """Override to mark newly created CRM partners as 'prospect'."""
+        """Override to mark newly created CRM partners as 'prospect' (or 'customer' if already won)."""
         # Capture partners that already exist before the assignment
         partners_before = {lead.partner_id for lead in self if lead.partner_id}
 
@@ -58,26 +58,47 @@ class CrmLead(models.Model):
         for lead in self:
             partner = lead.partner_id
             if partner and partner not in partners_before:
-                # This is a brand-new partner created from CRM
-                partner.sudo().write({'customer_type': 'prospect'})
+                if lead.stage_id.is_won or lead.probability == 100:
+                    partner.sudo().write({'customer_type': 'customer'})
+                else:
+                    partner.sudo().write({'customer_type': 'prospect'})
 
     # -------------------------------------------------------------------------
     # Opportunity Won → set partner customer_type = 'customer'
     # -------------------------------------------------------------------------
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._promote_partner_to_customer()
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        self._promote_partner_to_customer()
+        return res
+
+    def _promote_partner_to_customer(self):
+        """Promote opportunity's partner from 'prospect' to 'customer' if lead is won."""
+        for lead in self:
+            if lead.stage_id.is_won or lead.probability == 100:
+                if not lead.partner_id and (lead.partner_name or lead.contact_name or lead.email_from):
+                    lead._handle_partner_assignment(create_missing=True)
+                if lead.partner_id:
+                    partners = lead.partner_id | lead.partner_id.commercial_partner_id
+                    prospects = partners.filtered(lambda p: p.customer_type != 'customer')
+                    if prospects:
+                        prospects.sudo().write({'customer_type': 'customer'})
+
     def action_set_won(self):
         """Override to promote partner customer_type to 'customer' on won."""
         result = super().action_set_won()
-        for lead in self:
-            if lead.partner_id:
-                lead.partner_id.sudo().write({'customer_type': 'customer'})
+        self._promote_partner_to_customer()
         return result
 
     def action_set_won_rainbowman(self):
         """Override to promote partner customer_type to 'customer' on won (rainbowman path)."""
         result = super().action_set_won_rainbowman()
-        for lead in self:
-            if lead.partner_id:
-                lead.partner_id.sudo().write({'customer_type': 'customer'})
+        self._promote_partner_to_customer()
         return result
 
     def action_create_contract(self):
