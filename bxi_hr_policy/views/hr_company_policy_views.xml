@@ -211,24 +211,27 @@
          4. MENU HIERARCHY UNDER EMPLOYEES
          ═══════════════════════════════════════════════════════════════════════ -->
 
-    <!-- Parent Menu: Company Policy (Child of Employees) -->
+    <!-- Parent Menu: Company Policy (Child of Employees - Visible to all employees) -->
     <menuitem id="menu_hr_company_policy_root"
               name="Company Policy"
               parent="hr.menu_hr_root"
+              groups="base.group_user"
               sequence="25"/>
 
-    <!-- Sub-menu 1: Policies (In-Screen View-Only) -->
+    <!-- Sub-menu 1: Policies (In-Screen View-Only - Visible to all employees) -->
     <menuitem id="menu_hr_company_policy_viewer_menu"
               name="Policies"
               parent="menu_hr_company_policy_root"
               action="action_hr_company_policy_viewer"
+              groups="base.group_user"
               sequence="10"/>
 
-    <!-- Sub-menu 2: Upload (List & Form Upload) -->
+    <!-- Sub-menu 2: Upload (List & Form Upload - Only visible to Admin / HR Manager) -->
     <menuitem id="menu_hr_company_policy_upload_menu"
               name="Upload"
               parent="menu_hr_company_policy_root"
               action="action_hr_company_policy_upload"
+              groups="base.group_system,hr.group_hr_manager"
               sequence="20"/>
 
 </odoo>

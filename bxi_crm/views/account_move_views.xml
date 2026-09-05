@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Customer Invoice: restrict partner_id dropdown to customer_type = 'customer' -->
+    <record id="view_move_form_customer_type_domain" model="ir.ui.view">
+        <field name="name">account.move.form.customer.type.domain</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="attributes">
+                <attribute name="domain">[('customer_rank', '&gt;', 0), ('customer_type', '=', 'customer')]</attribute>
+            </field>
+        </field>
+    </record>
+
+</odoo>

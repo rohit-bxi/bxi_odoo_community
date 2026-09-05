@@ -11,7 +11,7 @@ from odoo.http import request
 
 class EmployeeAPIController(http.Controller):
 
-    @http.route('/api/employee/details',type='json',auth='public',methods=['POST'],csrf=False)
+    @http.route('/api/employee/details',type='jsonrpc',auth='public',methods=['POST'],csrf=False)
     def get_employee_details(self, **kwargs):
         try:
             employee_email = kwargs.get('employee_email')
@@ -48,7 +48,7 @@ class EmployeeAPIController(http.Controller):
                 'message': str(e)
             }
     @http.route(
-        "/api/employee/check_registration_token",type="json",auth="public",methods=["POST"],csrf=False,)
+        "/api/employee/check_registration_token",type="jsonrpc",auth="public",methods=["POST"],csrf=False,)
     def check_registration_token(self, **kwargs):
         token = kwargs.get("token")
         if not token:
@@ -80,7 +80,7 @@ class EmployeeAPIController(http.Controller):
             "email": employee.private_email,
         }
 
-    @http.route('/api/employee/send_otp',type='json',auth='public',methods=['POST'],csrf=False)
+    @http.route('/api/employee/send_otp',type='jsonrpc',auth='public',methods=['POST'],csrf=False)
     def send_otp(self, **post):
         token = post.get("token")
         email = post.get("email")
@@ -143,7 +143,7 @@ class EmployeeAPIController(http.Controller):
             "message": "OTP sent successfully."
         }
     
-    @http.route('/api/employee/verify_otp',type='json', auth='public',methods=['POST'],csrf=False)
+    @http.route('/api/employee/verify_otp',type='jsonrpc', auth='public',methods=['POST'],csrf=False)
     def verify_otp(self, **post):
         token = post.get("token")
         otp = post.get("otp")
@@ -174,7 +174,7 @@ class EmployeeAPIController(http.Controller):
             "message":"OTP verified successfully."
         }
 
-    @http.route('/api/employee/create_password',type='json',auth='public', methods=['POST'],csrf=False)
+    @http.route('/api/employee/create_password',type='jsonrpc',auth='public', methods=['POST'],csrf=False)
     def create_password(self, **post):
         token = post.get("token")
         password = post.get("password")
@@ -199,7 +199,7 @@ class EmployeeAPIController(http.Controller):
             "message":"Password created successfully."
         }
 
-    @http.route("/api/employee/login",type="json",auth="public",methods=["POST"],csrf=False)
+    @http.route("/api/employee/login",type="jsonrpc",auth="public",methods=["POST"],csrf=False)
     def employee_login(self, **post):
         email = post.get("email")
         password = post.get("password")
@@ -266,7 +266,7 @@ class EmployeeAPIController(http.Controller):
             }
         }
 
-    @http.route("/api/employee/payslips",type="json",auth="public",methods=["POST"],csrf=False)
+    @http.route("/api/employee/payslips",type="jsonrpc",auth="public",methods=["POST"],csrf=False)
     def employee_payslips(self, **post):
         email = post.get("email")
         employee = request.env["hr.employee"].sudo().search([
@@ -480,7 +480,7 @@ class EmployeeAPIController(http.Controller):
             ],
         )
  
-    @http.route("/api/employee/forgot_password",type="json",auth="public",methods=["POST"],csrf=False,)
+    @http.route("/api/employee/forgot_password",type="jsonrpc",auth="public",methods=["POST"],csrf=False,)
     def forgot_password(self, **post):
         email = (post.get("email") or "").strip().lower()
         if not email:
@@ -553,7 +553,7 @@ class EmployeeAPIController(http.Controller):
             "message": "Password reset link has been sent to your personal email.",
         }
 
-    @http.route("/api/employee/reset_password",type="json",auth="public",methods=["POST"],csrf=False,)
+    @http.route("/api/employee/reset_password",type="jsonrpc",auth="public",methods=["POST"],csrf=False,)
     def reset_password(self, **post):
         token = (post.get("token") or "").strip()
         password = post.get("password")
@@ -694,7 +694,7 @@ class EmployeeAPIController(http.Controller):
 
     @http.route(
         "/api/employee/archived",
-        type="json",
+        type="jsonrpc",
         auth="public",
         methods=["POST"],
         csrf=False,
@@ -761,7 +761,7 @@ class EmployeeAPIController(http.Controller):
 
     @http.route(
         "/api/employee/verify_aadhar",
-        type="json",
+        type="jsonrpc",
         auth="public",
         methods=["POST"],
         csrf=False,
@@ -796,7 +796,7 @@ class EmployeeAPIController(http.Controller):
     
     @http.route(
         "/api/employee/create_new_credentials",
-        type="json",
+        type="jsonrpc",
         auth="public",
         methods=["POST"],
         csrf=False,
@@ -865,7 +865,7 @@ class EmployeeAPIController(http.Controller):
 
     @http.route(
         "/api/employee/edit_profile",
-        type="json",
+        type="jsonrpc",
         auth="public",
         methods=["POST"],
         csrf=False,
@@ -916,3 +916,4 @@ class EmployeeAPIController(http.Controller):
                 "emergency_phone": employee.emergency_phone or False,
             },
         }
+

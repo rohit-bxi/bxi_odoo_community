@@ -4,7 +4,7 @@ from datetime import datetime
 
 class PurchaseOrderAPI(http.Controller):
 
-    @http.route('/api/purchase/create', type='json', auth='public', methods=['POST'], csrf=False)
+    @http.route('/api/purchase/create', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
     def create_purchase_order(self, **params):
         try:
             data = params.get('params', params)
@@ -121,7 +121,7 @@ class PurchaseOrderAPI(http.Controller):
                 "message": str(e)
             }
 
-    @http.route('/api/purchase/read', type='json', auth='public', methods=['POST'], csrf=False)
+    @http.route('/api/purchase/read', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
     def get_purchase_orders(self, **params):
         try:
             data = params.get('params', params)
@@ -183,3 +183,4 @@ class PurchaseOrderAPI(http.Controller):
                 "status": "error",
                 "message": str(e)
             }
+
