@@ -7,12 +7,12 @@ class TravelRequestOption(models.Model):
     Stores structured travel preferences/options selected by the employee
     for a travel request. These are pushed to myBiz after HR approval.
     """
-    _name = 'travel.request.option'
-    _description = 'Travel Request — myBiz Option / Preference'
+    _name = 'mybiz.travel.option'
+    _description = 'myBiz Travel Option / Preference'
     _order = 'option_type, sequence, id'
 
     travel_request_id = fields.Many2one(
-        'travel.request',
+        'mybiz.travel.request',
         string='Travel Request',
         required=True,
         ondelete='cascade',

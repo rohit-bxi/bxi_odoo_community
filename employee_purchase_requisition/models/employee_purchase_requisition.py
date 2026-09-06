@@ -10,7 +10,7 @@ class PurchaseRequisition(models.Model):
     _inherit = "mail.thread", "mail.activity.mixin"
 
     name = fields.Char(string="Reference No", readonly=True)
-    employee_id = fields.Many2one(comodel_name='hr.employee', string='Employee',
+    employee_id = fields.Many2one(comodel_name='hr.employee', string='Requested By',
                                   required=True, help='Select an employee')
     dept_id = fields.Many2one(comodel_name='hr.department', string='Department',
                               related='employee_id.department_id', store=True,

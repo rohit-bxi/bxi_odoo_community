@@ -3,8 +3,8 @@
 
     <!-- Daily cron: poll myBiz for booking status updates on pending travel requests -->
     <record id="ir_cron_sync_mybiz_status" model="ir.cron">
-        <field name="name">Travel Request: Sync myBiz Booking Status</field>
-        <field name="model_id" ref="bxi_travel_request.model_travel_request"/>
+        <field name="name">myBiz Travel: Sync myBiz Booking Status</field>
+        <field name="model_id" ref="model_mybiz_travel_request"/>
         <field name="state">code</field>
         <field name="code">model._cron_sync_mybiz_status()</field>
         <field name="interval_number">6</field>

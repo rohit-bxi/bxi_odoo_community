@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_mybiz_travel_request_user,mybiz.travel.request user,model_mybiz_travel_request,bxi_mybiz_travel.group_travel_user,1,1,1,0
+access_mybiz_travel_request_manager,mybiz.travel.request manager,model_mybiz_travel_request,bxi_mybiz_travel.group_travel_manager,1,1,1,1
+access_mybiz_travel_request_admin,mybiz.travel.request admin,model_mybiz_travel_request,bxi_mybiz_travel.group_travel_admin,1,1,1,1
+access_mybiz_travel_request_expense_line_user,mybiz.travel.expense.line user,model_mybiz_travel_expense_line,bxi_mybiz_travel.group_travel_user,1,1,1,1
+access_mybiz_travel_request_option_user,mybiz.travel.option user,model_mybiz_travel_option,bxi_mybiz_travel.group_travel_user,1,1,1,1
+access_mybiz_travel_request_option_admin,mybiz.travel.option admin,model_mybiz_travel_option,bxi_mybiz_travel.group_travel_admin,1,1,1,1
+access_mybiz_config_admin,mybiz.config admin,model_mybiz_config,bxi_mybiz_travel.group_travel_admin,1,1,1,1
+access_mybiz_config_system,mybiz.config system,model_mybiz_config,base.group_system,1,1,1,1

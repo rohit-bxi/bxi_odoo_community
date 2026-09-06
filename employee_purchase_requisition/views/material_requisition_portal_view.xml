@@ -29,7 +29,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>Reference</th>
-                                        <th>Employee</th>
+                                        <th>Requested By</th>
                                         <th>Department</th>
                                         <th>Date</th>
                                         <th>Status</th>
