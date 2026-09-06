@@ -12,7 +12,7 @@ class BxiMyBizConfig(models.Model):
     Singleton-style configuration for MakeMyTrip myBiz corporate API.
     One active config record per company is expected.
     """
-    _name = 'bxi.mybiz.config'
+    _name = 'mybiz.config'
     _description = 'MakeMyTrip myBiz API Configuration'
     _inherit = ['mail.thread']
     _rec_name = 'name'

@@ -5,8 +5,8 @@
          LIST VIEW — myBiz Configuration
     ═══════════════════════════════════════════════════════════════ -->
     <record id="view_mybiz_config_list" model="ir.ui.view">
-        <field name="name">bxi.mybiz.config.list</field>
-        <field name="model">bxi.mybiz.config</field>
+        <field name="name">mybiz.config.list</field>
+        <field name="model">mybiz.config</field>
         <field name="arch" type="xml">
             <list string="myBiz Configurations">
                 <field name="name"/>
@@ -25,8 +25,8 @@
          FORM VIEW — myBiz Configuration
     ═══════════════════════════════════════════════════════════════ -->
     <record id="view_mybiz_config_form" model="ir.ui.view">
-        <field name="name">bxi.mybiz.config.form</field>
-        <field name="model">bxi.mybiz.config</field>
+        <field name="name">mybiz.config.form</field>
+        <field name="model">mybiz.config</field>
         <field name="arch" type="xml">
             <form string="MakeMyTrip myBiz Configuration">
                 <header>
@@ -124,7 +124,7 @@
     ═══════════════════════════════════════════════════════════════ -->
     <record id="action_mybiz_config" model="ir.actions.act_window">
         <field name="name">myBiz Configuration</field>
-        <field name="res_model">bxi.mybiz.config</field>
+        <field name="res_model">mybiz.config</field>
         <field name="view_mode">list,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
