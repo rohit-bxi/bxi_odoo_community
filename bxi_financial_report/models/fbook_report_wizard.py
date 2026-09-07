@@ -1737,13 +1737,60 @@ class FbookReportWizard(models.TransientModel):
         y0_profit = y0_billed - y0_expenses
         y0_margin = (y0_profit / y0_billed * 100) if y0_billed > 0 else 0.0
 
+        # Investors calculation for Year 0 (3rd year back)
+        y0_investors = 0.0
+        if 'account.move.line' in self.env:
+            inv_lines_y0 = self.env['account.move.line'].sudo().search([
+                ('company_id', 'in', company_ids),
+                ('move_id.move_type', '=', 'entry'),
+                ('parent_state', '=', 'posted'),
+                ('date', '>=', y0_start_str),
+                ('date', '<=', y0_end_str),
+                ('partner_id.is_partner_investor', 'in', ['yes', True]),
+            ])
+            for line in inv_lines_y0:
+                if line.credit > 0:
+                    y0_investors += custom_convert(
+                        line.credit, line.company_id.currency_id, target_currency,
+                        date_val=line.date, year_key='y1', record=line
+                    )
+                elif line.debit > 0:
+                    y0_investors -= custom_convert(
+                        line.debit, line.company_id.currency_id, target_currency,
+                        date_val=line.date, year_key='y1', record=line
+                    )
+
+            cash_lines_y0 = self.env['account.move.line'].sudo().search([
+                ('company_id', 'in', company_ids),
+                ('move_id.move_type', '=', 'entry'),
+                ('parent_state', '=', 'posted'),
+                ('journal_id.type', '=', 'cash'),
+                ('date', '>=', y0_start_str),
+                ('date', '<=', y0_end_str),
+                ('account_id.account_type', '!=', 'asset_cash'),
+                '|', ('partner_id', '=', False), ('partner_id.is_partner_investor', 'in', ['no', False]),
+            ])
+            for line in cash_lines_y0:
+                if line.credit > 0:
+                    y0_investors += custom_convert(
+                        line.credit, line.company_id.currency_id, target_currency,
+                        date_val=line.date, year_key='y1', record=line
+                    )
+                elif line.debit > 0:
+                    y0_investors -= custom_convert(
+                        line.debit, line.company_id.currency_id, target_currency,
+                        date_val=line.date, year_key='y1', record=line
+                    )
+
         y1_billed = data['y1']['total']['billed']
         y1_expenses = data['y1']['total']['expenses']
+        y1_investors = data['y1']['total']['calibration']
         y1_profit = data['y1']['total']['profit']
         y1_margin = data['y1']['total']['margin']
 
         y2_billed = data['y2']['total']['billed']
         y2_expenses = data['y2']['total']['expenses']
+        y2_investors = data['y2']['total']['calibration']
         y2_profit = data['y2']['total']['profit']
         y2_margin = data['y2']['total']['margin']
 
@@ -1753,6 +1800,7 @@ class FbookReportWizard(models.TransientModel):
 
         total_3y_revenue = y0_billed + y1_billed + y2_billed
         total_3y_expenses = y0_expenses + y1_expenses + y2_expenses
+        total_3y_investors = y0_investors + y1_investors + y2_investors
         total_3y_profit = total_3y_revenue - total_3y_expenses
         total_3y_margin = (total_3y_profit / total_3y_revenue * 100) if total_3y_revenue > 0 else 0.0
 
@@ -1764,6 +1812,7 @@ class FbookReportWizard(models.TransientModel):
                     'prefix': y0_prefix,
                     'revenue': target_currency.round(y0_billed),
                     'expenses': target_currency.round(y0_expenses),
+                    'investors': target_currency.round(y0_investors),
                     'profit': target_currency.round(y0_profit),
                     'margin': round(y0_margin, 2),
                 },
@@ -1773,6 +1822,7 @@ class FbookReportWizard(models.TransientModel):
                     'prefix': y1_prefix,
                     'revenue': target_currency.round(y1_billed),
                     'expenses': target_currency.round(y1_expenses),
+                    'investors': target_currency.round(y1_investors),
                     'profit': target_currency.round(y1_profit),
                     'margin': round(y1_margin, 2),
                 },
@@ -1782,12 +1832,14 @@ class FbookReportWizard(models.TransientModel):
                     'prefix': y2_prefix,
                     'revenue': target_currency.round(y2_billed),
                     'expenses': target_currency.round(y2_expenses),
+                    'investors': target_currency.round(y2_investors),
                     'profit': target_currency.round(y2_profit),
                     'margin': round(y2_margin, 2),
                 },
             ],
             'total_revenue': target_currency.round(total_3y_revenue),
             'total_expenses': target_currency.round(total_3y_expenses),
+            'total_investors': target_currency.round(total_3y_investors),
             'total_profit': target_currency.round(total_3y_profit),
             'total_margin': round(total_3y_margin, 2),
         }

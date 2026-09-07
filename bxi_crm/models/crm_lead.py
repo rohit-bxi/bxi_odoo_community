@@ -85,9 +85,11 @@ class CrmLead(models.Model):
                     lead._handle_partner_assignment(create_missing=True)
                 if lead.partner_id:
                     partners = lead.partner_id | lead.partner_id.commercial_partner_id
-                    prospects = partners.filtered(lambda p: p.customer_type != 'customer')
-                    if prospects:
-                        prospects.sudo().write({'customer_type': 'customer'})
+                    for p in partners:
+                        if p.customer_type == 'vendor':
+                            p.sudo().write({'customer_type': 'customer_and_vendor'})
+                        elif p.customer_type not in ('customer', 'customer_and_vendor'):
+                            p.sudo().write({'customer_type': 'customer'})
 
     def action_set_won(self):
         """Override to promote partner customer_type to 'customer' on won."""

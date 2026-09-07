@@ -8,7 +8,7 @@
         <field name="inherit_id" ref="project_contract_management.view_contract_form"/>
         <field name="arch" type="xml">
             <field name="client_ids" position="attributes">
-                <attribute name="domain">[('customer_type', '=', 'customer')]</attribute>
+                <attribute name="domain">[('customer_type', 'in', ['customer', 'customer_and_vendor'])]</attribute>
             </field>
         </field>
     </record>

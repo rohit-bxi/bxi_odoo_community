@@ -11,6 +11,8 @@ class ResPartner(models.Model):
         selection=[
             ('prospect', 'Prospect'),
             ('customer', 'Customer'),
+            ('vendor', 'Vendor'),
+            ('customer_and_vendor', 'Customer and Vendor'),
         ],
         string='Customer Type',
         default='prospect',
@@ -39,3 +41,4 @@ class ResPartner(models.Model):
                     'name': duplicate.display_name or duplicate.name,
                     'id': duplicate.id,
                 })
+

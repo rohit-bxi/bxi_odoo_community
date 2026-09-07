@@ -10,7 +10,7 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
             <field name="partner_id" position="attributes">
-                <attribute name="domain">[('customer_rank', '&gt;', 0), ('customer_type', '=', 'customer')]</attribute>
+                <attribute name="domain">[('customer_rank', '&gt;', 0), ('customer_type', 'in', ['customer', 'customer_and_vendor'])]</attribute>
             </field>
         </field>
     </record>
