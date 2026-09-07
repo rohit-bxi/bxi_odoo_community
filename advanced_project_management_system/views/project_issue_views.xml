@@ -39,18 +39,18 @@
                 <sheet>
                     <group>
                         <field name="summary" placeholder="Issue Summary"/>
-                        <group>
+                        <group name="issue_left">
                             <field name="user_id"/>
                             <field name="priority" widget="priority"
                                    class="me-3"/>
                             <field name="tag_ids" widget="many2many_tags"/>
                             <field name="name"/>
-                        </group>
-                        <group>
-                            <field name="partner_id"/>
-                            <field name="email"/>
                             <field name="project_id"/>
                             <field name="task_id"/>
+                        </group>
+                        <group name="issue_right">
+                            <field name="partner_id"/>
+                            <field name="email"/>
                             <field name="start_date"/>
                             <field name="deadline"/>
                             <field name="duration_type"/>

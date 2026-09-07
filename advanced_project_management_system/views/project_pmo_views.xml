@@ -175,7 +175,7 @@
         <field name="inherit_id"
                ref="advanced_project_management_system.project_milestone_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='project_id']" position="after">
+            <xpath expr="//field[@name='deadline']" position="after">
                 <field name="milestone_code" readonly="1"/>
                 <field name="owner_id"/>
                 <field name="pmo_state"/>
@@ -186,6 +186,8 @@
                        decoration-danger="health_status == 'red'"/>
                 <field name="actual_start_date"/>
                 <field name="actual_end_date"/>
+            </xpath>
+            <xpath expr="//field[@name='is_reached']" position="after">
                 <field name="target_completion_date"/>
                 <field name="completion_percentage" widget="progressbar"/>
                 <field name="total_task_count"/>
@@ -423,6 +425,8 @@
                 <field name="pmo_state"/>
                 <field name="pmo_priority"/>
                 <field name="severity"/>
+            </xpath>
+            <xpath expr="//field[@name='email']" position="after">
                 <field name="reported_by_id"/>
                 <field name="target_resolution_date"/>
                 <field name="resolution_date"/>

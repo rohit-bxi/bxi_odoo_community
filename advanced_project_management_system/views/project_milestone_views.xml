@@ -29,15 +29,21 @@
         <field name="mode">primary</field>
         <field name="inherit_id" ref="project.project_milestone_view_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//group[@name='main_details']" position="attributes">
+                <attribute name="name">main_details_left</attribute>
+            </xpath>
             <xpath expr="//field[@name='deadline']" position="before">
                 <field name="start_date"/>
             </xpath>
-            <xpath expr="//field[@name='deadline']" position="after">
-                <field name="duration_type"/>
-                <field name="duration" readonly="1"/>
-            </xpath>
-            <xpath expr="//field[@name='is_reached']" position="after">
+            <xpath expr="//field[@name='is_reached']" position="replace">
                 <field name="project_id"/>
+            </xpath>
+            <xpath expr="//group[@name='main_details_left']" position="after">
+                <group name="main_details_right">
+                    <field name="duration_type"/>
+                    <field name="duration" readonly="1"/>
+                    <field name="is_reached"/>
+                </group>
             </xpath>
         </field>
     </record>
