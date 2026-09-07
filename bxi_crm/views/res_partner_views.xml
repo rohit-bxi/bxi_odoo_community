@@ -26,7 +26,7 @@
         <field name="name">Customers</field>
         <field name="res_model">res.partner</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('customer_rank', '&gt;', 0), ('customer_type', 'in', ['customer', 'customer_and_vendor'])]</field>
+        <field name="domain">[('customer_type', 'in', ['customer', 'customer_and_vendor'])]</field>
         <field name="context">{'default_customer_rank': 1, 'default_customer_type': 'customer'}</field>
     </record>
 
@@ -37,7 +37,7 @@
         <field name="name">Prospects</field>
         <field name="res_model">res.partner</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('customer_rank', '&gt;', 0), ('customer_type', '=', 'prospect')]</field>
+        <field name="domain">[('customer_type', '=', 'prospect')]</field>
         <field name="context">{'default_customer_rank': 1, 'default_customer_type': 'prospect'}</field>
     </record>
 
@@ -74,7 +74,7 @@
         <field name="name">Customers</field>
         <field name="res_model">res.partner</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('customer_rank', '&gt;', 0), ('customer_type', 'in', ['customer', 'customer_and_vendor'])]</field>
+        <field name="domain">[('customer_type', 'in', ['customer', 'customer_and_vendor'])]</field>
         <field name="context">{'default_customer_rank': 1, 'default_customer_type': 'customer'}</field>
     </record>
 
