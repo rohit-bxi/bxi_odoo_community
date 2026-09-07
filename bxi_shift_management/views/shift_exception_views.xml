@@ -224,4 +224,28 @@
             </p>
         </field>
     </record>
+    <record id="action_bxi_shift_exception_my_request"
+            model="ir.actions.act_window">
+        <field name="name">My Exception Requests</field>
+        <field name="res_model">bxi.shift.exception</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">
+            [('employee_id.user_id', '=', uid)]
+        </field>
+    </record>
+    <record id="action_bxi_shift_exception_team_request"
+            model="ir.actions.act_window">
+        <field name="name">Team Exception Requests</field>
+        <field name="res_model">bxi.shift.exception</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">
+            [('manager_id.user_id', '=', uid)]
+        </field>
+    </record>
+    <record id="action_bxi_shift_exception_all"
+        model="ir.actions.act_window">
+        <field name="name">All Exception Requests</field>
+        <field name="res_model">bxi.shift.exception</field>
+        <field name="view_mode">list,form</field>
+     </record>
 </odoo>

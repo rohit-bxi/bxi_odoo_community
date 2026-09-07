@@ -11,5 +11,14 @@
         <field name="number_increment">1</field>
         <field name="company_id" eval="False"/>
     </record>
+    <record id="seq_bxi_exception_request" model="ir.sequence">
+        <field name="name">Exception Request</field>
+        <field name="code">bxi.exception.request</field>
+        <field name="prefix">BXI/ER/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="number_next">1</field>
+        <field name="number_increment">1</field>
+        <field name="company_id" eval="False"/>
+    </record>
 
 </odoo>

@@ -37,6 +37,7 @@ class BxiShiftException(models.Model):
     manager_id = fields.Many2one(
         "hr.employee",
         string="Manager",
+        related='employee_id.parent_id',
         tracking=True,
     )
 
@@ -251,6 +252,7 @@ class BxiShiftException(models.Model):
             ],
             limit=1,
         )
+        is_hr_manager = self.env.user.has_group("hr.group_hr_manager")
         for record in self:
             if record.state != "manager_approval":
                 raise UserError(
@@ -259,87 +261,120 @@ class BxiShiftException(models.Model):
                         "can be approved."
                     )
                 )
-            if (
-                not current_employee
-                or record.manager_id.id != current_employee.id
-            ):
-                raise UserError(
-                    _(
-                        "Only the employee's direct manager can approve "
-                        "this request."
+
+            # Normal manager can approve only own team's request.
+            # HR Manager can approve any request.
+            if not is_hr_manager:
+                if (
+                    not current_employee
+                    or record.manager_id.id != current_employee.id
+                ):
+                    raise UserError(
+                        _(
+                            "You can approve only exception requests "
+                            "submitted by your team members."
+                        )
                     )
-                )
 
             record.write(
                 {
                     "state": "approved",
-                    "manager_approved_by": current_employee.id,
+                    "manager_approved_by": current_employee.id if current_employee else False,
                     "manager_approved_date": fields.Datetime.now(),
                 }
             )
 
-            # Apply per-date overrides and update the employee's weekday
-            # location fields for the weekdays included in this exception.
-            EmployeeLocation = self.env['bxi.shift.employee.location'].sudo()
+            # -----------------------------------------
+            # Existing location logic
+            # -----------------------------------------
 
-            # Collect original weekday values to allow restore later.
+            EmployeeLocation = self.env[
+                "bxi.shift.employee.location"
+            ].sudo()
+
             orig = {}
             weekday_field_map = {
-                0: 'monday_location_id',
-                1: 'tuesday_location_id',
-                2: 'wednesday_location_id',
-                3: 'thursday_location_id',
-                4: 'friday_location_id',
-                5: 'saturday_location_id',
-                6: 'sunday_location_id',
+                0: "monday_location_id",
+                1: "tuesday_location_id",
+                2: "wednesday_location_id",
+                3: "thursday_location_id",
+                4: "friday_location_id",
+                5: "saturday_location_id",
+                6: "sunday_location_id",
             }
 
             emp = record.employee_id.sudo()
 
-            # Save originals only once if not already stored
             try:
                 if not record.original_weekday_locations:
                     for idx, field_name in weekday_field_map.items():
                         if field_name in emp._fields:
-                            orig[field_name] = emp[field_name].id if emp[field_name] else False
-                    record.original_weekday_locations = json.dumps(orig)
-            except Exception:
-                _logger.exception('Failed to capture original weekday locations for %s', record.name)
+                            orig[field_name] = (
+                                emp[field_name].id
+                                if emp[field_name]
+                                else False
+                            )
 
-            # Iterate dates and create per-day override records
+                    record.original_weekday_locations = json.dumps(orig)
+
+            except Exception:
+                _logger.exception(
+                    "Failed to capture original weekday locations for %s",
+                    record.name,
+                )
+
             cur = record.date_from
             while cur <= record.date_to:
                 weekday = cur.weekday()
 
-                # If allowed_weekdays is set, skip days not included
                 if record.allowed_weekdays:
                     try:
-                        allowed = [int(x.strip()) for x in record.allowed_weekdays.split(',') if x.strip()]
+                        allowed = [
+                            int(x.strip())
+                            for x in record.allowed_weekdays.split(",")
+                            if x.strip()
+                        ]
                     except Exception:
                         allowed = []
                     if allowed and weekday not in allowed:
                         cur = cur + timedelta(days=1)
                         continue
 
-                # Create or update per-day override
                 try:
-                    EmployeeLocation.create({
-                        'employee_id': emp.id,
-                        'date': cur,
-                        'location_id': record.to_location_id.id if record.to_location_id else False,
-                        'exception_id': record.id,
-                    })
+                    EmployeeLocation.create(
+                        {
+                            "employee_id": emp.id,
+                            "date": cur,
+                            "location_id": (
+                                record.to_location_id.id
+                                if record.to_location_id
+                                else False
+                            ),
+                            "exception_id": record.id,
+                        }
+                    )
                 except Exception:
-                    # If unique constraint prevents create, skip
                     pass
 
-                # Update employee weekday field (set to to_location_id)
                 field_name = weekday_field_map.get(weekday)
-                if field_name and field_name in emp._fields and record.to_location_id:
+
+                if (
+                    field_name
+                    and field_name in emp._fields
+                    and record.to_location_id
+                ):
                     try:
-                        emp.write({field_name: record.to_location_id.id})
+                        emp.write(
+                            {
+                                field_name: record.to_location_id.id
+                            }
+                        )
                     except Exception:
-                        _logger.exception('Failed to update employee weekday field %s for %s', field_name, emp.name)
+                        _logger.exception(
+                            "Failed to update employee weekday field %s for %s",
+                            field_name,
+                            emp.name,
+                        )
 
                 cur = cur + timedelta(days=1)
 
