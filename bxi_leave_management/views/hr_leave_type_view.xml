@@ -28,5 +28,34 @@
 
         </field>
     </record>
-
+    <record id="view_hr_leave_form_compensation" model="ir.ui.view">
+        <field name="name">hr.leave.form.compensation</field>
+        <field name="model">hr.leave</field>
+        <field name="inherit_id" ref="hr_holidays.hr_leave_view_form"/>
+        <field name="arch" type="xml">
+           <xpath expr="//field[@name='holiday_status_id']" position="after">
+                <div
+                    class="alert alert-warning"
+                    role="alert"
+                    invisible="not compensation_required"
+                >
+                    <strong>Compensation Required</strong>
+                    <br/>
+                    You are applying Earned Leave on a mandatory WFO day.
+                    You must compensate by working from office on Monday or
+                    Friday of the same week.
+                </div>
+                <field
+                    name="compensation_required"
+                    invisible="1"
+                />
+                <field
+                    name="compensation_date"
+                    string="Compensation Date"
+                    invisible="not compensation_required"
+                    required="compensation_required"
+                />
+            </xpath> 
+        </field>
+    </record>
 </odoo>

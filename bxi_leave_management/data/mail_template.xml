@@ -2,52 +2,218 @@
 <odoo>
     <record id="email_template_leave_request_submitted" model="mail.template">
         <field name="name">Leave Request - Submitted Notification</field>
-        <field name="model_id" ref="hr_holidays.model_hr_leave" />
-        <field name="subject">New Leave Request Submitted - {{ object.employee_id.name }}</field>
+        <field name="model_id" ref="hr_holidays.model_hr_leave"/>
+        <field name="subject">
+            New Leave Request Submitted - {{ object.employee_id.name }}
+        </field>
         <field name="email_from">hrsupport@bxitech.com</field>
+
         <field name="body_html" type="html">
-            <div style="font-family: Arial, sans-serif; font-size: 14px; max-width: 600px;">
-                <div style="background-color: #875a7b; color: white; padding: 15px; border-radius: 6px 6px 0 0;">
-                    <h3 style="margin: 0;">New Leave Request Submitted</h3>
+
+            <div style="font-family: Arial, sans-serif;
+                        font-size: 14px;
+                        max-width: 600px;">
+
+                <!-- HEADER -->
+                <div style="background-color: #875a7b;
+                            color: white;
+                            padding: 15px;
+                            border-radius: 6px 6px 0 0;">
+
+                    <h3 style="margin: 0;">
+                        New Leave Request Submitted
+                    </h3>
+
                 </div>
-                <div style="padding: 20px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 6px 6px;">
-                    <p>Dear Approver,</p>
-                    <p>A new leave request has been submitted by <b><t t-esc="object.employee_id.name"/></b> and requires your attention.</p>
-                    
-                    <table border="1" cellpadding="8" style="border-collapse: collapse; width: 100%; margin-top: 15px; margin-bottom: 20px;">
+
+                <!-- BODY -->
+                <div style="padding: 20px;
+                            border: 1px solid #e0e0e0;
+                            border-top: none;
+                            border-radius: 0 0 6px 6px;">
+
+                    <p>
+                        Dear Approver,
+                    </p>
+
+                    <p>
+                        A new leave request has been submitted by
+                        <b>
+                            <t t-esc="object.employee_id.name"/>
+                        </b>
+                        and requires your attention.
+                    </p>
+
+                    <!-- LEAVE DETAILS -->
+                    <table border="1"
+                           cellpadding="8"
+                           style="border-collapse: collapse;
+                                  width: 100%;
+                                  margin-top: 15px;
+                                  margin-bottom: 20px;">
+
                         <tr style="background-color: #f8f9fa;">
-                            <th style="text-align: left; width: 35%;">Employee</th>
-                            <td><t t-esc="object.employee_id.name"/></td>
+                            <th style="text-align: left; width: 35%;">
+                                Employee
+                            </th>
+                            <td>
+                                <t t-esc="object.employee_id.name"/>
+                            </td>
                         </tr>
+
                         <tr>
-                            <th style="text-align: left;">Leave Type</th>
-                            <td><t t-esc="object.holiday_status_id.name"/></td>
+                            <th style="text-align: left;">
+                                Leave Type
+                            </th>
+                            <td>
+                                <t t-esc="object.holiday_status_id.name"/>
+                            </td>
                         </tr>
+
                         <tr style="background-color: #f8f9fa;">
-                            <th style="text-align: left;">From Date</th>
-                            <td><t t-esc="object.request_date_from"/></td>
+                            <th style="text-align: left;">
+                                From Date
+                            </th>
+                            <td>
+                                <t t-esc="object.request_date_from"/>
+                            </td>
                         </tr>
+
                         <tr>
-                            <th style="text-align: left;">To Date</th>
-                            <td><t t-esc="object.request_date_to"/></td>
+                            <th style="text-align: left;">
+                                To Date
+                            </th>
+                            <td>
+                                <t t-esc="object.request_date_to"/>
+                            </td>
                         </tr>
+
                         <tr style="background-color: #f8f9fa;">
-                            <th style="text-align: left;">Duration</th>
-                            <td><t t-esc="object.number_of_days"/> Day(s)</td>
+                            <th style="text-align: left;">
+                                Duration
+                            </th>
+                            <td>
+                                <t t-esc="object.number_of_days"/>
+                                Day(s)
+                            </td>
                         </tr>
+
                         <tr>
-                            <th style="text-align: left;">Reason</th>
-                            <td><t t-esc="object.name or 'N/A'"/></td>
+                            <th style="text-align: left;">
+                                Reason
+                            </th>
+                            <td>
+                                <t t-esc="object.name or 'N/A'"/>
+                            </td>
                         </tr>
+
                     </table>
-                    
-                    <t t-set="url" t-value="'/web#id=%s&amp;model=hr.leave&amp;view_type=form' % object.id" />
+
+
+                    <!-- =================================================
+                         COMPENSATION SECTION
+                    ================================================== -->
+
+                    <t t-if="object.compensation_required">
+
+                        <div style="margin-top: 20px;
+                                    margin-bottom: 20px;
+                                    padding: 15px;
+                                    border: 1px solid #f0ad4e;
+                                    background-color: #fff8e5;
+                                    border-radius: 6px;">
+
+                            <h4 style="margin-top: 0;
+                                       margin-bottom: 10px;
+                                       color: #8a6d3b;">
+
+                                Compensation Required
+
+                            </h4>
+
+                            <p style="margin-bottom: 10px;">
+
+                                This Earned Leave request falls on a
+                                <strong>mandatory WFO day
+                                (Tuesday/Wednesday/Thursday)</strong>.
+
+                            </p>
+
+                            <p style="margin-bottom: 8px;">
+
+                                The employee is required to compensate
+                                for this leave by working from office
+                                on the following date:
+
+                            </p>
+
+                            <table border="1"
+                                   cellpadding="8"
+                                   style="border-collapse: collapse;
+                                          width: 100%;
+                                          margin-top: 10px;">
+
+                                <tr>
+                                    <th style="text-align: left;
+                                               width: 40%;
+                                               background-color: #f8f9fa;">
+
+                                        Compensation Date
+
+                                    </th>
+
+                                    <td>
+                                        <strong>
+                                            <t t-esc="object.compensation_date"/>
+                                        </strong>
+                                    </td>
+
+                                </tr>
+
+
+                            </table>
+
+                            <p style="margin-top: 12px;
+                                      margin-bottom: 0;">
+
+                                <strong>
+                                    Important:
+                                </strong>
+
+                                The compensation must be completed
+                                during the <strong>same week</strong>
+                                as the leave.
+
+                            </p>
+
+                        </div>
+
+                    </t>
+
+
+                    <!-- VIEW REQUEST BUTTON -->
+
+                    <t t-set="url"
+                       t-value="'/web#id=%s&amp;model=hr.leave&amp;view_type=form' % object.id"/>
+
                     <a t-att-href="url"
-                       style="display: inline-block; background-color: #875a7b; color: white; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 4px;">
+                       style="display: inline-block;
+                              background-color: #875a7b;
+                              color: white;
+                              padding: 10px 20px;
+                              text-decoration: none;
+                              font-weight: bold;
+                              border-radius: 4px;">
+
                         View Leave Request
+
                     </a>
+
                 </div>
+
             </div>
+
         </field>
     </record>
+
 </odoo>
