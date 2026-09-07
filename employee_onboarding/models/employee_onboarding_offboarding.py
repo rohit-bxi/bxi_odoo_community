@@ -38,14 +38,10 @@ class EmployeeOnboardingOffboarding(models.Model):
 
     # ── Employee Information ─────────────────────────────────────────────
     employee_id = fields.Many2one(
-        'hr.employee',
+        'hr.bxi.employee',
         string='Employee',
         required=True,
         tracking=True,
-    )
-    employee_code = fields.Char(
-        string='Employee Code',
-        readonly=True,
     )
     department_id = fields.Many2one(
         'hr.department',
@@ -148,7 +144,6 @@ class EmployeeOnboardingOffboarding(models.Model):
     def _onchange_employee_id(self):
         if self.employee_id:
             emp = self.employee_id
-            self.employee_code = emp.employee_code
             self.department_id = emp.department_id
             self.position_id = emp.job_id
             self.manager_id = emp.parent_id
@@ -156,7 +151,6 @@ class EmployeeOnboardingOffboarding(models.Model):
             self.work_email = emp.work_email
             self.work_phone = emp.work_phone
         else:
-            self.employee_code = False
             self.department_id = False
             self.position_id = False
             self.manager_id = False

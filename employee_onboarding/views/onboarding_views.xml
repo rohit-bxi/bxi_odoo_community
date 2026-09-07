@@ -95,7 +95,6 @@
                 <field name="name"/>
                 <field name="request_type_id"/>
                 <field name="employee_id"/>
-                <field name="employee_code"/>
                 <field name="department_id"/>
                 <field name="position_id"/>
                 <field name="manager_id"/>
@@ -154,7 +153,6 @@
                             <field name="resignation_id" readonly="state != 'draft'"
                                    options="{'no_create': True, 'no_create_edit': True}"
                                    invisible="not resignation_id"/>
-                            <field name="employee_code"/>
                             <field name="request_date" readonly="state != 'draft'"/>
                             <field name="effective_date"/>
                         </group>

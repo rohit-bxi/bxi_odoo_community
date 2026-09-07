@@ -44,4 +44,29 @@
               action="action_bxi_shift_exception"
           sequence="40"
           groups="bxi_shift_management.group_shift_user"/>
+     
+     <menuitem
+          id="menu_shift_exception_my_request"
+          name="My Requests"
+          parent="menu_shift_management_root"
+          action="action_bxi_shift_exception_my_request"
+          sequence="40"
+          groups="bxi_shift_management.group_shift_user"
+          />
+     <menuitem
+          id="menu_shift_exception_team_request"
+          name="Team Requests"
+          parent="menu_shift_management_root"
+          action="action_bxi_shift_exception_team_request"
+          sequence="50"
+          groups="bxi_shift_management.group_shift_user"
+          />
+     <menuitem
+          id="menu_shift_exception_all_request"
+          name="All Exception Requests"
+          parent="menu_shift_management_root"
+          action="action_bxi_shift_exception_all"
+          sequence="60"
+          groups="hr.group_hr_manager"
+          />
 </odoo>
