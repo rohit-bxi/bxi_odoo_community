@@ -176,16 +176,16 @@
                ref="advanced_project_management_system.project_milestone_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='deadline']" position="after">
-                <field name="milestone_code" readonly="1"/>
-                <field name="owner_id"/>
-                <field name="pmo_state"/>
-                <field name="pmo_priority"/>
-                <field name="health_status" widget="badge"
-                       decoration-success="health_status == 'green'"
-                       decoration-warning="health_status == 'amber'"
-                       decoration-danger="health_status == 'red'"/>
                 <field name="actual_start_date"/>
                 <field name="actual_end_date"/>
+                <field name="milestone_code" readonly="1"/>
+                <field name="owner_id"/>
+                <field name="pmo_priority"/>
+                <field name="pmo_state"/>
+            </xpath>
+            <xpath expr="//field[@name='duration_type']" position="before">
+                <field name="approved_by_id"/>
+                <field name="approval_date"/>
             </xpath>
             <xpath expr="//field[@name='is_reached']" position="after">
                 <field name="target_completion_date"/>
@@ -193,8 +193,6 @@
                 <field name="total_task_count"/>
                 <field name="completed_task_count"/>
                 <field name="acceptance_required"/>
-                <field name="approved_by_id"/>
-                <field name="approval_date"/>
                 <field name="remarks"/>
             </xpath>
         </field>
@@ -422,11 +420,14 @@
             </xpath>
             <xpath expr="//field[@name='task_id']" position="after">
                 <field name="milestone_id"/>
-                <field name="pmo_state"/>
-                <field name="pmo_priority"/>
-                <field name="severity"/>
             </xpath>
-            <xpath expr="//field[@name='email']" position="after">
+            <xpath expr="//field[@name='priority'][@widget='priority']"
+                   position="after">
+                <field name="pmo_priority"/>
+                <field name="pmo_state"/>
+            </xpath>
+            <xpath expr="//field[@name='tag_ids']" position="after">
+                <field name="severity"/>
                 <field name="reported_by_id"/>
                 <field name="target_resolution_date"/>
                 <field name="resolution_date"/>
