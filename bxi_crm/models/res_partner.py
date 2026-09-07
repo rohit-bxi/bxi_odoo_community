@@ -39,4 +39,3 @@ class ResPartner(models.Model):
                     'name': duplicate.display_name or duplicate.name,
                     'id': duplicate.id,
                 })
-
