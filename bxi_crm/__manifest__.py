@@ -11,6 +11,7 @@
         "sale",
         "account",
         "project_contract_management",
+        "bxi_financial_report",
     ],
     'data': [
         "security/ir.model.access.csv",
