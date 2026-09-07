@@ -11,5 +11,8 @@ class SaleOrder(models.Model):
         result = super().action_confirm()
         for order in self:
             if order.partner_id:
-                order.partner_id.sudo().write({'customer_type': 'customer'})
+                if order.partner_id.customer_type == 'vendor':
+                    order.partner_id.sudo().write({'customer_type': 'customer_and_vendor'})
+                elif order.partner_id.customer_type not in ('customer', 'customer_and_vendor'):
+                    order.partner_id.sudo().write({'customer_type': 'customer'})
         return result
