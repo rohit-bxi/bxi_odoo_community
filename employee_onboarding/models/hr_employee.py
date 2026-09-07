@@ -74,3 +74,56 @@ class HrEmployee(models.Model):
             },
             'target': 'current',
         }
+
+
+class HrBxiEmployee(models.Model):
+    _name = 'hr.bxi.employee'
+    _description = 'BXI Employee'
+    _rec_name = 'name'
+    _order = 'name asc'
+
+    name = fields.Char(
+        string='Full Name',
+        required=True,
+        index=True,
+    )
+    contact_number = fields.Char(
+        string='Contact Number',
+    )
+    personal_email = fields.Char(
+        string='Personal Email',
+    )
+    job_title = fields.Many2one(
+        'hr.job',
+        string='Job Position',
+        readonly=True,
+    )
+    company_id = fields.Many2one(
+        'res.company',
+        string='Organization / Company',
+        required=True,
+        default=lambda self: self.env.company,
+        index=True,
+    )
+    department_id = fields.Many2one(
+        'hr.department',
+        string='Department',
+        index=True,
+    )
+
+    reporting_manager_id = fields.Many2one(
+        'hr.employee',
+        string='Reporting Manager',
+        store=True,
+    )
+
+    work_location_id = fields.Many2one(
+        'hr.work.location',
+        string='Work Location',
+        index=True,
+    )
+
+    date_of_joining = fields.Date(
+        string='Date of Joining',
+        index=True,
+    )

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ===================================================== -->
+    <!-- Tree View -->
+    <!-- ===================================================== -->
+
+    <record id="view_hr_bxi_employee_tree" model="ir.ui.view">
+        <field name="name">hr.bxi.employee.tree</field>
+        <field name="model">hr.bxi.employee</field>
+        <field name="arch" type="xml">
+            <list string="BXI Employees">
+                <field name="name"/>
+                <field name="contact_number"/>
+                <field name="personal_email"/>
+                <field name="job_title"/>
+                <field name="company_id"/>
+                <field name="department_id"/>
+                <field name="reporting_manager_id"/>
+                <field name="work_location_id"/>
+                <field name="date_of_joining"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hr_bxi_employee_form" model="ir.ui.view">
+        <field name="name">hr.bxi.employee.form</field>
+        <field name="model">hr.bxi.employee</field>
+        <field name="arch" type="xml">
+            <form string="BXI Employee">
+
+                <sheet>
+
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name"
+                                   placeholder="Employee Name"/>
+                        </h1>
+                    </div>
+
+                    <group>
+
+                        <!-- Personal Information -->
+                        <group string="Personal Information">
+                            <field name="contact_number"/>
+                            <field name="personal_email"/>
+                        </group>
+
+                        <group string="Job Information">
+                            <field name="job_title"/>
+                            <field name="company_id"/>
+                            <field name="department_id"/>
+                        </group>
+
+                    </group>
+                    <group>
+                        <group string="Reporting">
+                            <field name="reporting_manager_id"/>
+                        </group>
+                        <group string="Work Information">
+                            <field name="work_location_id"/>
+                            <field name="date_of_joining"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_hr_bxi_employee" model="ir.actions.act_window">
+        <field name="name">BXI Employee</field>
+        <field name="res_model">hr.bxi.employee</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Bxi Employee for onbording/offbording.
+            </p>
+        </field>
+    </record>
+     <menuitem
+        id="menu_hr_bxi_employee_root"
+        name="BXI Employees"
+        parent="menu_employee_onboarding_root"
+        action="action_hr_bxi_employee"
+        sequence="10"
+        groups="hr.group_hr_manager"/>
+
+</odoo>

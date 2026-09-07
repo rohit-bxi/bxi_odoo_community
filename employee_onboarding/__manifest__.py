@@ -16,6 +16,7 @@
         'views/employee_resignation_views.xml',
         'views/onboarding_menus.xml',
         'views/hr_employee_views.xml',
+        'views/hr_bxi_employee.xml',
     ],
     'installable': True,
     'application': False,
