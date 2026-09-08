@@ -59,40 +59,56 @@ class AccountAnalyticLine(models.Model):
             if rec.date and rec.date < current_week_start:
                 raise UserError(_("Timesheets for previous weeks (before %s) cannot be created, modified, or submitted.") % current_week_start.strftime('%Y-%m-%d'))
 
-    @api.constrains('employee_id', 'date')
+    @api.constrains("employee_id", "date")
     def _check_one_entry_per_day(self):
-        """Block users from creating more than 1 timesheet entry for a single day."""
+        AnalyticLine = self.env["account.analytic.line"]
         for rec in self:
-            # Time off requests / holidays are managed via the Time Off app; skip one-entry check
-            if hasattr(rec, 'holiday_id') and rec.holiday_id:
+            if not rec.employee_id or not rec.date:
                 continue
-
-            # Only enforce when there are hours logged on the line
-            if not getattr(rec, 'unit_amount', 0):
+            if "holiday_id" in AnalyticLine._fields:
+                if rec.holiday_id:
+                    continue
+            if not rec.unit_amount:
                 continue
-
-            # Only enforce the one-entry-per-day restriction for employees with role_band < 8.
             try:
-                rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
-            except Exception:
-                rb_val = None
+                role_band = (
+                    int(rec.employee_id.role_band)
+                    if rec.employee_id.role_band
+                    else None
+                )
+            except (TypeError, ValueError):
+                role_band = None
 
-            if rb_val is not None and rb_val >= ROLE_BAND_THRESHOLD:
+            if role_band is None:
                 continue
 
-            if rec.employee_id and rec.date:
-                domain = [
-                    ('employee_id', '=', rec.employee_id.id),
-                    ('date', '=', rec.date),
-                    ('id', '!=', rec.id),
-                ]
-                if 'holiday_id' in self.env['account.analytic.line']._fields:
-                    domain.append(('holiday_id', '=', False))
-                existing = self.env['account.analytic.line'].sudo().search(domain, limit=1)
-                if existing:
-                    raise UserError(_("Only one timesheet entry is allowed per day (%s) for employee %s.") % (
-                        rec.date.strftime('%Y-%m-%d'), rec.employee_id.name
-                    ))
+            # Role band 8+ is exempt.
+            if role_band >= ROLE_BAND_THRESHOLD:
+                continue
+            domain = [
+                ("employee_id", "=", rec.employee_id.id),
+                ("date", "=", rec.date),
+                ("id", "!=", rec.id),
+            ]
+
+            if "holiday_id" in AnalyticLine._fields:
+                domain.append(("holiday_id", "=", False))
+            existing = AnalyticLine.search(
+                domain,
+                limit=1,
+            )
+
+            if existing:
+                raise ValidationError(
+                    _(
+                        "Only one timesheet entry is allowed per day "
+                        "(%(date)s) for employee %(employee)s."
+                    )
+                    % {
+                        "date": rec.date.strftime("%Y-%m-%d"),
+                        "employee": rec.employee_id.name,
+                    }
+                )
 
     @api.constrains("unit_amount", "employee_id", "date")
     def _check_max_hours_per_day(self):
