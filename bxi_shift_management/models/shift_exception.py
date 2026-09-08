@@ -116,6 +116,7 @@ class BxiShiftException(models.Model):
     manager_approved_by = fields.Many2one(
         "hr.employee",
         string="Manager Approved By",
+        related="employee_id.parent_id",
         readonly=True,
         copy=False,
         tracking=True,
