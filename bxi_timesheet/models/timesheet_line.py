@@ -40,6 +40,10 @@ class AccountAnalyticLine(models.Model):
             if hasattr(rec, 'holiday_id') and rec.holiday_id:
                 continue
 
+            # Only enforce when there are hours logged on the line
+            if not getattr(rec, 'unit_amount', 0):
+                continue
+
             # Only enforce past-week lock for employees whose role_band is below the threshold.
             # Employees with role_band >= 8 are exempt from these restrictions.
             try:
@@ -59,6 +63,10 @@ class AccountAnalyticLine(models.Model):
         for rec in self:
             # Time off requests / holidays are managed via the Time Off app; skip one-entry check
             if hasattr(rec, 'holiday_id') and rec.holiday_id:
+                continue
+
+            # Only enforce when there are hours logged on the line
+            if not getattr(rec, 'unit_amount', 0):
                 continue
 
             # Only enforce the one-entry-per-day restriction for employees with role_band < 8.
@@ -99,6 +107,10 @@ class AccountAnalyticLine(models.Model):
                 rb_val = None
 
             if rb_val is not None and rb_val >= ROLE_BAND_THRESHOLD:
+                continue
+
+            # Only enforce when there are hours logged on the line
+            if not getattr(rec, 'unit_amount', 0):
                 continue
 
             if rec.employee_id and rec.date:
