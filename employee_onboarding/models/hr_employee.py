@@ -98,6 +98,9 @@ class HrBxiEmployee(models.Model):
         string='Job Position',
         readonly=True,
     )
+    job_id = fields.Many2one(
+        'hr.job',
+        string='Job Position')
     company_id = fields.Many2one(
         'res.company',
         string='Organization / Company',
