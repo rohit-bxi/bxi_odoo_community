@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from jsonschema import ValidationError
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 from datetime import date, timedelta
@@ -92,39 +94,68 @@ class AccountAnalyticLine(models.Model):
                         rec.date.strftime('%Y-%m-%d'), rec.employee_id.name
                     ))
 
-    @api.constrains('unit_amount', 'employee_id', 'date')
+    @api.constrains("unit_amount", "employee_id", "date")
     def _check_max_hours_per_day(self):
-        """Block users from logging more than 9 hours for a single day."""
+        """
+        Prevent employees with role_band < 8 from having
+        more than 9 total timesheet hours on a single day.
+
+        Time-off analytic lines are excluded.
+        Employees with role_band >= 8 are excluded.
+        """
+        AnalyticLine = self.env["account.analytic.line"]
         for rec in self:
-            # Skip check for time off lines
-            if hasattr(rec, 'holiday_id') and rec.holiday_id:
+            if not rec.employee_id or not rec.date:
                 continue
-
-            # Only enforce the per-day hours cap for employees with role_band < 8.
+            if "holiday_id" in AnalyticLine._fields:
+                if rec.holiday_id:
+                    continue
             try:
-                rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
-            except Exception:
-                rb_val = None
+                role_band = (
+                    int(rec.employee_id.role_band)
+                    if rec.employee_id.role_band
+                    else None
+                )
+            except (TypeError, ValueError):
+                role_band = None
 
-            if rb_val is not None and rb_val >= ROLE_BAND_THRESHOLD:
+            if role_band is None:
                 continue
 
-            # Only enforce when there are hours logged on the line
-            if not getattr(rec, 'unit_amount', 0):
+            if role_band >= ROLE_BAND_THRESHOLD:
                 continue
+            if rec.unit_amount <= 0:
+                continue
+            domain = [
+                ("employee_id", "=", rec.employee_id.id),
+                ("date", "=", rec.date),
+            ]
 
-            if rec.employee_id and rec.date:
-                domain = [
-                    ('employee_id', '=', rec.employee_id.id),
-                    ('date', '=', rec.date),
-                ]
-                if 'holiday_id' in self.env['account.analytic.line']._fields:
-                    domain.append(('holiday_id', '=', False))
-                day_lines = self.env['account.analytic.line'].sudo().search(domain)
-                total_hours = sum(day_lines.mapped('unit_amount'))
-                if total_hours > 9.0:
-                    raise UserError(_("You cannot log more than 9 hours for a single day (%s).") % rec.date.strftime('%Y-%m-%d'))
+            if "holiday_id" in AnalyticLine._fields:
+                domain.append(("holiday_id", "=", False))
 
+            day_lines = AnalyticLine.search(domain)
+
+            total_hours = sum(
+                day_lines.mapped("unit_amount")
+            )
+
+            # ---------------------------------------------------------
+            # Maximum 9 hours per day
+            # ---------------------------------------------------------
+            if total_hours > 9.0:
+                raise ValidationError(
+                    _(
+                        "You cannot log more than 9 hours for a single day "
+                        "(%s).\n\n"
+                        "Total logged hours: %.2f"
+                    )
+                    % (
+                        rec.date.strftime("%Y-%m-%d"),
+                        total_hours,
+                    )
+                )
+            
     def _check_can_write(self, values):
         """
         Allow updating approval workflow fields (state, remarks) on timesheets linked
