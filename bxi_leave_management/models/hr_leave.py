@@ -1,5 +1,5 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 from datetime import date, timedelta
 
 
@@ -374,3 +374,318 @@ class HrEmployeeLeave(models.Model):
         for leave in self:
             leave._validate_compensation_date()
         return super().action_confirm()
+
+
+    sick_leave_policy = fields.Boolean(
+        string="Sick Leave Policy",
+        compute="_compute_sick_leave_policy",
+    )
+
+    @api.depends("holiday_status_id")
+    def _compute_sick_leave_policy(self):
+        for leave in self:
+            leave.sick_leave_policy = (
+                (leave.holiday_status_id.leave_code or "").strip().upper()
+                == "SICK"
+            )
+
+    # ---------------------------------------------------------
+    # Helpers
+    # ---------------------------------------------------------
+
+    def _get_leave_type_by_code(self, code):
+        """Return the configured leave type for the current company."""
+        hr_type = self.env["hr.leave.type"]
+
+        # Build a safe domain depending on which identifying fields exist
+        fields = hr_type._fields
+
+        if "time_off_code" in fields and "leave_code" in fields:
+            domain = [
+                "|",
+                ("time_off_code", "=", code),
+                ("leave_code", "=", code),
+                "|",
+                ("company_id", "=", False),
+                ("company_id", "=", self.env.company.id),
+            ]
+        elif "time_off_code" in fields:
+            domain = [
+                ("time_off_code", "=", code),
+                "|",
+                ("company_id", "=", False),
+                ("company_id", "=", self.env.company.id),
+            ]
+        elif "leave_code" in fields:
+            domain = [
+                ("leave_code", "=", code),
+                "|",
+                ("company_id", "=", False),
+                ("company_id", "=", self.env.company.id),
+            ]
+        else:
+            # Fallback: search by name (case-insensitive contains)
+            return hr_type.search(
+                [
+                    ("name", "ilike", code),
+                    "|",
+                    ("company_id", "=", False),
+                    ("company_id", "=", self.env.company.id),
+                ],
+                limit=1,
+            )
+
+        return hr_type.search(domain, limit=1)
+
+    def _get_el_balance(self, employee, date_from=None):
+        """
+        Return the employee's current EL virtual remaining balance.
+
+        Odoo 19 uses allocation data / virtual_remaining_leaves
+        for available time-off calculations.
+        """
+        el_type = self._get_leave_type_by_code("EL")
+
+        if not el_type:
+            raise ValidationError(
+                _(
+                    "Earned Leave (EL) time off type is not configured.\n"
+                    "Please configure a Time Off Type with code EL."
+                )
+            )
+
+        date_from = date_from or fields.Date.context_today(self)
+
+        allocation_data = el_type.get_allocation_data(
+            employee,
+            date_from,
+        )
+
+        if not allocation_data:
+            return 0.0
+
+        employee_data = allocation_data.get(employee)
+
+        if not employee_data:
+            return 0.0
+
+        total_balance = 0.0
+
+        for item in employee_data:
+            # item may be a (allocation, values) tuple, or a dict-like structure
+            allocation = None
+            allocation_values = None
+
+            if isinstance(item, (list, tuple)):
+                if len(item) >= 2:
+                    allocation, allocation_values = item[0], item[1]
+                else:
+                    continue
+            elif isinstance(item, dict):
+                allocation_values = item
+                allocation = item.get("allocation") or item.get("allocation_id")
+            else:
+                # unknown structure, skip
+                continue
+
+            if allocation:
+                if (not getattr(allocation, 'date_to', None)
+                        or allocation.date_to >= date_from):
+                    total_balance += allocation_values.get(
+                        "virtual_remaining_leaves",
+                        0.0,
+                    )
+
+        return max(total_balance, 0.0)
+
+    def _get_working_days_between(self, employee, date_from, date_to):
+        """
+        Return working dates between two dates according to
+        the employee's working calendar.
+        """
+        calendar = employee.resource_calendar_id
+
+        if not calendar:
+            calendar = self.env.company.resource_calendar_id
+
+        if not calendar:
+            return []
+
+        start_datetime = fields.Datetime.to_datetime(date_from)
+        end_datetime = fields.Datetime.to_datetime(date_to) + timedelta(
+            days=1
+        )
+
+        work_data = employee._get_work_days_data(
+            start_datetime,
+            end_datetime,
+        )
+
+        return work_data
+
+    # ---------------------------------------------------------
+    # Validation
+    # ---------------------------------------------------------
+
+    def _check_sick_leave_policy(self):
+        """
+        Apply the BXI SL policy.
+
+        Rules:
+        1. SL requires EL balance.
+        2. SL consumes EL.
+        3. > 1 day requires attachment.
+        4. If EL is insufficient, uncovered days become LWP.
+        """
+        for leave in self:
+
+            leave_code = (
+                leave.holiday_status_id.code or ""
+            ).strip().upper()
+
+            if leave_code != "SICK":
+                continue
+
+            if not leave.employee_id:
+                continue
+
+            # ---------------------------------------------
+            # Attachment requirement
+            # ---------------------------------------------
+
+            if leave.number_of_days > 1:
+                if not leave.attachment_ids:
+                    raise ValidationError(
+                        _(
+                            "Attachment Required\n\n"
+                            "Sick Leave for more than 1 day requires "
+                            "supporting documentation.\n\n"
+                            "Please attach the required document before "
+                            "submitting the request."
+                        )
+                    )
+
+            # ---------------------------------------------
+            # EL balance handling: automatically map SICK to EL or LWP
+            # If EL partially covers the request, split into EL + LWP
+            # ---------------------------------------------
+
+            el_type = self._get_leave_type_by_code("EL")
+            lwp_type = self._get_leave_type_by_code("LWP")
+
+            el_balance = self._get_el_balance(
+                leave.employee_id,
+                leave.request_date_from,
+            )
+
+            # No EL at all -> convert entire request to LWP
+            if el_balance <= 0:
+                if lwp_type:
+                    leave.holiday_status_id = lwp_type
+                    continue
+                else:
+                    # fallback: raise informative error
+                    raise ValidationError(
+                        _(
+                            "No Earned Leave balance is available and no LWP type is configured."
+                        )
+                    )
+
+            # If EL fully covers request -> convert to EL
+            try:
+                req_days = float(leave.number_of_days or 0.0)
+            except Exception:
+                req_days = 0.0
+
+            if el_balance >= req_days and el_type:
+                leave.holiday_status_id = el_type
+                continue
+
+            # Partial coverage: split into EL (first N days) + LWP (remaining)
+            if el_type and lwp_type and req_days > 0 and leave.request_date_from and leave.request_date_to:
+                # use integer days for splitting; EL fractional part goes to EL, remaining becomes LWP
+                use_el_days = int(el_balance)
+                if use_el_days <= 0:
+                    # nothing usable as whole day -> mark entire as LWP
+                    leave.holiday_status_id = lwp_type
+                    continue
+
+                remaining_days = req_days - use_el_days
+
+                # compute date splits (simple contiguous split)
+                start_date = leave.request_date_from
+                el_end_date = start_date + timedelta(days=use_el_days - 1)
+                lwp_start_date = el_end_date + timedelta(days=1)
+
+                # update current record to EL covering first `use_el_days`
+                leave.holiday_status_id = el_type
+                leave.request_date_from = start_date
+                leave.request_date_to = el_end_date
+                leave.number_of_days = use_el_days
+
+                # create LWP leave for remaining days
+                lwp_vals = {
+                    'name': (leave.name or '') + ' (LWP remainder)',
+                    'employee_id': leave.employee_id.id,
+                    'holiday_status_id': lwp_type.id,
+                    'request_date_from': lwp_start_date,
+                    'request_date_to': leave.request_date_to,
+                    'number_of_days': remaining_days,
+                    'company_id': leave.company_id.id,
+                }
+                # copy attachments if any
+                if leave.attachment_ids:
+                    # attachments cannot be directly set by many2many ids in vals, skip copying for now
+                    pass
+
+                self.env['hr.leave'].create(lwp_vals)
+                continue
+
+            # If we couldn't split (no types configured), raise
+            if not el_type:
+                raise ValidationError(
+                    _(
+                        "Earned Leave (EL) time off type is not configured."
+                    )
+                )
+            if not lwp_type:
+                raise ValidationError(
+                    _(
+                        "LWP time off type is not configured."
+                    )
+                )
+
+    # ---------------------------------------------------------
+    # Create
+    # ---------------------------------------------------------
+
+    @api.model_create_multi
+    def create(self, vals_list):
+
+        leaves = super().create(vals_list)
+
+        leaves._check_sick_leave_policy()
+
+        return leaves
+
+    # ---------------------------------------------------------
+    # Write
+    # ---------------------------------------------------------
+
+    def write(self, vals):
+
+        result = super().write(vals)
+
+        fields_to_check = {
+            "employee_id",
+            "holiday_status_id",
+            "request_date_from",
+            "request_date_to",
+            "attachment_ids",
+            "supported_attachment_ids",
+        }
+
+        if fields_to_check.intersection(vals):
+            self._check_sick_leave_policy()
+
+        return result
