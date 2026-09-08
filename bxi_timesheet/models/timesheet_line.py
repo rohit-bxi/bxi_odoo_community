@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from jsonschema import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
