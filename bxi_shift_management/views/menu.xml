@@ -55,11 +55,11 @@
           />
      <menuitem
           id="menu_shift_exception_team_request"
-          name="Team ExceptionRequests"
+          name="Team Exception Requests"
           parent="menu_shift_exception_working"
           action="action_bxi_shift_exception_team_request"
           sequence="50"
-          groups="bxi_shift_management.group_shift_user"
+          groups="hr.group_hr_manager,bxi_shift_management.group_shift_hr,bxi_shift_management.group_shift_admin"
           />
      <menuitem
           id="menu_shift_exception_all_request"
@@ -67,6 +67,6 @@
           parent="menu_shift_exception_working"
           action="action_bxi_shift_exception_all"
           sequence="60"
-          groups="hr.group_hr_manager"
+          groups="hr.group_hr_manager,bxi_shift_management.group_shift_admin"
           />
 </odoo>
