@@ -10,6 +10,11 @@ class EmployeeOnboardingOffboarding(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'create_date desc'
 
+    active = fields.Boolean(
+        string='Active',
+        default=True,
+        tracking=True,
+    )
     name = fields.Char(
         string='Reference',
         required=True,
