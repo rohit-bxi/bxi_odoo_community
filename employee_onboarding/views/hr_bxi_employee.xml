@@ -45,6 +45,8 @@
                         <group string="Personal Information">
                             <field name="contact_number"/>
                             <field name="personal_email"/>
+                            <field name="job_title"/>
+                            <field name="job_id"/>
                         </group>
 
                         <group string="Job Information">

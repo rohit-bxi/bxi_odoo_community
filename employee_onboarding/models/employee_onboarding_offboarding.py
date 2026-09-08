@@ -48,6 +48,11 @@ class EmployeeOnboardingOffboarding(models.Model):
         required=True,
         tracking=True,
     )
+    offboarding_employee_id = fields.Many2one(
+        'hr.employee',
+        string='Employee',
+        tracking=True,
+    )
     department_id = fields.Many2one(
         'hr.department',
         string='Department',
