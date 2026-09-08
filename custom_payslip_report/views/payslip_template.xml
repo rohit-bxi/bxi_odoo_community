@@ -75,8 +75,8 @@
                             <td style="border:1px solid #000;"><b>Designation</b></td>
                             <td style="border:1px solid #000;"><t t-esc="o.employee_id.job_title or ''"/></td>
                             <td style="border:1px solid #000;"><b>Location</b></td>
-                            <td style="border:1px solid #000;"><t t-esc="o.employee_id.psa or ''"/></td>
-                        </tr>
+                            <td style="border:1px solid #000;"> <t t-esc="o.employee_id.psa or ''"/> <t t-if="o.employee_id.psa and o.employee_id.pa_name"> - </t> <t t-esc="o.employee_id.pa_name or ''"/> </td> 
+                           </tr>
                         <tr>
                             <td style="border:1px solid #000;"><b>DOJ / Gender</b></td>
                             <td style="border:1px solid #000;"><t t-esc="o.employee_id.emp_date_of_joining or ''"/>, <t t-esc="dict(o.employee_id._fields['sex'].selection).get(o.employee_id.sex, o.employee_id.sex) if o.employee_id.sex else ''"/></td>
