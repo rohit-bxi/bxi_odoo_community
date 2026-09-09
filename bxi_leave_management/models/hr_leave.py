@@ -112,22 +112,48 @@ class HrEmployeeLeave(models.Model):
                     # If dates are invalid or None, let other validations handle it
                     pass
 
-    @api.constrains('holiday_status_id', 'request_date_from', 'request_date_to')
+    @api.constrains(
+        'holiday_status_id',
+        'request_date_from',
+        'request_date_to'
+    )
     def _check_el_leave_rules(self):
         """
-        Enforce EL (Earned Leave) application window: must be applied at least 7 days before.
-        This runs in addition to any other constraints.
+        Enforce EL (Earned Leave) application window:
+        EL must normally be applied at least 7 days before
+        the leave start date.
+        Automatic EL conversion from Sick Leave is exempted
+        from this advance-notice rule.
         """
         for rec in self:
-            if not rec.holiday_status_id or rec.holiday_status_id.time_off_code != 'EL':
+            if self.env.context.get('skip_el_advance_check'):
+                continue
+
+            if not rec.holiday_status_id:
+                continue
+
+            code = (
+                getattr(rec.holiday_status_id, 'time_off_code', False)
+                or getattr(rec.holiday_status_id, 'leave_code', False)
+                or getattr(rec.holiday_status_id, 'code', False)
+                or ''
+            ).strip().upper()
+
+            if code != 'EL':
                 continue
 
             if rec.request_date_from:
                 try:
-                    days_diff = (rec.request_date_from - date.today()).days
+                    days_diff = (
+                        rec.request_date_from - date.today()
+                    ).days
+
                     if days_diff < 7:
                         raise ValidationError(
-                            "EL leave must be applied at least 7 days before the leave start date.You can apply for LWP for the same."
+                            _(
+                                "EL leave must be applied at least "
+                                "7 days before the leave start date."
+                            )
                         )
                 except TypeError:
                     pass
@@ -529,32 +555,56 @@ class HrEmployeeLeave(models.Model):
 
     def _check_sick_leave_policy(self):
         """
-        Apply the BXI SL policy.
+        Apply the BXI Sick Leave policy.
 
         Rules:
-        1. SL requires EL balance.
-        2. SL consumes EL.
-        3. > 1 day requires attachment.
-        4. If EL is insufficient, uncovered days become LWP.
+            1. Sick Leave requires EL balance.
+            2. Available EL is consumed first.
+            3. If EL is insufficient, remaining days become LWP.
+            4. If no EL is available, entire request becomes LWP.
+            5. Sick Leave > 1 day requires attachment.
+            6. Automatic EL conversion bypasses the normal
+            EL advance-notice validation.
         """
+
+        # Prevent recursive processing when this method itself creates
+        # an LWP record.
+        if self.env.context.get('skip_sick_leave_policy'):
+            return
+
         for leave in self:
-
-            leave_code = (
-                leave.holiday_status_id.code or ""
-            ).strip().upper()
-
-            if leave_code != "SICK":
-                continue
 
             if not leave.employee_id:
                 continue
 
-            # ---------------------------------------------
-            # Attachment requirement
-            # ---------------------------------------------
+            # ---------------------------------------------------------
+            # Identify Sick Leave
+            # ---------------------------------------------------------
 
-            if leave.number_of_days > 1:
-                if not leave.attachment_ids:
+            leave_code = (
+                getattr(leave.holiday_status_id, 'code', False)
+                or getattr(leave.holiday_status_id, 'leave_code', False)
+                or getattr(leave.holiday_status_id, 'time_off_code', False)
+                or ''
+            ).strip().upper()
+
+            if leave_code != 'SICK':
+                continue
+
+            # ---------------------------------------------------------
+            # Attachment requirement
+            # ---------------------------------------------------------
+
+            req_days = float(leave.number_of_days or 0.0)
+
+            if req_days > 1:
+                has_attachment = bool(leave.attachment_ids)
+                if 'supported_attachment_ids' in leave._fields:
+                    has_attachment = (
+                        has_attachment
+                        or bool(leave.supported_attachment_ids)
+                    )
+                if not has_attachment:
                     raise ValidationError(
                         _(
                             "Attachment Required\n\n"
@@ -565,106 +615,177 @@ class HrEmployeeLeave(models.Model):
                         )
                     )
 
-            # ---------------------------------------------
-            # EL balance handling: automatically map SICK to EL or LWP
-            # If EL partially covers the request, split into EL + LWP
-            # ---------------------------------------------
+            if req_days <= 0:
+                continue
+
+            if not leave.request_date_from or not leave.request_date_to:
+                continue
+
+            # ---------------------------------------------------------
+            # Get EL and LWP leave types
+            # ---------------------------------------------------------
 
             el_type = self._get_leave_type_by_code("EL")
             lwp_type = self._get_leave_type_by_code("LWP")
+
+            if not el_type:
+                raise ValidationError(
+                    _(
+                        "Earned Leave (EL) time off type is not configured.\n"
+                        "Please configure a Time Off Type with code EL."
+                    )
+                )
+
+            if not lwp_type:
+                raise ValidationError(
+                    _(
+                        "LWP time off type is not configured.\n"
+                        "Please configure a Time Off Type with code LWP."
+                    )
+                )
+
+            # ---------------------------------------------------------
+            # Get current EL balance
+            # ---------------------------------------------------------
 
             el_balance = self._get_el_balance(
                 leave.employee_id,
                 leave.request_date_from,
             )
 
-            # No EL at all -> convert entire request to LWP
-            if el_balance <= 0:
-                if lwp_type:
-                    leave.holiday_status_id = lwp_type
-                    continue
-                else:
-                    # fallback: raise informative error
-                    raise ValidationError(
-                        _(
-                            "No Earned Leave balance is available and no LWP type is configured."
-                        )
-                    )
+            # We only consume complete EL days.
+            usable_el_days = min(
+                int(el_balance),
+                int(req_days)
+            )
 
-            # If EL fully covers request -> convert to EL
-            try:
-                req_days = float(leave.number_of_days or 0.0)
-            except Exception:
-                req_days = 0.0
+            # ---------------------------------------------------------
+            # CASE 1:
+            # No EL available -> Entire Sick Leave becomes LWP
+            # ---------------------------------------------------------
 
-            if el_balance >= req_days and el_type:
-                leave.holiday_status_id = el_type
-                continue
+            if usable_el_days <= 0:
 
-            # Partial coverage: split into EL (first N days) + LWP (remaining)
-            if el_type and lwp_type and req_days > 0 and leave.request_date_from and leave.request_date_to:
-                # use integer days for splitting; EL fractional part goes to EL, remaining becomes LWP
-                use_el_days = int(el_balance)
-                if use_el_days <= 0:
-                    # nothing usable as whole day -> mark entire as LWP
-                    leave.holiday_status_id = lwp_type
-                    continue
-
-                remaining_days = req_days - use_el_days
-
-                # compute date splits (simple contiguous split)
-                start_date = leave.request_date_from
-                el_end_date = start_date + timedelta(days=use_el_days - 1)
-                lwp_start_date = el_end_date + timedelta(days=1)
-
-                # update current record to EL covering first `use_el_days`
-                leave.holiday_status_id = el_type
-                leave.request_date_from = start_date
-                leave.request_date_to = el_end_date
-                leave.number_of_days = use_el_days
-
-                # create LWP leave for remaining days
-                lwp_vals = {
-                    'name': (leave.name or '') + ' (LWP remainder)',
-                    'employee_id': leave.employee_id.id,
+                leave.with_context(
+                    skip_sick_leave_policy=True
+                ).write({
                     'holiday_status_id': lwp_type.id,
-                    'request_date_from': lwp_start_date,
-                    'request_date_to': leave.request_date_to,
-                    'number_of_days': remaining_days,
-                    'company_id': leave.company_id.id,
-                }
-                # copy attachments if any
-                if leave.attachment_ids:
-                    # attachments cannot be directly set by many2many ids in vals, skip copying for now
-                    pass
+                })
 
-                self.env['hr.leave'].create(lwp_vals)
                 continue
 
-            # If we couldn't split (no types configured), raise
-            if not el_type:
-                raise ValidationError(
-                    _(
-                        "Earned Leave (EL) time off type is not configured."
-                    )
-                )
-            if not lwp_type:
-                raise ValidationError(
-                    _(
-                        "LWP time off type is not configured."
-                    )
-                )
+            # ---------------------------------------------------------
+            # Save ORIGINAL dates before changing the current leave
+            # ---------------------------------------------------------
 
-    # ---------------------------------------------------------
-    # Create
-    # ---------------------------------------------------------
+            original_start_date = leave.request_date_from
+            original_end_date = leave.request_date_to
+            original_name = leave.name or _('Sick Leave')
+
+            # ---------------------------------------------------------
+            # CASE 2:
+            # EL fully covers Sick Leave
+            #
+            # Example:
+            # Sick = 3 days
+            # EL    = 3 days
+            #
+            # Result:
+            # 3 days EL
+            # ---------------------------------------------------------
+
+            if usable_el_days >= req_days:
+
+                leave.with_context(
+                    skip_sick_leave_policy=True,
+                    skip_el_advance_check=True,
+                ).write({
+                    'holiday_status_id': el_type.id,
+                })
+
+                continue
+
+            # ---------------------------------------------------------
+            # CASE 3:
+            # Partial EL + LWP
+            #
+            # Example:
+            # Sick = 3
+            # EL   = 1
+            #
+            # Result:
+            # Day 1 = EL
+            # Day 2 = LWP
+            # Day 3 = LWP
+            # ---------------------------------------------------------
+
+            el_days = usable_el_days
+            lwp_days = req_days - el_days
+
+            # ---------------------------------------------------------
+            # Calculate date ranges
+            # ---------------------------------------------------------
+
+            el_start_date = original_start_date
+
+            el_end_date = (
+                el_start_date
+                + timedelta(days=el_days - 1)
+            )
+
+            lwp_start_date = el_end_date + timedelta(days=1)
+            lwp_end_date = original_end_date
+
+            # ---------------------------------------------------------
+            # Update ORIGINAL record to EL
+            # ---------------------------------------------------------
+
+            leave.with_context(
+                skip_sick_leave_policy=True,
+                skip_el_advance_check=True,
+            ).write({
+                'holiday_status_id': el_type.id,
+                'request_date_from': el_start_date,
+                'request_date_to': el_end_date,
+                'number_of_days': el_days,
+            })
+
+            # ---------------------------------------------------------
+            # Create remaining LWP record
+            # ---------------------------------------------------------
+
+            lwp_vals = {
+                'name': (
+                    f"{original_name} (LWP)"
+                ),
+                'employee_id': leave.employee_id.id,
+                'holiday_status_id': lwp_type.id,
+                'request_date_from': lwp_start_date,
+                'request_date_to': lwp_end_date,
+                'number_of_days': lwp_days,
+                'company_id': leave.company_id.id,
+            }
+
+            # ---------------------------------------------------------
+            # Copy attachments to LWP if available
+            # ---------------------------------------------------------
+
+            if leave.attachment_ids:
+                lwp_vals['attachment_ids'] = [
+                    (6, 0, leave.attachment_ids.ids)
+                ]
+
+            self.env['hr.leave'].with_context(
+                skip_sick_leave_policy=True
+            ).create(lwp_vals)
 
     @api.model_create_multi
     def create(self, vals_list):
 
         leaves = super().create(vals_list)
 
-        leaves._check_sick_leave_policy()
+        if not self.env.context.get('skip_sick_leave_policy'):
+            leaves._check_sick_leave_policy()
 
         return leaves
 
@@ -685,7 +806,10 @@ class HrEmployeeLeave(models.Model):
             "supported_attachment_ids",
         }
 
-        if fields_to_check.intersection(vals):
+        if (
+            fields_to_check.intersection(vals)
+            and not self.env.context.get('skip_sick_leave_policy')
+        ):
             self._check_sick_leave_policy()
 
         return result
