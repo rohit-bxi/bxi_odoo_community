@@ -28,6 +28,11 @@ class EmployeeOnboardingOffboarding(models.Model):
         required=True,
         tracking=True,
     )
+    employee_model = fields.Selection(
+        related='request_type_id.employee_model',
+        string='Employee Model',
+        readonly=True,
+    )
     state = fields.Selection(
         [
             ('draft', 'Draft'),
@@ -45,7 +50,6 @@ class EmployeeOnboardingOffboarding(models.Model):
     employee_id = fields.Many2one(
         'hr.bxi.employee',
         string='Employee',
-        required=True,
         tracking=True,
     )
     offboarding_employee_id = fields.Many2one(
@@ -156,6 +160,25 @@ class EmployeeOnboardingOffboarding(models.Model):
             emp = self.employee_id
             self.department_id = emp.department_id
             self.position_id = emp.job_id
+            self.manager_id = emp.reporting_manager_id
+            self.company_id = emp.company_id
+            self.work_email = emp.personal_email
+            self.work_phone = emp.contact_number
+        else:
+            self.department_id = False
+            self.position_id = False
+            self.manager_id = False
+            self.company_id = self.env.company
+            self.work_email = False
+            self.work_phone = False
+
+    @api.onchange('offboarding_employee_id')
+    def _onchange_offboarding_employee_id(self):
+        if self.offboarding_employee_id:
+            emp = self.offboarding_employee_id
+
+            self.department_id = emp.department_id
+            self.position_id = emp.job_id
             self.manager_id = emp.parent_id
             self.company_id = emp.company_id
             self.work_email = emp.work_email
@@ -167,6 +190,16 @@ class EmployeeOnboardingOffboarding(models.Model):
             self.company_id = self.env.company
             self.work_email = False
             self.work_phone = False
+
+    @api.onchange('request_type_id')
+    def _onchange_request_type_field_visibility(self):
+        if not self.request_type_id:
+            return
+        model = self.request_type_id.employee_model or 'hr.employee'
+        if model == 'hr.bxi.employee':
+            self.offboarding_employee_id = False
+        else:
+            self.employee_id = False
 
     # ── Status Actions ───────────────────────────────────────────────────
     def action_in_progress(self):

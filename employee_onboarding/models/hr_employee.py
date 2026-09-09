@@ -6,10 +6,10 @@ from odoo import models, fields, api
 class HrEmployee(models.Model):
     _inherit = 'hr.employee'
 
-    onboarding_ids = fields.One2many(
+    offboarding_ids = fields.One2many(
         'employee.onboarding.offboarding',
-        'employee_id',
-        string='Onboarding / Offboarding Requests'
+        'offboarding_employee_id',
+        string='Offboarding Requests',
     )
     onboarding_count = fields.Integer(
         string="Onboarding / Offboarding Count",
@@ -25,11 +25,11 @@ class HrEmployee(models.Model):
         compute="_compute_resignation_count"
     )
 
-    @api.depends('onboarding_ids')
+    @api.depends('offboarding_ids')
     def _compute_onboarding_count(self):
         read_group_result = self.env['employee.onboarding.offboarding']._read_group(
-            [('employee_id', 'in', self.ids)],
-            ['employee_id'],
+            [('offboarding_employee_id', 'in', self.ids)],
+            ['offboarding_employee_id'],
             ['__count']
         )
         result = {employee.id: count for employee, count in read_group_result}
@@ -93,10 +93,8 @@ class HrBxiEmployee(models.Model):
     personal_email = fields.Char(
         string='Personal Email',
     )
-    job_title = fields.Many2one(
-        'hr.job',
-        string='Job Position',
-        readonly=True,
+    job_title = fields.Char(
+        string='Job Title',
     )
     job_id = fields.Many2one(
         'hr.job',
