@@ -257,7 +257,7 @@ class EmployeeResignation(models.Model):
             reason_label = dict(self._fields['reason'].selection).get(self.reason, self.reason) if self.reason else ''
 
             offboarding_vals = {
-                'employee_id': self.employee_id.id,
+                'offboarding_employee_id': self.employee_id.id,
                 'resignation_id': self.id,
                 'request_type_id': offboarding_type.id if offboarding_type else False,
                 'effective_date': self.approved_last_working_day or self.last_working_day,

@@ -31,6 +31,16 @@ class BoardingRequestType(models.Model):
         'request_type_id',
         string='Tasks',
     )
+    employee_model = fields.Selection(
+        [
+            ('hr.bxi.employee', 'HR BXI Employee'),
+            ('hr.employee', 'HR Employee'),
+        ],
+        string='Employee Model',
+        help='Select which employee model should be used for this request type.\n'
+             'Controls which employee field is shown on the onboarding/offboarding form.',
+        default='hr.employee',
+    )
 
 
 class BoardingRequestTypeTask(models.Model):
