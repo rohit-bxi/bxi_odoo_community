@@ -46,38 +46,131 @@ class EmployeeOnboardingOffboarding(models.Model):
         tracking=True,
     )
 
-    # ── Employee Information ─────────────────────────────────────────────
+    # ── Employee Onboarding Information ────────────────────────────────
+    # Source: hr.bxi.employee
     employee_id = fields.Many2one(
         'hr.bxi.employee',
         string='Employee',
         tracking=True,
     )
+
+    onboarding_department_id = fields.Many2one(
+        'hr.department',
+        related='employee_id.department_id',
+        readonly=True,
+    )
+
+    onboarding_position_id = fields.Many2one(
+        'hr.job',
+        related='employee_id.job_id',
+        readonly=True,
+    )
+
+    onboarding_job_title = fields.Char(
+        related='employee_id.job_title',
+        readonly=True,
+    )
+
+    onboarding_employee_code = fields.Char(
+        related='employee_id.employee_code',
+        readonly=True,
+    )
+
+    onboarding_role_band = fields.Char(
+        related='employee_id.role_band',
+        readonly=True,
+    )
+
+    onboarding_emp_category = fields.Char(
+        related='employee_id.emp_category',
+        readonly=True,
+    )
+
+    onboarding_emp_skill_category = fields.Char(
+        related='employee_id.emp_skill_category',
+        readonly=True,
+    )
+    onboarding_manager_id = fields.Many2one(
+        'hr.employee',
+        related='employee_id.reporting_manager_id',
+        readonly=True,
+    )
+    onboarding_company_id = fields.Many2one(
+        related='employee_id.company_id',
+        string='Company',
+        readonly=True,
+    )
+    onboarding_phone_number = fields.Char(
+        related='employee_id.contact_number',
+        string='Personal Phone Number')
+    
+    onboarding_email = fields.Char(
+        related='employee_id.personal_email',
+        string='Personal Email')
+    
+
+    # ── Employee Offboarding Information ───────────────────────────────
+    # Source: hr.employee
     offboarding_employee_id = fields.Many2one(
         'hr.employee',
         string='Employee',
         tracking=True,
     )
-    department_id = fields.Many2one(
-        'hr.department',
+
+    offboarding_department_id = fields.Many2one(
+        related='offboarding_employee_id.department_id',
         string='Department',
         readonly=True,
     )
-    position_id = fields.Many2one(
-        'hr.job',
+
+    offboarding_position_id = fields.Many2one(
+        related='offboarding_employee_id.job_id',
         string='Job Position',
         readonly=True,
     )
-    manager_id = fields.Many2one(
-        'hr.employee',
+
+    offboarding_job_title = fields.Char(
+        related='offboarding_employee_id.job_title',
+        string='Job Title',
+        readonly=True,
+    )
+    offboarding_role_band = fields.Char(
+        string='Role Band',
+        readonly=True,
+    )
+    # related='offboarding_employee_id.role_band',
+
+    offboarding_employee_code = fields.Char(
+        string='Employee Code',
+        readonly=True,
+    )
+    # related='offboarding_employee_id.employee_code',
+
+    offboarding_manager_id = fields.Many2one(
+        related='offboarding_employee_id.parent_id',
         string='Manager',
         readonly=True,
     )
-    company_id = fields.Many2one(
-        'res.company',
+
+    offboarding_company_id = fields.Many2one(
+        related='offboarding_employee_id.company_id',
         string='Company',
         readonly=True,
-        default=lambda self: self.env.company,
     )
+    offboarding_category = fields.Char(
+        string='EMP Category',
+    )
+    offboarding_emp_skill_category = fields.Char(
+        string='EMP Skill Category',
+    )
+    offboarding_phone_number = fields.Char(
+        related='offboarding_employee_id.private_phone',
+        string='Personal Phone Number')
+
+    offboarding_email = fields.Char(
+            related='offboarding_employee_id.private_email',
+            string='Personal Email')
+    
     work_email = fields.Char(
         string='Work Email',
         readonly=True,
@@ -94,22 +187,27 @@ class EmployeeOnboardingOffboarding(models.Model):
         ondelete='set null',
         tracking=True,
     )
+
     request_date = fields.Date(
         string='Request Date',
         default=fields.Date.context_today,
         required=True,
         tracking=True,
     )
+
     effective_date = fields.Date(
         string='Effective Date',
         tracking=True,
     )
+
     reason = fields.Text(
         string='Reason / Remarks',
     )
+
     notes = fields.Html(
         string='Notes',
     )
+
     task_line_ids = fields.One2many(
         'employee.onboarding.task',
         'onboarding_id',
@@ -127,6 +225,7 @@ class EmployeeOnboardingOffboarding(models.Model):
                     request_type_name = self.env['boarding.request.type'].browse(
                         request_type_id
                     ).name or ''
+
                 if 'offboard' in request_type_name.lower().replace('-', '').replace(' ', ''):
                     vals['name'] = self.env['ir.sequence'].next_by_code(
                         'employee.offboarding.sequence'
@@ -135,71 +234,77 @@ class EmployeeOnboardingOffboarding(models.Model):
                     vals['name'] = self.env['ir.sequence'].next_by_code(
                         'employee.onboarding.sequence'
                     ) or _('New')
+
         return super().create(vals_list)
 
     # ── Onchange ─────────────────────────────────────────────────────────
     @api.onchange('request_type_id')
     def _onchange_request_type_id(self):
-        """Auto-fill task checklist from the selected request type's tasks."""
+        """Load tasks and switch between onboarding/offboarding employee."""
         self.task_line_ids = [(5, 0, 0)]
+
         if self.request_type_id and self.request_type_id.task_ids:
             lines = []
             for task in self.request_type_id.task_ids:
                 lines.append((0, 0, {
                     'task': task.task,
-                    'performed_by': task.performed_by.id if task.performed_by else False,
+                    'performed_by': (
+                        task.performed_by.id
+                        if task.performed_by else False
+                    ),
                     'sequence': task.sequence,
                     'status': 'incomplete',
                     'review': 'pending',
                 }))
             self.task_line_ids = lines
 
-    @api.onchange('employee_id')
-    def _onchange_employee_id(self):
-        if self.employee_id:
-            emp = self.employee_id
-            self.department_id = emp.department_id
-            self.position_id = emp.job_id
-            self.manager_id = emp.reporting_manager_id
-            self.company_id = emp.company_id
-            self.work_email = emp.personal_email
-            self.work_phone = emp.contact_number
-        else:
-            self.department_id = False
-            self.position_id = False
-            self.manager_id = False
-            self.company_id = self.env.company
-            self.work_email = False
-            self.work_phone = False
-
-    @api.onchange('offboarding_employee_id')
-    def _onchange_offboarding_employee_id(self):
-        if self.offboarding_employee_id:
-            emp = self.offboarding_employee_id
-
-            self.department_id = emp.department_id
-            self.position_id = emp.job_id
-            self.manager_id = emp.parent_id
-            self.company_id = emp.company_id
-            self.work_email = emp.work_email
-            self.work_phone = emp.work_phone
-        else:
-            self.department_id = False
-            self.position_id = False
-            self.manager_id = False
-            self.company_id = self.env.company
-            self.work_email = False
-            self.work_phone = False
-
-    @api.onchange('request_type_id')
-    def _onchange_request_type_field_visibility(self):
         if not self.request_type_id:
+            self.employee_id = False
+            self.offboarding_employee_id = False
             return
-        model = self.request_type_id.employee_model or 'hr.employee'
-        if model == 'hr.bxi.employee':
+
+        if self.request_type_id.employee_model == 'hr.bxi.employee':
             self.offboarding_employee_id = False
         else:
             self.employee_id = False
+
+    @api.onchange('employee_id')
+    def _onchange_employee_id(self):
+        """Onboarding employee is selected from hr.bxi.employee."""
+        if self.employee_id:
+            self.onboarding_company_id = (
+                getattr(self.employee_id, 'onboarding_company_id', False)
+                or self.env.company
+            )
+            self.work_email = (
+                getattr(self.employee_id, 'work_email', False)
+                or getattr(self.employee_id, 'personal_email', False)
+                or False
+            )
+            self.work_phone = (
+                getattr(self.employee_id, 'work_phone', False)
+                or getattr(self.employee_id, 'contact_number', False)
+                or False
+            )
+
+    @api.onchange('offboarding_employee_id')
+    def _onchange_offboarding_employee_id(self):
+        """Offboarding employee is selected from hr.employee."""
+        if self.offboarding_employee_id:
+            self.offboarding_company_id = (
+                getattr(self.offboarding_employee_id, 'offboarding_company_id', False)
+                or self.env.company
+            )
+            self.work_email = (
+                getattr(self.offboarding_employee_id, 'work_email', False)
+                or getattr(self.offboarding_employee_id, 'private_email', False)
+                or False
+            )
+            self.work_phone = (
+                getattr(self.offboarding_employee_id, 'work_phone', False)
+                or getattr(self.offboarding_employee_id, 'mobile_phone', False)
+                or False
+            )
 
     # ── Status Actions ───────────────────────────────────────────────────
     def action_in_progress(self):
@@ -239,9 +344,15 @@ class EmployeeOnboardingOffboarding(models.Model):
                         )
                         continue
 
+                selected_employee = (
+                    rec.employee_id
+                    if rec.request_type_id.employee_model == 'hr.bxi.employee'
+                    else rec.offboarding_employee_id
+                )
+
                 subject = _("New Tasks Assigned: %s - %s (%s)") % (
                     rec.request_type_id.name or _('Request'),
-                    rec.employee_id.name or '',
+                    selected_employee.name if selected_employee else '',
                     rec.name or ''
                 )
 
@@ -259,7 +370,7 @@ class EmployeeOnboardingOffboarding(models.Model):
                 body_html = f"""
                     <div style="font-family: Arial, sans-serif; font-size: 14px; color: #333333; line-height: 1.5;">
                         <p>Hello <strong>{recipient_name}</strong>,</p>
-                        <p>A new <strong>{rec.request_type_id.name or ''}</strong> request (Ref: <strong>{rec.name or ''}</strong>) has been raised for employee <strong>{rec.employee_id.name or ''}</strong>.</p>
+                        <p>A new <strong>{rec.request_type_id.name or ''}</strong> request (Ref: <strong>{rec.name or ''}</strong>) has been raised for employee <strong>{selected_employee.name if selected_employee else ''}</strong>.</p>
                         <p>Please find below the consolidated list of tasks assigned to your team:</p>
                         <table style="border-collapse: collapse; width: 100%; max-width: 600px; margin-top: 10px; margin-bottom: 15px;">
                             <thead>

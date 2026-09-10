@@ -84,14 +84,26 @@ class BxiShiftException(models.Model):
         [
             ("office", "Office"),
             ("home", "Home"),
+            ("client", "Client Site"),
         ],
         string="Mode",
         tracking=True,
+    )
+    client_location = fields.Char(
+        string="Client Location",
+    )
+    client_name = fields.Char(
+        string="Client Name",
     )
 
     reason = fields.Text(
         string="Reason / Description",
     )
+    @api.onchange("mode")
+    def _onchange_mode(self):
+        for record in self:
+            if record.mode == "client":
+                record.compensation_date = False
 
     state = fields.Selection(
         [
