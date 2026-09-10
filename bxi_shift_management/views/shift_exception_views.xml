@@ -94,11 +94,10 @@
                                 name="to_location_id"
                                 string="Requested Work Location"
                                 readonly="state != 'draft'"
+                                required="1"
                             />
-
                         </group>
                         <group>
-
                             <field
                                 name="compensation_date"
                                 string="Compensation Date"
@@ -141,6 +140,7 @@
                             nolabel="1"
                             placeholder="Please provide the reason for this exception..."
                             readonly="state != 'draft'"
+                            required="1"
                         />
                     </group>
                     <separator
