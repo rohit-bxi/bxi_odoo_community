@@ -197,12 +197,83 @@ class EmployeeResignation(models.Model):
                 vals['emp_date_of_joining'] = False
         return super().write(vals)
 
+    def _send_submission_email(self):
+        self.ensure_one()
+        employee = self.employee_id
+        if not employee:
+            return False
+
+        reason_label = dict(self._fields['reason'].selection).get(self.reason, self.reason) if self.reason else ''
+        manager_name = employee.parent_id.name if employee.parent_id else 'N/A'
+        department_name = employee.department_id.name if employee.department_id else 'N/A'
+        job_name = employee.job_id.name if employee.job_id else 'N/A'
+        manager_email = self.employee_id.parent_id.work_email
+
+        subject = _('Resignation Submitted: %s - %s') % (employee.name, self.name)
+        body_html = f"""
+            <div style="font-family: Arial, sans-serif; font-size: 14px;">
+                <p>Dear HR Support,</p>
+                <p>This employee has submitted a resignation request.</p>
+                <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+                    <tr>
+                        <th align="left" style="width: 35%;">Employee</th>
+                        <td>{employee.name or 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <th align="left">Employee Code</th>
+                        <td>{self.employee_code or 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <th align="left">Department</th>
+                        <td>{department_name}</td>
+                    </tr>
+                    <tr>
+                        <th align="left">Job Position</th>
+                        <td>{job_name}</td>
+                    </tr>
+                    <tr>
+                        <th align="left">Manager</th>
+                        <td>{manager_name}</td>
+                    </tr>
+                    <tr>
+                        <th align="left">Resignation Date</th>
+                        <td>{self.resignation_date or 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <th align="left">Requested Last Working Day</th>
+                        <td>{self.last_working_day or 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <th align="left">Reason</th>
+                        <td>{reason_label}</td>
+                    </tr>
+                    <tr>
+                        <th align="left">Reference</th>
+                        <td>{self.name}</td>
+                    </tr>
+                </table>
+                <p><strong>Resignation Letter:</strong></p>
+                <div>{self.resignation_body or ''}</div>
+            </div>
+        """
+
+        mail = self.env['mail.mail'].sudo().create({
+            'subject': subject,
+            'email_to': 'hrsupport@bxitech.com',
+            'email_from': 'HR Support <hrsupport@bxitech.com>',
+            'email_cc': manager_email or '',
+            'body_html': body_html,
+            'auto_delete': True,
+        })
+        return mail.send()
+
     # ── State Actions ────────────────────────────────────────────────────
     def action_submit(self):
         for rec in self:
             if rec.state != 'draft':
                 continue
             rec.state = 'submitted'
+            rec._send_submission_email()
 
     def action_approve(self):
         for rec in self:
