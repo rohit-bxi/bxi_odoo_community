@@ -45,17 +45,18 @@
                         <group string="Personal Information">
                             <field name="contact_number"/>
                             <field name="personal_email"/>
-                            <field name="job_title"/>
-                            <field name="job_id"/>
+                            <field name="employee_code"/>
+                            <field name="role_band"/>
                         </group>
 
                         <group string="Job Information">
                             <field name="job_id"/>
                             <field name="job_title"/>
-                            <field name="company_id"/>
                             <field name="department_id"/>
+                            <field name="emp_category"/>
+                            <field name="emp_skill_category"/>
+                            <field name="company_id"/>
                         </group>
-
                     </group>
                     <group>
                         <group string="Reporting">

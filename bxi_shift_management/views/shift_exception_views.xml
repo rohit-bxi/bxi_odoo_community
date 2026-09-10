@@ -105,6 +105,18 @@
                                 readonly="state != 'draft'"
                                 invisible="mode != 'home'"
                             />
+                            <field
+                                name="client_name"
+                                string="Client Name"
+                                required="1"
+                                invisible="mode != 'client'"
+                            />
+                            <field
+                                name="client_location"
+                                string="Client Location"
+                                required="1"
+                                invisible="mode != 'client'"
+                            />
 
                         </group>
 
