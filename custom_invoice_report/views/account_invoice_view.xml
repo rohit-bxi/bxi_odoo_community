@@ -30,4 +30,23 @@
         </field>
     </record>
 
+    <record id="view_move_form_inherit_shipping_address" model="ir.ui.view">
+        <field name="name">account.move.form.inherit.shipping.address</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@id='other_tab_group']" position="inside">
+                <group string="Ship To" name="ship_to_address_group" invisible="move_type not in ('out_invoice', 'out_refund')">
+                    <field name="is_different_shipping_address" readonly="state != 'draft'"/>
+                    <field name="shipping_street" string="Street 1" invisible="not is_different_shipping_address" readonly="state != 'draft'"/>
+                    <field name="shipping_street2" string="Street 2" invisible="not is_different_shipping_address" readonly="state != 'draft'"/>
+                    <field name="shipping_city" string="City" invisible="not is_different_shipping_address" readonly="state != 'draft'"/>
+                    <field name="shipping_state_id" string="State" invisible="not is_different_shipping_address" readonly="state != 'draft'" options="{'no_open': True, 'no_create': True}"/>
+                    <field name="shipping_zip" string="Zip" invisible="not is_different_shipping_address" readonly="state != 'draft'"/>
+                    <field name="shipping_country_id" string="Country" invisible="not is_different_shipping_address" readonly="state != 'draft'" options="{'no_open': True, 'no_create': True}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
 </odoo>
