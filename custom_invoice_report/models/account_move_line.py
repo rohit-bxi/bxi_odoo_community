@@ -66,6 +66,7 @@ class AccountMoveLine(models.Model):
 
     @api.onchange("inv_months")
     def _onchange_inv_months(self):
+        self._compute_totals()
         self._months_refresh_move_dynamic_lines()
         self._months_force_full_recompute()
 
@@ -113,4 +114,3 @@ class AccountMoveLine(models.Model):
             # 3) Recompute amounts (residual/amount_due depends on payment_term lines)
             if hasattr(move, "_compute_amount"):
                 move._compute_amount()
-

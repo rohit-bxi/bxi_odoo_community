@@ -23,19 +23,18 @@ class AccountMove(models.Model):
             raise UserError(_("Report Not Found"))
         return report.report_action(self)
 
-
     def _prepare_product_base_line_for_taxes_computation(self, line):
         """
         Core hook: tax and totals base quantity uses qty * months.
         """
         base_line = super()._prepare_product_base_line_for_taxes_computation(line)
 
-        months = getattr(line, "inv_months", 1) or 1
-        qty = base_line.get("quantity", line.quantity or 0.0) or 0.0
+        inv_months = getattr(line, "inv_months", 1) if not isinstance(line, dict) else line.get("inv_months", 1)
+        months = inv_months if inv_months and inv_months > 0 else 1
+        qty = base_line.get("quantity", getattr(line, "quantity", 0.0) or 0.0) or 0.0
         base_line["quantity"] = qty * months
 
         return base_line
-
 
 
 class AccountMoveSendWizard(models.TransientModel):
@@ -60,3 +59,4 @@ class AccountMoveSendWizard(models.TransientModel):
             'custom_invoice_report.action_custom_invoice_report_pdf',
             raise_if_not_found=False
         )
+        return custom_report
