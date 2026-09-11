@@ -7,18 +7,19 @@
     'author': 'BXI',
     'summary': 'Invoice Report Customization',
     'description': 'Invoice Report Customization',
-    'depends': ['account'],
+    'depends': ['account', 'sale'],
     'data': [
         'report/account_invoice_report.xml',
         'views/custom_invoice_template.xml',
         'views/account_invoice_view.xml',
+        'views/sale_order_view.xml',
         'views/res_user.xml',
     ],
     'assets': {
-                'web.report_assets_common': [
-                'custom_invoice_report/static/src/css/invoice.css',
-                ],
-            },
+        'web.report_assets_common': [
+            'custom_invoice_report/static/src/css/invoice.css',
+        ],
+    },
     'installable': True,
     'application': False,
     'auto_install': False,
