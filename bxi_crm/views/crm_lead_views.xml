@@ -37,7 +37,7 @@
                         type="object"
                         string="Create Contract"
                         class="btn-primary"
-                        invisible="stage_id.is_won == False"/>
+                        invisible="stage_id.is_won == False or contract_count &gt; 0"/>
 
             </xpath>
 
