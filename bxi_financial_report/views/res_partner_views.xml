@@ -45,7 +45,7 @@
 
             <!-- Custom Category, Investor, and Partner Fields -->
             <xpath expr="//field[@name='category_id']" position="after">
-                <field name="vendor_category" string="Vendor Category" required="1"/>
+                <field name="vendor_category" string="Vendor Category"/>
                 <field name="is_partner_investor" string="Investor" required="1"/>
                 <field name="is_partner" string="Partner" required="1"/>
             </xpath>
@@ -63,12 +63,6 @@
                 <attribute name="required">1</attribute>
             </xpath>
             <xpath expr="//field[@name='vat']" position="attributes">
-                <attribute name="required">1</attribute>
-            </xpath>
-            <xpath expr="//field[@name='l10n_in_pan_entity_id']" position="attributes">
-                <attribute name="required">1</attribute>
-            </xpath>
-            <xpath expr="//field[@name='l10n_in_tan']" position="attributes">
                 <attribute name="required">1</attribute>
             </xpath>
         </field>

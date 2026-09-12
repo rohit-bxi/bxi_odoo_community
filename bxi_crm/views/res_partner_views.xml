@@ -16,6 +16,10 @@
                     widget="selection"
                 />
             </xpath>
+            <xpath expr="//field[@name='vendor_category']" position="attributes">
+                <attribute name="invisible">customer_type not in ('vendor', 'customer_and_vendor')</attribute>
+                <attribute name="required">customer_type in ('vendor', 'customer_and_vendor')</attribute>
+            </xpath>
         </field>
     </record>
 
