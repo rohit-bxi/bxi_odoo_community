@@ -103,8 +103,54 @@ class CrmLead(models.Model):
         self._promote_partner_to_customer()
         return result
 
+    def _convert_usd_to_target_currency(self, usd_amount, target_currency, target_date=None):
+        if not usd_amount or not target_currency:
+            return usd_amount or 0.0
+
+        currency_code = target_currency.name or ""
+        d = target_date or fields.Date.context_today(self)
+        year = d.year if hasattr(d, "year") else fields.Date.today().year
+
+        if year >= 2027:
+            rate_usd_inr = 93.0
+            rate_aed_inr = 25.6
+        else:
+            rate_usd_inr = 90.0
+            rate_aed_inr = 24.5
+
+        if currency_code == "USD":
+            converted = usd_amount
+        elif currency_code == "INR":
+            converted = usd_amount * rate_usd_inr
+        elif currency_code == "AED":
+            converted = (usd_amount * rate_usd_inr) / rate_aed_inr
+        else:
+            usd_curr = (
+                self.env.ref("base.USD", raise_if_not_found=False)
+                or self.env["res.currency"].search([("name", "=", "USD")], limit=1)
+            )
+            if usd_curr and usd_curr != target_currency:
+                converted = usd_curr._convert(
+                    usd_amount,
+                    target_currency,
+                    self.company_id or self.env.company,
+                    d,
+                )
+            else:
+                converted = usd_amount
+
+        return target_currency.round(converted) if hasattr(target_currency, "round") else round(converted, 2)
+
     def action_create_contract(self):
         self.ensure_one()
+
+        company = self.company_id or self.env.company
+        target_currency = company.currency_id
+
+        contract_amount = self._convert_usd_to_target_currency(
+            self.expected_revenue,
+            target_currency,
+        )
 
         return {
             "type": "ir.actions.act_window",
@@ -114,7 +160,8 @@ class CrmLead(models.Model):
             "target": "current",
             "context": {
                 "default_lead_id": self.id,
-                "default_contract_amount": self.expected_revenue,
+                "default_currency_id": target_currency.id if target_currency else False,
+                "default_contract_amount": contract_amount,
                 "default_client_ids": [(6, 0, self.partner_id.ids)],
             },
         }

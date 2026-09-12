@@ -63,7 +63,7 @@
                 <attribute name="required">1</attribute>
             </xpath>
             <xpath expr="//field[@name='vat']" position="attributes">
-                <attribute name="required">1</attribute>
+                <attribute name="required">l10n_in_gst_treatment and l10n_in_gst_treatment not in ('unregistered', 'consumer', 'overseas')</attribute>
             </xpath>
         </field>
     </record>
