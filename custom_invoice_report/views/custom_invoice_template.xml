@@ -80,18 +80,6 @@
                                 <b>SHIP TO</b>
                                 <br/>
                                 <t t-if="o.is_different_shipping_address">
-                                    <span t-field="o.partner_id.name"/>
-                                    <br/>
-                                    <t t-if="o.partner_id.vat">
-                                        <t t-if="o.partner_id.country_code == 'IN'">GSTIN</t>
-                                        <t t-elif="o.partner_id.country_id.vat_label" t-out="o.partner_id.country_id.vat_label"/>
-                                        <t t-elif="o.partner_id.country_code in ('AE', 'SA', 'BH', 'OM', 'KW', 'QA')">TRN</t>
-                                        <t t-elif="o.company_id.account_fiscal_country_id.vat_label" t-out="o.company_id.account_fiscal_country_id.vat_label"/>
-                                        <t t-elif="is_india and not o.partner_id.country_id">GSTIN</t>
-                                        <t t-else="">TRN</t>:
-                                        <span t-field="o.partner_id.vat"/>
-                                        <br/>
-                                    </t>
                                     <t t-if="o.shipping_street"><span t-field="o.shipping_street"/><br/></t>
                                     <t t-if="o.shipping_street2"><span t-field="o.shipping_street2"/><br/></t>
                                     <t t-if="o.shipping_city"><span t-field="o.shipping_city"/><t t-if="o.shipping_state_id or o.shipping_zip">, </t></t>
@@ -101,18 +89,6 @@
                                     <t t-if="o.shipping_country_id"><span t-field="o.shipping_country_id.name"/></t>
                                 </t>
                                 <t t-else="">
-                                    <span t-field="o.partner_id.name"/>
-                                    <br/>
-                                    <t t-if="o.partner_id.vat">
-                                        <t t-if="o.partner_id.country_code == 'IN'">GSTIN</t>
-                                        <t t-elif="o.partner_id.country_id.vat_label" t-out="o.partner_id.country_id.vat_label"/>
-                                        <t t-elif="o.partner_id.country_code in ('AE', 'SA', 'BH', 'OM', 'KW', 'QA')">TRN</t>
-                                        <t t-elif="o.company_id.account_fiscal_country_id.vat_label" t-out="o.company_id.account_fiscal_country_id.vat_label"/>
-                                        <t t-elif="is_india and not o.partner_id.country_id">GSTIN</t>
-                                        <t t-else="">TRN</t>:
-                                        <span t-field="o.partner_id.vat"/>
-                                        <br/>
-                                    </t>
                                     <span t-field="o.partner_id.contact_address"/>
                                 </t>
                             </td>
@@ -124,14 +100,14 @@
                         <thead>
                             <tr style="background:#0b2f5b;color:white;font-weight:bold;text-align:center;">
                                 <th style="border:1px solid black;padding:6px;width:5%;">S.No</th>
-                                <th t-attf-style="border:1px solid black;padding:6px;width:#{is_india and '26%' or '35%'};">DESCRIPTION</th>
-                                <th t-if="is_india" style="border:1px solid black;padding:6px;width:9%;">SAC CODE</th>
+                                <th style="border:1px solid black;padding:6px;width:26%;">DESCRIPTION</th>
+                                <th style="border:1px solid black;padding:6px;width:9%;">SAC/HSN CODE</th>
                                 <th style="border:1px solid black;padding:6px;width:10%;">MONTH/YEAR</th>
                                 <th style="border:1px solid black;padding:6px;width:6%;">QTY</th>
                                 <th style="border:1px solid black;padding:6px;width:11%;">UNIT PRICE</th>
                                 <th style="border:1px solid black;padding:6px;width:10%;">TAX</th>
                                 <th style="border:1px solid black;padding:6px;width:11%;">TAX AMOUNT</th>
-                                <th style="border:1px solid black;padding:6px;width:12%;">TOTAL</th>
+                                <th style="border:1px solid black;padding:6px;width:12%;">AMOUNT</th>
                             </tr>
                         </thead>
 
@@ -148,7 +124,7 @@
                                             <span t-field="l.name"/>
                                         </td>
 
-                                        <td t-if="is_india" style="border:1px solid black;padding:6px;text-align:center;">
+                                        <td style="border:1px solid black;padding:6px;text-align:center;">
                                             <span t-field="l.product_id.l10n_in_hsn_code"/>
                                         </td>
 
