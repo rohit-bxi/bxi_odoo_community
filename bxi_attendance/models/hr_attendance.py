@@ -244,6 +244,17 @@ class HrAttendance(models.Model):
                     if check_date.weekday() not in allowed_weekdays:
                         continue
 
+                if exception.mode == "client":
+                    _logger.info(
+                        "Approved client-site exception applied | "
+                        "employee=%s | date=%s | exception=%s | "
+                        "location tracking bypassed",
+                        employee.name,
+                        check_date,
+                        exception.name,
+                    )
+                    return False
+
                 if exception.to_location_id:
 
                     _logger.info(
@@ -577,6 +588,58 @@ class HrAttendance(models.Model):
         )
 
         local_date = local_datetime.date()
+
+        # --------------------------------------------------------
+        # Client-site exception bypasses location tracking.
+        # --------------------------------------------------------
+
+        if "bxi.shift.exception" in self.env:
+            ShiftException = self.env[
+                "bxi.shift.exception"
+            ].sudo()
+
+            client_exceptions = ShiftException.search(
+                [
+                    ("employee_id", "=", employee.id),
+                    ("state", "=", "approved"),
+                    ("date_from", "<=", local_date),
+                    ("date_to", ">=", local_date),
+                    ("mode", "=", "client"),
+                ],
+                order="id desc",
+            )
+
+            for exception in client_exceptions:
+                if exception.allowed_weekdays:
+                    try:
+                        allowed_weekdays = [
+                            int(value.strip())
+                            for value in exception.allowed_weekdays.split(",")
+                            if value.strip()
+                        ]
+                    except (TypeError, ValueError):
+                        _logger.warning(
+                            "Invalid allowed_weekdays '%s' on exception %s",
+                            exception.allowed_weekdays,
+                            exception.name,
+                        )
+                        continue
+
+                    allowed_weekdays = [
+                        day for day in allowed_weekdays if 0 <= day <= 6
+                    ]
+
+                    if local_date.weekday() not in allowed_weekdays:
+                        continue
+
+                _logger.info(
+                    "Client-site exception bypasses GPS validation | "
+                    "employee=%s | date=%s | exception=%s",
+                    employee.name,
+                    local_date,
+                    exception.name,
+                )
+                return
 
         # --------------------------------------------------------
         # Get employee's effective work location
