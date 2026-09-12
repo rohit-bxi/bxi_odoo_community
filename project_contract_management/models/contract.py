@@ -154,6 +154,53 @@ class ProjectContract(models.Model):
             elif self.contract_type in ('tnm', 'staff_aug', 'cost_plus', 'retainer'):
                 self.billing_cycle = 'monthly'
 
+    def _convert_usd_to_target_currency(self, usd_amount, target_currency, target_date=None):
+        if not usd_amount or not target_currency:
+            return usd_amount or 0.0
+
+        currency_code = target_currency.name or ""
+        d = target_date or fields.Date.context_today(self)
+        year = d.year if hasattr(d, "year") else fields.Date.today().year
+
+        if year >= 2027:
+            rate_usd_inr = 93.0
+            rate_aed_inr = 25.6
+        else:
+            rate_usd_inr = 90.0
+            rate_aed_inr = 24.5
+
+        if currency_code == "USD":
+            converted = usd_amount
+        elif currency_code == "INR":
+            converted = usd_amount * rate_usd_inr
+        elif currency_code == "AED":
+            converted = (usd_amount * rate_usd_inr) / rate_aed_inr
+        else:
+            usd_curr = (
+                self.env.ref("base.USD", raise_if_not_found=False)
+                or self.env["res.currency"].search([("name", "=", "USD")], limit=1)
+            )
+            if usd_curr and usd_curr != target_currency:
+                converted = usd_curr._convert(
+                    usd_amount,
+                    target_currency,
+                    self.company_id or self.env.company,
+                    d,
+                )
+            else:
+                converted = usd_amount
+
+        return target_currency.round(converted) if hasattr(target_currency, "round") else round(converted, 2)
+
+    @api.onchange('lead_id', 'currency_id', 'contract_start_date')
+    def _onchange_lead_currency_for_amount(self):
+        if self.lead_id and getattr(self.lead_id, 'expected_revenue', False) and self.currency_id:
+            self.contract_amount = self._convert_usd_to_target_currency(
+                self.lead_id.expected_revenue,
+                self.currency_id,
+                self.contract_start_date,
+            )
+
 
 
 
