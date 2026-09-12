@@ -136,7 +136,8 @@
                             type="object"
                             string="Create Project"
                             class="btn-primary"
-                            icon="fa-plus"/>
+                            icon="fa-plus"
+                            invisible="project_count &gt; 0"/>
 
                 </header>
 
