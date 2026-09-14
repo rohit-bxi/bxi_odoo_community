@@ -49,11 +49,11 @@
                     <t t-set="mip_ded" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code == 'MIP' or (l.name and 'medical' in l.name.lower())).mapped('total'))) or 0.0"/>
                     <t t-set="ee_pf_val" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code in ('PF', 'EPF', 'EE_PF', 'EEPF') or (l.name and 'provident' in l.name.lower() and 'er' not in l.code.lower())).mapped('total'))) or 0.0"/>
                     <t t-set="tds_ded" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code in ('TDS', 'IT', 'INCOME_TAX', 'TAX') or (l.name and ('income tax' in l.name.lower() or 'tds' in l.name.lower()))).mapped('total'))) or 0.0"/>
-                    <t t-set="lop_lines" t-value="o.line_ids.filtered(lambda l: l.code in ('LOP', 'LWP', 'UNPAID', 'LEAVE_DED', 'UNPAID_LEAVE', 'LOSS_OF_PAY', 'LWP_DED') or (l.name and ('lop' in l.name.lower() or 'loss of pay' in l.name.lower() or 'unpaid' in l.name.lower() or 'leave without pay' in l.name.lower())))"/>
-                    <t t-set="other_ded_lines" t-value="o.line_ids.filtered(lambda l: l.code in ('DEDUCTION', 'OTHER_DED', 'MISC_DED') or (l.category_id.code == 'DED' and l.code not in ('MIP', 'PF', 'EPF', 'EE_PF', 'EEPF', 'TDS', 'IT', 'INCOME_TAX', 'TAX', 'LOP', 'LWP', 'UNPAID', 'LEAVE_DED', 'UNPAID_LEAVE', 'LOSS_OF_PAY', 'LWP_DED')))"/>
+                    <t t-set="lop_lines" t-value="o.line_ids.filtered(lambda l: l.code in ('LOP', 'LWP', 'LWP_DAYS', 'UNPAID', 'LEAVE_DED', 'UNPAID_LEAVE', 'LOSS_OF_PAY', 'LWP_DED') or (l.name and ('lop' in l.name.lower() or 'loss of pay' in l.name.lower() or 'unpaid' in l.name.lower() or 'leave without pay' in l.name.lower())))"/>
+                    <t t-set="lop_ded" t-value="abs(sum(lop_lines.mapped('total'))) or 0.0"/>
+                    <t t-set="other_ded_lines" t-value="o.line_ids.filtered(lambda l: l.id not in lop_lines.ids and (l.code in ('DEDUCTION', 'OTHER_DED', 'MISC_DED') or (l.category_id.code == 'DED' and l.code not in ('MIP', 'PF', 'EPF', 'EE_PF', 'EEPF', 'TDS', 'IT', 'INCOME_TAX', 'TAX', 'PT', 'LOP', 'LWP', 'LWP_DAYS', 'UNPAID', 'LEAVE_DED', 'UNPAID_LEAVE', 'LOSS_OF_PAY', 'LWP_DED') and not (l.name and ('lop' in l.name.lower() or 'loss of pay' in l.name.lower() or 'unpaid' in l.name.lower() or 'leave without pay' in l.name.lower())))))"/>
                     <t t-set="other_ded" t-value="abs(sum(other_ded_lines.mapped('total'))) or 0.0"/>
-                    <t t-set="gross_ded" t-value="abs(sum(o.line_ids.filtered(lambda l: l.category_id.code == 'DED').mapped('total'))) or abs(sum(o.line_ids.filtered(lambda l: l.code == 'DED').mapped('total'))) or 0.0"/>
-                    <t t-set="lop_ded" t-value="abs(sum(lop_lines.mapped('total'))) if (lop_lines and abs(sum(lop_lines.mapped('total'))) &gt; 0) else (gross_ded - mip_ded - ee_pf_val - tds_ded - other_ded if (gross_ded - mip_ded - ee_pf_val - tds_ded - other_ded) &gt; 0.01 else 0.0)"/>
+                    <t t-set="gross_ded" t-value="abs(sum(o.line_ids.filtered(lambda l: l.category_id.code == 'DED').mapped('total'))) or abs(sum(o.line_ids.filtered(lambda l: l.code == 'DED').mapped('total'))) or (mip_ded + ee_pf_val + tds_ded + lop_ded + other_ded) or 0.0"/>
 
                     <t t-set="net_pay" t-value="sum(o.line_ids.filtered(lambda l: l.code == 'NET').mapped('total')) or sum(o.line_ids.filtered(lambda l: l.category_id.code == 'NET').mapped('total')) or (gross_earn - gross_ded) or 0.0"/>
                     <t t-set="er_pf_val" t-value="ee_pf_val if ee_pf_val else (o.employee_id.l10n_in_pf_employer_amount or 0.0)"/>
@@ -136,9 +136,11 @@
                             <td style="border:1px solid #000;">
                               <t t-esc="'%.2f' % basic_earn"/>
                             </td>
-                            <td style="border:1px solid #000;"><b>Medical Premium</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="'%.2f' % mip_ded"/>
+                              <t t-if="mip_ded &gt; 0"><b>Medical Premium</b></t>
+                            </td>
+                            <td style="border:1px solid #000;">
+                              <t t-if="mip_ded &gt; 0"><t t-esc="'%.2f' % mip_ded"/></t>
                             </td>
                         </tr>
                         <tr>
@@ -150,9 +152,11 @@
                             <td style="border:1px solid #000;">
                               <t t-esc="'%.2f' % hra_earn"/>
                             </td>
-                            <td style="border:1px solid #000;"><b>EE PF Monthly</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="'%.2f' % ee_pf_val"/>
+                              <t t-if="ee_pf_val &gt; 0"><b>EE PF Monthly</b></t>
+                            </td>
+                            <td style="border:1px solid #000;">
+                              <t t-if="ee_pf_val &gt; 0"><t t-esc="'%.2f' % ee_pf_val"/></t>
                             </td>
                         </tr>
                         <tr>
@@ -164,9 +168,11 @@
                             <td style="border:1px solid #000;">
                               <t t-esc="'%.2f' % spl_earn"/>
                             </td>
-                            <td style="border:1px solid #000;"><b>Income Tax</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="'%.2f' % tds_ded"/>
+                              <t t-if="tds_ded &gt; 0"><b>Income Tax</b></t>
+                            </td>
+                            <td style="border:1px solid #000;">
+                              <t t-if="tds_ded &gt; 0"><t t-esc="'%.2f' % tds_ded"/></t>
                             </td>
                         </tr>
                         <!-- LOP & Arrear / Other Deduction Rows -->
