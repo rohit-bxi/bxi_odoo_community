@@ -34,24 +34,28 @@
                     <t t-set="work_100" t-value="sum(o.worked_days_line_ids.filtered(lambda l: l.code not in ('LWP', 'UNPAID')).mapped('number_of_days'))"/>
                     <t t-set="days_worked" t-value="work_100 if work_100 else (total_month_days - lwp_count)"/>
 
-                    <t t-set="basic_std" t-value="o.employee_id.l10n_in_basic_salary_amount or 0.0"/>
+                    <t t-set="basic_std" t-value="o.employee_id.l10n_in_basic_salary_amount or (o.contract_id.wage * 0.5 if o.contract_id else 0.0) or 0.0"/>
                     <t t-set="hra_std" t-value="o.employee_id.l10n_in_hra or 0.0"/>
-                    <t t-set="spl_std" t-value="o.employee_id.l10n_in_fixed_allowance or 0.0"/>
+                    <t t-set="spl_std" t-value="o.employee_id.l10n_in_fixed_allowance or getattr(o.employee_id, 'flexible_allowance', 0.0) or 0.0"/>
                     <t t-set="tot_std" t-value="basic_std + hra_std + spl_std"/>
 
                     <t t-set="basic_earn" t-value="sum(o.line_ids.filtered(lambda l: l.code == 'BASIC').mapped('total')) or 0.0"/>
                     <t t-set="hra_earn" t-value="sum(o.line_ids.filtered(lambda l: l.code == 'HRA').mapped('total')) or 0.0"/>
-                    <t t-set="spl_earn" t-value="sum(o.line_ids.filtered(lambda l: l.code in ('SPL', 'FLEX')).mapped('total')) or 0.0"/>
                     <t t-set="ara_earn" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code == 'ARA').mapped('total'))) or 0.0"/>
                     <t t-set="gross_earn" t-value="sum(o.line_ids.filtered(lambda l: l.category_id.code == 'GROSS').mapped('total')) or sum(o.line_ids.filtered(lambda l: l.code == 'GROSS').mapped('total')) or 0.0"/>
+                    <t t-set="spl_earn_lines" t-value="o.line_ids.filtered(lambda l: l.code in ('SPL', 'FLEX', 'FLEXI', 'FLEXIBLE', 'FA', 'FIXED', 'SA', 'SPECIAL', 'FIXED_ALLOWANCE', 'SPEC_ALW') or (l.name and ('flex' in l.name.lower() or 'special' in l.name.lower() or 'fixed allow' in l.name.lower())))"/>
+                    <t t-set="spl_earn" t-value="sum(spl_earn_lines.mapped('total')) if (spl_earn_lines and sum(spl_earn_lines.mapped('total')) &gt; 0) else (gross_earn - basic_earn - hra_earn - ara_earn if (gross_earn - basic_earn - hra_earn - ara_earn) &gt; 0.01 else 0.0)"/>
 
-                    <t t-set="mip_ded" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code == 'MIP').mapped('total'))) or 0.0"/>
-                    <t t-set="ee_pf_val" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code in ('PF', 'EPF', 'EE_PF')).mapped('total'))) or 0.0"/>
-                    <t t-set="tds_ded" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code == 'TDS').mapped('total'))) or 0.0"/>
-                    <t t-set="other_ded" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code == 'DEDUCTION').mapped('total'))) or 0.0"/>
-                    <t t-set="gross_ded" t-value="abs(sum(o.line_ids.filtered(lambda l: l.category_id.code == 'DED').mapped('total'))) or abs(sum(o.line_ids.filtered(lambda l: l.code == 'DED').mapped('total'))) or 0.0"/>
+                    <t t-set="mip_ded" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code == 'MIP' or (l.name and 'medical' in l.name.lower())).mapped('total'))) or 0.0"/>
+                    <t t-set="ee_pf_val" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code in ('PF', 'EPF', 'EE_PF', 'EEPF') or (l.name and 'provident' in l.name.lower() and 'er' not in l.code.lower())).mapped('total'))) or 0.0"/>
+                    <t t-set="tds_ded" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code in ('TDS', 'IT', 'INCOME_TAX', 'TAX') or (l.name and ('income tax' in l.name.lower() or 'tds' in l.name.lower()))).mapped('total'))) or 0.0"/>
+                    <t t-set="lop_lines" t-value="o.line_ids.filtered(lambda l: l.code in ('LOP', 'LWP', 'LWP_DAYS', 'UNPAID', 'LEAVE_DED', 'UNPAID_LEAVE', 'LOSS_OF_PAY', 'LWP_DED') or (l.name and ('lop' in l.name.lower() or 'loss of pay' in l.name.lower() or 'unpaid' in l.name.lower() or 'leave without pay' in l.name.lower())))"/>
+                    <t t-set="lop_ded" t-value="abs(sum(lop_lines.mapped('total'))) or 0.0"/>
+                    <t t-set="other_ded_lines" t-value="o.line_ids.filtered(lambda l: l.id not in lop_lines.ids and (l.code in ('DEDUCTION', 'OTHER_DED', 'MISC_DED') or (l.category_id.code == 'DED' and l.code not in ('MIP', 'PF', 'EPF', 'EE_PF', 'EEPF', 'TDS', 'IT', 'INCOME_TAX', 'TAX', 'PT', 'LOP', 'LWP', 'LWP_DAYS', 'UNPAID', 'LEAVE_DED', 'UNPAID_LEAVE', 'LOSS_OF_PAY', 'LWP_DED') and not (l.name and ('lop' in l.name.lower() or 'loss of pay' in l.name.lower() or 'unpaid' in l.name.lower() or 'leave without pay' in l.name.lower())))))"/>
+                    <t t-set="other_ded" t-value="abs(sum(other_ded_lines.mapped('total'))) or 0.0"/>
+                    <t t-set="gross_ded" t-value="abs(sum(o.line_ids.filtered(lambda l: l.category_id.code == 'DED').mapped('total'))) or abs(sum(o.line_ids.filtered(lambda l: l.code == 'DED').mapped('total'))) or (mip_ded + ee_pf_val + tds_ded + lop_ded + other_ded) or 0.0"/>
 
-                    <t t-set="net_pay" t-value="sum(o.line_ids.filtered(lambda l: l.code == 'NET').mapped('total')) or sum(o.line_ids.filtered(lambda l: l.category_id.code == 'NET').mapped('total')) or 0.0"/>
+                    <t t-set="net_pay" t-value="sum(o.line_ids.filtered(lambda l: l.code == 'NET').mapped('total')) or sum(o.line_ids.filtered(lambda l: l.category_id.code == 'NET').mapped('total')) or (gross_earn - gross_ded) or 0.0"/>
                     <t t-set="er_pf_val" t-value="ee_pf_val if ee_pf_val else (o.employee_id.l10n_in_pf_employer_amount or 0.0)"/>
                     <t t-set="nps_val" t-value="o.employee_id.nps_contribution if o.employee_id.nps_contribution else (abs(sum(o.line_ids.filtered(lambda l: l.code in ('NPS', 'ERNPS', 'ER_NPS', 'EE_NPS')).mapped('total'))) or 0.0)"/>
 
@@ -132,9 +136,11 @@
                             <td style="border:1px solid #000;">
                               <t t-esc="'%.2f' % basic_earn"/>
                             </td>
-                            <td style="border:1px solid #000;"><b>Medical Premium</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="'%.2f' % mip_ded"/>
+                              <t t-if="mip_ded &gt; 0"><b>Medical Premium</b></t>
+                            </td>
+                            <td style="border:1px solid #000;">
+                              <t t-if="mip_ded &gt; 0"><t t-esc="'%.2f' % mip_ded"/></t>
                             </td>
                         </tr>
                         <tr>
@@ -146,9 +152,11 @@
                             <td style="border:1px solid #000;">
                               <t t-esc="'%.2f' % hra_earn"/>
                             </td>
-                            <td style="border:1px solid #000;"><b>EE PF Monthly</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="'%.2f' % ee_pf_val"/>
+                              <t t-if="ee_pf_val &gt; 0"><b>EE PF Monthly</b></t>
+                            </td>
+                            <td style="border:1px solid #000;">
+                              <t t-if="ee_pf_val &gt; 0"><t t-esc="'%.2f' % ee_pf_val"/></t>
                             </td>
                         </tr>
                         <tr>
@@ -160,25 +168,45 @@
                             <td style="border:1px solid #000;">
                               <t t-esc="'%.2f' % spl_earn"/>
                             </td>
-                            <td style="border:1px solid #000;"><b>Income Tax</b></td>
                             <td style="border:1px solid #000;">
-                              <t t-esc="'%.2f' % tds_ded"/>
+                              <t t-if="tds_ded &gt; 0"><b>Income Tax</b></t>
+                            </td>
+                            <td style="border:1px solid #000;">
+                              <t t-if="tds_ded &gt; 0"><t t-esc="'%.2f' % tds_ded"/></t>
                             </td>
                         </tr>
-                        <!-- Arrear / Deduction Row (Conditional) -->
-                        <t t-if="o.line_ids.filtered(lambda l: l.code in ('ARA', 'DEDUCTION'))">
+                        <!-- LOP & Arrear / Other Deduction Rows -->
+                        <t t-if="lop_ded &gt; 0 or ara_earn &gt; 0 or other_ded &gt; 0">
                             <tr>
                                 <td style="border:1px solid #000;"></td>
                                 <td style="border:1px solid #000;"></td>
-                                <td style="border:1px solid #000;"><b>Arrear Allowance</b></td>
                                 <td style="border:1px solid #000;">
-                                    <t t-esc="'%.2f' % ara_earn"/>
+                                    <t t-if="ara_earn &gt; 0"><b>Arrear Allowance</b></t>
                                 </td>
-                                <td style="border:1px solid #000;"><b>Deduction</b></td>
                                 <td style="border:1px solid #000;">
-                                    <t t-esc="'%.2f' % other_ded"/>
+                                    <t t-if="ara_earn &gt; 0"><t t-esc="'%.2f' % ara_earn"/></t>
+                                </td>
+                                <td style="border:1px solid #000;">
+                                    <t t-if="lop_ded &gt; 0"><b>LOP</b></t>
+                                    <t t-elif="other_ded &gt; 0"><b>Deduction</b></t>
+                                </td>
+                                <td style="border:1px solid #000;">
+                                    <t t-if="lop_ded &gt; 0"><t t-esc="'%.2f' % lop_ded"/></t>
+                                    <t t-elif="other_ded &gt; 0"><t t-esc="'%.2f' % other_ded"/></t>
                                 </td>
                             </tr>
+                            <t t-if="lop_ded &gt; 0 and other_ded &gt; 0">
+                                <tr>
+                                    <td style="border:1px solid #000;"></td>
+                                    <td style="border:1px solid #000;"></td>
+                                    <td style="border:1px solid #000;"></td>
+                                    <td style="border:1px solid #000;"></td>
+                                    <td style="border:1px solid #000;"><b>Deduction</b></td>
+                                    <td style="border:1px solid #000;">
+                                        <t t-esc="'%.2f' % other_ded"/>
+                                    </td>
+                                </tr>
+                            </t>
                         </t>
 
                         <tr>

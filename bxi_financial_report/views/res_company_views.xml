@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit Company Form View to add Grouped Company field -->
+    <record id="view_company_form_inherit_grouped_company" model="ir.ui.view">
+        <field name="name">res.company.form.inherit.grouped.company</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='parent_id']" position="after">
+                <field name="main_company_id" options="{'no_create': True}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

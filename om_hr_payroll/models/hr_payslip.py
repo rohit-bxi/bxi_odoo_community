@@ -63,7 +63,7 @@ class HrPayslip(models.Model):
     _name = 'hr.payslip'
     _description = 'Pay Slip'
     _inherit = ['mail.thread', 'mail.activity.mixin']
-    _order = 'id desc'
+    _order = 'date_from desc, id desc'
 
     struct_id = fields.Many2one('hr.payroll.structure', string='Structure',
                                 help='Defines the rules that have to be applied to this payslip, accordingly '

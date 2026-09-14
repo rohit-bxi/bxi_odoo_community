@@ -18,11 +18,13 @@
         'views/epf_report_wizard_views.xml',
         'views/tds_report_wizard_views.xml',
         'views/fbook_report_views.xml',
+        'views/res_company_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
             'bxi_financial_report/static/src/js/fbook_dashboard.js',
             'bxi_financial_report/static/src/xml/fbook_dashboard.xml',
+            'bxi_financial_report/static/src/js/company_service_patch.js',
         ],  
     },
     'installable': True,

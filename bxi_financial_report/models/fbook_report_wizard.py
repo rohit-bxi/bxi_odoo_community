@@ -456,6 +456,7 @@ class FbookReportWizard(models.TransientModel):
                     ('parent_state', '=', 'posted'),
                     ('date', '>=', qdef['start']),
                     ('date', '<=', effective_end),
+                    ('account_id.account_type', '!=', 'asset_cash'),
                     ('partner_id.is_partner_investor', 'in', ['yes', True]),
                 ])
                 q_inv_in = 0.0
@@ -471,6 +472,22 @@ class FbookReportWizard(models.TransientModel):
                             line.debit, line.company_id.currency_id, target_currency,
                             date_val=line.date, year_key=year_key, record=line
                         )
+
+                # Also include vendor bills / receipts for investors as Repaid (q_inv_out)
+                partner_bills_q = self.env['account.move'].sudo().search([
+                    ('company_id', 'in', company_ids),
+                    ('move_type', 'in', ('in_invoice', 'in_receipt', 'in_refund')),
+                    ('state', '=', 'posted'),
+                    ('partner_id.is_partner_investor', 'in', ['yes', True]),
+                    ('invoice_date', '>=', qdef['start']),
+                    ('invoice_date', '<=', effective_end),
+                ])
+                for bill in partner_bills_q:
+                    sign = -1.0 if bill.move_type == 'in_refund' else 1.0
+                    q_inv_out += sign * custom_convert(
+                        bill.amount_total, bill.currency_id, target_currency,
+                        date_val=bill.invoice_date, year_key=year_key, record=bill
+                    )
 
                 cash_lines = self.env['account.move.line'].sudo().search([
                     ('company_id', 'in', company_ids),
@@ -1069,6 +1086,7 @@ class FbookReportWizard(models.TransientModel):
                     ('move_id.move_type', '=', 'entry'),
                     ('parent_state', '=', 'posted'),
                     ('partner_id', '=', partner.id),
+                    ('account_id.account_type', '!=', 'asset_cash'),
                     ('date', '>=', min(y1_start_str, y2_start_str)),
                     ('date', '<=', max(y1_end_str, y2_end_str)),
                 ])
@@ -1101,6 +1119,30 @@ class FbookReportWizard(models.TransientModel):
                                 line.debit, line.company_id.currency_id, target_currency,
                                 date_val=ldate, year_key='y2', record=line
                             )
+
+                # Also include vendor bills / receipts for this investor as Repaid
+                partner_bills = self.env['account.move'].sudo().search([
+                    ('company_id', 'in', company_ids),
+                    ('move_type', 'in', ('in_invoice', 'in_receipt', 'in_refund')),
+                    ('state', '=', 'posted'),
+                    ('partner_id', '=', partner.id),
+                    ('invoice_date', '>=', min(y1_start_str, y2_start_str)),
+                    ('invoice_date', '<=', max(y1_end_str, y2_end_str)),
+                ])
+                for bill in partner_bills:
+                    b_date = bill.invoice_date or bill.date
+                    if not b_date:
+                        continue
+                    b_date_str = b_date.strftime('%Y-%m-%d')
+                    sign = -1.0 if bill.move_type == 'in_refund' else 1.0
+                    b_amount = sign * custom_convert(
+                        bill.amount_total, bill.currency_id, target_currency,
+                        date_val=b_date, year_key='y1' if y1_start_str <= b_date_str <= y1_end_str else 'y2', record=bill
+                    )
+                    if y1_start_str <= b_date_str <= y1_end_str:
+                        investor_data_map[partner_key]['y1_debit'] += b_amount
+                    if y2_start_str <= b_date_str <= y2_end_str:
+                        investor_data_map[partner_key]['y2_debit'] += b_amount
 
             # Process Cash Journal Entries for "Unsecured Loan" row
             unsecured_loan_key = 'unsecured_loan'
@@ -1746,6 +1788,7 @@ class FbookReportWizard(models.TransientModel):
                 ('parent_state', '=', 'posted'),
                 ('date', '>=', y0_start_str),
                 ('date', '<=', y0_end_str),
+                ('account_id.account_type', '!=', 'asset_cash'),
                 ('partner_id.is_partner_investor', 'in', ['yes', True]),
             ])
             for line in inv_lines_y0:
@@ -1759,6 +1802,21 @@ class FbookReportWizard(models.TransientModel):
                         line.debit, line.company_id.currency_id, target_currency,
                         date_val=line.date, year_key='y1', record=line
                     )
+
+            partner_bills_y0 = self.env['account.move'].sudo().search([
+                ('company_id', 'in', company_ids),
+                ('move_type', 'in', ('in_invoice', 'in_receipt', 'in_refund')),
+                ('state', '=', 'posted'),
+                ('partner_id.is_partner_investor', 'in', ['yes', True]),
+                ('invoice_date', '>=', y0_start_str),
+                ('invoice_date', '<=', y0_end_str),
+            ])
+            for bill in partner_bills_y0:
+                sign = -1.0 if bill.move_type == 'in_refund' else 1.0
+                y0_investors -= sign * custom_convert(
+                    bill.amount_total, bill.currency_id, target_currency,
+                    date_val=bill.invoice_date, year_key='y1', record=bill
+                )
 
             cash_lines_y0 = self.env['account.move.line'].sudo().search([
                 ('company_id', 'in', company_ids),
