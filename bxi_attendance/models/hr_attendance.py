@@ -213,15 +213,21 @@ class HrAttendance(models.Model):
 
             for exception in exceptions:
 
+                allowed_weekdays_value = getattr(
+                    exception,
+                    "allowed_weekdays",
+                    False,
+                )
+
                 # If weekdays are specified, verify the current
                 # day is included.
-                if exception.allowed_weekdays:
+                if allowed_weekdays_value:
 
                     try:
                         allowed_weekdays = [
                             int(value.strip())
                             for value in
-                            exception.allowed_weekdays.split(",")
+                            allowed_weekdays_value.split(",")
                             if value.strip()
                         ]
                     except (TypeError, ValueError):
@@ -229,7 +235,7 @@ class HrAttendance(models.Model):
                         _logger.warning(
                             "Invalid allowed_weekdays '%s' "
                             "on exception %s",
-                            exception.allowed_weekdays,
+                            allowed_weekdays_value,
                             exception.name,
                         )
 
@@ -610,17 +616,22 @@ class HrAttendance(models.Model):
             )
 
             for exception in client_exceptions:
-                if exception.allowed_weekdays:
+                allowed_weekdays_value = getattr(
+                    exception,
+                    "allowed_weekdays",
+                    False,
+                )
+                if allowed_weekdays_value:
                     try:
                         allowed_weekdays = [
                             int(value.strip())
-                            for value in exception.allowed_weekdays.split(",")
+                            for value in allowed_weekdays_value.split(",")
                             if value.strip()
                         ]
                     except (TypeError, ValueError):
                         _logger.warning(
                             "Invalid allowed_weekdays '%s' on exception %s",
-                            exception.allowed_weekdays,
+                            allowed_weekdays_value,
                             exception.name,
                         )
                         continue

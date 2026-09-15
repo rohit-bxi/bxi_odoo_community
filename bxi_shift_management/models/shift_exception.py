@@ -89,6 +89,14 @@ class BxiShiftException(models.Model):
         string="Mode",
         tracking=True,
     )
+    allowed_weekdays = fields.Char(
+        string="Allowed Weekdays",
+        help=(
+            "Comma-separated weekday numbers with Monday=0 and "
+            "Sunday=6. Example: 1,2,3"
+        ),
+        tracking=True,
+    )
     client_location = fields.Char(
         string="Client Location",
     )
