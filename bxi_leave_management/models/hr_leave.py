@@ -39,6 +39,7 @@ class HrEmployeeLeave(models.Model):
                 rec._send_leave_submission_email()
 
     def _send_leave_submission_email(self):
+        """Send leave submission notification to HR Support and Employee Manager."""
         template = self.env.ref(
             'bxi_leave_management.email_template_leave_request_submitted',
             raise_if_not_found=False
@@ -49,26 +50,61 @@ class HrEmployeeLeave(models.Model):
             if rec.is_submission_email_sent:
                 continue
 
-            recipients = ['hr@bxitech.com']
+            # -------------------------------------------------
+            # HR Support - Always receive leave notification
+            # -------------------------------------------------
+            recipients = [
+                'hrsupport@bxitech.com'
+            ]
 
-            manager = rec.employee_id.parent_id or rec.employee_id.leave_manager_id
+            # -------------------------------------------------
+            # Employee Manager
+            # -------------------------------------------------
+            manager = (
+                rec.employee_id.parent_id
+                or rec.employee_id.leave_manager_id
+            )
             manager_email = False
             if manager:
-                manager_email = manager.work_email or (manager.user_id and manager.user_id.email)
-
+                manager_email = (
+                    manager.work_email
+                    or (
+                        manager.user_id
+                        and manager.user_id.email
+                    )
+                )
             if manager_email:
                 recipients.append(manager_email.strip())
 
-            unique_recipients = list(dict.fromkeys([r for r in recipients if r]))
+            # -------------------------------------------------
+            # Remove duplicate / empty emails
+            # -------------------------------------------------
+            unique_recipients = list(
+                dict.fromkeys(
+                    email for email in recipients
+                    if email
+                )
+            )
+
             email_to_str = ','.join(unique_recipients)
 
-            rec.sudo().write({'is_submission_email_sent': True})
-
+            # -------------------------------------------------
+            # Send Email
+            # -------------------------------------------------
             template.sudo().send_mail(
                 rec.id,
-                email_values={'email_to': email_to_str},
+                email_values={
+                    'email_to': email_to_str,
+                },
                 force_send=True
             )
+
+            # -------------------------------------------------
+            # Mark as sent
+            # -------------------------------------------------
+            rec.sudo().write({
+                'is_submission_email_sent': True
+            })
 
     @api.constrains('holiday_status_id', 'request_date_from', 'request_date_to')
     def _check_rh_leave_rules(self):
