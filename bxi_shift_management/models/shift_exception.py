@@ -41,6 +41,19 @@ class BxiShiftException(models.Model):
         tracking=True,
     )
 
+    is_request_manager = fields.Boolean(
+        string="Is Request Manager",
+        compute="_compute_is_request_manager",
+    )
+
+    @api.depends('manager_id')
+    def _compute_is_request_manager(self):
+        current_user = self.env.user
+        for record in self:
+            record.is_request_manager = (
+                record.manager_id.user_id == current_user
+            )
+
     company_id = fields.Many2one(
         "res.company",
         string="Company",
@@ -58,6 +71,30 @@ class BxiShiftException(models.Model):
         string="To Date",
         required=True,
         tracking=True,
+    )
+
+    wfh_day_count = fields.Integer(
+        string="WFH Days",
+        compute="_compute_wfh_day_count",
+        store=True,
+    )
+
+    show_compensation_date = fields.Boolean(
+        string="Show Compensation Date",
+        compute="_compute_wfh_day_count",
+        store=True,
+    )
+
+    show_compensation_date_2 = fields.Boolean(
+        string="Show Compensation Date 2",
+        compute="_compute_wfh_day_count",
+        store=True,
+    )
+
+    show_compensation_date_3 = fields.Boolean(
+        string="Show Compensation Date 3",
+        compute="_compute_wfh_day_count",
+        store=True,
     )
 
     to_location_id = fields.Many2one(
@@ -78,6 +115,17 @@ class BxiShiftException(models.Model):
             "Monday or Friday and within 7 calendar days before or "
             "after the exception date."
         ),
+    )
+    compensation_date_2 = fields.Date(
+        string="Compensation Date 2",
+        tracking=True,
+        help="Second compensation date for multi-day Home/WFH requests.",
+    )
+
+    compensation_date_3 = fields.Date(
+        string="Compensation Date 3",
+        tracking=True,
+        help="Third compensation date for multi-day Home/WFH requests.",
     )
 
     mode = fields.Selection(
@@ -107,10 +155,67 @@ class BxiShiftException(models.Model):
     reason = fields.Text(
         string="Reason / Description",
     )
-    @api.onchange("mode")
-    def _onchange_mode(self):
+
+    @api.depends("date_from", "date_to", "mode")
+    def _compute_wfh_day_count(self):
         for record in self:
-            if record.mode == "client":
+            record.wfh_day_count = 0
+            record.show_compensation_date = False
+            record.show_compensation_date_2 = False
+            record.show_compensation_date_3 = False
+
+            if (
+                record.mode != "home"
+                or not record.date_from
+                or not record.date_to
+                or record.date_to < record.date_from
+            ):
+                continue
+
+            current_date = record.date_from
+            wfh_dates = []
+
+            while current_date <= record.date_to:
+                # Tuesday = 1
+                # Wednesday = 2
+                # Thursday = 3
+                if current_date.weekday() in (1, 2, 3):
+                    wfh_dates.append(current_date)
+
+                current_date += timedelta(days=1)
+
+            record.wfh_day_count = len(wfh_dates)
+
+            record.show_compensation_date = (
+                record.wfh_day_count >= 1
+            )
+            record.show_compensation_date_2 = (
+                record.wfh_day_count >= 2
+            )
+            record.show_compensation_date_3 = (
+                record.wfh_day_count >= 3
+            )
+            
+    @api.onchange("mode", "date_from", "date_to")
+    def _onchange_wfh_dates(self):
+        for record in self:
+            if record.mode != "home":
+                record.compensation_date = False
+                record.compensation_date_2 = False
+                record.compensation_date_3 = False
+                continue
+
+            # Keep the compensation fields aligned with the number
+            # of WFH days currently selected.
+            wfh_day_count = record.wfh_day_count
+
+            if wfh_day_count < 3:
+                record.compensation_date_3 = False
+
+            if wfh_day_count < 2:
+                record.compensation_date_2 = False
+
+            if wfh_day_count < 1:
                 record.compensation_date = False
 
     state = fields.Selection(
@@ -221,91 +326,148 @@ class BxiShiftException(models.Model):
                     _("To Date cannot be earlier than From Date.")
                 )
 
+    def _get_wfh_dates(self):
+        """Return all dates in the request period.
+        Home/WFH is allowed only Tuesday, Wednesday and Thursday.
+        """
+        self.ensure_one()
+        if not self.date_from or not self.date_to:
+            return []
+
+        dates = []
+        current_date = self.date_from
+        while current_date <= self.date_to:
+            dates.append(current_date)
+            current_date += timedelta(days=1)
+        return dates
+
+    def _get_compensation_dates(self):
+        """Return the configured compensation dates in their field order."""
+        self.ensure_one()
+        return [
+            value
+            for value in (
+                self.compensation_date,
+                self.compensation_date_2,
+                self.compensation_date_3,
+            )
+            if value
+        ]
+
     def _validate_wfh_policy(self):
         """
         Validate the fixed WFH / exception working policy.
 
         Policy:
             - WFH is allowed only Tuesday, Wednesday and Thursday.
-            - Compensation date must be Monday or Friday.
-            - Compensation date must be within +/- 7 calendar days.
-            - Saturday and Sunday are automatically excluded.
+            - 1 WFH day requires 1 compensation day.
+            - 2 WFH days require 2 compensation days.
+            - 3 WFH days require 3 compensation days.
+            - Compensation dates must be working days.
+            - Under the current policy, compensation is Monday or Friday.
+            - Each compensation date must be within +/- 7 calendar days
+              of the WFH period.
+            - Compensation dates must be unique and cannot be WFH dates.
         """
-
         for record in self:
-
-            # This policy is applicable only for Home/WFH.
             if record.mode != "home":
                 continue
 
             if not record.date_from or not record.date_to:
                 raise ValidationError(
-                    _(
-                        "From Date and To Date are required "
-                        "for Work From Home."
-                    )
+                    _("From Date and To Date are required for Work From Home.")
                 )
 
-            current_date = record.date_from
+            wfh_dates = record._get_wfh_dates()
 
-            while current_date <= record.date_to:
-
-                # Tuesday = 1
-                # Wednesday = 2
-                # Thursday = 3
-                if current_date.weekday() not in (1, 2, 3):
-                    raise ValidationError(
-                        _(
-                            "Work From Home is allowed only on "
-                            "Tuesday, Wednesday or Thursday.\n\n"
-                            "Invalid date: %(date)s"
-                        )
-                        % {
-                            "date": current_date,
-                        }
-                    )
-
-                current_date += timedelta(days=1)
-
-            # Compensation date is mandatory for Home/WFH.
-            if not record.compensation_date:
+            # WFH is allowed only Tuesday / Wednesday / Thursday.
+            invalid_wfh_dates = [
+                value for value in wfh_dates if value.weekday() not in (1, 2, 3)
+            ]
+            if invalid_wfh_dates:
                 raise ValidationError(
                     _(
-                        "Compensation Date is required for "
-                        "Work From Home."
+                        "Work From Home is allowed only on Tuesday, "
+                        "Wednesday or Thursday.\n\n"
+                        "Invalid date: %(date)s"
+                    )
+                    % {"date": invalid_wfh_dates[0]}
+                )
+
+            wfh_day_count = len(wfh_dates)
+            compensation_dates = record._get_compensation_dates()
+
+            # Maximum supported by the existing fields.
+            if wfh_day_count > 3:
+                raise ValidationError(
+                    _(
+                        "A maximum of 3 Work From Home days is allowed "
+                        "per request. Please raise another request for "
+                        "additional WFH days."
                     )
                 )
 
-            # For a single exception date, validate compensation date.
-            #
-            # Current business rule assumes one compensation date
-            # for the exception request.
-            if record.date_from == record.date_to:
-
-                allowed_dates = (
-                    record._get_allowed_compensation_dates(
-                        record.date_from
+            # Exactly one compensation date per WFH day.
+            if len(compensation_dates) != wfh_day_count:
+                raise ValidationError(
+                    _(
+                        "Each Work From Home day requires exactly one "
+                        "compensation day.\n\n"
+                        "WFH Days: %(wfh_days)s\n"
+                        "Compensation Dates Entered: %(comp_days)s"
                     )
+                    % {
+                        "wfh_days": wfh_day_count,
+                        "comp_days": len(compensation_dates),
+                    }
                 )
 
-                if record.compensation_date not in allowed_dates:
-                    formatted_dates = ", ".join(
-                        str(value)
-                        for value in allowed_dates
-                    )
+            # No duplicate compensation dates.
+            if len(compensation_dates) != len(set(compensation_dates)):
+                raise ValidationError(
+                    _("Compensation dates must be different.")
+                )
 
+            wfh_date_set = set(wfh_dates)
+            for compensation_date in compensation_dates:
+                # Current policy allows Monday or Friday only.
+                if compensation_date.weekday() not in (0, 4):
                     raise ValidationError(
                         _(
-                            "Invalid Compensation Date.\n\n"
-                            "For Work From Home on %(exception_date)s, "
-                            "compensation can only be taken on Monday "
-                            "or Friday within 7 calendar days before "
-                            "or after the exception date.\n\n"
-                            "Allowed compensation dates: %(dates)s"
+                            "Invalid Compensation Date: %(date)s.\n\n"
+                            "Compensation dates must be working days and, "
+                            "under the current policy, can only be Monday "
+                            "or Friday."
+                        )
+                        % {"date": compensation_date}
+                    )
+
+                # Compensation cannot be one of the WFH dates.
+                if compensation_date in wfh_date_set:
+                    raise ValidationError(
+                        _(
+                            "Compensation Date %(date)s cannot be one of "
+                            "the Work From Home dates."
+                        )
+                        % {"date": compensation_date}
+                    )
+
+                # The compensation date must be within +/- 7 calendar
+                # days of the complete WFH period.
+                allowed_start = record.date_from - timedelta(days=7)
+                allowed_end = record.date_to + timedelta(days=7)
+                if not (allowed_start <= compensation_date <= allowed_end):
+                    raise ValidationError(
+                        _(
+                            "Invalid Compensation Date: %(date)s.\n\n"
+                            "Each compensation date must be within 7 "
+                            "calendar days before or after the Work From "
+                            "Home period (%(date_from)s to %(date_to)s)."
                         )
                         % {
-                            "exception_date": record.date_from,
-                            "dates": formatted_dates or "None",
+                            "date": compensation_date,
+                            "date_from": record.date_from,
+                            "date_to": record.date_to,
                         }
                     )
 
@@ -313,6 +475,8 @@ class BxiShiftException(models.Model):
         "date_from",
         "date_to",
         "compensation_date",
+        "compensation_date_2",
+        "compensation_date_3",
         "mode",
     )
     def _check_wfh_policy(self):
@@ -385,6 +549,7 @@ class BxiShiftException(models.Model):
             # Validate WFH / Exception Policy
             # ---------------------------------------------------------
             record._validate_wfh_policy()
+            record._check_monthly_home_exception()
 
             # ---------------------------------------------------------
             # Move to Manager Approval
@@ -468,7 +633,7 @@ class BxiShiftException(models.Model):
                 "<strong>From Date:</strong> %s<br/>"
                 "<strong>To Date:</strong> %s<br/>"
                 "<strong>Mode:</strong> %s<br/>"
-                "<strong>Compensation Date:</strong> %s<br/>"
+                "<strong>Compensation Date(s):</strong> %s<br/>"
                 "<strong>Reason:</strong> %s"
                 "</p>"
 
@@ -497,7 +662,9 @@ class BxiShiftException(models.Model):
                 record.date_from or "",
                 record.date_to or "",
                 mode_label,
-                record.compensation_date or "",
+                ", ".join(
+                    str(value) for value in record._get_compensation_dates()
+                ),
                 record.reason or "",
                 view_request_url,
             )
@@ -570,12 +737,9 @@ class BxiShiftException(models.Model):
             # Validate again before approval.
             record._validate_wfh_policy()
 
-            EmployeeLocation = self.env[
-                "bxi.shift.employee.location"
-            ].sudo()
-
-            orig = {}
-
+            # -------------------------------------------------------------
+            # Weekday field mapping
+            # -------------------------------------------------------------
             weekday_field_map = {
                 0: "monday_location_id",
                 1: "tuesday_location_id",
@@ -589,103 +753,57 @@ class BxiShiftException(models.Model):
             emp = record.employee_id.sudo()
 
             # -------------------------------------------------------------
-            # Capture original employee weekday locations
+            # Capture the employee's ORIGINAL weekly locations.
+            #
+            # The cron uses this snapshot to restore the employee after the
+            # exception day is finished.  If this employee already has an
+            # exception with a saved snapshot, reuse that snapshot so a
+            # second request does not accidentally save an already-modified
+            # WFH location as the employee's "original" location.
             # -------------------------------------------------------------
+            if not record.original_weekday_locations:
+                orig = {}
 
-            try:
-
-                if not record.original_weekday_locations:
-
-                    for idx, field_name in weekday_field_map.items():
-
-                        if field_name in emp._fields:
-
-                            orig[field_name] = (
-                                emp[field_name].id
-                                if emp[field_name]
-                                else False
-                            )
-
-                    record.original_weekday_locations = json.dumps(
-                        orig
-                    )
-
-            except Exception:
-                _logger.exception(
-                    "Failed to capture original weekday locations "
-                    "for %s",
-                    record.name,
+                previous_exception = self.search(
+                    [
+                        ("id", "!=", record.id),
+                        ("employee_id", "=", emp.id),
+                        ("original_weekday_locations", "!=", False),
+                    ],
+                    order="id asc",
+                    limit=1,
                 )
 
-            # -------------------------------------------------------------
-            # Apply exception location
-            # -------------------------------------------------------------
-
-            cur = record.date_from
-
-            while cur <= record.date_to:
-
-                weekday = cur.weekday()
-
-                # Fixed policy:
-                # Home/WFH -> Tuesday, Wednesday, Thursday only.
-                #
-                # Office/Hybrid can continue through the existing
-                # location logic.
-
-                if record.mode == "home":
-                    if weekday not in (1, 2, 3):
-                        cur += timedelta(days=1)
-                        continue
-
-                try:
-
-                    EmployeeLocation.create(
-                        {
-                            "employee_id": emp.id,
-                            "date": cur,
-                            "location_id": (
-                                record.to_location_id.id
-                                if record.to_location_id
-                                else False
-                            ),
-                            "exception_id": record.id,
-                        }
-                    )
-
-                except Exception:
-                    _logger.exception(
-                        "Failed to create employee location "
-                        "for exception %s on %s",
-                        record.name,
-                        cur,
-                    )
-
-                field_name = weekday_field_map.get(weekday)
-
-                if (
-                    field_name
-                    and field_name in emp._fields
-                    and record.to_location_id
-                ):
+                if previous_exception and previous_exception.original_weekday_locations:
                     try:
-
-                        emp.write(
-                            {
-                                field_name:
-                                    record.to_location_id.id
-                            }
+                        orig = json.loads(
+                            previous_exception.original_weekday_locations
+                        )
+                    except (TypeError, ValueError):
+                        _logger.warning(
+                            "Invalid original_weekday_locations on %s",
+                            previous_exception.name,
                         )
 
-                    except Exception:
-                        _logger.exception(
-                            "Failed to update employee weekday "
-                            "field %s for %s",
-                            field_name,
-                            emp.name,
-                        )
+                if not orig:
+                    for weekday, field_name in weekday_field_map.items():
+                        if field_name in emp._fields:
+                            value = emp[field_name]
+                            orig[field_name] = value.id if value else False
 
-                cur += timedelta(days=1)
+                record.original_weekday_locations = json.dumps(orig)
+
+            # -------------------------------------------------------------
+            # Do NOT change the employee weekly fields at approval time.
+            #
+            # The nightly cron is responsible for:
+            #   - restoring today's field to its original location;
+            #   - applying tomorrow's approved exception;
+            #   - applying tomorrow's compensation-day location.
+            #
+            # This prevents a WFH request for 15-16 September from changing
+            # Tuesday/Wednesday immediately on approval.
+            # -------------------------------------------------------------
 
             # -------------------------------------------------------------
             # Change state after successful processing
@@ -788,23 +906,49 @@ class BxiShiftException(models.Model):
 
     @api.model
     def cron_apply_and_cleanup_exceptions(self):
+        """
+        Nightly exception-working scheduler.
+
+        Expected cron time: 23:00 every day.
+
+        Example:
+            WFH: 15-09-2026 to 16-09-2026
+            Compensation: 14-09-2026 and 18-09-2026
+
+        Night of 13 Sep:
+            Monday (14 Sep) is prepared as the employee's original location.
+
+        Night of 14 Sep:
+            Monday is restored to original location.
+            Tuesday (15 Sep) is changed to the WFH location.
+
+        Night of 15 Sep:
+            Tuesday is restored to original location.
+            Wednesday (16 Sep) is changed to the WFH location.
+
+        Night of 16 Sep:
+            Wednesday is restored to original location.
+            Thursday is prepared normally.
+
+        Night of 17 Sep:
+            Thursday is restored to original location.
+            Friday (18 Sep) is set to the employee's original location
+            because it is the compensation day.
+
+        Therefore the employee's actual weekly location fields always represent
+        the location that should be used for the next working day, while the
+        original values are restored automatically after an exception day.
+        """
         today = fields.Date.context_today(self)
+        tomorrow = today + timedelta(days=1)
+
         _logger.info(
-            "Starting BXI daily shift exception cron for %s",
+            "Starting BXI daily shift exception cron: today=%s, tomorrow=%s",
             today,
+            tomorrow,
         )
 
-        active_exceptions = self.search(
-            [
-                ("state", "=", "approved"),
-                ("date_from", "<=", today),
-                ("date_to", ">=", today),
-            ]
-        )
-
-        weekday = today.weekday()
-
-        weekday_fields = {
+        weekday_field_map = {
             0: "monday_location_id",
             1: "tuesday_location_id",
             2: "wednesday_location_id",
@@ -814,148 +958,260 @@ class BxiShiftException(models.Model):
             6: "sunday_location_id",
         }
 
-        field_name = weekday_fields.get(weekday)
-
-        if not field_name:
-            return True
-
         # -------------------------------------------------------------
-        # 2. Apply today's exception location
+        # Find employees for whom an original weekly location snapshot
+        # exists.  These are employees that have already had an exception
+        # approved/processed.
         # -------------------------------------------------------------
-
-        for exception in active_exceptions:
-
-            employee = exception.employee_id.sudo()
-
-            if not employee:
-                continue
-
-            # ---------------------------------------------------------
-            # Fixed WFH rule:
-            # Tuesday = 1
-            # Wednesday = 2
-            # Thursday = 3
-            # ---------------------------------------------------------
-
-            if exception.mode == "home":
-
-                if weekday not in (1, 2, 3):
-                    continue
-
-            # Field must exist on employee.
-            if field_name not in employee._fields:
-
-                _logger.warning(
-                    "Employee model does not contain %s",
-                    field_name,
-                )
-
-                continue
-
-            # ---------------------------------------------------------
-            # Apply exception location
-            # ---------------------------------------------------------
-
-            if exception.to_location_id:
-
-                employee.write(
-                    {
-                        field_name:
-                            exception.to_location_id.id,
-                    }
-                )
-
-                _logger.info(
-                    "Applied exception %s: employee=%s, "
-                    "date=%s, field=%s, location=%s",
-                    exception.name,
-                    employee.name,
-                    today,
-                    field_name,
-                    exception.to_location_id.name,
-                )
-
-        # -------------------------------------------------------------
-        # 3. Restore locations for expired exceptions
-        # -------------------------------------------------------------
-
-        expired_exceptions = self.search(
+        exception_records = self.search(
             [
-                ("state", "=", "approved"),
-                ("date_to", "<", today),
+                ("employee_id", "!=", False),
                 ("original_weekday_locations", "!=", False),
             ]
         )
 
-        for exception in expired_exceptions:
+        employees = exception_records.mapped("employee_id").sudo()
 
-            employee = exception.employee_id.sudo()
+        for employee in employees:
+            baseline_exception = self.search(
+                [
+                    ("employee_id", "=", employee.id),
+                    ("original_weekday_locations", "!=", False),
+                ],
+                order="id asc",
+                limit=1,
+            )
 
-            if not employee:
+            if not baseline_exception:
                 continue
 
             try:
-
                 original_locations = json.loads(
-                    exception.original_weekday_locations
-                    or "{}"
+                    baseline_exception.original_weekday_locations or "{}"
                 )
-
-            except Exception:
-
+            except (TypeError, ValueError):
                 _logger.exception(
-                    "Invalid original weekday locations "
-                    "for exception %s",
-                    exception.name,
+                    "Could not read original weekday locations for employee %s",
+                    employee.name,
                 )
-
                 continue
 
-            for field_name, location_id in (
-                original_locations.items()
-            ):
+            # ---------------------------------------------------------
+            # 1. Restore ALL weekly fields to their original locations.
+            #
+            # This is the important part that makes the exception expire.
+            # We do this before applying tomorrow's exception.
+            # ---------------------------------------------------------
+            restore_values = {}
 
+            for weekday, field_name in weekday_field_map.items():
                 if field_name not in employee._fields:
                     continue
 
-                try:
+                original_location_id = original_locations.get(field_name)
 
-                    employee.write(
-                        {
-                            field_name:
-                                location_id or False,
-                        }
+                if original_location_id:
+                    restore_values[field_name] = int(original_location_id)
+                else:
+                    restore_values[field_name] = False
+
+            if restore_values:
+                employee.write(restore_values)
+
+            # ---------------------------------------------------------
+            # 2. Find an APPROVED exception that applies to TOMORROW.
+            # ---------------------------------------------------------
+            approved_requests = self.search(
+                [
+                    ("employee_id", "=", employee.id),
+                    ("state", "=", "approved"),
+                ],
+                order="id asc",
+            )
+
+            tomorrow_field_name = weekday_field_map.get(tomorrow.weekday())
+
+            if not tomorrow_field_name or tomorrow_field_name not in employee._fields:
+                continue
+
+            tomorrow_location_id = False
+            tomorrow_has_exception = False
+
+            for exception in approved_requests:
+                # -----------------------------------------------------
+                # A. WFH / Home exception for tomorrow.
+                # -----------------------------------------------------
+                if (
+                    exception.mode == "home"
+                    and exception.date_from
+                    and exception.date_to
+                    and exception.date_from <= tomorrow <= exception.date_to
+                    and tomorrow.weekday() in (1, 2, 3)
+                ):
+                    tomorrow_has_exception = True
+                    tomorrow_location_id = (
+                        exception.to_location_id.id
+                        if exception.to_location_id
+                        else False
                     )
 
                     _logger.info(
-                        "Restored employee=%s field=%s "
-                        "location=%s after exception %s expired",
+                        "Tomorrow %s is WFH for employee=%s "
+                        "(request=%s, location=%s)",
+                        tomorrow,
                         employee.name,
-                        field_name,
-                        location_id,
                         exception.name,
+                        tomorrow_location_id,
                     )
 
-                except Exception:
+                    # Home requests are restricted to one request per
+                    # employee per calendar month, so normally there will
+                    # not be another Home request competing here.
+                    break
 
-                    _logger.exception(
-                        "Failed to restore employee=%s "
-                        "field=%s for exception %s",
-                        employee.name,
-                        field_name,
-                        exception.name,
+                # -----------------------------------------------------
+                # B. Office / Client exception for tomorrow.
+                #
+                # Preserve the existing exception-working behaviour for
+                # non-Home modes as well.
+                # -----------------------------------------------------
+                if (
+                    exception.mode in ("office", "client")
+                    and exception.date_from
+                    and exception.date_to
+                    and exception.date_from <= tomorrow <= exception.date_to
+                ):
+                    tomorrow_has_exception = True
+                    tomorrow_location_id = (
+                        exception.to_location_id.id
+                        if exception.to_location_id
+                        else False
                     )
 
-            # Clear stored original values after restoration.
-            exception.write(
-                {
-                    "original_weekday_locations": False,
-                }
-            )
+                    _logger.info(
+                        "Tomorrow %s is %s exception for employee=%s "
+                        "(request=%s, location=%s)",
+                        tomorrow,
+                        exception.mode,
+                        employee.name,
+                        exception.name,
+                        tomorrow_location_id,
+                    )
+                    break
+
+                # -----------------------------------------------------
+                # C. Compensation day.
+                #
+                # Compensation means the employee must work from the
+                # ORIGINAL location configured for that weekday.
+                # Because we restored all weekly fields above, using the
+                # original snapshot here guarantees that WFH does not
+                # remain on the compensation day.
+                # -----------------------------------------------------
+                if (
+                    exception.mode == "home"
+                    and tomorrow in exception._get_compensation_dates()
+                ):
+                    tomorrow_has_exception = True
+                    tomorrow_location_id = original_locations.get(
+                        tomorrow_field_name
+                    )
+
+                    if tomorrow_location_id:
+                        tomorrow_location_id = int(tomorrow_location_id)
+
+                    _logger.info(
+                        "Tomorrow %s is compensation day for employee=%s "
+                        "(request=%s, original location=%s)",
+                        tomorrow,
+                        employee.name,
+                        exception.name,
+                        tomorrow_location_id,
+                    )
+                    break
+
+            # ---------------------------------------------------------
+            # 3. Apply TOMORROW's exception to the actual employee
+            #    weekday field.
+            #
+            # Example:
+            #     tomorrow = Tuesday
+            #     tomorrow_field_name = tuesday_location_id
+            #     WFH location = Home
+            #
+            #     employee.tuesday_location_id = Home
+            # ---------------------------------------------------------
+            if tomorrow_has_exception:
+                employee.write(
+                    {
+                        tomorrow_field_name: tomorrow_location_id,
+                    }
+                )
 
         _logger.info(
-            "Completed BXI daily shift exception cron for %s",
+            "Completed BXI daily shift exception cron: today=%s, tomorrow=%s",
             today,
+            tomorrow,
         )
-
         return True
+
+    def _check_monthly_home_exception(self):
+        """
+        Allow only one Work From Home (Home mode) request
+        per employee per calendar month.
+        """
+        for record in self:
+            # Monthly restriction applies only to Home / WFH.
+            if record.mode != "home":
+                continue
+            if not record.employee_id:
+                continue
+            if not record.date_from:
+                continue
+            # Start and end of the month of the WFH request.
+            month_start = record.date_from.replace(day=1)
+            if month_start.month == 12:
+                month_end = month_start.replace(
+                    year=month_start.year + 1,
+                    month=1,
+                    day=1,
+                ) - timedelta(days=1)
+            else:
+                month_end = month_start.replace(
+                    month=month_start.month + 1,
+                    day=1,
+                ) - timedelta(days=1)
+
+            # Find another active WFH request for the same employee
+            # in the same calendar month.
+            existing_request = self.search(
+                [
+                    ("id", "!=", record.id),
+                    ("employee_id", "=", record.employee_id.id),
+                    ("mode", "=", "home"),
+                    ("date_from", ">=", month_start),
+                    ("date_from", "<=", month_end),
+                    ("state", "in", ("manager_approval", "approved")),
+                ],
+                limit=1,
+            )
+
+            if existing_request:
+                raise ValidationError(
+                    _(
+                        "You have already raised a Work From Home request "
+                        "for %(month)s %(year)s.\n\n"
+                        "Existing Request: %(request)s\n"
+                        "From Date: %(date_from)s\n"
+                        "To Date: %(date_to)s\n\n"
+                        "Only one Work From Home request is allowed "
+                        "per calendar month."
+                    )
+                    % {
+                        "month": record.date_from.strftime("%B"),
+                        "year": record.date_from.year,
+                        "request": existing_request.name,
+                        "date_from": existing_request.date_from,
+                        "date_to": existing_request.date_to,
+                    }
+                )

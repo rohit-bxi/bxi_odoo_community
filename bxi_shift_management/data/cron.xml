@@ -33,5 +33,14 @@
             <field name="active">True</field>
         </record>
 
+        <record id="ir_cron_shift_exception_daily" model="ir.cron">
+            <field name="name">Shift Exception - Apply Daily Locations</field>
+            <field name="model_id" ref="model_bxi_shift_exception"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_apply_and_cleanup_exceptions()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active">True</field>
+        </record>
     </data>
 </odoo>
