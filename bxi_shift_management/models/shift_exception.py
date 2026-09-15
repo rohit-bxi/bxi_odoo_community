@@ -381,57 +381,144 @@ class BxiShiftException(models.Model):
                     _("From Date and To Date are required.")
                 )
 
-            # Validate WFH policy before submission.
+            # ---------------------------------------------------------
+            # Validate WFH / Exception Policy
+            # ---------------------------------------------------------
             record._validate_wfh_policy()
 
+            # ---------------------------------------------------------
+            # Move to Manager Approval
+            # ---------------------------------------------------------
             record.state = "manager_approval"
 
+            # ---------------------------------------------------------
+            # Manager Email
+            # ---------------------------------------------------------
             manager_email = (
                 record.manager_id.user_id.email
                 if record.manager_id.user_id
                 else False
             )
 
+            # ---------------------------------------------------------
+            # HR Support Email
+            # ---------------------------------------------------------
+            hr_email = "hrsupport@bxitech.com"
+
+            # ---------------------------------------------------------
+            # Prepare recipients
+            # ---------------------------------------------------------
+            recipients = [hr_email]
+
             if manager_email:
+                recipients.append(manager_email.strip())
+
+            # Remove duplicate / empty emails
+            recipients = list(
+                dict.fromkeys(
+                    email for email in recipients if email
+                )
+            )
+
+            email_to = ",".join(recipients)
+
+            # ---------------------------------------------------------
+            # Backend View Request URL
+            # ---------------------------------------------------------
+            base_url = self.env["ir.config_parameter"].sudo().get_param(
+                "web.base.url"
+            )
+
+            view_request_url = (
+                f"{base_url}/web#"
+                f"id={record.id}"
+                f"&model=bxi.shift.exception"
+                f"&view_type=form"
+            )
+
+            # ---------------------------------------------------------
+            # Mode Label
+            # ---------------------------------------------------------
+            mode_label = ""
+
+            if record.mode:
+                mode_label = dict(
+                    record._fields["mode"].selection
+                ).get(record.mode, "")
+
+            # ---------------------------------------------------------
+            # Email Subject
+            # ---------------------------------------------------------
+            subject = _(
+                "Exception Working Request: %s"
+            ) % record.name
+
+            # ---------------------------------------------------------
+            # Email Body
+            # ---------------------------------------------------------
+            body = _(
+                "<p>Dear Manager / HR,</p>"
+
+                "<p>"
+                "Employee <strong>%s</strong> has submitted an "
+                "Exception Working Request for your review."
+                "</p>"
+
+                "<p>"
+                "<strong>From Date:</strong> %s<br/>"
+                "<strong>To Date:</strong> %s<br/>"
+                "<strong>Mode:</strong> %s<br/>"
+                "<strong>Compensation Date:</strong> %s<br/>"
+                "<strong>Reason:</strong> %s"
+                "</p>"
+
+                "<p>"
+                "Please review the request and take the necessary action."
+                "</p>"
+
+                "<p style='margin-top:20px;'>"
+                "<a href='%s' "
+                "style='background-color:#875A7B;"
+                "color:white;"
+                "padding:10px 18px;"
+                "text-decoration:none;"
+                "border-radius:5px;"
+                "display:inline-block;'>"
+                "View Request"
+                "</a>"
+                "</p>"
+
+                "<p>"
+                "Regards,<br/>"
+                "HR Support"
+                "</p>"
+            ) % (
+                record.employee_id.name,
+                record.date_from or "",
+                record.date_to or "",
+                mode_label,
+                record.compensation_date or "",
+                record.reason or "",
+                view_request_url,
+            )
+
+            # ---------------------------------------------------------
+            # Send Email
+            # ---------------------------------------------------------
+            if email_to:
                 try:
-                    subject = _(
-                        "Exception Working Request: %s"
-                    ) % record.name
-
-                    body = _(
-                        "<p>Employee <strong>%s</strong> has requested "
-                        "an exception working change from "
-                        "<strong>%s</strong> to <strong>%s</strong>.</p>"
-                        "<p><strong>Mode:</strong> %s</p>"
-                        "<p><strong>Compensation Date:</strong> %s</p>"
-                        "<p><strong>Reason:</strong> %s</p>"
-                    ) % (
-                        record.employee_id.name,
-                        record.date_from or "",
-                        record.date_to or "",
-                        dict(
-                            record._fields["mode"].selection
-                        ).get(record.mode, "")
-                        if record.mode
-                        else "",
-                        record.compensation_date or "",
-                        record.reason or "",
-                    )
-
-                    self.env["mail.mail"].sudo().create(
-                        {
-                            "subject": subject,
-                            "body_html": body,
-                            "email_from": "hrsupport@bxitech.com",
-                            "email_to": manager_email,
-                            "auto_delete": True,
-                        }
-                    ).send()
+                    self.env["mail.mail"].sudo().create({
+                        "subject": subject,
+                        "body_html": body,
+                        "email_from": "hrsupport@bxitech.com",
+                        "email_to": email_to,
+                        "auto_delete": True,
+                    }).send()
 
                 except Exception:
                     _logger.exception(
-                        "Failed to send manager notification "
-                        "for shift exception %s",
+                        "Failed to send exception working "
+                        "notification for %s",
                         record.name,
                     )
 
