@@ -893,3 +893,141 @@
     font-size: 16px;
     color: #495057;
 }
+
+/* ============================================================
+   Helpdesk Dashboard – Team Cards Section
+   ============================================================ */
+.teams-section {
+    margin-bottom: 2rem;
+}
+
+.hd-team-card {
+    background: #fff;
+    border: 1px solid #e0e4e8;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.hd-team-card:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.10) !important;
+    transform: translateY(-2px);
+}
+
+/* Card Header */
+.hd-team-card-header {
+    padding: 14px 18px 10px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.hd-team-name {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hd-team-alias {
+    font-size: 12px;
+    color: #718096;
+}
+
+.hd-team-alias .fa {
+    margin-right: 4px;
+    color: #a0aec0;
+}
+
+/* Card Body */
+.hd-team-card-body {
+    padding: 14px 18px;
+}
+
+/* Actions row: Tickets button + Closed count + SLA rate */
+.hd-team-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.hd-btn-tickets {
+    background: #2d3748 !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 5px !important;
+    padding: 5px 14px !important;
+    font-size: 13px !important;
+    flex-shrink: 0;
+    transition: background 0.15s ease;
+}
+
+.hd-btn-tickets:hover {
+    background: #1a202c !important;
+}
+
+.hd-btn-tickets .fa {
+    margin-right: 4px;
+}
+
+.hd-closed-block,
+.hd-sla-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1;
+}
+
+.hd-closed-count,
+.hd-sla-count {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.hd-closed-label,
+.hd-sla-label {
+    font-size: 11px;
+    color: #718096;
+    white-space: nowrap;
+}
+
+/* Bottom stats row: Open / Unassigned / Urgent / Failed */
+.hd-team-stats {
+    display: flex;
+    justify-content: space-between;
+    text-align: center;
+}
+
+.hd-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+}
+
+.hd-stat + .hd-stat {
+    border-left: 1px solid #f0f0f0;
+}
+
+.hd-stat-val {
+    font-size: 16px;
+    font-weight: 700;
+    color: #2d3748;
+    line-height: 1.3;
+}
+
+.hd-stat-failed .hd-stat-val {
+    color: #e53e3e;
+}
+
+.hd-stat-lbl {
+    font-size: 11px;
+    color: #a0aec0;
+    margin-top: 2px;
+}

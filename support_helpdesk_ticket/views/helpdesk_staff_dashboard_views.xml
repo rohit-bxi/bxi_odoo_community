@@ -357,6 +357,20 @@
                             </div>
                         </div>
 
+                        <!-- Teams Section -->
+                        <div class="teams-section" id="dashboard-teams-section">
+                            <h3 class="section-title">
+                                <i class="fa fa-users" title="Teams"/> Teams
+                            </h3>
+                            <div class="row" id="team-cards-container">
+                                <!-- Team cards injected here by JS -->
+                                <div class="col-12 text-center py-4 text-muted" id="team-cards-loading">
+                                    <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
+                                    <p class="mt-2">Loading teams...</p>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Charts Section -->
                         <div class="charts-section">
                             <h3 class="section-title"><i class="fa fa-chart-bar" title="Analytics"/> Analytics &amp; Insights</h3>
