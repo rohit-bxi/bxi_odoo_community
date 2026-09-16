@@ -24,6 +24,7 @@
                             <th name="reimbursement_date">Reimbursement Date</th>
                             <th name="product_category">Category</th>
                             <th name="toltal_amount">Total</th>
+                            <th name="receipt">Receipt</th>
                             <th name="status">Status</th>
                         </tr>
                     </thead>
@@ -51,16 +52,24 @@
                                         <t t-esc="exp.total_amount" />
                                     </td>
                                     <td>
-                                        <span t-if="exp.state == 'draft'" class="badge bg-secondary">
-                                            Draft</span>
-                                        <span t-elif="exp.state == 'submitted'"
-                                            class="badge bg-info">Submitted</span>
-                                        <span t-elif="exp.state == 'approved'"
-                                            class="badge bg-primary">Approved</span>
-                                        <span t-elif="exp.state == 'paid'" class="badge bg-success">
-                                            Paid</span>
-                                        <span t-elif="exp.state == 'hr_approval'" class="badge bg-success">Hr Approval</span>
-                                        <span t-elif="exp.state == 'finance_approval'" class="badge bg-success">Finance Approval</span>
+                                        <t t-set="attachments" t-value="request.env['ir.attachment'].sudo().search([('res_model','=','hr.expense'),('res_id','=',exp.id)])"/>
+                                        <t t-if="attachments">
+                                            <t t-foreach="attachments" t-as="att">
+                                                <a t-att-href="'/web/content/%s?download=true' % (att.id,)" class="me-2"> <t t-esc="att.name"/> </a>
+                                            </t>
+                                        </t>
+                                        <t t-else="">
+                                            -
+                                        </t>
+                                    </td>
+                                    <td>
+                                        <span t-if="exp.state == 'draft'" class="badge bg-secondary">Draft</span>
+                                        <span t-elif="exp.state == 'finance_approval'" class="badge bg-info">Finance Approval</span>
+                                        <span t-elif="exp.state == 'approved'" class="badge bg-primary">Approved</span>
+                                        <span t-elif="exp.state == 'posted'" class="badge bg-primary">Posted</span>
+                                        <span t-elif="exp.state == 'in_payment'" class="badge bg-warning">In Payment</span>
+                                        <span t-elif="exp.state == 'paid'" class="badge bg-success">Paid</span>
+                                        <span t-elif="exp.state == 'refused'" class="badge bg-danger">Refused</span>
                                         <span t-else="" class="badge bg-dark">
                                             <t t-esc="exp.state" />
                                         </span>

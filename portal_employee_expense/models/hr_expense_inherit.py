@@ -34,7 +34,6 @@ class HrExpense(models.Model):
     state = fields.Selection(
         selection=[
             ('draft', 'Draft'),
-            ('hr_approval', 'Hr Approval'),
             ('finance_approval', 'Finance Approval'),
             ('approved', 'Approved'),
             ('posted', 'Posted'),
@@ -64,11 +63,7 @@ class HrExpense(models.Model):
 
         return records
 
-    def action_hr_approve(self):
-        for rec in self:
-            if rec.state != 'hr_approval':
-                raise UserError("Expense must be in HR Approval state.")
-            rec.state = 'finance_approval'
+    # HR approval step removed; expenses go directly to finance approval on create
 
     def action_finance_approved(self):
         for rec in self:
@@ -92,35 +87,13 @@ class HrExpense(models.Model):
     def _send_state_email(self):
         for rec in self:
             template = False
-            email_to = False
-            if rec.state == 'hr_approval':
-                template = self.env.ref(
-                    'portal_employee_expense.email_template_hr',
-                    raise_if_not_found=False
-                )
-                email_to = 'hr@bxitech.com'
-            elif rec.state == 'finance_approval':
-                template = self.env.ref(
-                    'portal_employee_expense.email_template_finance',
-                    raise_if_not_found=False
-                )
-                email_to = 'FSO@bxiventures.com'
+            if rec.state == 'finance_approval':
+                template = self.env.ref('portal_employee_expense.email_template_finance', raise_if_not_found=False)
             elif rec.state == 'approved':
-                template = self.env.ref(
-                    'portal_employee_expense.email_template_expense_approved',
-                    raise_if_not_found=False
-                )
+                template = self.env.ref('portal_employee_expense.email_template_expense_approved', raise_if_not_found=False)
             elif rec.state == 'refused':
-                template = self.env.ref(
-                    'portal_employee_expense.email_template_expense_refused',
-                    raise_if_not_found=False
-                )
+                template = self.env.ref('portal_employee_expense.email_template_expense_refused', raise_if_not_found=False)
+
             if template:
-                email_values = {}
-                if email_to:
-                    email_values['email_to'] = email_to
-                template.send_mail(
-                    rec.id,
-                    email_values=email_values,
-                    force_send=True
-                )
+                template.send_mail(rec.id, force_send=True)
+

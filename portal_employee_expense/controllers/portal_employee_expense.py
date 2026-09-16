@@ -39,9 +39,7 @@ class EmployeePortalExpense(http.Controller):
             ('user_id', '=', user.id)
         ], limit=1)
 
-        if not employee:
-            raise AccessError("No employee is linked to your user account.")
-
+        # Render form (GET request)
         if not post:
             products = request.env['product.product'].sudo().search([])
             return request.render(
@@ -49,6 +47,7 @@ class EmployeePortalExpense(http.Controller):
                 {'products': products}
             )
 
+        # Handle form submission (POST)
         form = request.httprequest.form
         files = request.httprequest.files
 
@@ -57,72 +56,29 @@ class EmployeePortalExpense(http.Controller):
         dates = form.getlist('date[]')
         amounts = form.getlist('amount[]')
 
+        # gather uploaded files (support 'receipt[]', 'attachment[]', 'attachment')
         attachments = []
-
         for key in ('receipt[]', 'receipt', 'attachment[]', 'attachment'):
             try:
                 attachments.extend(files.getlist(key) or [])
             except Exception:
-                pass
+                continue
 
-        row_count = max(
-            len(names),
-            len(product_ids),
-            len(dates),
-            len(amounts),
-        )
-
-        for index in range(row_count):
-
-            name = names[index] if index < len(names) else False
-            product = product_ids[index] if index < len(product_ids) else False
-            date = dates[index] if index < len(dates) else False
-            amount = amounts[index] if index < len(amounts) else False
-
+        for index, (name, product, date, amount) in enumerate(
+            zip(names, product_ids, dates, amounts)
+        ):
             if not name:
                 continue
 
             product_id = int(product) if product else False
 
-            expense_record = request.env['hr.expense'].sudo().create({
+            request.env['hr.expense'].sudo().create({
                 'name': name,
                 'date': date,
                 'product_id': product_id,
                 'total_amount': float(amount or 0),
                 'employee_id': employee.id if employee else False,
-                'state': 'hr_approval',
+                'state': 'finance_approval',
             })
 
-            uploaded_file = (
-                attachments[index]
-                if index < len(attachments)
-                else False
-            )
-
-            if uploaded_file and uploaded_file.filename:
-                file_content = uploaded_file.read()
-
-                if file_content:
-                    attachment = request.env['ir.attachment'].sudo().create({
-                        'name': uploaded_file.filename,
-                        'type': 'binary',
-                        'datas': base64.b64encode(file_content).decode('utf-8'),
-                        'res_model': 'hr.expense',
-                        'res_id': expense_record.id,
-                        'mimetype': (
-                            uploaded_file.content_type
-                            or 'application/octet-stream'
-                        ),
-                    })
-
-                    # Link receipt to expense
-                    expense_record.sudo().write({
-                        'attachment_ids': [(4, attachment.id)]
-                    })
-
-            expense_record.sudo().write({
-                'state': 'hr_approval'
-            })
-
-            expense_record._send_state_email()
         return request.redirect('/my/employee-expenses')

@@ -1,21 +1,15 @@
 <odoo>
     <record id="view_hr_expense_form_inherit_hr" model="ir.ui.view">
-        <field name="name">hr.expense.form.hr.approval</field>
+        <field name="name">hr.expense.form.finance.approval</field>
         <field name="model">hr.expense</field>
         <field name="inherit_id" ref="hr_expense.hr_expense_view_form" />
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
-                <button name="action_hr_approve"
-                    type="object"
-                    string="HR Approve"
-                    class="btn-primary"
-                    invisible="state != 'hr_approval'" />
-
                 <button name="action_refuse"
                     type="object"
                     string="Refuse"
                     class="btn-danger"
-                    invisible="state != 'hr_approval'" />
+                    invisible="state != 'finance_approval'" />
             </xpath>
             <xpath expr="//button[@name='action_submit']" position="replace">
                 <button name="action_finance_approved"
@@ -25,9 +19,9 @@
                     invisible="state != 'finance_approval'" />
             </xpath>
             <xpath expr="//field[@name='state']" position="replace">
-            <field name="state" widget="statusbar"
-                statusbar_visible="hr_approval,finance_approval,approved,posted"/>
-        </xpath>
+                <field name="state" widget="statusbar"
+                    statusbar_visible="finance_approval,approved,posted"/>
+            </xpath>
         </field>
     </record>
 </odoo>
