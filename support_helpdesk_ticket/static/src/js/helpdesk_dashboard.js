@@ -103,6 +103,7 @@
                 self.Chart = Chart;
                 self.loadTeams();
                 self.loadKPIs();
+                self.loadTeamCards();
                 self.setupEventListeners();
             }).catch(function(error) {
                 console.error('Failed to initialize dashboard:', error);
@@ -141,6 +142,7 @@
                     e.stopPropagation();
                     self.loadKPIs();
                     self.loadCharts();
+                    self.loadTeamCards();
                     return false;
                 });
             }
@@ -466,6 +468,115 @@
             
             // Reload KPIs with cleared filters
             self.loadKPIs();
+        },
+
+        loadTeamCards: function() {
+            var self = this;
+            rpcQuery('/helpdesk/dashboard/team-cards', {}).then(function(result) {
+                if (result.success && result.data) {
+                    self.renderTeamCards(result.data);
+                }
+            }).catch(function(error) {
+                console.error('Error loading team cards:', error);
+            });
+        },
+
+        renderTeamCards: function(teams) {
+            var container = document.getElementById('team-cards-container');
+            if (!container) return;
+
+            // Hide loading indicator
+            var loading = document.getElementById('team-cards-loading');
+            if (loading) loading.style.display = 'none';
+
+            // Remove existing team cards (not the loading div)
+            var existing = container.querySelectorAll('.hd-team-card-col');
+            existing.forEach(function(el) { el.remove(); });
+
+            if (!teams || teams.length === 0) {
+                if (loading) {
+                    loading.style.display = 'block';
+                    loading.innerHTML = '<p class="text-muted">No teams found.</p>';
+                }
+                return;
+            }
+
+            teams.forEach(function(team) {
+                var col = document.createElement('div');
+                col.className = 'col-lg-4 col-md-6 mb-4 hd-team-card-col';
+
+                var aliasHtml = team.alias_email
+                    ? '<div class="hd-team-alias"><i class="fa fa-envelope-o"></i> ' + team.alias_email + '</div>'
+                    : '';
+
+                var slaRate = team.sla_success_rate !== undefined ? team.sla_success_rate + ' %' : '/ %';
+
+                col.innerHTML = [
+                    '<div class="hd-team-card shadow-sm">',
+                    '  <div class="hd-team-card-header">',
+                    '    <strong class="hd-team-name">' + team.name + '</strong>',
+                    aliasHtml,
+                    '  </div>',
+                    '  <div class="hd-team-card-body">',
+                    '    <div class="hd-team-actions">',
+                    '      <button class="btn btn-sm btn-dark hd-btn-tickets" data-team-id="' + team.id + '">',
+                    '        <i class="fa fa-ticket"></i> Tickets',
+                    '      </button>',
+                    '      <div class="hd-closed-block">',
+                    '        <span class="hd-closed-count text-primary">' + team.closed_tickets + '</span>',
+                    '        <span class="hd-closed-label">Tickets Closed</span>',
+                    '      </div>',
+                    '      <div class="hd-sla-block">',
+                    '        <span class="hd-sla-count text-success">' + slaRate + '</span>',
+                    '        <span class="hd-sla-label">SLA Success Rate</span>',
+                    '      </div>',
+                    '    </div>',
+                    '    <div class="hd-team-stats">',
+                    '      <div class="hd-stat">',
+                    '        <span class="hd-stat-val">' + team.open_tickets + '</span>',
+                    '        <span class="hd-stat-lbl">Open</span>',
+                    '      </div>',
+                    '      <div class="hd-stat">',
+                    '        <span class="hd-stat-val">' + team.unassigned_tickets + '</span>',
+                    '        <span class="hd-stat-lbl">Unassigned</span>',
+                    '      </div>',
+                    '      <div class="hd-stat">',
+                    '        <span class="hd-stat-val">' + team.urgent_tickets + '</span>',
+                    '        <span class="hd-stat-lbl">Urgent</span>',
+                    '      </div>',
+                    '      <div class="hd-stat hd-stat-failed">',
+                    '        <span class="hd-stat-val text-danger">' + team.failed_tickets + '</span>',
+                    '        <span class="hd-stat-lbl">Failed</span>',
+                    '      </div>',
+                    '    </div>',
+                    '  </div>',
+                    '</div>',
+                ].join('\n');
+
+                // Attach click handler for Tickets button
+                var ticketsBtn = col.querySelector('.hd-btn-tickets');
+                if (ticketsBtn) {
+                    ticketsBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        var teamId = this.getAttribute('data-team-id');
+                        if (window.odoo && odoo.env) {
+                            odoo.env.services.action.doAction({
+                                type: 'ir.actions.act_window',
+                                name: team.name + ' Tickets',
+                                res_model: 'helpdesk.ticket',
+                                view_mode: 'list,form,kanban',
+                                domain: [['team_id', '=', parseInt(teamId)]],
+                                context: {},
+                            });
+                        } else {
+                            window.location.href = '/web#action=helpdesk_ticket&domain=[("team_id","=",' + teamId + ')]';
+                        }
+                    });
+                }
+
+                container.appendChild(col);
+            });
         }
     };
     

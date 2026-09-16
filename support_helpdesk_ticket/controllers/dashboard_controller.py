@@ -211,7 +211,71 @@ class HelpdeskDashboardController(http.Controller):
                 'success': False,
                 'error': str(e)
             }
-    
+
+    @http.route('/helpdesk/dashboard/team-cards', type='jsonrpc', auth='user', methods=['POST'], csrf=False)
+    def get_team_cards(self, **kwargs):
+        """Get per-team card stats for the team cards section in dashboard."""
+        try:
+            teams = request.env['helpdesk.team'].search([('active', '=', True)])
+            all_tickets = request.env['helpdesk.ticket'].search([])
+
+            team_cards = []
+            for team in teams:
+                team_tickets = all_tickets.filtered(lambda t: t.team_id.id == team.id)
+
+                closed_tickets = len(team_tickets.filtered(
+                    lambda t: t.state in ['closed', 'resolved']
+                ))
+                open_tickets = len(team_tickets.filtered(
+                    lambda t: t.state not in ['closed', 'cancelled']
+                ))
+                unassigned_tickets = len(team_tickets.filtered(
+                    lambda t: not t.user_id and t.state not in ['closed', 'cancelled']
+                ))
+                urgent_tickets = len(team_tickets.filtered(
+                    lambda t: t.priority == '3' and t.state not in ['closed', 'cancelled']
+                ))
+                failed_tickets = len(team_tickets.filtered(
+                    lambda t: t.sla_response_status == 'breached' and t.state not in ['closed', 'cancelled']
+                ))
+
+                # SLA success rate
+                total_with_sla = len(team_tickets.filtered(
+                    lambda t: t.sla_response_status in ['met', 'at_risk', 'breached']
+                ))
+                met_sla = len(team_tickets.filtered(
+                    lambda t: t.sla_response_status == 'met'
+                ))
+                sla_success_rate = round((met_sla / total_with_sla * 100), 2) if total_with_sla > 0 else 0.0
+
+                # Alias email
+                alias_email = ''
+                if team.alias_id and team.alias_id.alias_name:
+                    alias_domain = request.env['ir.config_parameter'].sudo().get_param('mail.catchall.domain', '')
+                    alias_email = '%s@%s' % (team.alias_id.alias_name, alias_domain) if alias_domain else team.alias_id.alias_name
+
+                team_cards.append({
+                    'id': team.id,
+                    'name': team.name,
+                    'alias_email': alias_email,
+                    'closed_tickets': closed_tickets,
+                    'sla_success_rate': sla_success_rate,
+                    'open_tickets': open_tickets,
+                    'unassigned_tickets': unassigned_tickets,
+                    'urgent_tickets': urgent_tickets,
+                    'failed_tickets': failed_tickets,
+                })
+
+            return {
+                'success': True,
+                'data': team_cards,
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
     @http.route('/helpdesk/team/dashboard/kpis', type='jsonrpc', auth='user', methods=['POST'], csrf=False)
     def get_team_kpis(self, date_from=None, date_to=None, team_id=None, **kwargs):
         """Get KPI data for team dashboard"""
