@@ -11,25 +11,23 @@
                 </a>
             </div>
             <t t-if="not expenses">
-                <p class="alert alert-warning">There are currently no expense available for this
-                    user.</p>
+                <p class="alert alert-warning">There are currently no expenses available for this user.</p>
             </t>
-            <t t-if="expenses" t-call="portal.portal_table">
-                <table class="table table-bordered" id="expense_table">
-                    <thead>
-                        <tr class="active">
-                            <th name="Employee">Employee</th>
-                            <th name="Description">Description</th>
-                            <th name="expenses_date">Expense Date</th>
-                            <th name="reimbursement_date">Reimbursement Date</th>
-                            <th name="product_category">Category</th>
-                            <th name="toltal_amount">Total</th>
-                            <th name="receipt">Receipt</th>
-                            <th name="status">Status</th>
-                        </tr>
-                    </thead>
-                    <div class="container mt-4">
-                        <h2>My Expenses</h2>
+            <t t-if="expenses">
+                <div class="table-responsive border-0">
+                    <table class="table table-bordered table-striped" id="expense_table">
+                        <thead>
+                            <tr class="active">
+                                <th name="Employee">Employee</th>
+                                <th name="Description">Description</th>
+                                <th name="expenses_date">Expense Date</th>
+                                <th name="reimbursement_date">Reimbursement Date</th>
+                                <th name="product_category">Category</th>
+                                <th name="toltal_amount">Total</th>
+                                <th name="receipt">Receipt</th>
+                                <th name="status">Status</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             <t t-foreach="expenses" t-as="exp">
                                 <tr>
@@ -77,8 +75,11 @@
                                 </tr>
                             </t>
                         </tbody>
-                    </div>
-                </table>
+                    </table>
+                </div>
+                <div t-if="pager" class="o_portal_pager d-flex justify-content-center my-3">
+                    <t t-call="portal.pager"/>
+                </div>
             </t>
         </t>
     </template>
