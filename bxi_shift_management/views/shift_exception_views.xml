@@ -7,7 +7,6 @@
         <field name="arch" type="xml">
             <form string="Exception Working Request">
                 <header>
-
                     <button
                         name="action_submit"
                         type="object"
@@ -80,8 +79,11 @@
                         </group>
                     </group>
                     <separator string="Exception Details"/>
+
                     <group>
+
                         <group>
+
                             <field
                                 name="mode"
                                 widget="radio"
@@ -96,27 +98,17 @@
                             />
                         </group>
                         <group>
-                            <field name="show_compensation_date" invisible="1"/>
-                            <field name="show_compensation_date_2" invisible="1"/>
-                            <field name="show_compensation_date_3" invisible="1"/>
+                            <field
+                                name="show_compensation_date"
+                                invisible="1"
+                            />
                             <field
                                 name="compensation_date"
                                 string="Compensation Date"
                                 readonly="state != 'draft'"
                                 invisible="not show_compensation_date"
                             />
-                            <field
-                                name="compensation_date_2"
-                                string="Compensation Date 2"
-                                readonly="state != 'draft'"
-                                invisible="not show_compensation_date_2"
-                            />
-                            <field
-                                name="compensation_date_3"
-                                string="Compensation Date 3"
-                                readonly="state != 'draft'"
-                                invisible="not show_compensation_date_3"
-                            />
+
                         </group>
 
                     </group>
@@ -126,13 +118,29 @@
                         invisible="mode != 'home'"
                     >
                         <strong>Work From Home Policy:</strong>
-                        WFH is allowed only on Tuesday, Wednesday and
-                        Thursday. Compensation must be taken on Monday
-                        or Friday within 7 calendar days before or after
-                        the WFH date.
+
+                        <div>
+                            Work From Home is allowed for
+                            <strong>one day only</strong>
+                            and only on
+                            <strong>Tuesday, Wednesday or Thursday</strong>.
+                        </div>
+
+                        <div>
+                            One compensation day is required and must be
+                            <strong>Monday or Friday</strong>
+                            within 7 calendar days before or after
+                            the WFH date.
+                        </div>
+
                     </div>
 
+                    <!-- ================================================= -->
+                    <!-- REASON -->
+                    <!-- ================================================= -->
+
                     <separator string="Reason / Description"/>
+
                     <group>
 
                         <field
@@ -314,6 +322,7 @@
         <field name="domain">
             [('employee_id.user_id', '=', uid)]
         </field>
+
     </record>
 
 

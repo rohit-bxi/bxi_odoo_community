@@ -172,51 +172,29 @@ class BxiShiftException(models.Model):
             ):
                 continue
 
-            current_date = record.date_from
-            wfh_dates = []
-
-            while current_date <= record.date_to:
-                # Tuesday = 1
-                # Wednesday = 2
-                # Thursday = 3
-                if current_date.weekday() in (1, 2, 3):
-                    wfh_dates.append(current_date)
-
-                current_date += timedelta(days=1)
-
-            record.wfh_day_count = len(wfh_dates)
-
-            record.show_compensation_date = (
-                record.wfh_day_count >= 1
-            )
-            record.show_compensation_date_2 = (
-                record.wfh_day_count >= 2
-            )
-            record.show_compensation_date_3 = (
-                record.wfh_day_count >= 3
-            )
+            if record.date_from == record.date_to:
+                if record.date_from.weekday() in (1, 2, 3):
+                    record.wfh_day_count = 1
+                    record.show_compensation_date = True
             
     @api.onchange("mode", "date_from", "date_to")
     def _onchange_wfh_dates(self):
         for record in self:
+
             if record.mode != "home":
                 record.compensation_date = False
                 record.compensation_date_2 = False
                 record.compensation_date_3 = False
                 continue
 
-            # Keep the compensation fields aligned with the number
-            # of WFH days currently selected.
-            wfh_day_count = record.wfh_day_count
+            # Home/WFH is exactly one day.
+            if record.date_from and record.date_to:
+                if record.date_from != record.date_to:
+                    record.compensation_date = False
 
-            if wfh_day_count < 3:
-                record.compensation_date_3 = False
-
-            if wfh_day_count < 2:
+                # Only one compensation date is allowed.
                 record.compensation_date_2 = False
-
-            if wfh_day_count < 1:
-                record.compensation_date = False
+                record.compensation_date_3 = False
 
     state = fields.Selection(
         [
@@ -327,149 +305,184 @@ class BxiShiftException(models.Model):
                 )
 
     def _get_wfh_dates(self):
-        """Return all dates in the request period.
-        Home/WFH is allowed only Tuesday, Wednesday and Thursday.
+        """
+        Return the WFH date.
+        Home/WFH is strictly limited to one day.
+        Allowed weekdays:
+            Tuesday
+            Wednesday
+            Thursday
         """
         self.ensure_one()
         if not self.date_from or not self.date_to:
             return []
 
-        dates = []
-        current_date = self.date_from
-        while current_date <= self.date_to:
-            dates.append(current_date)
-            current_date += timedelta(days=1)
-        return dates
+        if self.mode != "home":
+            return []
+
+        if self.date_from != self.date_to:
+            return []
+
+        if self.date_from.weekday() not in (1, 2, 3):
+            return []
+
+        return [self.date_from]
 
     def _get_compensation_dates(self):
-        """Return the configured compensation dates in their field order."""
+        """
+        Return the single compensation date for a Home/WFH request.
+        """
         self.ensure_one()
         return [
-            value
-            for value in (
-                self.compensation_date,
-                self.compensation_date_2,
-                self.compensation_date_3,
-            )
-            if value
-        ]
+            self.compensation_date
+        ] if self.compensation_date else []
 
     def _validate_wfh_policy(self):
         """
-        Validate the fixed WFH / exception working policy.
+        Validate Home/WFH exception policy.
 
-        Policy:
-            - WFH is allowed only Tuesday, Wednesday and Thursday.
-            - 1 WFH day requires 1 compensation day.
-            - 2 WFH days require 2 compensation days.
-            - 3 WFH days require 3 compensation days.
-            - Compensation dates must be working days.
-            - Under the current policy, compensation is Monday or Friday.
-            - Each compensation date must be within +/- 7 calendar days
-              of the WFH period.
-            - Compensation dates must be unique and cannot be WFH dates.
+        Rules:
+            - Home/WFH request must be exactly ONE day.
+            - Home/WFH is allowed only Tuesday, Wednesday or Thursday.
+            - Exactly ONE compensation date is required.
+            - Compensation date must be Monday or Friday.
+            - Compensation date must be within +/- 7 calendar days.
+            - Compensation date cannot equal the WFH date.
+            - compensation_date_2 and compensation_date_3 are not allowed.
         """
+
         for record in self:
+
             if record.mode != "home":
                 continue
 
+            # ---------------------------------------------------------
+            # Basic dates
+            # ---------------------------------------------------------
             if not record.date_from or not record.date_to:
                 raise ValidationError(
-                    _("From Date and To Date are required for Work From Home.")
-                )
-
-            wfh_dates = record._get_wfh_dates()
-
-            # WFH is allowed only Tuesday / Wednesday / Thursday.
-            invalid_wfh_dates = [
-                value for value in wfh_dates if value.weekday() not in (1, 2, 3)
-            ]
-            if invalid_wfh_dates:
-                raise ValidationError(
                     _(
-                        "Work From Home is allowed only on Tuesday, "
-                        "Wednesday or Thursday.\n\n"
-                        "Invalid date: %(date)s"
-                    )
-                    % {"date": invalid_wfh_dates[0]}
-                )
-
-            wfh_day_count = len(wfh_dates)
-            compensation_dates = record._get_compensation_dates()
-
-            # Maximum supported by the existing fields.
-            if wfh_day_count > 3:
-                raise ValidationError(
-                    _(
-                        "A maximum of 3 Work From Home days is allowed "
-                        "per request. Please raise another request for "
-                        "additional WFH days."
+                        "From Date and To Date are required "
+                        "for Work From Home."
                     )
                 )
 
-            # Exactly one compensation date per WFH day.
-            if len(compensation_dates) != wfh_day_count:
+            # ---------------------------------------------------------
+            # Home/WFH must be exactly ONE day
+            # ---------------------------------------------------------
+            if record.date_from != record.date_to:
                 raise ValidationError(
                     _(
-                        "Each Work From Home day requires exactly one "
-                        "compensation day.\n\n"
-                        "WFH Days: %(wfh_days)s\n"
-                        "Compensation Dates Entered: %(comp_days)s"
+                        "Work From Home can be requested for only ONE day.\n\n"
+                        "From Date: %(date_from)s\n"
+                        "To Date: %(date_to)s\n\n"
+                        "Please select the same date in From Date and To Date."
                     )
                     % {
-                        "wfh_days": wfh_day_count,
-                        "comp_days": len(compensation_dates),
+                        "date_from": record.date_from,
+                        "date_to": record.date_to,
                     }
                 )
 
-            # No duplicate compensation dates.
-            if len(compensation_dates) != len(set(compensation_dates)):
+            wfh_date = record.date_from
+
+            # ---------------------------------------------------------
+            # WFH allowed only Tuesday / Wednesday / Thursday
+            # ---------------------------------------------------------
+            if wfh_date.weekday() not in (1, 2, 3):
                 raise ValidationError(
-                    _("Compensation dates must be different.")
+                    _(
+                        "Work From Home is allowed only on "
+                        "Tuesday, Wednesday or Thursday.\n\n"
+                        "Selected Date: %(date)s"
+                    )
+                    % {
+                        "date": wfh_date,
+                    }
                 )
 
-            wfh_date_set = set(wfh_dates)
-            for compensation_date in compensation_dates:
-                # Current policy allows Monday or Friday only.
-                if compensation_date.weekday() not in (0, 4):
-                    raise ValidationError(
-                        _(
-                            "Invalid Compensation Date: %(date)s.\n\n"
-                            "Compensation dates must be working days and, "
-                            "under the current policy, can only be Monday "
-                            "or Friday."
-                        )
-                        % {"date": compensation_date}
-                    )
+            # ---------------------------------------------------------
+            # Exactly ONE compensation date
+            # ---------------------------------------------------------
+            compensation_dates = record._get_compensation_dates()
 
-                # Compensation cannot be one of the WFH dates.
-                if compensation_date in wfh_date_set:
-                    raise ValidationError(
-                        _(
-                            "Compensation Date %(date)s cannot be one of "
-                            "the Work From Home dates."
-                        )
-                        % {"date": compensation_date}
+            if len(compensation_dates) != 1:
+                raise ValidationError(
+                    _(
+                        "Exactly ONE compensation date is required "
+                        "for a one-day Work From Home request."
                     )
+                )
 
-                # The compensation date must be within +/- 7 calendar
-                # days of the complete WFH period.
-                allowed_start = record.date_from - timedelta(days=7)
-                allowed_end = record.date_to + timedelta(days=7)
-                if not (allowed_start <= compensation_date <= allowed_end):
-                    raise ValidationError(
-                        _(
-                            "Invalid Compensation Date: %(date)s.\n\n"
-                            "Each compensation date must be within 7 "
-                            "calendar days before or after the Work From "
-                            "Home period (%(date_from)s to %(date_to)s)."
-                        )
-                        % {
-                            "date": compensation_date,
-                            "date_from": record.date_from,
-                            "date_to": record.date_to,
-                        }
+            # ---------------------------------------------------------
+            # Second and third compensation dates are NOT allowed
+            # ---------------------------------------------------------
+            if record.compensation_date_2:
+                raise ValidationError(
+                    _(
+                        "Only ONE compensation date is allowed "
+                        "for Work From Home."
                     )
+                )
+
+            if record.compensation_date_3:
+                raise ValidationError(
+                    _(
+                        "Only ONE compensation date is allowed "
+                        "for Work From Home."
+                    )
+                )
+
+            compensation_date = record.compensation_date
+
+            # ---------------------------------------------------------
+            # Compensation cannot equal WFH date
+            # ---------------------------------------------------------
+            if compensation_date == wfh_date:
+                raise ValidationError(
+                    _(
+                        "Compensation Date cannot be the same as "
+                        "the Work From Home date."
+                    )
+                )
+
+            # ---------------------------------------------------------
+            # Compensation must be Monday or Friday
+            # ---------------------------------------------------------
+            if compensation_date.weekday() not in (0, 4):
+                raise ValidationError(
+                    _(
+                        "Invalid Compensation Date: %(date)s.\n\n"
+                        "Compensation must be on Monday or Friday."
+                    )
+                    % {
+                        "date": compensation_date,
+                    }
+                )
+
+            # ---------------------------------------------------------
+            # Compensation must be within +/- 7 calendar days
+            # ---------------------------------------------------------
+            allowed_start = wfh_date - timedelta(days=7)
+            allowed_end = wfh_date + timedelta(days=7)
+
+            if not (
+                allowed_start
+                <= compensation_date
+                <= allowed_end
+            ):
+                raise ValidationError(
+                    _(
+                        "Invalid Compensation Date: %(date)s.\n\n"
+                        "The compensation date must be within "
+                        "7 calendar days before or after the "
+                        "Work From Home date (%(wfh_date)s)."
+                    )
+                    % {
+                        "date": compensation_date,
+                        "wfh_date": wfh_date,
+                    }
+                )
 
     @api.constrains(
         "date_from",
