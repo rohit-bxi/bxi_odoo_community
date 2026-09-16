@@ -872,7 +872,6 @@ class BxiShiftException(models.Model):
     # -------------------------------------------------------------------------
     # REFUSE
     # -------------------------------------------------------------------------
-
     def action_refuse(self):
         for record in self:
 
@@ -882,7 +881,55 @@ class BxiShiftException(models.Model):
             ):
                 continue
 
+            # -------------------------------------------------------------
+            # Change state to refused
+            # -------------------------------------------------------------
             record.state = "refused"
+
+            # -------------------------------------------------------------
+            # Notify employee by email
+            # -------------------------------------------------------------
+            employee_email = (
+                record.employee_id.user_id.email
+                if record.employee_id.user_id
+                else record.employee_id.work_email
+            )
+
+            if employee_email:
+
+                try:
+
+                    subject = _(
+                        "Your Exception Working Request Refused: %s"
+                    ) % record.name
+
+                    body = _(
+                        "<p>Your exception working request from "
+                        "<strong>%s</strong> to <strong>%s</strong> "
+                        "has been refused by "
+                        "<strong>%s</strong>.</p>"
+                    ) % (
+                        record.date_from or "",
+                        record.date_to or "",
+                        self.env.user.name,
+                    )
+
+                    self.env["mail.mail"].sudo().create(
+                        {
+                            "subject": subject,
+                            "body_html": body,
+                            "email_from": "hrsupport@bxitech.com",
+                            "email_to": employee_email,
+                            "auto_delete": True,
+                        }
+                    ).send()
+
+                except Exception:
+                    _logger.exception(
+                        "Failed to send employee refusal "
+                        "email for %s",
+                        record.name,
+                    )
 
         return True
 

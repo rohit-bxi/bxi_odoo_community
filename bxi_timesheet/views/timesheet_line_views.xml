@@ -63,9 +63,22 @@
         </field>
     </record>
 
-    <!-- Action for Timesheet Approvals -->
+    <!-- Action for Manager Team Approvals -->
     <record id="action_bxi_timesheet_approvals" model="ir.actions.act_window">
-        <field name="name">Approvals</field>
+        <field name="name">Team Approvals</field>
+        <field name="res_model">account.analytic.line</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', '=', 'submitted'), ('employee_id.parent_id.user_id', '=', uid)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No timesheets pending approval from your team.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action for Admin Approvals -->
+    <record id="action_bxi_timesheet_admin_approvals" model="ir.actions.act_window">
+        <field name="name">Admin Approvals</field>
         <field name="res_model">account.analytic.line</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[('state', '=', 'submitted')]</field>
@@ -116,12 +129,21 @@
         <!-- <field name="groups_id" eval="[(4, ref('hr_timesheet.group_hr_timesheet_approver')), (4, ref('hr_timesheet.group_timesheet_manager')), (4, ref('hr.group_hr_user')), (4, ref('hr.group_hr_manager'))]"/> -->
     </record>
 
-    <!-- Menu Item: Approvals (Visible to Approver / Manager / HR / Admin) -->
-    <menuitem id="menu_bxi_timesheet_approvals"
-              name="Approvals"
-              parent="hr_timesheet.timesheet_menu_root"
-              action="action_bxi_timesheet_approvals"
-              groups="hr_timesheet.group_hr_timesheet_approver,hr_timesheet.group_timesheet_manager,hr.group_hr_user,hr.group_hr_manager,base.group_erp_manager,base.group_system"
-              sequence="10"/>
+    <!-- Team Approvals: visible only to managers / approvers with direct reports -->
+    <menuitem
+        id="menu_bxi_timesheet_team_approvals"
+        name="Team Approvals"
+        parent="hr_timesheet.timesheet_menu_root"
+        action="action_bxi_timesheet_approvals"
+        groups="hr_timesheet.group_hr_timesheet_approver"
+        sequence="10"/>
 
+    <!-- Admin Approvals: visible only to admin level users -->
+    <menuitem
+        id="menu_bxi_timesheet_admin_approvals"
+        name="Admin Approvals"
+        parent="hr_timesheet.timesheet_menu_root"
+        action="action_bxi_timesheet_admin_approvals"
+        groups="base.group_system,hr_timesheet.group_timesheet_manager"
+        sequence="20"/>
 </odoo>
