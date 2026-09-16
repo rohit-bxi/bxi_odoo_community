@@ -3,13 +3,14 @@ import base64
 from odoo import http
 from odoo.http import request
 from odoo.exceptions import AccessError
+from odoo.addons.portal.controllers.portal import pager as portal_pager
 
 
 
 class EmployeePortalExpense(http.Controller):
 
-    @http.route(['/my/employee-expenses'], type='http', auth='user', website=True)
-    def portal_employee_expenses(self, **kwargs):
+    @http.route(['/my/employee-expenses', '/my/employee-expenses/page/<int:page>'], type='http', auth='user', website=True)
+    def portal_employee_expenses(self, page=1, **kwargs):
         user = request.env.user
         Expense = request.env['hr.expense'].sudo()
 
@@ -21,17 +22,33 @@ class EmployeePortalExpense(http.Controller):
         emp_ids = employees.ids
 
         if emp_ids:
-            expenses = Expense.search([
+            domain = [
                 '|', ('employee_id', 'in', emp_ids),
                 ('create_uid', '=', user.id)
-            ], order='date desc, id desc')
+            ]
         else:
-            expenses = Expense.search([
-                ('create_uid', '=', user.id)
-            ], order='date desc, id desc')
+            domain = [('create_uid', '=', user.id)]
+
+        expense_count = Expense.search_count(domain)
+
+        pager = portal_pager(
+            url='/my/employee-expenses',
+            total=expense_count,
+            page=page,
+            step=10
+        )
+
+        expenses = Expense.search(
+            domain,
+            order='date desc, id desc',
+            limit=10,
+            offset=pager['offset']
+        )
 
         values = {
             'expenses': expenses,
+            'page_name': 'expense',
+            'pager': pager,
         }
         return request.render('portal_employee_expense.portal_my_expenses_template', values)
     
