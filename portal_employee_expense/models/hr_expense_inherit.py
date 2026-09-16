@@ -31,69 +31,59 @@ class HrExpense(models.Model):
             else:
                 rec.reimbursement_date = False
 
-    state = fields.Selection(
-        selection=[
-            ('draft', 'Draft'),
-            ('finance_approval', 'Finance Approval'),
-            ('approved', 'Approved'),
-            ('posted', 'Posted'),
-            ('in_payment', 'In Payment'),
-            ('paid', 'Paid'),
-            ('refused', 'Refused'),
-        ],
-        string="Status",
-        store=True, readonly=True,
-        index=True,
-        copy=False,
-        default='draft',
-        tracking=True,
-    )  
+    def action_submit(self):
+        """
+        Override: skip the HR approval step entirely.
+        On submit, move expense directly to Finance Approval (submitted state)
+        and send finance notification email.
+        """
+        # Call super to set approval_state = 'submitted' via the standard flow
+        # but we override to auto-submit without needing HR approval
+        for rec in self:
+            if not rec.product_id:
+                raise UserError("You cannot submit an expense without a category.")
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            if not vals.get('state') or vals.get('state') == 'draft':
-                vals['state'] = 'finance_approval'
+        # Set approval_state to 'submitted' directly, bypassing manager checks
+        self.sudo().write({'approval_state': 'submitted'})
+        self.sudo().update_activities_and_mails()
 
-        records = super().create(vals_list)
-
-        for rec in records:
-            if rec.state == 'finance_approval':
-                rec._send_state_email()
-
-        return records
-
-    # HR approval step removed; expenses go directly to finance approval on create
+        # Send finance approval notification
+        for rec in self:
+            rec._send_state_email()
 
     def action_finance_approved(self):
-        for rec in self:
-            if rec.state != 'finance_approval':
-                raise UserError("Expense must be in Finance Approval state.")
-            rec.state = 'approved'
-
-    def action_refuse(self):
-        for rec in self:
-            rec.state = 'refused'
-
-    def write(self, vals):
-        old_states = {rec.id: rec.state for rec in self}
-        res = super().write(vals)
-        if 'state' in vals:
-            for record in self:
-                if old_states.get(record.id) != record.state:
-                    record._send_state_email()
-        return res
+        """
+        Finance team approves the expense — calls the standard action_approve flow.
+        """
+        self.action_approve()
 
     def _send_state_email(self):
         for rec in self:
             template = False
-            if rec.state == 'finance_approval':
-                template = self.env.ref('portal_employee_expense.email_template_finance', raise_if_not_found=False)
+            if rec.state == 'submitted':
+                template = self.env.ref(
+                    'portal_employee_expense.email_template_finance',
+                    raise_if_not_found=False
+                )
             elif rec.state == 'approved':
-                template = self.env.ref('portal_employee_expense.email_template_expense_approved', raise_if_not_found=False)
+                template = self.env.ref(
+                    'portal_employee_expense.email_template_expense_approved',
+                    raise_if_not_found=False
+                )
             elif rec.state == 'refused':
-                template = self.env.ref('portal_employee_expense.email_template_expense_refused', raise_if_not_found=False)
+                template = self.env.ref(
+                    'portal_employee_expense.email_template_expense_refused',
+                    raise_if_not_found=False
+                )
 
             if template:
                 template.send_mail(rec.id, force_send=True)
 
+    def write(self, vals):
+        old_states = {rec.id: rec.state for rec in self}
+        res = super().write(vals)
+        if 'approval_state' in vals or 'state' in vals:
+            for record in self:
+                if old_states.get(record.id) != record.state:
+                    record._send_state_email()
+        return res

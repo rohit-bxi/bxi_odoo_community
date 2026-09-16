@@ -78,7 +78,7 @@ class EmployeePortalExpense(http.Controller):
                 'product_id': product_id,
                 'total_amount': float(amount or 0),
                 'employee_id': employee.id if employee else False,
-                'state': 'finance_approval',
+                'approval_state': 'submitted',
             })
 
         return request.redirect('/my/employee-expenses')
