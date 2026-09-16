@@ -34,12 +34,12 @@
                     <t t-set="work_100" t-value="sum(o.worked_days_line_ids.filtered(lambda l: l.code not in ('LWP', 'UNPAID')).mapped('number_of_days'))"/>
                     <t t-set="days_worked" t-value="work_100 if work_100 else (total_month_days - lwp_count)"/>
 
-                    <t t-set="basic_std" t-value="o.employee_id.l10n_in_basic_salary_amount or (o.contract_id.wage * 0.5 if o.contract_id else 0.0) or 0.0"/>
+                    <t t-set="basic_earn" t-value="sum(o.line_ids.filtered(lambda l: l.code == 'BASIC').mapped('total')) or 0.0"/>
+                    <t t-set="basic_std" t-value="basic_earn if basic_earn else (o.employee_id.l10n_in_basic_salary_amount or (o.contract_id.wage * 0.5 if o.contract_id else 0.0) or 0.0)"/>
+                    <t t-set="basic_earn" t-value="basic_earn or basic_std"/>
                     <t t-set="hra_std" t-value="o.employee_id.l10n_in_hra or 0.0"/>
                     <t t-set="spl_std" t-value="o.employee_id.l10n_in_fixed_allowance or getattr(o.employee_id, 'flexible_allowance', 0.0) or 0.0"/>
                     <t t-set="tot_std" t-value="basic_std + hra_std + spl_std"/>
-
-                    <t t-set="basic_earn" t-value="sum(o.line_ids.filtered(lambda l: l.code == 'BASIC').mapped('total')) or 0.0"/>
                     <t t-set="hra_earn" t-value="sum(o.line_ids.filtered(lambda l: l.code == 'HRA').mapped('total')) or 0.0"/>
                     <t t-set="ara_earn" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code == 'ARA').mapped('total'))) or 0.0"/>
                     <t t-set="gross_earn" t-value="sum(o.line_ids.filtered(lambda l: l.category_id.code == 'GROSS').mapped('total')) or sum(o.line_ids.filtered(lambda l: l.code == 'GROSS').mapped('total')) or 0.0"/>
