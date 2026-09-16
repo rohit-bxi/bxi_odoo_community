@@ -50,12 +50,17 @@ class HrExpense(models.Model):
         tracking=True,
     )  
 
-    @api.model
+    @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('state') or vals.get('state') == 'draft':
+                vals['state'] = 'finance_approval'
+
         records = super().create(vals_list)
 
         for rec in records:
-            rec.state = 'hr_approval'
+            if rec.state == 'finance_approval':
+                rec._send_state_email()
 
         return records
 
@@ -76,27 +81,46 @@ class HrExpense(models.Model):
             rec.state = 'refused'
 
     def write(self, vals):
+        old_states = {rec.id: rec.state for rec in self}
         res = super().write(vals)
         if 'state' in vals:
             for record in self:
-                record._send_state_email()
+                if old_states.get(record.id) != record.state:
+                    record._send_state_email()
         return res
-    
-    def _send_state_email(self):
-        self.ensure_one()
-        template = False
-        email_to = False
-        if self.state == 'hr_approval':
-            template = self.env.ref('portal_employee_expense.email_template_hr')
-            email_to = 'shekhawatritika2001@gmail.com'
-        elif self.state == 'finance_approval':
-            template = self.env.ref('portal_employee_expense.email_template_finance')
-            email_to = 'shekhawatritika2001@gmail.com'
-        if not template or not email_to:
-            return
-        template.send_mail(
-            self.id,
-            email_values={'email_to': email_to},
-            force_send=True
-        )
 
+    def _send_state_email(self):
+        for rec in self:
+            template = False
+            email_to = False
+            if rec.state == 'hr_approval':
+                template = self.env.ref(
+                    'portal_employee_expense.email_template_hr',
+                    raise_if_not_found=False
+                )
+                email_to = 'hr@bxitech.com'
+            elif rec.state == 'finance_approval':
+                template = self.env.ref(
+                    'portal_employee_expense.email_template_finance',
+                    raise_if_not_found=False
+                )
+                email_to = 'FSO@bxiventures.com'
+            elif rec.state == 'approved':
+                template = self.env.ref(
+                    'portal_employee_expense.email_template_expense_approved',
+                    raise_if_not_found=False
+                )
+            elif rec.state == 'refused':
+                template = self.env.ref(
+                    'portal_employee_expense.email_template_expense_refused',
+                    raise_if_not_found=False
+                )
+            if template:
+                email_values = {}
+                if email_to:
+                    email_values['email_to'] = email_to
+                template.send_mail(
+                    rec.id,
+                    email_values=email_values,
+                    force_send=True
+                )
