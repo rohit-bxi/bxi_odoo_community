@@ -56,11 +56,11 @@
                            filter_domain="['|',('name','ilike',self),('code','ilike',self)]"/>
                     <field name="amount_select"/>
                     <field name="slip_id"/>
-                    <group>
+                    <group name="group_by">
                         <filter string="Salary Rule Category" name="category_id" context="{'group_by':'category_id'}"/>
                         <filter string="Contribution Register" name="register_id" context="{'group_by':'register_id'}"/>
-                        <filter string="Amount Type" name="amount_select" context="{'group_by':'amount_select'}"/>
-                        <filter string="Employees" name="employee_id" context="{'group_by':'employee_id'}"/>
+                        <filter string="Amount Type" name="group_amount_select" context="{'group_by':'amount_select'}"/>
+                        <filter string="Employees" name="group_employee_id" context="{'group_by':'employee_id'}"/>
                     </group>
                 </search>
             </field>
@@ -79,6 +79,7 @@
                     <field name="name"/>
                     <field name="date_from"/>
                     <field name="date_to"/>
+                    <field name="net_wage" string="Net Salary Pay"/>
                     <field name="state"/>
                     <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
                     <field name="payslip_run_id" invisible="1"/>
@@ -228,7 +229,7 @@
                                 </field>
                             </page>
                             <page string="Salary Computation">
-                                <field name="line_ids" colspan="4" nolabel="1" readonly="state != 'draft'" domain="[('total', '!=', 0)]">
+                                <field name="line_ids" colspan="4" nolabel="1" readonly="state != 'draft'" domain="[('amount', '!=', 0)]">
                                     <list string="Salary Structure" editable="bottom" create="0">
                                         <field name="name"/>
                                         <field name="code"/>
@@ -303,13 +304,13 @@
                     <filter string="Done" name="done" domain="[('state','=','done')]" help="Done Slip"/>
                     <field name="employee_id"/>
                     <field name="payslip_run_id"/>
-                    <group expand="0" string="Group By">
+                    <group name="group_by">
                         <filter string="Date From" name="group_date_from" context="{'group_by': 'date_from:month'}"/>
-                        <filter string="Employees" name="employee_id" context="{'group_by':'employee_id'}"/>
-                        <filter string="PaySlip Batch" name="payslip_run_id" context="{'group_by':'payslip_run_id'}"/>
-                        <filter string="Companies" name="company_id" groups="base.group_multi_company"
+                        <filter string="Employees" name="group_employee_id" context="{'group_by':'employee_id'}"/>
+                        <filter string="PaySlip Batch" name="group_payslip_run_id" context="{'group_by':'payslip_run_id'}"/>
+                        <filter string="Companies" name="group_company_id" groups="base.group_multi_company"
                                 context="{'group_by':'company_id'}"/>
-                        <filter string="States" name="state" context="{'group_by':'state'}"/>
+                        <filter string="States" name="group_state" context="{'group_by':'state'}"/>
                     </group>
                 </search>
             </field>
@@ -433,7 +434,19 @@
                             <field name="credit_note" readonly="state != 'draft'"/>
                         </group>
                         <separator string="Payslips"/>
-                        <field name="slip_ids" readonly="state != 'draft'"/>
+                        <field name="slip_ids" readonly="state != 'draft'">
+                            <list decoration-info="state in ('done')"
+                                  decoration-muted="state == 'cancel'" string="Payslips" default_order="date_from desc">
+                                <field name="number"/>
+                                <field name="employee_id"/>
+                                <field name="name"/>
+                                <field name="date_from"/>
+                                <field name="date_to"/>
+                                <field name="net_wage" string="Net Salary Pay" sum="Total Net Pay"/>
+                                <field name="state"/>
+                                <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
+                            </list>
+                        </field>
                     </sheet>
                 </form>
             </field>
