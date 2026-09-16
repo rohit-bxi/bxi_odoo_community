@@ -112,8 +112,28 @@ class HrPayslip(models.Model):
                                                       string='Details by Salary Rule Category')
     credit_note = fields.Boolean(string='Credit Note',
                                  help="Indicates this payslip has a refund of another")
+    currency_id = fields.Many2one('res.currency', string='Currency', related='company_id.currency_id', readonly=True)
+    net_wage = fields.Monetary(
+        string='Net Salary Pay',
+        compute='_compute_net_wage',
+        store=True,
+        currency_field='currency_id',
+    )
     payslip_run_id = fields.Many2one('hr.payslip.run', string='Payslip Batches', copy=False)
     payslip_count = fields.Integer(compute='_compute_payslip_count', string="Payslip Computation Details")
+
+    def init(self):
+        super().init()
+        self.env.cr.execute("""
+            ALTER TABLE hr_payslip 
+            ADD COLUMN IF NOT EXISTS net_wage numeric;
+        """)
+
+    @api.depends('line_ids.total', 'line_ids.code')
+    def _compute_net_wage(self):
+        for payslip in self:
+            net_lines = payslip.line_ids.filtered(lambda line: line.code == 'NET' or line.category_id.code == 'NET')
+            payslip.net_wage = sum(net_lines.mapped('total')) if net_lines else 0.0
 
     def _compute_details_by_salary_rule_category(self):
         for payslip in self:
@@ -219,6 +239,26 @@ class HrPayslip(models.Model):
     def compute_sheet(self):
         for payslip in self:
             number = payslip.number or self.env['ir.sequence'].next_by_code('salary.slip')
+            
+            # Sync Leave Without Pay (LWP_DAYS) input with worked days lines if present
+            lop_days = sum(
+                abs(line.number_of_days)
+                for line in payslip.worked_days_line_ids
+                if line.code in ('LOP', 'LWP', 'UNPAID', 'LWP_DAYS')
+                or (line.name and any(k in line.name.lower() for k in ['leave without pay', 'loss of pay', 'unpaid', 'lop']))
+            )
+            lwp_inputs = payslip.input_line_ids.filtered(
+                lambda line: line.code in ('LWP_DAYS', 'LWP', 'LOP') or (line.name and any(k in line.name.lower() for k in ['leave without pay', 'loss of pay']))
+            )
+            if lwp_inputs:
+                for inp in lwp_inputs:
+                    if lop_days > 0 and inp.amount == 0.0:
+                        inp.amount = lop_days
+                    elif lop_days == 0 and not payslip.worked_days_line_ids.filtered(
+                        lambda l: l.code in ('LOP', 'LWP', 'UNPAID', 'LWP_DAYS') or (l.name and any(k in l.name.lower() for k in ['leave without pay', 'loss of pay']))
+                    ):
+                        inp.amount = 0.0
+
             # delete old payslip lines
             payslip.line_ids.unlink()
 
@@ -538,6 +578,17 @@ class HrPayslip(models.Model):
         contracts = self.env['hr.version'].browse(contract_ids)
         worked_days_line_ids = self.get_worked_day_lines(contracts, date_from, date_to)
         input_line_ids = self.get_inputs(contracts, date_from, date_to)
+
+        lop_days = sum(
+            abs(wd.get('number_of_days', 0.0))
+            for wd in worked_days_line_ids
+            if wd.get('code') in ('LOP', 'LWP', 'UNPAID', 'LWP_DAYS')
+            or (wd.get('name') and any(k in wd.get('name', '').lower() for k in ['leave without pay', 'loss of pay', 'unpaid', 'lop']))
+        )
+        for inp in input_line_ids:
+            if inp.get('code') in ('LWP_DAYS', 'LWP', 'LOP') or (inp.get('name') and any(k in inp.get('name', '').lower() for k in ['leave without pay', 'loss of pay'])):
+                inp['amount'] = lop_days
+
         res['value'].update({
             'worked_days_line_ids': worked_days_line_ids,
             'input_line_ids': input_line_ids,
@@ -582,12 +633,33 @@ class HrPayslip(models.Model):
                 worked_days_lines += worked_days_lines.new(r)
             self.worked_days_line_ids = worked_days_lines
 
+            lop_days = sum(
+                abs(line.number_of_days)
+                for line in self.worked_days_line_ids
+                if line.code in ('LOP', 'LWP', 'UNPAID', 'LWP_DAYS')
+                or (line.name and any(k in line.name.lower() for k in ['leave without pay', 'loss of pay', 'unpaid', 'lop']))
+            )
+
             input_line_ids = self.get_inputs(versions, date_from, date_to)
             input_lines = self.input_line_ids.browse([])
             for r in input_line_ids:
+                if r.get('code') in ('LWP_DAYS', 'LWP', 'LOP') or (r.get('name') and any(k in r.get('name', '').lower() for k in ['leave without pay', 'loss of pay'])):
+                    r['amount'] = lop_days
                 input_lines += input_lines.new(r)
             self.input_line_ids = input_lines
             return
+
+    @api.onchange('worked_days_line_ids')
+    def onchange_worked_days_line_ids(self):
+        lop_days = sum(
+            abs(line.number_of_days)
+            for line in self.worked_days_line_ids
+            if line.code in ('LOP', 'LWP', 'UNPAID', 'LWP_DAYS')
+            or (line.name and any(k in line.name.lower() for k in ['leave without pay', 'loss of pay', 'unpaid', 'lop']))
+        )
+        for line in self.input_line_ids:
+            if line.code in ('LWP_DAYS', 'LWP', 'LOP') or (line.name and any(k in line.name.lower() for k in ['leave without pay', 'loss of pay'])):
+                line.amount = lop_days
 
     @api.onchange('version_id')
     def onchange_version(self):
@@ -619,7 +691,14 @@ class HrPayslipLine(models.Model):
     rate = fields.Float(string='Rate (%)', default=100.0)
     amount = fields.Float()
     quantity = fields.Float(default=1.0)
-    total = fields.Float(compute='_compute_total', string='Total')
+    total = fields.Float(compute='_compute_total', string='Total', store=True)
+
+    def init(self):
+        super().init()
+        self.env.cr.execute("""
+            ALTER TABLE hr_payslip_line 
+            ADD COLUMN IF NOT EXISTS total double precision;
+        """)
 
     @api.depends('quantity', 'amount', 'rate')
     def _compute_total(self):
