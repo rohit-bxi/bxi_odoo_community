@@ -1,7 +1,7 @@
 from odoo import api, fields, models, tools, _
 from odoo.exceptions import UserError, ValidationError
 import babel
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from dateutil.relativedelta import relativedelta
 from pytz import timezone
 
@@ -240,24 +240,82 @@ class HrPayslip(models.Model):
         for payslip in self:
             number = payslip.number or self.env['ir.sequence'].next_by_code('salary.slip')
             
+            # Ensure Leave Without Pay worked days line is always present
+            lwp_wd = payslip.worked_days_line_ids.filtered(
+                lambda l: l.code in ('LOP', 'LWP', 'UNPAID', 'LWP_DAYS')
+                or (l.name and any(k in (l.name or '').lower() for k in ['leave without pay', 'loss of pay', 'unpaid', 'lop']))
+            )
+            if not lwp_wd and payslip.state == 'draft':
+                self.env['hr.payslip.worked_days'].create({
+                    'name': _('Leave Without Pay'),
+                    'payslip_id': payslip.id,
+                    'sequence': 10,
+                    'code': 'LWP_DAYS',
+                    'number_of_days': 0.0,
+                    'number_of_hours': 0.0,
+                    'version_id': payslip.version_id.id if payslip.version_id else False,
+                })
+            elif lwp_wd and payslip.state == 'draft':
+                for wd in lwp_wd:
+                    vals = {}
+                    if wd.code != 'LWP_DAYS':
+                        vals['code'] = 'LWP_DAYS'
+                    if wd.name != _('Leave Without Pay'):
+                        vals['name'] = _('Leave Without Pay')
+                    if wd.number_of_days < 0:
+                        vals['number_of_days'] = abs(wd.number_of_days)
+                    if wd.number_of_hours < 0:
+                        vals['number_of_hours'] = 0.0
+                    if vals:
+                        wd.write(vals)
+
+            # If draft and employee joined during the payslip period, ensure worked_days reflect joining date
+            emp = payslip.employee_id
+            joining_date = (
+                emp.emp_date_of_joining
+                or payslip.version_id.date_start
+                or getattr(payslip.version_id, 'contract_date_start', False)
+                or emp.date_start
+            )
+            if joining_date and payslip.state == 'draft' and payslip.date_from and payslip.date_to:
+                j_date = fields.Date.from_string(joining_date)
+                if payslip.date_from < j_date <= payslip.date_to:
+                    calendar = emp.resource_calendar_id
+                    if calendar:
+                        j_dt = datetime.combine(j_date, time.min)
+                        d_to = datetime.combine(payslip.date_to, time.max)
+                        d_from = datetime.combine(payslip.date_from, time.min)
+                        work_data = emp._get_work_days_data(j_dt, d_to, calendar=calendar, compute_leaves=False)
+                        pre_work = emp._get_work_days_data(d_from, datetime.combine(j_date - timedelta(days=1), time.max), calendar=calendar, compute_leaves=False)
+                        work100_line = payslip.worked_days_line_ids.filtered(lambda l: l.code == 'WORK100')
+                        if work100_line and work100_line[0].number_of_days > work_data['days']:
+                            work100_line[0].write({
+                                'number_of_days': work_data['days'],
+                                'number_of_hours': work_data['hours'],
+                            })
+                            lwp_line = payslip.worked_days_line_ids.filtered(
+                                lambda l: l.code in ('LOP', 'LWP', 'UNPAID', 'LWP_DAYS')
+                                or (l.name and any(k in (l.name or '').lower() for k in ['leave without pay', 'loss of pay', 'unpaid', 'lop']))
+                            )
+                            if lwp_line and lwp_line[0].number_of_days < round(pre_work['days'], 2):
+                                lwp_line[0].write({
+                                    'number_of_days': round(lwp_line[0].number_of_days + pre_work['days'], 2),
+                                    'number_of_hours': 0.0,
+                                })
+
             # Sync Leave Without Pay (LWP_DAYS) input with worked days lines if present
             lop_days = sum(
                 abs(line.number_of_days)
                 for line in payslip.worked_days_line_ids
                 if line.code in ('LOP', 'LWP', 'UNPAID', 'LWP_DAYS')
-                or (line.name and any(k in line.name.lower() for k in ['leave without pay', 'loss of pay', 'unpaid', 'lop']))
+                or (line.name and any(k in (line.name or '').lower() for k in ['leave without pay', 'loss of pay', 'unpaid', 'lop']))
             )
             lwp_inputs = payslip.input_line_ids.filtered(
-                lambda line: line.code in ('LWP_DAYS', 'LWP', 'LOP') or (line.name and any(k in line.name.lower() for k in ['leave without pay', 'loss of pay']))
+                lambda line: line.code in ('LWP_DAYS', 'LWP', 'LOP') or (line.name and any(k in (line.name or '').lower() for k in ['leave without pay', 'loss of pay']))
             )
             if lwp_inputs:
                 for inp in lwp_inputs:
-                    if lop_days > 0 and inp.amount == 0.0:
-                        inp.amount = lop_days
-                    elif lop_days == 0 and not payslip.worked_days_line_ids.filtered(
-                        lambda l: l.code in ('LOP', 'LWP', 'UNPAID', 'LWP_DAYS') or (l.name and any(k in l.name.lower() for k in ['leave without pay', 'loss of pay']))
-                    ):
-                        inp.amount = 0.0
+                    inp.amount = lop_days
 
             # delete old payslip lines
             payslip.line_ids.unlink()
@@ -316,13 +374,54 @@ class HrPayslip(models.Model):
                 if work_hours:
                     current_leave_struct['number_of_days'] -= hours / work_hours
 
-            # compute worked days
-            work_data = version.employee_id._get_work_days_data(
-                day_from,
-                day_to,
-                calendar=calendar,
-                compute_leaves=False,
+            # Calculate working days from joining date if joined during or after this period
+            emp = version.employee_id
+            joining_date = (
+                emp.emp_date_of_joining
+                or version.date_start
+                or getattr(version, 'contract_date_start', False)
+                or emp.date_start
             )
+
+            pre_join_lwp_days = 0.0
+            actual_start_dt = day_from
+
+            if joining_date:
+                j_date = fields.Date.from_string(joining_date)
+                joining_dt = datetime.combine(j_date, time.min)
+                if joining_dt > day_from:
+                    actual_start_dt = max(day_from, joining_dt)
+                    if joining_dt <= day_to:
+                        # Working days in the month prior to joining date become LWP
+                        pre_join_end_dt = datetime.combine(j_date - timedelta(days=1), time.max)
+                        pre_work_data = emp._get_work_days_data(
+                            day_from,
+                            pre_join_end_dt,
+                            calendar=calendar,
+                            compute_leaves=False,
+                        )
+                        pre_join_lwp_days = pre_work_data['days']
+                    else:
+                        # Joined after the end of this payslip period
+                        total_month_data = emp._get_work_days_data(
+                            day_from,
+                            day_to,
+                            calendar=calendar,
+                            compute_leaves=False,
+                        )
+                        pre_join_lwp_days = total_month_data['days']
+
+            # compute worked days from actual start date
+            if actual_start_dt <= day_to:
+                work_data = emp._get_work_days_data(
+                    actual_start_dt,
+                    day_to,
+                    calendar=calendar,
+                    compute_leaves=False,
+                )
+            else:
+                work_data = {'days': 0.0, 'hours': 0.0}
+
             attendances = {
                 'name': _("Normal Working Days paid at 100%"),
                 'sequence': 1,
@@ -332,8 +431,35 @@ class HrPayslip(models.Model):
                 'version_id': version.id,  # MIGRATION: updated field
             }
 
+            # Separate LOP / Leave Without Pay from other leaves
+            lop_days = pre_join_lwp_days
+            other_leaves = []
+            for status, leave_struct in leaves.items():
+                status_code = (status.code or '').upper()
+                status_name = (status.name or '').lower()
+                is_lop = (
+                    status_code in ('LOP', 'LWP', 'UNPAID', 'LWP_DAYS')
+                    or any(k in status_name for k in ['leave without pay', 'loss of pay', 'unpaid', 'lop'])
+                )
+                if is_lop:
+                    lop_days += abs(leave_struct.get('number_of_days', 0.0))
+                else:
+                    other_leaves.append(leave_struct)
+
+            # Leave Without Pay (LWP_DAYS) line should always be present:
+            # If LOP is taken (or joining difference exists), count is updated; if none, count is 0.0
+            lwp_line = {
+                'name': _("Leave Without Pay"),
+                'sequence': 10,
+                'code': 'LWP_DAYS',
+                'number_of_days': round(lop_days, 2),
+                'number_of_hours': 0.0,
+                'version_id': version.id,
+            }
+
             res.append(attendances)
-            res.extend(leaves.values())
+            res.extend(other_leaves)
+            res.append(lwp_line)
         return res
 
     @api.model

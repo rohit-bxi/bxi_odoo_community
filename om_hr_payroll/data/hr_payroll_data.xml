@@ -10,7 +10,7 @@
             <field name="category_id" ref="om_hr_payroll.BASIC"/>
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = contract.wage</field>
+            <field name="amount_python_compute">result = employee.l10n_in_basic_salary_amount</field>
         </record>
 
         <record id="hr_rule_taxable" model="hr.salary.rule">
@@ -34,35 +34,6 @@
             <field name="amount_percentage">30</field>
         </record>
 
-        <record id="hr_rule_da" model="hr.salary.rule">
-            <field name="name">Dearness Allowance</field>
-            <field name="sequence" eval="5"/>
-            <field name="code">DA</field>
-            <field name="category_id" ref="om_hr_payroll.ALW"/>
-            <field name="condition_select">none</field>
-            <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = contract.da</field>
-        </record>
-
-        <record id="hr_rule_travel" model="hr.salary.rule">
-            <field name="name">Travel Allowance</field>
-            <field name="sequence" eval="7"/>
-            <field name="code">Travel</field>
-            <field name="category_id" ref="om_hr_payroll.ALW"/>
-            <field name="condition_select">none</field>
-            <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = contract.travel_allowance</field>
-        </record>
-
-        <record id="hr_rule_meal" model="hr.salary.rule">
-            <field name="name">Meal Allowance</field>
-            <field name="sequence" eval="9"/>
-            <field name="code">Meal</field>
-            <field name="category_id" ref="om_hr_payroll.ALW"/>
-            <field name="condition_select">none</field>
-            <field name="amount_select">code</field>
-            <field name="amount_python_compute">result = contract.meal_allowance</field>
-        </record>
 
         <record id="hr_rule_medical" model="hr.salary.rule">
             <field name="name">Medical Allowance</field>

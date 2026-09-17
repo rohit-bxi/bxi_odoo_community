@@ -1,0 +1,18 @@
+<odoo>
+    <template id="portal_my_performance_bonus_link"
+        inherit_id="portal.portal_my_home"
+        name="Portal Home - Performance / Bonus Letters">
+        <xpath expr="//div[@id='portal_common_category']/t[1]" position="after">
+            <t t-if="(request.env.user.has_group('base.group_portal') or request.env.user.has_group('base.group_user'))
+                 and not request.env.user.sudo().vender_custmer_access">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon" t-value="'/bxi_hr_performance_bonus/static/src/img/letter-icon.svg'"/>
+                    <t t-set="title">My Performance / Bonus Letters</t>
+                    <t t-set="text">View your appraisal, promotion and bonus letters</t>
+                    <t t-set="url" t-value="'/my/performance-bonus-letters'" />
+                    <t t-set="config_card" t-value="True" />
+                </t>
+            </t>
+        </xpath>
+    </template>
+</odoo>
