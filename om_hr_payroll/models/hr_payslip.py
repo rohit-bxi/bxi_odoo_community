@@ -262,10 +262,10 @@ class HrPayslip(models.Model):
                         vals['code'] = 'LWP_DAYS'
                     if wd.name != _('Leave Without Pay'):
                         vals['name'] = _('Leave Without Pay')
-                    if wd.number_of_days < 0:
-                        vals['number_of_days'] = abs(wd.number_of_days)
-                    if wd.number_of_hours < 0:
-                        vals['number_of_hours'] = 0.0
+                    if wd.number_of_days > 0:
+                        vals['number_of_days'] = -abs(wd.number_of_days)
+                    if wd.number_of_hours > 0:
+                        vals['number_of_hours'] = -abs(wd.number_of_hours)
                     if vals:
                         wd.write(vals)
 
@@ -282,25 +282,30 @@ class HrPayslip(models.Model):
                 if payslip.date_from < j_date <= payslip.date_to:
                     calendar = emp.resource_calendar_id
                     if calendar:
-                        j_dt = datetime.combine(j_date, time.min)
                         d_to = datetime.combine(payslip.date_to, time.max)
                         d_from = datetime.combine(payslip.date_from, time.min)
-                        work_data = emp._get_work_days_data(j_dt, d_to, calendar=calendar, compute_leaves=False)
+                        total_month_data = emp._get_work_days_data(d_from, d_to, calendar=calendar, compute_leaves=False)
                         pre_work = emp._get_work_days_data(d_from, datetime.combine(j_date - timedelta(days=1), time.max), calendar=calendar, compute_leaves=False)
                         work100_line = payslip.worked_days_line_ids.filtered(lambda l: l.code == 'WORK100')
-                        if work100_line and work100_line[0].number_of_days > work_data['days']:
+                        if work100_line and work100_line[0].number_of_days < total_month_data['days']:
                             work100_line[0].write({
-                                'number_of_days': work_data['days'],
-                                'number_of_hours': work_data['hours'],
+                                'number_of_days': total_month_data['days'],
+                                'number_of_hours': total_month_data['hours'],
                             })
-                            lwp_line = payslip.worked_days_line_ids.filtered(
-                                lambda l: l.code in ('LOP', 'LWP', 'UNPAID', 'LWP_DAYS')
-                                or (l.name and any(k in (l.name or '').lower() for k in ['leave without pay', 'loss of pay', 'unpaid', 'lop']))
-                            )
-                            if lwp_line and lwp_line[0].number_of_days < round(pre_work['days'], 2):
+                        lwp_line = payslip.worked_days_line_ids.filtered(
+                            lambda l: l.code in ('LOP', 'LWP', 'UNPAID', 'LWP_DAYS')
+                            or (l.name and any(k in (l.name or '').lower() for k in ['leave without pay', 'loss of pay', 'unpaid', 'lop']))
+                        )
+                        if lwp_line:
+                            abs_lop = abs(lwp_line[0].number_of_days)
+                            if abs_lop < round(pre_work['days'], 2):
                                 lwp_line[0].write({
-                                    'number_of_days': round(lwp_line[0].number_of_days + pre_work['days'], 2),
+                                    'number_of_days': -round(abs_lop + pre_work['days'], 2),
                                     'number_of_hours': 0.0,
+                                })
+                            elif lwp_line[0].number_of_days > 0:
+                                lwp_line[0].write({
+                                    'number_of_days': -abs(lwp_line[0].number_of_days),
                                 })
 
             # Sync Leave Without Pay (LWP_DAYS) input with worked days lines if present
@@ -411,16 +416,13 @@ class HrPayslip(models.Model):
                         )
                         pre_join_lwp_days = total_month_data['days']
 
-            # compute worked days from actual start date
-            if actual_start_dt <= day_to:
-                work_data = emp._get_work_days_data(
-                    actual_start_dt,
-                    day_to,
-                    calendar=calendar,
-                    compute_leaves=False,
-                )
-            else:
-                work_data = {'days': 0.0, 'hours': 0.0}
+            # compute worked days for the full payslip period
+            work_data = emp._get_work_days_data(
+                day_from,
+                day_to,
+                calendar=calendar,
+                compute_leaves=False,
+            )
 
             attendances = {
                 'name': _("Normal Working Days paid at 100%"),
@@ -447,12 +449,12 @@ class HrPayslip(models.Model):
                     other_leaves.append(leave_struct)
 
             # Leave Without Pay (LWP_DAYS) line should always be present:
-            # If LOP is taken (or joining difference exists), count is updated; if none, count is 0.0
+            # Value must be negative (-) so it deducts from total working days
             lwp_line = {
                 'name': _("Leave Without Pay"),
                 'sequence': 10,
                 'code': 'LWP_DAYS',
-                'number_of_days': round(lop_days, 2),
+                'number_of_days': -abs(round(lop_days, 2)) if lop_days else 0.0,
                 'number_of_hours': 0.0,
                 'version_id': version.id,
             }
@@ -777,14 +779,18 @@ class HrPayslip(models.Model):
 
     @api.onchange('worked_days_line_ids')
     def onchange_worked_days_line_ids(self):
+        for line in self.worked_days_line_ids:
+            if line.code in ('LOP', 'LWP', 'UNPAID', 'LWP_DAYS') or (line.name and any(k in (line.name or '').lower() for k in ['leave without pay', 'loss of pay', 'unpaid', 'lop'])):
+                if line.number_of_days > 0:
+                    line.number_of_days = -abs(line.number_of_days)
         lop_days = sum(
             abs(line.number_of_days)
             for line in self.worked_days_line_ids
             if line.code in ('LOP', 'LWP', 'UNPAID', 'LWP_DAYS')
-            or (line.name and any(k in line.name.lower() for k in ['leave without pay', 'loss of pay', 'unpaid', 'lop']))
+            or (line.name and any(k in (line.name or '').lower() for k in ['leave without pay', 'loss of pay', 'unpaid', 'lop']))
         )
         for line in self.input_line_ids:
-            if line.code in ('LWP_DAYS', 'LWP', 'LOP') or (line.name and any(k in line.name.lower() for k in ['leave without pay', 'loss of pay'])):
+            if line.code in ('LWP_DAYS', 'LWP', 'LOP') or (line.name and any(k in (line.name or '').lower() for k in ['leave without pay', 'loss of pay'])):
                 line.amount = lop_days
 
     @api.onchange('version_id')

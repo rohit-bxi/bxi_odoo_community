@@ -30,9 +30,9 @@
 
                     <!-- EMPLOYEE DETAILS & PAYSLIP LINE VALUES -->
                     <t t-set="total_month_days" t-value="(o.date_to - o.date_from).days + 1 if (o.date_to and o.date_from) else 30"/>
-                    <t t-set="lwp_count" t-value="sum(o.input_line_ids.filtered(lambda l: l.code in ('LWP_DAYS', 'LWP')).mapped('amount')) or sum(o.worked_days_line_ids.filtered(lambda l: l.code in ('LWP', 'UNPAID')).mapped('number_of_days')) or 0"/>
-                    <t t-set="work_100" t-value="sum(o.worked_days_line_ids.filtered(lambda l: l.code not in ('LWP', 'UNPAID')).mapped('number_of_days'))"/>
-                    <t t-set="days_worked" t-value="work_100 if work_100 else (total_month_days - lwp_count)"/>
+                    <t t-set="lwp_count" t-value="sum(o.input_line_ids.filtered(lambda l: l.code in ('LWP_DAYS', 'LWP')).mapped('amount')) or abs(sum(o.worked_days_line_ids.filtered(lambda l: l.code in ('LWP', 'UNPAID', 'LWP_DAYS')).mapped('number_of_days'))) or 0"/>
+                    <t t-set="work_100" t-value="sum(o.worked_days_line_ids.filtered(lambda l: l.code not in ('LWP', 'UNPAID', 'LWP_DAYS')).mapped('number_of_days'))"/>
+                    <t t-set="days_worked" t-value="(work_100 - lwp_count) if work_100 else (total_month_days - lwp_count)"/>
 
                     <t t-set="basic_earn" t-value="sum(o.line_ids.filtered(lambda l: l.code == 'BASIC').mapped('total')) or 0.0"/>
                     <t t-set="basic_std" t-value="basic_earn if basic_earn else (o.employee_id.l10n_in_basic_salary_amount or (o.contract_id.wage * 0.5 if o.contract_id else 0.0) or 0.0)"/>
