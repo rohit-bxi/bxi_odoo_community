@@ -20,7 +20,7 @@
                 <field name='hr_user_id'/>
             </xpath>
              <xpath expr="//field[@name='categ_ids']" position="after">
-                <field name='job_approach'/>
+                <field name='job_approach' placeholder="If Job is not created"/>
                 <field name="country"/>
             </xpath>
             <xpath expr="//field[@name='email_from']" position="after">
@@ -76,7 +76,7 @@
 
                     <group string="Monthly Components" col="2">
                         <field name="basic_salary"/>
-                        <field name="flexible_allowance"/>
+                        <field name="flexible_allowance" force_save="1"/>
                         <field name="monthly_total" readonly="1"/>
                         <field name="annual_fixed" readonly="1"/>
                     </group>
@@ -218,6 +218,7 @@
 
                         <field name="reporting_manager_id"/>
                         <field name="hr_user_id"/>
+                        <field name="sign_request_id" readonly="1"/>
 
                     </group>
                     <group>

@@ -37,7 +37,7 @@ class HrHire(models.Model):
         default=False
     )
     job_title = fields.Char(string="Job title")
-    cover_letter = fields.Text(String="Cover Letter")
+    cover_letter = fields.Text(string="Cover Letter")
     resume_filename = fields.Char(
         string="File Name"
     )
@@ -53,9 +53,9 @@ class HrHire(models.Model):
         related='company_id',
         readonly=True,
     )
-    job_approach = fields.Char("Job Approach", placeholder="If Job is not created)")
+    job_approach = fields.Char("Job Approach")
     country = fields.Char("Country")
-    sign_request_id = fields.Many2one('sign.request', string="Sign Request")
+    sign_request_id = fields.Many2one('sign.oca.request', string="Sign Request")
 
     reporting_manager_id = fields.Many2one('hr.employee', string="Reporting Manager")
     hr_user_id = fields.Many2one('hr.employee', string="HR Responsible")
@@ -142,7 +142,7 @@ class HrHire(models.Model):
 
     # Monthly Components
     basic_salary = fields.Monetary(string="Basic Salary",store=True,currency_field='company_currency_id',readonly=False)
-    flexible_allowance = fields.Float("Flexible Allowance",compute="_compute_salary",store=True,readonly=True,force_save=True,compute_sudo=True,)
+    flexible_allowance = fields.Float("Flexible Allowance", compute="_compute_salary", store=True, readonly=True, compute_sudo=True)
 
     monthly_total = fields.Float(compute="_compute_salary", store=True, tracking=True,compute_sudo=True,)
     annual_fixed = fields.Float(compute="_compute_salary", store=True, tracking=True,compute_sudo=True,)
