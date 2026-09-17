@@ -29,8 +29,101 @@
             </xpath>
         </field>
     </record>
+
+    <record id="view_hr_job_form_inherit_approval" model="ir.ui.view">
+        <field name="name">hr.job.form.inherit.approval</field>
+        <field name="model">hr.job</field>
+        <field name="inherit_id" ref="hr.view_hr_job_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button
+                    name="action_submit_for_approval"
+                    type="object"
+                    string="Submit for Approval"
+                    class="btn-primary"
+                    invisible="approval_state not in ['draft', 'rejected']"
+                />
+
+                <button
+                    name="action_rm_approve"
+                    type="object"
+                    string="RM Approve"
+                    class="btn-primary"
+                    invisible="approval_state != 'rm_approval'"
+                />
+
+                <button
+                    name="action_hr_approve"
+                    type="object"
+                    string="HR Approve"
+                    class="btn-primary"
+                    invisible="approval_state != 'hr_approval'"
+                />
+
+                <button
+                    name="action_reject"
+                    type="object"
+                    string="Reject"
+                    class="btn-secondary"
+                    invisible="approval_state not in ['rm_approval', 'hr_approval']"
+                />
+
+                <field
+                    name="approval_state"
+                    widget="statusbar"
+                    statusbar_visible="draft,rm_approval,hr_approval,approved,rejected"
+                />
+
+            </xpath>
+
+
+            <!-- ============================= -->
+            <!-- APPROVAL INFORMATION -->
+            <!-- ============================= -->
+
+            <xpath expr="//sheet" position="inside">
+
+                <group string="Job Approval">
+
+                    <group>
+
+                        <field
+                            name="approval_state"
+                            readonly="1"
+                        />
+
+                        <field
+                            name="rm_id"
+                            readonly="approval_state not in ['draft', 'rejected']"
+                        />
+
+                        <field
+                            name="hr_approver_id"
+                            readonly="approval_state not in ['draft', 'rejected']"
+                        />
+
+                    </group>
+
+                    <group>
+
+                        <field
+                            name="rm_approval_date"
+                            readonly="1"
+                        />
+                        <field
+                            name="hr_approval_date"
+                            readonly="1"
+                        />
+                        <field
+                            name="rejection_reason"
+                            readonly="1"
+                            invisible="approval_state != 'rejected'"
+                        />
+                    </group>
+                </group>
+            </xpath>
+        </field>
+        </record>
+
     </data>
-
 </odoo>
-
-
