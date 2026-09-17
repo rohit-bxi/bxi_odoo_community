@@ -1,4 +1,9 @@
-from odoo import models, fields, api
+import logging
+
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError
+_logger = logging.getLogger(__name__)
+
 
 class HrJob(models.Model):
     _inherit = 'hr.job'
@@ -168,3 +173,417 @@ class HrJob(models.Model):
                     'hr.job.requisition'
                 ) or 'New'
         return super().create(vals_list)
+
+    approval_state = fields.Selection(
+        [
+            ('draft', 'Draft'),
+            ('rm_approval', 'RM Approval'),
+            ('hr_approval', 'HR Approval'),
+            ('approved', 'Approved'),
+            ('rejected', 'Rejected'),
+        ],
+        string='Approval Status',
+        default='draft',
+        tracking=True,
+        copy=False,
+    )
+
+    rm_id = fields.Many2one(
+        'hr.employee',
+        string='Reporting Manager',
+        tracking=True,
+        copy=False,
+    )
+
+    hr_approver_id = fields.Many2one(
+        'hr.employee',
+        string='HR Approver',
+        tracking=True,
+        copy=False,
+    )
+
+    rm_approval_date = fields.Datetime(
+        string='RM Approval Date',
+        readonly=True,
+        copy=False,
+    )
+
+    hr_approval_date = fields.Datetime(
+        string='HR Approval Date',
+        readonly=True,
+        copy=False,
+    )
+
+    rejection_reason = fields.Text(
+        string='Rejection Reason',
+        copy=False,
+    )
+
+    def action_submit_for_approval(self):
+        for job in self:
+            if job.approval_state not in ('draft', 'rejected'):
+                raise UserError(
+                    _(
+                        "Only jobs in Draft or Rejected status "
+                        "can be submitted for approval."
+                    )
+                )
+            if not job.rm_id:
+                raise UserError(
+                    _(
+                        "Please select the Reporting Manager "
+                        "before submitting the job for approval."
+                    )
+                )
+            if not job.rm_id.user_id:
+                raise UserError(
+                    _(
+                        "The selected Reporting Manager does not "
+                        "have a related user."
+                    )
+                )
+
+            if not job.hr_approver_id:
+                raise UserError(
+                    _(
+                        "Please select the HR Approver "
+                        "before submitting the job for approval."
+                    )
+                )
+
+            if not job.hr_approver_id.user_id:
+                raise UserError(
+                    _(
+                        "The selected HR Approver does not "
+                        "have a related user."
+                    )
+                )
+            job.write({
+                'approval_state': 'rm_approval',
+                'rejection_reason': False,
+            })
+            job._send_rm_approval_email()
+    def action_rm_approve(self):
+        current_employee = self.env['hr.employee'].search(
+            [
+                ('user_id', '=', self.env.user.id),
+            ],
+            limit=1,
+        )
+        for job in self:
+
+            if job.approval_state != 'rm_approval':
+                raise UserError(
+                    _(
+                        "This job is not waiting for RM approval."
+                    )
+                )
+
+            if not job.rm_id:
+                raise UserError(
+                    _("Reporting Manager is not configured.")
+                )
+
+            if job.rm_id != current_employee:
+                raise UserError(
+                    _(
+                        "Only the assigned Reporting Manager "
+                        "can approve this job."
+                    )
+                )
+
+            job.write({
+                'approval_state': 'hr_approval',
+                'rm_approval_date': fields.Datetime.now(),
+            })
+
+            job._send_hr_approval_email()
+
+    def action_hr_approve(self):
+        current_employee = self.env['hr.employee'].search(
+            [
+                ('user_id', '=', self.env.user.id),
+            ],
+            limit=1,
+        )
+
+        for job in self:
+
+            if job.approval_state != 'hr_approval':
+                raise UserError(
+                    _(
+                        "This job is not waiting for HR approval."
+                    )
+                )
+
+            if not job.hr_approver_id:
+                raise UserError(
+                    _("HR Approver is not configured.")
+                )
+
+            if job.hr_approver_id != current_employee:
+                raise UserError(
+                    _(
+                        "Only the assigned HR Approver "
+                        "can approve this job."
+                    )
+                )
+
+            job.write({
+                'approval_state': 'approved',
+                'hr_approval_date': fields.Datetime.now(),
+            })
+
+    def action_reject(self):
+        for job in self:
+
+            if job.approval_state not in (
+                'rm_approval',
+                'hr_approval',
+            ):
+                raise UserError(
+                    _(
+                        "Only jobs waiting for approval "
+                        "can be rejected."
+                    )
+                )
+
+            job.write({
+                'approval_state': 'rejected',
+            })
+
+    def _send_rm_approval_email(self):
+        self.ensure_one()
+
+        if not self.rm_id or not self.rm_id.work_email:
+            _logger.warning(
+                "Cannot send RM approval email for Job %s: "
+                "RM email is missing.",
+                self.display_name,
+            )
+            return
+
+        base_url = self.env['ir.config_parameter'].sudo().get_param(
+            'web.base.url'
+        )
+
+        job_url = (
+            f"{base_url}/web#"
+            f"id={self.id}"
+            f"&model=hr.job"
+            f"&view_type=form"
+        )
+
+        subject = _(
+            "Job Approval Required - %s"
+        ) % self.name
+
+        body = f"""
+            <div style="font-family: Arial, sans-serif; font-size: 14px;">
+
+                <p>Hello {self.rm_id.name},</p>
+
+                <p>
+                    A new job position has been submitted and is
+                    waiting for your approval.
+                </p>
+
+                <table style="border-collapse: collapse; width: 100%;">
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold;">
+                            Job Position
+                        </td>
+                        <td style="padding: 8px;">
+                            {self.name}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold;">
+                            Department
+                        </td>
+                        <td style="padding: 8px;">
+                            {self.department_id.name or ''}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold;">
+                            Company
+                        </td>
+                        <td style="padding: 8px;">
+                            {self.company_id.name or ''}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold;">
+                            Positions
+                        </td>
+                        <td style="padding: 8px;">
+                            {self.expected_employees or 0}
+                        </td>
+                    </tr>
+                </table>
+
+                <br/>
+
+                <p>
+                    Please review the complete job details in Odoo
+                    and approve or reject the request.
+                </p>
+
+                <p>
+                    <a href="{job_url}"
+                       style="
+                           background-color: #875A7B;
+                           color: white;
+                           padding: 10px 18px;
+                           text-decoration: none;
+                           border-radius: 4px;
+                           display: inline-block;
+                       ">
+                        Review Job Position
+                    </a>
+                </p>
+
+                <p>
+                    Regards,<br/>
+                    Recruitment Team
+                </p>
+
+            </div>
+        """
+
+        mail_values = {
+            'subject': subject,
+            'body_html': body,
+            'email_to': self.rm_id.work_email,
+            'email_from' : 'hrsupport@bxitech.com',
+            'model': 'hr.job',
+            'res_id': self.id,
+        }
+
+        self.env['mail.mail'].sudo().create(mail_values).send()
+
+    # =========================================================
+    # EMAIL - HR
+    # =========================================================
+
+    def _send_hr_approval_email(self):
+        self.ensure_one()
+
+        if not self.hr_approver_id or not self.hr_approver_id.work_email:
+            _logger.warning(
+                "Cannot send HR approval email for Job %s: "
+                "HR email is missing.",
+                self.display_name,
+            )
+            return
+
+        base_url = self.env['ir.config_parameter'].sudo().get_param(
+            'web.base.url'
+        )
+
+        job_url = (
+            f"{base_url}/web#"
+            f"id={self.id}"
+            f"&model=hr.job"
+            f"&view_type=form"
+        )
+
+        subject = _(
+            "HR Approval Required - %s"
+        ) % self.name
+
+        body = f"""
+            <div style="font-family: Arial, sans-serif; font-size: 14px;">
+
+                <p>Hello {self.hr_approver_id.name},</p>
+
+                <p>
+                    The Reporting Manager has approved the following
+                    job position.
+                </p>
+
+                <p>
+                    The job is now waiting for your HR approval.
+                </p>
+
+                <table style="border-collapse: collapse; width: 100%;">
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold;">
+                            Job Position
+                        </td>
+                        <td style="padding: 8px;">
+                            {self.name}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold;">
+                            Department
+                        </td>
+                        <td style="padding: 8px;">
+                            {self.department_id.name or ''}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold;">
+                            Company
+                        </td>
+                        <td style="padding: 8px;">
+                            {self.company_id.name or ''}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold;">
+                            Positions
+                        </td>
+                        <td style="padding: 8px;">
+                            {self.expected_employees or 0}
+                        </td>
+                    </tr>
+                </table>
+
+                <br/>
+
+                <p>
+                    Please review the complete job details in Odoo
+                    and approve or reject the request.
+                </p>
+
+                <p>
+                    <a href="{job_url}"
+                       style="
+                           background-color: #875A7B;
+                           color: white;
+                           padding: 10px 18px;
+                           text-decoration: none;
+                           border-radius: 4px;
+                           display: inline-block;
+                       ">
+                        Review Job Position
+                    </a>
+                </p>
+
+                <p>
+                    Regards,<br/>
+                    Recruitment Team
+                </p>
+
+            </div>
+        """
+
+        mail_values = {
+            'subject': subject,
+            'body_html': body,
+            'email_from' : 'hrsupport@bxitech.com',
+            'email_to': self.hr_approver_id.work_email,
+            'model': 'hr.job',
+            'res_id': self.id,
+        }
+
+        self.env['mail.mail'].sudo().create(mail_values).send()
