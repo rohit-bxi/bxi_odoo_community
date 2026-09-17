@@ -26,7 +26,8 @@
                             class="oe_highlight"/>
                     <field name="state"
                            widget="statusbar"
-                           statusbar_visible="draft,released,cancelled"/>
+                           statusbar_visible="draft,released,cancelled"
+                           clickable="True"/>
                 </header>
                 <sheet>
                     <group string="Employee Details">

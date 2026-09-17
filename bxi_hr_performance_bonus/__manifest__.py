@@ -17,7 +17,7 @@
         - Performance/Bonus Tracking
         - PDF Reports
     """,
-    'depends': ['hr', 'mail', 'custom_template', 'bxi_hr_employee'],
+    'depends': ['hr', 'mail', 'custom_template', 'bxi_hr_employee', 'portal', 'website', 'bxi_user_access'],
     'data': [
         'security/ir.model.access.csv',
         'views/employee_letter_wizard.xml',
@@ -27,6 +27,8 @@
         'report/report_employee_bonus_letter.xml',
         'report/report_apprsail_promotion.xml',
         'report/report_promotion_letter.xml',
+        'views/portal_performance_bonus_menu.xml',
+        'views/portal_performance_bonus_templates.xml',
     ],
     'installable': True,
     'application': False,

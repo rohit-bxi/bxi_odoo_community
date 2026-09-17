@@ -1,10 +1,11 @@
 {
     'name': 'bxi_hr_recruitment',
-    'version': '1.0',
+    'version': '19.0.1.0.0',
+    'license': 'LGPL-3',
     'summary': 'API for creating job positions',
     'author': 'Kriti',
     'category': 'HR',
-    'depends': ['base','hr','hr_recruitment','website','mail','sign','custom_template'],
+    'depends': ['base','hr','hr_recruitment','website','mail','sign_oca','custom_template'],
     'installable': True,
     'application': False,
     'data': [

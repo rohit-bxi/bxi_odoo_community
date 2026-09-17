@@ -1,0 +1,125 @@
+<odoo>
+
+    <!-- ==================== LIST PAGE ==================== -->
+    <template id="portal_my_performance_bonus_letters" name="My Performance / Bonus Letters">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True" />
+
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <t t-call="portal.portal_searchbar">
+                    <t t-set="title">My Performance / Bonus Letters</t>
+                </t>
+            </div>
+
+            <t t-if="not letters">
+                <p class="alert alert-warning">
+                    There are currently no performance / bonus letters available.
+                </p>
+            </t>
+
+            <t t-if="letters">
+                <div class="table-responsive border-0">
+                    <table class="table table-bordered table-striped" id="performance_bonus_table">
+                        <thead>
+                            <tr class="active">
+                                <th>Letter Type</th>
+                                <th>Release Date</th>
+                                <th>Effective Date</th>
+                                <th>Bonus Amount</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="letters" t-as="letter">
+                                <tr>
+                                    <td>
+                                        <t t-esc="letter_type_labels.get(letter.letter_type, letter.letter_type or '')" />
+                                    </td>
+                                    <td>
+                                        <t t-esc="letter.release_date" />
+                                    </td>
+                                    <td>
+                                        <t t-esc="letter.effective_date" />
+                                    </td>
+                                    <td>
+                                        <t t-if="letter.letter_type == 'bonus_letter' and letter.bonus_amount">
+                                            INR <t t-esc="letter.bonus_amount" />
+                                        </t>
+                                        <t t-else="">-</t>
+                                    </td>
+                                    <td>
+                                        <span t-if="letter.state == 'draft'" class="badge bg-secondary">Draft</span>
+                                        <span t-elif="letter.state == 'released'" class="badge bg-success">Released</span>
+                                        <span t-elif="letter.state == 'cancelled'" class="badge bg-danger">Cancelled</span>
+                                        <span t-else="" class="badge bg-dark">
+                                            <t t-esc="letter.state" />
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a t-att-href="'/my/performance-bonus-letters/%s' % letter.id"
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fa fa-eye"/> View
+                                        </a>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+                <div t-if="pager" class="o_portal_pager d-flex justify-content-center my-3">
+                    <t t-call="portal.pager"/>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- ==================== DETAIL PAGE ==================== -->
+    <template id="portal_performance_bonus_letter_detail" name="Performance / Bonus Letter Detail">
+        <t t-call="portal.portal_layout">
+
+            <!-- Breadcrumb -->
+            <div class="mb-3">
+                <a href="/my/performance-bonus-letters" class="btn btn-secondary btn-sm">
+                    <i class="fa fa-arrow-left"/> Back to Letters
+                </a>
+                <t t-if="pdf_url">
+                    <a t-att-href="pdf_url" class="btn btn-primary btn-sm ms-2" target="_blank">
+                        <i class="fa fa-download"/> Download PDF
+                    </a>
+                </t>
+            </div>
+
+            <!-- Letter Title -->
+            <div class="text-center mb-3">
+                <h3>
+                    <t t-esc="letter_type_labels.get(letter.letter_type, letter.letter_type or '')" />
+                </h3>
+            </div>
+
+            <!-- Render the letter content based on letter_type -->
+            <div class="border rounded p-4 bg-white shadow-sm">
+                <t t-if="letter.letter_type == 'bonus_letter'">
+                    <t t-call="bxi_hr_performance_bonus._report_employee_bonus_letter">
+                        <t t-set="o" t-value="letter" />
+                    </t>
+                </t>
+                <t t-elif="letter.letter_type in ('appraisal_letter', 'appraisal_promotion_letter')">
+                    <t t-call="bxi_hr_performance_bonus._report_appraisal_letter_template">
+                        <t t-set="o" t-value="letter" />
+                    </t>
+                </t>
+                <t t-elif="letter.letter_type == 'promotion_letter'">
+                    <t t-call="bxi_hr_performance_bonus._promotion_letter_content">
+                        <t t-set="o" t-value="letter" />
+                    </t>
+                </t>
+                <t t-else="">
+                    <p class="alert alert-warning">Letter content not available.</p>
+                </t>
+            </div>
+
+        </t>
+    </template>
+
+</odoo>
