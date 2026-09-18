@@ -25,16 +25,16 @@ from odoo.tools.misc import get_lang
 
 class AccountTaxReport(models.TransientModel):
     _name = 'kit.account.tax.report'
-    _inherit = "account.report"
+    _inherit = "account.common.report"
     _description = 'Tax Report'
 
     section_main_report_ids = fields.Many2many(string="Section Of",
-                                               comodel_name='account.report',
+                                               comodel_name='account.common.report',
                                                relation="account_tax_report_section_rel",
                                                column1="sub_report_id",
                                                column2="main_report_id")
     section_report_ids = fields.Many2many(string="Sections",
-                                          comodel_name='account.report',
+                                          comodel_name='account.common.report',
                                           relation="account_tax_report_section_rel",
                                           column1="main_report_id",
                                           column2="sub_report_id")

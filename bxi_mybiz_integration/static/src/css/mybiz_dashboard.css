@@ -1,0 +1,171 @@
+/* myBiz Integration Dashboard Stylesheet */
+
+.o_mybiz_dashboard_container {
+    padding: 24px;
+    background-color: #f8fafc;
+    min-height: 100%;
+    font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+    color: #334155;
+}
+
+.mybiz-dashboard-header {
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 16px;
+}
+
+.mybiz-dashboard-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.mybiz-kpi-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 18px 16px;
+    text-align: center;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    height: 100%;
+}
+
+.mybiz-kpi-card-sm {
+    padding: 12px;
+}
+
+.mybiz-kpi-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.mybiz-kpi-card-sm .mybiz-kpi-value {
+    font-size: 20px;
+}
+
+.mybiz-kpi-label {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.mybiz-panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 18px;
+    height: 100%;
+}
+
+.mybiz-panel-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 14px;
+}
+
+.mybiz-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 13px;
+}
+
+.mybiz-bar-label {
+    width: 140px;
+    flex-shrink: 0;
+    color: #475569;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.mybiz-bar-track {
+    flex-grow: 1;
+    background: #f1f5f9;
+    border-radius: 6px;
+    height: 10px;
+    overflow: hidden;
+}
+
+.mybiz-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.3s ease;
+}
+
+.mybiz-bar-value {
+    width: 56px;
+    text-align: right;
+    flex-shrink: 0;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.mybiz-trend-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px;
+    height: 160px;
+}
+
+.mybiz-trend-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    height: 100%;
+}
+
+.mybiz-trend-bar-wrap {
+    flex-grow: 1;
+    display: flex;
+    align-items: flex-end;
+    width: 100%;
+}
+
+.mybiz-trend-bar {
+    width: 60%;
+    margin: 0 auto;
+    background: #7048e8;
+    border-radius: 4px 4px 0 0;
+    min-height: 2px;
+}
+
+.mybiz-trend-count {
+    font-size: 12px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-top: 6px;
+}
+
+.mybiz-trend-label {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.mybiz-table {
+    margin-bottom: 0;
+}
+
+.mybiz-table thead th {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #94a3b8;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.mybiz-clickable-row {
+    cursor: pointer;
+}
+
+.mybiz-clickable-row:hover {
+    background-color: #f8fafc;
+}

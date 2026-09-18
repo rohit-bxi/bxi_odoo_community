@@ -23,9 +23,9 @@ from odoo import api, fields, models
 from odoo.tools import get_lang
 
 
-class AccountCommonReport(models.Model):
-    """Inherits the Account report model to add special fields and functions"""
-    _inherit = "account.report"
+class AccountCommonReport(models.TransientModel):
+    """Base wizard model for the legacy accounting report wizards"""
+    _name = "account.common.report"
     _description = "Account Common Report"
 
     company_id = fields.Many2one('res.company', string='Company',

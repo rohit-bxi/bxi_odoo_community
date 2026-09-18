@@ -115,10 +115,16 @@ class BxiMyBizConfig(models.Model):
                     status = f'✅ Connection successful (HTTP {resp.status_code})'
                     msg_type = 'success'
                 elif resp.status_code in (401, 403):
-                    status = f'⚠️ Authentication failed (HTTP {resp.status_code}) — check credentials'
+                    status = (
+                        f'⚠️ Authentication failed (HTTP {resp.status_code}) — '
+                        'check credentials'
+                    )
                     msg_type = 'warning'
                 else:
-                    status = f'ℹ️ Server reachable — HTTP {resp.status_code} (endpoint may require POST)'
+                    status = (
+                        f'ℹ️ Server reachable — HTTP {resp.status_code} '
+                        '(endpoint may require POST)'
+                    )
                     msg_type = 'info'
             else:
                 status = f'⚠️ Unexpected response: HTTP {resp.status_code}'

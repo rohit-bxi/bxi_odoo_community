@@ -31,7 +31,7 @@ class AccountBankStatementLine(models.Model):
 
     lines_widget = fields.Char(string="Lines Widget")
     account_id = fields.Many2one('account.account', string='Account')
-    tax_ids = fields.Many2many('account.tax')
+    tax_ids = fields.Many2many('account.tax', string='Taxes')
     form_name = fields.Char()
     form_balance = fields.Monetary(currency_field='currency_id')
     rowdata = fields.Json(string="RowData")

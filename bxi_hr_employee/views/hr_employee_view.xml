@@ -82,7 +82,7 @@
         <field name="inherit_id" ref="hr.view_employee_form" />
         <field name="arch" type="xml">
             <xpath expr="//page[@name='hr_settings']" position="after">
-                <page string="Contract Payroll" invisible="employee_type != 'contractor'">
+                <page string="Contract Payroll" groups="hr.group_hr_user" invisible="employee_type != 'contractor'">
                     <group string="Contract Payment Details">
                         <group>
                             <field name="template_company_id"/>

@@ -50,7 +50,7 @@ class EmployeeOnboardingOffboarding(models.Model):
     )
     offboarding_employee_id = fields.Many2one(
         'hr.employee',
-        string='Employee',
+        string='Offboarding Employee',
         tracking=True,
     )
     department_id = fields.Many2one(

@@ -95,7 +95,7 @@ class HrBxiEmployee(models.Model):
     )
     job_title = fields.Many2one(
         'hr.job',
-        string='Job Position',
+        string='Current Job Position',
         readonly=True,
     )
     job_id = fields.Many2one(
