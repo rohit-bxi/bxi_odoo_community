@@ -99,14 +99,18 @@
                                     <div style="border: 1px solid #70a4cc; border-top: none; padding: 6px 8px; font-size: 10.5px; line-height: 1.35; min-height: 80px;">
                                         <!-- Custom Shipping Address -->
                                         <t t-if="o.is_different_shipping_address">
-                                            <div style="font-weight: bold; color: #000;"><span t-field="o.company_id.name"/></div>
+                                            <div style="font-weight: bold; color: #000;">
+                                                <t t-if="o.shipping_partner_id"><span t-field="o.shipping_partner_id.name"/></t>
+                                                <t t-else=""><span t-field="o.company_id.name"/></t>
+                                            </div>
                                             <t t-if="o.shipping_street"><span t-field="o.shipping_street"/><br/></t>
                                             <t t-if="o.shipping_street2"><span t-field="o.shipping_street2"/><br/></t>
                                             <t t-if="o.shipping_city or o.shipping_state_id or o.shipping_zip">
                                                 <span t-field="o.shipping_city"/><t t-if="o.shipping_state_id">, <span t-esc="o.shipping_state_id.code or o.shipping_state_id.name"/></t><t t-if="o.shipping_zip"> <span t-field="o.shipping_zip"/></t><br/>
                                             </t>
                                             <t t-if="o.shipping_country_id"><span t-field="o.shipping_country_id.name"/><br/></t>
-                                            <t t-if="o.company_id.phone">Phone: <span t-field="o.company_id.phone"/></t>
+                                            <t t-if="o.shipping_partner_id and o.shipping_partner_id.phone">Phone: <span t-field="o.shipping_partner_id.phone"/></t>
+                                            <t t-elif="o.company_id.phone">Phone: <span t-field="o.company_id.phone"/></t>
                                         </t>
                                         <!-- Destination Partner Address -->
                                         <t t-elif="o.dest_address_id">

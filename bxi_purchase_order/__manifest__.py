@@ -4,7 +4,7 @@
     'summary': 'API for creating purchase order',
     'author': 'Kriti',
     'category': 'Purchase',
-    'depends': ['purchase', 'account', 'stock'],
+    'depends': ['purchase', 'account', 'stock', 'bxi_crm'],
     'data': [
         'views/purchase_order_views.xml',
         'report/purchase_order_report.xml',

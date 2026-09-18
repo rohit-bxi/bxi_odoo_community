@@ -36,8 +36,9 @@
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
             <xpath expr="//group[@id='other_tab_group']" position="inside">
-                <group string="Ship To" name="ship_to_address_group" invisible="move_type not in ('out_invoice', 'out_refund')">
+                <group string="Ship To" name="ship_to_address_group" invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund')">
                     <field name="is_different_shipping_address" readonly="state != 'draft'"/>
+                    <field name="shipping_partner_id" string="Ship To" invisible="not is_different_shipping_address" readonly="state != 'draft'" options="{'no_open': True, 'no_create': True}"/>
                     <field name="shipping_street" string="Street 1" invisible="not is_different_shipping_address" readonly="state != 'draft'"/>
                     <field name="shipping_street2" string="Street 2" invisible="not is_different_shipping_address" readonly="state != 'draft'"/>
                     <field name="shipping_city" string="City" invisible="not is_different_shipping_address" readonly="state != 'draft'"/>

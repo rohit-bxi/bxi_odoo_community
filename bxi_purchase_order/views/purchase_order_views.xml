@@ -23,6 +23,7 @@
             <xpath expr="//group[@name='invoice_info']" position="after">
                 <group string="Ship To" name="ship_to_address_group">
                     <field name="is_different_shipping_address" readonly="state in ('cancel', 'purchase') or locked"/>
+                    <field name="shipping_partner_id" string="Ship To" invisible="not is_different_shipping_address" readonly="state in ('cancel', 'purchase') or locked" options="{'no_open': True, 'no_create': True}"/>
                     <field name="shipping_street" string="Street 1" invisible="not is_different_shipping_address" readonly="state in ('cancel', 'purchase') or locked"/>
                     <field name="shipping_street2" string="Street 2" invisible="not is_different_shipping_address" readonly="state in ('cancel', 'purchase') or locked"/>
                     <field name="shipping_city" string="City" invisible="not is_different_shipping_address" readonly="state in ('cancel', 'purchase') or locked"/>
