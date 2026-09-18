@@ -446,60 +446,20 @@ class FbookReportWizard(models.TransientModel):
                         )
                     cash_flow_val = bank_balance
 
-            # 9. Investors: Net cash flow (IN - OUT) from posted journal entries of partners with is_partner_investor=True + Cash Journal Entries (Unsecured Loan)
+            # 9. Investors: Net cash flow (IN - OUT) under GL 112230 (Unsecured Loan Account)
             calibration_val = 0.0
             if 'account.move.line' in self.env and q_start_date <= today_date:
                 effective_end = q_end_date if q_end_date <= today_date else today_date
                 inv_lines = self.env['account.move.line'].sudo().search([
                     ('company_id', 'in', company_ids),
-                    ('move_id.move_type', '=', 'entry'),
                     ('parent_state', '=', 'posted'),
+                    ('account_id.code', '=', '112230'),
                     ('date', '>=', qdef['start']),
                     ('date', '<=', effective_end),
-                    ('account_id.account_type', '!=', 'asset_cash'),
-                    ('partner_id.is_partner_investor', 'in', ['yes', True]),
                 ])
                 q_inv_in = 0.0
                 q_inv_out = 0.0
                 for line in inv_lines:
-                    if line.credit > 0:
-                        q_inv_in += custom_convert(
-                            line.credit, line.company_id.currency_id, target_currency,
-                            date_val=line.date, year_key=year_key, record=line
-                        )
-                    elif line.debit > 0:
-                        q_inv_out += custom_convert(
-                            line.debit, line.company_id.currency_id, target_currency,
-                            date_val=line.date, year_key=year_key, record=line
-                        )
-
-                # Also include vendor bills / receipts for investors as Repaid (q_inv_out)
-                partner_bills_q = self.env['account.move'].sudo().search([
-                    ('company_id', 'in', company_ids),
-                    ('move_type', 'in', ('in_invoice', 'in_receipt', 'in_refund')),
-                    ('state', '=', 'posted'),
-                    ('partner_id.is_partner_investor', 'in', ['yes', True]),
-                    ('invoice_date', '>=', qdef['start']),
-                    ('invoice_date', '<=', effective_end),
-                ])
-                for bill in partner_bills_q:
-                    sign = -1.0 if bill.move_type == 'in_refund' else 1.0
-                    q_inv_out += sign * custom_convert(
-                        bill.amount_total, bill.currency_id, target_currency,
-                        date_val=bill.invoice_date, year_key=year_key, record=bill
-                    )
-
-                cash_lines = self.env['account.move.line'].sudo().search([
-                    ('company_id', 'in', company_ids),
-                    ('move_id.move_type', '=', 'entry'),
-                    ('parent_state', '=', 'posted'),
-                    ('journal_id.type', '=', 'cash'),
-                    ('date', '>=', qdef['start']),
-                    ('date', '<=', effective_end),
-                    ('account_id.account_type', '!=', 'asset_cash'),
-                    '|', ('partner_id', '=', False), ('partner_id.is_partner_investor', 'in', ['no', False]),
-                ])
-                for line in cash_lines:
                     if line.credit > 0:
                         q_inv_in += custom_convert(
                             line.credit, line.company_id.currency_id, target_currency,
@@ -1060,16 +1020,31 @@ class FbookReportWizard(models.TransientModel):
 
         investor_data_map = {}
 
-        if 'account.move' in self.env and 'res.partner' in self.env:
-            # Only partners marked with is_partner_investor as Yes
-            investor_partners = self.env['res.partner'].sudo().search([
-                ('is_partner_investor', 'in', ['yes', True])
+        if 'account.move.line' in self.env:
+            # Query all posted entries under GL 112230 (Unsecured Loan Account)
+            loan_lines = self.env['account.move.line'].sudo().search([
+                ('company_id', 'in', company_ids),
+                ('parent_state', '=', 'posted'),
+                ('account_id.code', '=', '112230'),
+                ('date', '>=', min(y1_start_str, y2_start_str)),
+                ('date', '<=', max(y1_end_str, y2_end_str)),
             ])
 
-            for partner in investor_partners:
-                partner_name = partner.name.strip() if partner.name else 'Unknown Partner'
-                category = ', '.join(partner.category_id.mapped('name')) if partner.category_id else 'General'
-                partner_key = partner.id
+            for line in loan_lines:
+                ldate = line.date
+                if not ldate:
+                    continue
+                ldate_str = ldate.strftime('%Y-%m-%d')
+
+                partner = line.partner_id
+                if partner:
+                    partner_key = partner.id
+                    partner_name = partner.name.strip() if partner.name else 'Unknown Partner'
+                    category = ', '.join(partner.category_id.mapped('name')) if partner.category_id else 'General'
+                else:
+                    partner_key = 'unsecured_loan_unassigned'
+                    partner_name = 'Unsecured Loan'
+                    category = 'Unsecured Loan'
 
                 if partner_key not in investor_data_map:
                     investor_data_map[partner_key] = {
@@ -1081,119 +1056,30 @@ class FbookReportWizard(models.TransientModel):
                         'y2_debit': 0.0,
                     }
 
-                partner_lines = self.env['account.move.line'].sudo().search([
-                    ('company_id', 'in', company_ids),
-                    ('move_id.move_type', '=', 'entry'),
-                    ('parent_state', '=', 'posted'),
-                    ('partner_id', '=', partner.id),
-                    ('account_id.account_type', '!=', 'asset_cash'),
-                    ('date', '>=', min(y1_start_str, y2_start_str)),
-                    ('date', '<=', max(y1_end_str, y2_end_str)),
-                ])
-
-                for line in partner_lines:
-                    ldate = line.date
-                    if not ldate:
-                        continue
-                    ldate_str = ldate.strftime('%Y-%m-%d')
-
-                    if line.credit > 0:
-                        if y1_start_str <= ldate_str <= y1_end_str:
-                            investor_data_map[partner_key]['y1_credit'] += custom_convert(
-                                line.credit, line.company_id.currency_id, target_currency,
-                                date_val=ldate, year_key='y1', record=line
-                            )
-                        if y2_start_str <= ldate_str <= y2_end_str:
-                            investor_data_map[partner_key]['y2_credit'] += custom_convert(
-                                line.credit, line.company_id.currency_id, target_currency,
-                                date_val=ldate, year_key='y2', record=line
-                            )
-                    elif line.debit > 0:
-                        if y1_start_str <= ldate_str <= y1_end_str:
-                            investor_data_map[partner_key]['y1_debit'] += custom_convert(
-                                line.debit, line.company_id.currency_id, target_currency,
-                                date_val=ldate, year_key='y1', record=line
-                            )
-                        if y2_start_str <= ldate_str <= y2_end_str:
-                            investor_data_map[partner_key]['y2_debit'] += custom_convert(
-                                line.debit, line.company_id.currency_id, target_currency,
-                                date_val=ldate, year_key='y2', record=line
-                            )
-
-                # Also include vendor bills / receipts for this investor as Repaid
-                partner_bills = self.env['account.move'].sudo().search([
-                    ('company_id', 'in', company_ids),
-                    ('move_type', 'in', ('in_invoice', 'in_receipt', 'in_refund')),
-                    ('state', '=', 'posted'),
-                    ('partner_id', '=', partner.id),
-                    ('invoice_date', '>=', min(y1_start_str, y2_start_str)),
-                    ('invoice_date', '<=', max(y1_end_str, y2_end_str)),
-                ])
-                for bill in partner_bills:
-                    b_date = bill.invoice_date or bill.date
-                    if not b_date:
-                        continue
-                    b_date_str = b_date.strftime('%Y-%m-%d')
-                    sign = -1.0 if bill.move_type == 'in_refund' else 1.0
-                    b_amount = sign * custom_convert(
-                        bill.amount_total, bill.currency_id, target_currency,
-                        date_val=b_date, year_key='y1' if y1_start_str <= b_date_str <= y1_end_str else 'y2', record=bill
-                    )
-                    if y1_start_str <= b_date_str <= y1_end_str:
-                        investor_data_map[partner_key]['y1_debit'] += b_amount
-                    if y2_start_str <= b_date_str <= y2_end_str:
-                        investor_data_map[partner_key]['y2_debit'] += b_amount
-
-            # Process Cash Journal Entries for "Unsecured Loan" row
-            unsecured_loan_key = 'unsecured_loan'
-            investor_data_map[unsecured_loan_key] = {
-                'name': 'Unsecured Loan',
-                'category': 'Unsecured Loan',
-                'y1_credit': 0.0,
-                'y1_debit': 0.0,
-                'y2_credit': 0.0,
-                'y2_debit': 0.0,
-            }
-
-            cash_moves = self.env['account.move'].sudo().search([
-                ('company_id', 'in', company_ids),
-                ('move_type', '=', 'entry'),
-                ('journal_id.type', '=', 'cash'),
-                ('state', '=', 'posted'),
-                ('date', '>=', min(y1_start_str, y2_start_str)),
-                ('date', '<=', max(y1_end_str, y2_end_str)),
-            ])
-
-            for move in cash_moves:
-                ldate = move.date
-                if not ldate:
-                    continue
-                ldate_str = ldate.strftime('%Y-%m-%d')
-
-                for line in move.line_ids:
-                    if line.account_id.account_type != 'asset_cash':
-                        if line.credit > 0:
-                            if y1_start_str <= ldate_str <= y1_end_str:
-                                investor_data_map[unsecured_loan_key]['y1_credit'] += custom_convert(
-                                    abs(line.debit - line.credit), line.company_id.currency_id, target_currency,
-                                    date_val=ldate, year_key='y1', record=line
-                                )
-                            if y2_start_str <= ldate_str <= y2_end_str:
-                                investor_data_map[unsecured_loan_key]['y2_credit'] += custom_convert(
-                                    abs(line.debit - line.credit), line.company_id.currency_id, target_currency,
-                                    date_val=ldate, year_key='y2', record=line
-                                )
-                        elif line.debit > 0:
-                            if y1_start_str <= ldate_str <= y1_end_str:
-                                investor_data_map[unsecured_loan_key]['y1_debit'] += custom_convert(
-                                    abs(line.debit - line.credit), line.company_id.currency_id, target_currency,
-                                    date_val=ldate, year_key='y1', record=line
-                                )
-                            if y2_start_str <= ldate_str <= y2_end_str:
-                                investor_data_map[unsecured_loan_key]['y2_debit'] += custom_convert(
-                                    abs(line.debit - line.credit), line.company_id.currency_id, target_currency,
-                                    date_val=ldate, year_key='y2', record=line
-                                )
+                # Credit = Investment amount received from the investor
+                if line.credit > 0:
+                    if y1_start_str <= ldate_str <= y1_end_str:
+                        investor_data_map[partner_key]['y1_credit'] += custom_convert(
+                            line.credit, line.company_id.currency_id, target_currency,
+                            date_val=ldate, year_key='y1', record=line
+                        )
+                    if y2_start_str <= ldate_str <= y2_end_str:
+                        investor_data_map[partner_key]['y2_credit'] += custom_convert(
+                            line.credit, line.company_id.currency_id, target_currency,
+                            date_val=ldate, year_key='y2', record=line
+                        )
+                # Debit = Amount repaid / sent back to that same partner
+                elif line.debit > 0:
+                    if y1_start_str <= ldate_str <= y1_end_str:
+                        investor_data_map[partner_key]['y1_debit'] += custom_convert(
+                            line.debit, line.company_id.currency_id, target_currency,
+                            date_val=ldate, year_key='y1', record=line
+                        )
+                    if y2_start_str <= ldate_str <= y2_end_str:
+                        investor_data_map[partner_key]['y2_debit'] += custom_convert(
+                            line.debit, line.company_id.currency_id, target_currency,
+                            date_val=ldate, year_key='y2', record=line
+                        )
 
         investor_rows = []
         for inv_key in sorted(investor_data_map.keys(), key=lambda k: investor_data_map[k]['name']):
@@ -1784,60 +1670,21 @@ class FbookReportWizard(models.TransientModel):
         if 'account.move.line' in self.env:
             inv_lines_y0 = self.env['account.move.line'].sudo().search([
                 ('company_id', 'in', company_ids),
-                ('move_id.move_type', '=', 'entry'),
                 ('parent_state', '=', 'posted'),
+                ('account_id.code', '=', '112230'),
                 ('date', '>=', y0_start_str),
                 ('date', '<=', y0_end_str),
-                ('account_id.account_type', '!=', 'asset_cash'),
-                ('partner_id.is_partner_investor', 'in', ['yes', True]),
             ])
             for line in inv_lines_y0:
                 if line.credit > 0:
                     y0_investors += custom_convert(
                         line.credit, line.company_id.currency_id, target_currency,
-                        date_val=line.date, year_key='y1', record=line
+                        date_val=line.date, year_key='y0', record=line
                     )
                 elif line.debit > 0:
                     y0_investors -= custom_convert(
                         line.debit, line.company_id.currency_id, target_currency,
-                        date_val=line.date, year_key='y1', record=line
-                    )
-
-            partner_bills_y0 = self.env['account.move'].sudo().search([
-                ('company_id', 'in', company_ids),
-                ('move_type', 'in', ('in_invoice', 'in_receipt', 'in_refund')),
-                ('state', '=', 'posted'),
-                ('partner_id.is_partner_investor', 'in', ['yes', True]),
-                ('invoice_date', '>=', y0_start_str),
-                ('invoice_date', '<=', y0_end_str),
-            ])
-            for bill in partner_bills_y0:
-                sign = -1.0 if bill.move_type == 'in_refund' else 1.0
-                y0_investors -= sign * custom_convert(
-                    bill.amount_total, bill.currency_id, target_currency,
-                    date_val=bill.invoice_date, year_key='y1', record=bill
-                )
-
-            cash_lines_y0 = self.env['account.move.line'].sudo().search([
-                ('company_id', 'in', company_ids),
-                ('move_id.move_type', '=', 'entry'),
-                ('parent_state', '=', 'posted'),
-                ('journal_id.type', '=', 'cash'),
-                ('date', '>=', y0_start_str),
-                ('date', '<=', y0_end_str),
-                ('account_id.account_type', '!=', 'asset_cash'),
-                '|', ('partner_id', '=', False), ('partner_id.is_partner_investor', 'in', ['no', False]),
-            ])
-            for line in cash_lines_y0:
-                if line.credit > 0:
-                    y0_investors += custom_convert(
-                        line.credit, line.company_id.currency_id, target_currency,
-                        date_val=line.date, year_key='y1', record=line
-                    )
-                elif line.debit > 0:
-                    y0_investors -= custom_convert(
-                        line.debit, line.company_id.currency_id, target_currency,
-                        date_val=line.date, year_key='y1', record=line
+                        date_val=line.date, year_key='y0', record=line
                     )
 
         y1_billed = data['y1']['total']['billed']
