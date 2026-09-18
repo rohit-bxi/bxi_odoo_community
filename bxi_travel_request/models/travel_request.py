@@ -200,9 +200,18 @@ class TravelRequest(models.Model):
     )
 
     # ─── Approval ────────────────────────────────────────────────
-    manager_approved_by = fields.Many2one('hr.employee', string='Manager Approved By', readonly=True, tracking=True)
-    manager_approved_date = fields.Datetime(string='Manager Approved On', readonly=True, tracking=True)
-    hr_approved_by = fields.Many2one('hr.employee', string='HR Approved By', readonly=True, tracking=True)
+    manager_approved_by = fields.Many2one(
+        'hr.employee',
+        string='Manager Approved By',
+        readonly=True,
+        tracking=True)
+    manager_approved_date = fields.Datetime(
+        string='Manager Approved On', readonly=True, tracking=True)
+    hr_approved_by = fields.Many2one(
+        'hr.employee',
+        string='HR Approved By',
+        readonly=True,
+        tracking=True)
     hr_approved_date = fields.Datetime(string='HR Approved On', readonly=True, tracking=True)
 
     # ─── myBiz Integration ───────────────────────────────────────
@@ -322,8 +331,8 @@ class TravelRequest(models.Model):
 
     def _compute_can_hr_approve(self):
         is_hr = self.env.user.has_group('hr.group_hr_user') or \
-                self.env.user.has_group('hr.group_hr_manager') or \
-                self.env.user.has_group('base.group_system')
+            self.env.user.has_group('hr.group_hr_manager') or \
+            self.env.user.has_group('base.group_system')
         for rec in self:
             rec.can_hr_approve = is_hr
 
@@ -350,7 +359,8 @@ class TravelRequest(models.Model):
             if rec.employee_id:
                 rec.manager_id = rec.employee_id.parent_id.id or False
                 rec.department_id = rec.employee_id.department_id.id or False
-                rec.contact_number = rec.employee_id.work_phone or rec.employee_id.mobile_phone or False
+                rec.contact_number = (
+                    rec.employee_id.work_phone or rec.employee_id.mobile_phone or False)
                 rec.email = rec.employee_id.work_email or False
 
     @api.onchange('hotel_required')
@@ -392,7 +402,8 @@ class TravelRequest(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get('name', 'New') == 'New':
-                vals['name'] = self.env['ir.sequence'].next_by_code('travel.request') or 'BXI/TR/0001'
+                vals['name'] = self.env['ir.sequence'].next_by_code(
+                    'travel.request') or 'BXI/TR/0001'
         return super().create(vals_list)
 
     def write(self, vals):
@@ -415,11 +426,13 @@ class TravelRequest(models.Model):
                     'in the "Travel Segments" tab before submitting.'
                 ))
             rec.write({'state': 'manager_approval'})
+            manager_user = rec.manager_id.user_id
             rec.activity_schedule(
                 'mail.mail_activity_data_todo',
-                user_id=rec.manager_id.user_id.id if rec.manager_id and rec.manager_id.user_id else False,
+                user_id=manager_user.id if manager_user else False,
                 summary=_('Travel Request Pending Your Approval'),
-                note=_('Travel request %s from %s is awaiting your approval.') % (rec.name, rec.employee_id.name),
+                note=_('Travel request %s from %s is awaiting your approval.') % (
+                    rec.name, rec.employee_id.name),
             )
 
     def manager_action_approve(self):
@@ -462,7 +475,9 @@ class TravelRequest(models.Model):
         """Cancel the travel request."""
         for rec in self:
             if rec.state == 'approved':
-                raise UserError(_('Approved and booked requests cannot be directly cancelled. Please contact HR.'))
+                raise UserError(_(
+                    'Approved and booked requests cannot be directly cancelled. '
+                    'Please contact HR.'))
             rec.write({'state': 'cancelled'})
 
     def action_reset_to_draft(self):
@@ -501,10 +516,14 @@ class TravelRequest(models.Model):
         # ── Flight Segments ───────────────────────────────────────
         flight_segments = []
         for opt in rec.travel_option_ids.filtered(lambda o: o.option_type == 'flight'):
+            travel_date = (
+                opt.departure_datetime.strftime('%Y-%m-%d')
+                if opt.departure_datetime else str(rec.departure_date)
+            )
             seg = {
                 'origin': opt.origin_code or rec.from_city,
                 'destination': opt.destination_code or rec.to_city,
-                'travelDate': opt.departure_datetime.strftime('%Y-%m-%d') if opt.departure_datetime else str(rec.departure_date),
+                'travelDate': travel_date,
             }
             if opt.departure_datetime:
                 seg['departureTime'] = opt.departure_datetime.strftime('%H:%M')
@@ -564,17 +583,22 @@ class TravelRequest(models.Model):
                 'occupancy': 1,
             }
             if rec.hotel_grade:
-                hotel_details['starRating'] = rec.hotel_grade if rec.hotel_grade != 'budget' else '2'
+                hotel_details['starRating'] = (
+                    rec.hotel_grade if rec.hotel_grade != 'budget' else '2')
 
         # ── Cab Details ───────────────────────────────────────────
         cab_details = None
         cab_opts = rec.travel_option_ids.filtered(lambda o: o.option_type == 'cab')
         if cab_opts:
             c = cab_opts[0]
+            pickup_dt = (
+                c.pickup_datetime.strftime('%Y-%m-%d %H:%M')
+                if c.pickup_datetime else str(rec.departure_date)
+            )
             cab_details = {
                 'pickupLocation': c.pickup_location or rec.to_city,
                 'dropLocation': c.drop_location or '',
-                'pickupDateTime': c.pickup_datetime.strftime('%Y-%m-%d %H:%M') if c.pickup_datetime else str(rec.departure_date),
+                'pickupDateTime': pickup_dt,
                 'cabType': (c.cab_type or 'any').upper(),
             }
         elif rec.cab_required:
@@ -621,11 +645,14 @@ class TravelRequest(models.Model):
     def _push_to_mybiz(self):
         """Push the approved travel request to the myBiz API."""
         self.ensure_one()
-        config = self.env['bxi.mybiz.config'].get_active_config(self.company_id.id)
+        # sudo: any HR approver must be able to trigger the push even if they
+        # don't personally have access to the myBiz Configuration model.
+        config = self.env['bxi.mybiz.config'].sudo().get_active_config(self.company_id.id)
         if not config:
             self.write({
                 'mybiz_status': 'failed',
-                'mybiz_error': 'myBiz configuration not found. Please configure myBiz API settings.',
+                'mybiz_error': (
+                    'myBiz configuration not found. Please configure myBiz API settings.'),
             })
             self.message_post(body=_(
                 '⚠️ myBiz Push Failed: No active myBiz configuration found for company %s. '
@@ -662,7 +689,8 @@ class TravelRequest(models.Model):
                 'mybiz_raw_response': json.dumps(resp_data, indent=2),
             })
             self.message_post(
-                body=_('✅ Successfully pushed to MakeMyTrip myBiz. Service ID: <b>%s</b>') % (service_id or '—'),
+                body=_('✅ Successfully pushed to MakeMyTrip myBiz. Service ID: <b>%s</b>') % (
+                    service_id or '—'),
                 subtype_xmlid='mail.mt_note',
             )
             _logger.info('myBiz push successful for %s — Service ID: %s', self.name, service_id)
@@ -683,24 +711,34 @@ class TravelRequest(models.Model):
 
         except requests.exceptions.ConnectionError:
             err = 'Connection error — myBiz API unreachable. Check IP whitelisting.'
-            self.write({'mybiz_status': 'failed', 'mybiz_error': err, 'mybiz_sync_date': fields.Datetime.now()})
+            self.write({
+                'mybiz_status': 'failed', 'mybiz_error': err,
+                'mybiz_sync_date': fields.Datetime.now(),
+            })
             _logger.error('myBiz connection error for %s', self.name)
 
         except requests.exceptions.Timeout:
             err = 'Request timed out — myBiz API did not respond within 30 seconds.'
-            self.write({'mybiz_status': 'failed', 'mybiz_error': err, 'mybiz_sync_date': fields.Datetime.now()})
+            self.write({
+                'mybiz_status': 'failed', 'mybiz_error': err,
+                'mybiz_sync_date': fields.Datetime.now(),
+            })
             _logger.error('myBiz timeout for %s', self.name)
 
         except Exception as e:
             err = str(e)
-            self.write({'mybiz_status': 'failed', 'mybiz_error': err, 'mybiz_sync_date': fields.Datetime.now()})
+            self.write({
+                'mybiz_status': 'failed', 'mybiz_error': err,
+                'mybiz_sync_date': fields.Datetime.now(),
+            })
             _logger.error('myBiz unexpected error for %s: %s', self.name, err)
 
     def action_retry_mybiz_push(self):
         """Manually retry the myBiz push for failed/pending requests."""
         for rec in self:
             if rec.state not in ('mybiz_pending', 'cancelled'):
-                raise UserError(_('Only requests in "myBiz Pending" or "Cancelled" state can be retried.'))
+                raise UserError(
+                    _('Only requests in "myBiz Pending" or "Cancelled" state can be retried.'))
             if rec.state == 'cancelled' and rec.mybiz_status == 'failed':
                 rec.write({'state': 'mybiz_pending', 'mybiz_status': 'not_pushed'})
             rec._push_to_mybiz()
@@ -715,7 +753,9 @@ class TravelRequest(models.Model):
         self.ensure_one()
         if not self.mybiz_service_id:
             return
-        config = self.env['bxi.mybiz.config'].get_active_config(self.company_id.id)
+        # sudo: same rationale as _push_to_mybiz — the caller may not have
+        # direct access to the myBiz Configuration model.
+        config = self.env['bxi.mybiz.config'].sudo().get_active_config(self.company_id.id)
         if not config:
             return
 
@@ -795,13 +835,20 @@ class TravelRequest(models.Model):
         template = False
         email_to = False
         if self.state == 'manager_approval':
-            template = self.env.ref('bxi_travel_request.email_template_manager', raise_if_not_found=False)
-            email_to = self.employee_id.parent_id.work_email if self.employee_id.parent_id else False
+            template = self.env.ref(
+                'bxi_travel_request.email_template_manager',
+                raise_if_not_found=False)
+            manager = self.employee_id.parent_id
+            email_to = manager.work_email if manager else False
         elif self.state == 'hr_approval':
-            template = self.env.ref('bxi_travel_request.email_template_hr', raise_if_not_found=False)
+            template = self.env.ref(
+                'bxi_travel_request.email_template_hr',
+                raise_if_not_found=False)
             email_to = 'hr@bxitech.com'
         elif self.state == 'approved':
-            template = self.env.ref('bxi_travel_request.email_template_approved', raise_if_not_found=False)
+            template = self.env.ref(
+                'bxi_travel_request.email_template_approved',
+                raise_if_not_found=False)
             email_to = self.employee_id.work_email or self.email
         if not template or not email_to:
             return

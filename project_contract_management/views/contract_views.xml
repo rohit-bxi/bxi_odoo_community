@@ -78,14 +78,14 @@
 
                                 <!-- CLIENTS -->
                                 <div class="contract_clients">
-                                    <i class="fa fa-users contract_client_icon"/>
+                                    <i class="fa fa-users contract_client_icon" title="Clients"/>
                                     <field name="client_ids" widget="many2many_tags"/>
                                 </div>
 
                                 <!-- AMOUNT -->
                                 <div class="contract_amount_row">
                                     <div class="contract_amount_icon">
-                                        <i class="fa fa-inr"/>
+                                        <i class="fa fa-inr" title="Amount"/>
                                     </div>
                                     <span class="contract_amount_value">
                                         <field name="contract_amount"
@@ -96,7 +96,7 @@
 
                                 <!-- DATES -->
                                 <div class="contract_dates_row">
-                                    <i class="fa fa-calendar-o"/>
+                                    <i class="fa fa-calendar-o" title="Contract Dates"/>
                                     <field name="contract_start_date"/>
                                     <span class="date_sep">→</span>
                                     <field name="contract_end_date"/>
@@ -110,7 +110,7 @@
                                     <field name="contract_type"/>
                                 </span>
                                 <div class="contract_open_btn">
-                                    <i class="fa fa-angle-right"/>
+                                    <i class="fa fa-angle-right" title="Open"/>
                                 </div>
                             </div>
 

@@ -19,4 +19,5 @@
         'report/offer_letter_template.xml',
         'report/offer_letter_report.xml',
     ],
+    'license': 'LGPL-3',
 }

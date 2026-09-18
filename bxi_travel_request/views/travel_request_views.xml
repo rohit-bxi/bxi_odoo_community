@@ -277,7 +277,8 @@
                                 </div>
                                 <div class="col-md-2 d-flex align-items-center justify-content-center">
                                     <div class="text-center">
-                                        <i class="fa fa-2x fa-arrow-right text-muted"/>
+                                        <i class="fa fa-2x fa-arrow-right text-muted"
+                                           title="Travel direction"/>
                                         <br/>
                                         <small class="text-muted">
                                             <field name="mode_of_travel" nolabel="1" readonly="1"/>
@@ -581,14 +582,14 @@
                                 <field name="employee_id"/>
                             </div>
                             <div class="text-muted mb-1">
-                                <i class="fa fa-map-marker me-1"/>
+                                <i class="fa fa-map-marker me-1" title="Route"/>
                                 <field name="from_city" nolabel="1"/>
                                 <span class="mx-1">→</span>
                                 <field name="to_city" nolabel="1"/>
                             </div>
                             <div class="d-flex justify-content-between align-items-center">
                                 <small class="text-muted">
-                                    <i class="fa fa-calendar me-1"/>
+                                    <i class="fa fa-calendar me-1" title="Departure date"/>
                                     <field name="departure_date" nolabel="1"/>
                                 </small>
                                 <span class="badge rounded-pill bg-secondary">
@@ -597,7 +598,7 @@
                             </div>
                             <div class="mt-2" t-if="record.mybiz_status.raw_value != 'not_pushed'">
                                 <small class="text-info">
-                                    <i class="fa fa-plane me-1"/>
+                                    <i class="fa fa-plane me-1" title="myBiz status"/>
                                     myBiz: <field name="mybiz_status" nolabel="1"/>
                                 </small>
                             </div>

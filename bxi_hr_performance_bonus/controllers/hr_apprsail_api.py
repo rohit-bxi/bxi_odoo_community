@@ -4,7 +4,7 @@ from odoo.http import request
 
 class EmployeeAppraisalAPI(http.Controller):
 
-    @http.route('/api/employee/appraisal',type='json',auth='public',methods=['POST'], csrf=False)
+    @http.route('/api/employee/appraisal', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
     def get_employee_appraisal(self, **kwargs):
         email = kwargs.get('employee_email')
         letter_type = kwargs.get('letter_type')

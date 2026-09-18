@@ -1,10 +1,28 @@
 # -*- coding: utf-8 -*-
-import json
 import logging
-from odoo import http, _
+
+from odoo import http
 from odoo.http import request
 
 _logger = logging.getLogger(__name__)
+
+
+def _is_direct_manager(record, employee):
+    """Whether `employee` is the direct reporting manager of the request's owner."""
+    return bool(
+        record.employee_id.parent_id
+        and employee
+        and record.employee_id.parent_id.id == employee.id
+    )
+
+
+def _is_hr_user(user):
+    """Whether `user` has HR officer/manager/system-admin rights."""
+    return (
+        user.has_group('hr.group_hr_user')
+        or user.has_group('hr.group_hr_manager')
+        or user.has_group('base.group_system')
+    )
 
 
 class TravelRequestPortal(http.Controller):
@@ -16,7 +34,7 @@ class TravelRequestPortal(http.Controller):
         employee = request.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
         T_Request = request.env['travel.request'].sudo()
 
-        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager') or user.has_group('base.group_system')
+        is_hr = _is_hr_user(user)
         is_manager = bool(employee and employee.child_ids)
 
         domain = [('company_id', 'in', request.env.companies.ids)]
@@ -25,7 +43,8 @@ class TravelRequestPortal(http.Controller):
             if is_hr:
                 domain.append(('state', 'in', ('hr_approval', 'manager_approval')))
             elif is_manager:
-                domain.extend([('state', '=', 'manager_approval'), ('employee_id.parent_id', '=', employee.id)])
+                domain.extend([('state', '=', 'manager_approval'),
+                              ('employee_id.parent_id', '=', employee.id)])
             else:
                 domain.append(('employee_id', '=', employee.id if employee else False))
         elif filter_type == 'team' and is_manager:
@@ -65,7 +84,8 @@ class TravelRequestPortal(http.Controller):
         })
 
     # ─── 2. Submit Travel Request ──────────────────────────────────
-    @http.route('/my/submit-travel-request', type='http', auth='user', website=True, methods=['GET', 'POST'])
+    @http.route('/my/submit-travel-request', type='http',
+                auth='user', website=True, methods=['GET', 'POST'])
     def submit_request(self, **post):
         user = request.env.user
         employee = request.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
@@ -73,7 +93,8 @@ class TravelRequestPortal(http.Controller):
         # AJAX helper for state dropdown dependent on country selection
         country_id = request.params.get('country_id')
         if country_id:
-            states = request.env['res.country.state'].sudo().search([('country_id', '=', int(country_id))])
+            states = request.env['res.country.state'].sudo().search(
+                [('country_id', '=', int(country_id))])
             return request.make_json_response({
                 'states': [{'id': s.id, 'name': s.name} for s in states]
             })
@@ -100,33 +121,45 @@ class TravelRequestPortal(http.Controller):
             cab_req = bool(post.get('cab_required'))
             adv_req = bool(post.get('advance_required'))
 
+            from_city = post.get('from_city')
+            to_city = post.get('to_city')
+            departure_date = post.get('departure_date')
+            return_date = post.get('return_date')
+            mode_of_travel = post.get('mode_of_travel')
+            travel_class = post.get('travel_class', 'economy')
+            hotel_city = post.get('hotel_city') or to_city
+            hotel_checkin = post.get('hotel_checkin') or departure_date
+            hotel_checkout = post.get('hotel_checkout') or return_date
+
             vals = {
                 'employee_id': employee.id if employee else False,
-                'manager_id': employee.parent_id.id if (employee and employee.parent_id) else False,
-                'department_id': employee.department_id.id if (employee and employee.department_id) else False,
+                'manager_id': (
+                    employee.parent_id.id if employee and employee.parent_id else False),
+                'department_id': (
+                    employee.department_id.id if employee and employee.department_id else False),
                 'travel_purpose': post.get('travel_purpose'),
                 'from_country': from_country,
                 'to_country': to_country,
                 'from_state': get_int('from_state'),
                 'to_state': get_int('to_state'),
-                'from_city': post.get('from_city'),
-                'to_city': post.get('to_city'),
+                'from_city': from_city,
+                'to_city': to_city,
                 'from_address': post.get('from_address'),
                 'to_address': post.get('to_address'),
-                'departure_date': post.get('departure_date'),
-                'return_date': post.get('return_date') or False,
-                'mode_of_travel': post.get('mode_of_travel'),
+                'departure_date': departure_date,
+                'return_date': return_date or False,
+                'mode_of_travel': mode_of_travel,
                 'trip_type': post.get('trip_type', 'round_trip'),
-                'travel_class': post.get('travel_class', 'economy'),
+                'travel_class': travel_class,
                 'contact_number': post.get('contact_number'),
                 'email': post.get('email'),
                 'other_info': post.get('other_info'),
                 # Hotel preferences
                 'hotel_required': hotel_req,
-                'hotel_city': post.get('hotel_city') or post.get('to_city') if hotel_req else False,
+                'hotel_city': hotel_city if hotel_req else False,
                 'hotel_grade': post.get('hotel_grade', '3') if hotel_req else False,
-                'hotel_checkin': post.get('hotel_checkin') or post.get('departure_date') if hotel_req else False,
-                'hotel_checkout': post.get('hotel_checkout') or post.get('return_date') if hotel_req else False,
+                'hotel_checkin': hotel_checkin if hotel_req else False,
+                'hotel_checkout': hotel_checkout if hotel_req else False,
                 'hotel_rooms': get_int('hotel_rooms', 1) if hotel_req else 1,
                 # Cab preferences
                 'cab_required': cab_req,
@@ -143,26 +176,26 @@ class TravelRequestPortal(http.Controller):
             rec = request.env['travel.request'].sudo().create(vals)
 
             # Auto-create a travel segment line based on primary travel selection
-            if post.get('mode_of_travel'):
+            if mode_of_travel:
                 request.env['travel.request.option'].sudo().create({
                     'travel_request_id': rec.id,
-                    'option_type': post.get('mode_of_travel'),
-                    'origin_code': post.get('from_city'),
-                    'destination_code': post.get('to_city'),
-                    'travel_class': post.get('travel_class', 'economy'),
-                    'description': f"{post.get('mode_of_travel').capitalize()} from {post.get('from_city')} to {post.get('to_city')}",
+                    'option_type': mode_of_travel,
+                    'origin_code': from_city,
+                    'destination_code': to_city,
+                    'travel_class': travel_class,
+                    'description': f'{mode_of_travel.capitalize()} from {from_city} to {to_city}',
                 })
 
             if hotel_req:
                 request.env['travel.request.option'].sudo().create({
                     'travel_request_id': rec.id,
                     'option_type': 'hotel',
-                    'hotel_city': post.get('hotel_city') or post.get('to_city'),
+                    'hotel_city': hotel_city,
                     'hotel_grade': post.get('hotel_grade', '3'),
-                    'checkin_date': post.get('hotel_checkin') or post.get('departure_date'),
-                    'checkout_date': post.get('hotel_checkout') or post.get('return_date'),
+                    'checkin_date': hotel_checkin,
+                    'checkout_date': hotel_checkout,
                     'rooms': get_int('hotel_rooms', 1),
-                    'description': f"Hotel stay in {post.get('hotel_city') or post.get('to_city')}",
+                    'description': f'Hotel stay in {hotel_city}',
                 })
 
             if cab_req:
@@ -172,7 +205,7 @@ class TravelRequestPortal(http.Controller):
                     'cab_type': post.get('cab_type', 'any'),
                     'pickup_location': post.get('cab_pickup'),
                     'drop_location': post.get('cab_dropoff'),
-                    'description': f"Cab service in {post.get('to_city')}",
+                    'description': f'Cab service in {to_city}',
                 })
 
             rec._send_state_email()
@@ -200,14 +233,13 @@ class TravelRequestPortal(http.Controller):
             return request.not_found()
 
         user = request.env.user
-        current_emp = request.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
+        current_emp = request.env['hr.employee'].sudo().search(
+            [('user_id', '=', user.id)], limit=1)
 
-        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager') or user.has_group('base.group_system')
+        is_hr = _is_hr_user(user)
         can_manager_approve = bool(
-            record.state == 'manager_approval' and
-            record.employee_id.parent_id and
-            current_emp and
-            record.employee_id.parent_id.id == current_emp.id
+            record.state == 'manager_approval'
+            and _is_direct_manager(record, current_emp)
         )
         can_hr_approve = bool(record.state == 'hr_approval' and is_hr)
 
@@ -221,44 +253,52 @@ class TravelRequestPortal(http.Controller):
         })
 
     # ─── 4. Website Manager Approval Action ────────────────────────
-    @http.route('/my/travel-request/<int:rec_id>/approve-manager', type='http', auth='user', website=True, methods=['POST'])
+    @http.route('/my/travel-request/<int:rec_id>/approve-manager',
+                type='http', auth='user', website=True, methods=['POST'])
     def manager_approve_website(self, rec_id, **kwargs):
         record = request.env['travel.request'].sudo().browse(rec_id)
         if record.exists():
             user = request.env.user
-            current_emp = request.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
-            if record.employee_id.parent_id and current_emp and record.employee_id.parent_id.id == current_emp.id:
+            current_emp = request.env['hr.employee'].sudo().search(
+                [('user_id', '=', user.id)], limit=1)
+            if _is_direct_manager(record, current_emp):
                 record.manager_action_approve()
-                return request.redirect(f'/my/travel-request/{rec_id}?msg=Manager+Approved+Successfully')
+                return request.redirect(
+                    f'/my/travel-request/{rec_id}?msg=Manager+Approved+Successfully')
         return request.redirect(f'/my/travel-request/{rec_id}')
 
-    @http.route('/my/travel-request/<int:rec_id>/refuse-manager', type='http', auth='user', website=True, methods=['POST'])
+    @http.route('/my/travel-request/<int:rec_id>/refuse-manager',
+                type='http', auth='user', website=True, methods=['POST'])
     def manager_refuse_website(self, rec_id, **kwargs):
         record = request.env['travel.request'].sudo().browse(rec_id)
         if record.exists():
             user = request.env.user
-            current_emp = request.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
-            if record.employee_id.parent_id and current_emp and record.employee_id.parent_id.id == current_emp.id:
+            current_emp = request.env['hr.employee'].sudo().search(
+                [('user_id', '=', user.id)], limit=1)
+            if _is_direct_manager(record, current_emp):
                 record.manager_action_refuse()
                 return request.redirect(f'/my/travel-request/{rec_id}?msg=Request+Refused')
         return request.redirect(f'/my/travel-request/{rec_id}')
 
     # ─── 5. Website HR Approval Action (Approve + Push to myBiz) ───
-    @http.route('/my/travel-request/<int:rec_id>/approve-hr', type='http', auth='user', website=True, methods=['POST'])
+    @http.route('/my/travel-request/<int:rec_id>/approve-hr',
+                type='http', auth='user', website=True, methods=['POST'])
     def hr_approve_website(self, rec_id, **kwargs):
         record = request.env['travel.request'].sudo().browse(rec_id)
         user = request.env.user
-        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager') or user.has_group('base.group_system')
+        is_hr = _is_hr_user(user)
         if record.exists() and is_hr:
             record.hr_action_approve()
-            return request.redirect(f'/my/travel-request/{rec_id}?msg=HR+Approved+and+Pushed+to+myBiz')
+            return request.redirect(
+                f'/my/travel-request/{rec_id}?msg=HR+Approved+and+Pushed+to+myBiz')
         return request.redirect(f'/my/travel-request/{rec_id}')
 
-    @http.route('/my/travel-request/<int:rec_id>/refuse-hr', type='http', auth='user', website=True, methods=['POST'])
+    @http.route('/my/travel-request/<int:rec_id>/refuse-hr',
+                type='http', auth='user', website=True, methods=['POST'])
     def hr_refuse_website(self, rec_id, **kwargs):
         record = request.env['travel.request'].sudo().browse(rec_id)
         user = request.env.user
-        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager') or user.has_group('base.group_system')
+        is_hr = _is_hr_user(user)
         if record.exists() and is_hr:
             record.hr_action_refuse()
             return request.redirect(f'/my/travel-request/{rec_id}?msg=Request+Refused+by+HR')

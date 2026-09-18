@@ -28,12 +28,12 @@ class AccountBalanceReport(models.TransientModel):
     _description = 'Trial Balance Report'
 
     section_report_ids = fields.Many2many(string="Sections",
-                                          comodel_name='account.report',
+                                          comodel_name='account.common.report',
                                           relation="account_balance_report_section_rel",
                                           column1="main_report_id",
                                           column2="sub_report_id")
     section_main_report_ids = fields.Many2many(string="Section Of",
-                                               comodel_name='account.report',
+                                               comodel_name='account.common.report',
                                                relation="account_balance_report_section_rel",
                                                column1="sub_report_id",
                                                column2="main_report_id")

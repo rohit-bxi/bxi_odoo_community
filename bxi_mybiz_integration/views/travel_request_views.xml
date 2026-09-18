@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         FORM VIEW — add Recall action, myBiz Travel Request URL /
+         response fields, and a per-segment recall button in the
+         travel-segment sub-form.
+    ═══════════════════════════════════════════════════════════════ -->
+    <record id="view_travel_request_form_inherit" model="ir.ui.view">
+        <field name="name">travel.request.form.mybiz.integration</field>
+        <field name="model">travel.request</field>
+        <field name="inherit_id" ref="bxi_travel_request.view_travel_request_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Header: Recall button, visible once at least one service has been pushed -->
+            <button name="action_retry_mybiz_push" position="after">
+                <button name="action_recall_all_mybiz_services"
+                        string="Recall from myBiz"
+                        type="object"
+                        class="btn-secondary"
+                        icon="fa-undo"
+                        invisible="mybiz_status not in ('pending', 'approved', 'booked')"
+                        confirm="This will recall (cancel) every flight/hotel service already pushed to myBiz for this request. Continue?"/>
+            </button>
+
+            <!-- myBiz Booking tab: surface the real response fields -->
+            <field name="mybiz_booking_ref" position="after">
+                <field name="mybiz_travel_request_url" readonly="1" widget="url"/>
+                <field name="mybiz_response_code" readonly="1"/>
+                <field name="mybiz_response_message" readonly="1"/>
+            </field>
+
+            <!-- Travel-segment sub-form: recall button next to that segment's myBiz status -->
+            <xpath expr="//field[@name='travel_option_ids']/form//field[@name='mybiz_status']"
+                   position="after">
+                <button name="action_recall_service"
+                        string="Recall"
+                        type="object"
+                        icon="fa-undo"
+                        class="btn-link"
+                        invisible="not mybiz_ref or mybiz_status == 'cancelled'"
+                        confirm="Recall this service from myBiz?"/>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

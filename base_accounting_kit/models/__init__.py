@@ -19,6 +19,7 @@
 #    If not, see <http://www.gnu.org/licenses/>.
 #
 #############################################################################
+from . import account_report
 from . import account_account
 from . import account_asset_asset
 from . import account_asset_category
@@ -31,7 +32,6 @@ from . import account_move_line
 from . import account_payment
 from . import account_payment_method
 from . import account_recurring_entries_line
-from . import account_report
 from . import followup_line
 from . import multiple_invoice
 from . import multiple_invoice_layout
