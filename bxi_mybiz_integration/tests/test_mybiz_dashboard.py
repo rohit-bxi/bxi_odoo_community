@@ -55,8 +55,43 @@ class TestMybizDashboard(TransactionCase):
         data = self.dashboard.get_dashboard_data(days=365)
         for key in ('total_requests', 'state_counts', 'mybiz_counts',
                     'success_rate', 'pending_manager', 'upcoming',
-                    'recent_failures', 'dept_spend', 'monthly_trend'):
+                    'recent_failures', 'dept_spend', 'monthly_trend',
+                    'base_domain', 'recent_domain'):
             self.assertIn(key, data)
+
+    def test_dashboard_domains_support_drill_down_filtering(self):
+        # The dashboard client composes these domains with an extra
+        # status/department/date filter to open a matching list view, so
+        # they must actually scope 'travel.request' searches correctly.
+        data = self.dashboard.get_dashboard_data(days=365)
+        TravelRequest = self.env['travel.request'].sudo()
+
+        pending_manager_domain = data['base_domain'] + [
+            ('state', '=', 'manager_approval'),
+        ]
+        self.assertIn(
+            self.pending_manager_request,
+            TravelRequest.search(pending_manager_domain),
+        )
+
+        failed_domain = data['recent_domain'] + [
+            ('mybiz_status', '=', 'failed'),
+        ]
+        self.assertIn(
+            self.failed_request, TravelRequest.search(failed_domain))
+
+    def test_dept_spend_entries_include_department_id(self):
+        data = self.dashboard.get_dashboard_data(days=365)
+        sales_entry = next(
+            d for d in data['dept_spend'] if d['department'] == 'Sales')
+        self.assertEqual(sales_entry['department_id'], self.department.id)
+
+    def test_monthly_trend_entries_include_date_bounds(self):
+        data = self.dashboard.get_dashboard_data(days=365)
+        for month in data['monthly_trend']:
+            self.assertIn('date_from', month)
+            self.assertIn('date_to', month)
+            self.assertLess(month['date_from'], month['date_to'])
 
     def test_dashboard_counts_include_seeded_requests(self):
         data = self.dashboard.get_dashboard_data(days=365)

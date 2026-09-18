@@ -90,12 +90,18 @@ class BxiMybizDashboard(models.AbstractModel):
         )
 
         dept_spend = {}
+        dept_ids = {}
         for r in requests_recent:
             dept = r.department_id.name or 'Unassigned'
             amount = (r.total_submitted_expense or 0.0) + (r.advance_amount or 0.0)
             dept_spend[dept] = dept_spend.get(dept, 0.0) + amount
+            dept_ids[dept] = r.department_id.id
         dept_spend_list = sorted(
-            [{'department': k, 'amount': round(v, 2)} for k, v in dept_spend.items()],
+            [{
+                'department': k,
+                'department_id': dept_ids.get(k, False),
+                'amount': round(v, 2),
+            } for k, v in dept_spend.items()],
             key=lambda d: d['amount'], reverse=True,
         )[:8]
         max_dept_amount = max([d['amount'] for d in dept_spend_list], default=0.0)
@@ -108,7 +114,12 @@ class BxiMybizDashboard(models.AbstractModel):
                 ('request_date', '>=', month_start),
                 ('request_date', '<', month_end),
             ])
-            months.append({'label': month_start.strftime('%b %Y'), 'count': count})
+            months.append({
+                'label': month_start.strftime('%b %Y'),
+                'count': count,
+                'date_from': fields.Date.to_string(month_start),
+                'date_to': fields.Date.to_string(month_end),
+            })
         max_month_count = max([m['count'] for m in months], default=0)
 
         approved_with_turnaround = requests_recent.filtered(
@@ -129,6 +140,14 @@ class BxiMybizDashboard(models.AbstractModel):
             'is_hr': roles['is_hr'],
             'is_manager': roles['is_manager'],
             'days': days,
+            # Domains the client can compose with a status/department/date
+            # filter to open a matching list view (drill-down clicks).
+            # 'base_domain' has no date restriction (matches the
+            # pending_manager/pending_hr/mybiz_pending counts below);
+            # 'recent_domain' additionally requires request_date >= since
+            # (matches every count derived from requests_recent).
+            'base_domain': domain,
+            'recent_domain': domain_recent,
             'total_requests': len(requests_recent),
             'state_counts': state_counts,
             'state_labels': state_selection,

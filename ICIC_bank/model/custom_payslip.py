@@ -1,18 +1,20 @@
-from datetime import datetime
-import uuid
-import requests
-from odoo import _, fields, models
-from odoo.fields import Date
-from odoo.exceptions import ValidationError
-from secrets import choice
 import base64
 import json
 import logging
 import os
+import re
 import string
+import uuid
+from datetime import datetime
+from secrets import choice
+
+import requests
 from Cryptodome.Cipher import AES, PKCS1_v1_5
 from Cryptodome.PublicKey import RSA
 from Cryptodome.Util.Padding import pad, unpad
+
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -66,8 +68,21 @@ class HrPayslip(models.Model):
         index=True,
     )
 
+    # om_hr_payroll has no net_wage field of its own: net pay lives on the
+    # payslip line whose salary rule code is "NET".
+    net_wage = fields.Float(
+        string="Net Wage",
+        compute="_compute_net_wage",
+        store=True,
+    )
+
     _icici_public_key_cache = None
     _private_key_cache = None
+
+    @api.depends("line_ids.total")
+    def _compute_net_wage(self):
+        for slip in self:
+            slip.net_wage = slip.get_salary_line_total("NET")
 
     def random_16(self):
         """Generate a cryptographically secure 16-digit numeric string."""
@@ -154,7 +169,7 @@ class HrPayslip(models.Model):
             raise ValidationError(
                 _("Unable to load private key.")
             ) from exc
-        
+
     def encrypt_payload(self, payload):
         """Encrypt payload using ICICI Hybrid Encryption."""
 
@@ -319,7 +334,7 @@ class HrPayslip(models.Model):
             raise ValidationError(
                 _("Unable to decrypt ICICI response.")
             ) from exc
-             
+
     def call_icici_api(self, url, payload):
         """Call ICICI API using Hybrid Encryption."""
 
@@ -470,14 +485,15 @@ class HrPayslip(models.Model):
 
                 raise ValidationError(
                     _(
-                        "Unexpected error occurred while communicating with ICICI."
+                        "Unexpected error occurred while "
+                        "communicating with ICICI."
                     )
                 ) from exc
 
         raise ValidationError(
             _("Unable to process the ICICI request.")
         )
-    
+
     def action_release_salary(self):
         """Validate payslips, call ICICI Create API and open OTP wizard."""
 
@@ -499,10 +515,11 @@ class HrPayslip(models.Model):
                     % slip.employee_id.name
                 )
 
-            if slip.state != "validated":
+            if slip.state != "done":
                 raise ValidationError(
                     _(
-                        "%s payslip must be validated before salary release."
+                        "%s payslip must be confirmed before salary "
+                        "release."
                     )
                     % slip.employee_id.name
                 )
@@ -666,8 +683,8 @@ class HrPayslip(models.Model):
             "context": {
                 "default_payslip_ids": self.ids,
             },
-        }    
-    
+        }
+
     def generate_salary_file(self, payment_date):
         """Generate ICICI Salary File."""
         payment_date = fields.Date.to_date(
@@ -816,7 +833,7 @@ class HrPayslip(models.Model):
         _logger.info("=" * 80)
 
         return salary_file
-    
+
     def action_reverse_payment(self, file_seq_num):
         """Reverse an ICICI salary payment."""
 
@@ -937,7 +954,7 @@ class HrPayslip(models.Model):
         )
 
         return True
-    
+
     def process_bulk_payment(self, otp, payment_date):
         """Submit salary file to ICICI after OTP verification."""
 
@@ -1003,7 +1020,8 @@ class HrPayslip(models.Model):
         _logger.info("=" * 80)
 
         result = self.call_icici_api(
-            "https://apibankingone.icici.bank.in/api/v1/cibbulkpayment/bulkPayment",
+            "https://apibankingone.icici.bank.in"
+            "/api/v1/cibbulkpayment/bulkPayment",
             payload,
         )
 
@@ -1094,8 +1112,11 @@ class HrPayslip(models.Model):
         )
 
         if not file_sequence and message:
-            import re
-            match = re.search(r"File Sequence\s*(?:No|Number)?\s*:\s*\[?(\d+)\]?", message, re.IGNORECASE)
+            match = re.search(
+                r"File Sequence\s*(?:No|Number)?\s*:\s*\[?(\d+)\]?",
+                message,
+                re.IGNORECASE,
+            )
             if match:
                 file_sequence = match.group(1)
 
@@ -1131,7 +1152,6 @@ class HrPayslip(models.Model):
         _logger.info("=" * 80)
 
         return True
-
 
     def action_open_reverse_wizard(self):
         """Open ICICI Reverse Payment Wizard."""

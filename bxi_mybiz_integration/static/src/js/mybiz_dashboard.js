@@ -54,6 +54,8 @@ class BxiMybizDashboard extends Component {
             is_admin: false,
             is_hr: false,
             is_manager: false,
+            base_domain: [],
+            recent_domain: [],
         });
 
         onWillStart(async () => {
@@ -101,6 +103,104 @@ class BxiMybizDashboard extends Component {
             views: [[false, "form"]],
             target: "current",
         });
+    }
+
+    /**
+     * Drill down from a dashboard tile/bar into the matching travel
+     * requests, e.g. clicking the "Pending HR Approval" KPI or the
+     * "HR Approval" bar in the status funnel.
+     */
+    openList(extraDomain, title) {
+        this.actionService.doAction({
+            type: "ir.actions.act_window",
+            name: title,
+            res_model: "travel.request",
+            views: [[false, "list"], [false, "form"]],
+            domain: extraDomain,
+            target: "current",
+        });
+    }
+
+    openTotalRequests() {
+        this.openList(this.state.recent_domain, "Total Requests");
+    }
+
+    openPushFailures() {
+        this.openList(
+            [...this.state.recent_domain, ["mybiz_status", "=", "failed"]],
+            "myBiz Push Failures"
+        );
+    }
+
+    openSuccessfulPushes() {
+        this.openList(
+            [...this.state.recent_domain,
+                ["mybiz_status", "in", ["pending", "approved", "booked"]]],
+            "myBiz Push Successes"
+        );
+    }
+
+    openTurnaroundTracked() {
+        this.openList(
+            [...this.state.recent_domain, ["hr_approved_date", "!=", false]],
+            "Approved With Turnaround Data"
+        );
+    }
+
+    openPendingManager() {
+        this.openList(
+            [...this.state.base_domain, ["state", "=", "manager_approval"]],
+            "Pending Manager Approval"
+        );
+    }
+
+    openPendingHr() {
+        this.openList(
+            [...this.state.base_domain, ["state", "=", "hr_approval"]],
+            "Pending HR Approval"
+        );
+    }
+
+    openMybizPending() {
+        this.openList(
+            [...this.state.base_domain, ["state", "=", "mybiz_pending"]],
+            "Awaiting myBiz Confirmation"
+        );
+    }
+
+    openByState(key) {
+        this.openList(
+            [...this.state.recent_domain, ["state", "=", key]],
+            this.state.state_labels[key] || key
+        );
+    }
+
+    openByMybizStatus(key) {
+        this.openList(
+            [...this.state.recent_domain, ["mybiz_status", "=", key]],
+            this.state.mybiz_labels[key] || key
+        );
+    }
+
+    openByDepartment(dept) {
+        const filter = dept.department_id
+            ? ["department_id", "=", dept.department_id]
+            : ["department_id", "=", false];
+        this.openList(
+            [...this.state.recent_domain, filter],
+            dept.department
+        );
+    }
+
+    openByMonth(month) {
+        this.openList(
+            [
+                ...this.state.base_domain,
+                ["request_date", ">=", month.date_from],
+                ["request_date", "<", month.date_to],
+            ],
+            month.label
+        );
     }
 }
 
