@@ -263,13 +263,16 @@
                                 <td style="width: 34%; vertical-align: top;">
                                     <table style="width: 100%; border-collapse: collapse; font-size: 10.5px;">
                                         <tr>
-                                            <td style="border: 1px solid #70a4cc; padding: 3px 6px; font-weight: bold; width: 45%; text-align: left;">SUBTOTAL</td>
-                                            <td style="border: 1px solid #70a4cc; padding: 3px 6px; text-align: right; width: 55%;">
+                                            <td style="border: 1px solid #70a4cc; padding: 3px 6px; font-weight: bold; width: 55%; text-align: left;">SUBTOTAL</td>
+                                            <td style="border: 1px solid #70a4cc; padding: 3px 6px; text-align: right; width: 45%;">
                                                 <span t-esc="'{:,.2f}'.format(o.amount_untaxed)"/>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style="border: 1px solid #70a4cc; padding: 3px 6px; text-align: left;">TAX</td>
+                                            <td style="border: 1px solid #70a4cc; padding: 3px 6px; text-align: left;">
+                                                <t t-set="applied_taxes" t-value="', '.join(o.order_line.tax_ids.mapped('name'))"/>
+                                                TAX<t t-if="applied_taxes"> (<span t-esc="applied_taxes"/>)</t>
+                                            </td>
                                             <td style="border: 1px solid #70a4cc; padding: 3px 6px; text-align: right;">
                                                 <t t-if="o.amount_tax"><span t-esc="'{:,.2f}'.format(o.amount_tax)"/></t>
                                                 <t t-else="">-</t>
