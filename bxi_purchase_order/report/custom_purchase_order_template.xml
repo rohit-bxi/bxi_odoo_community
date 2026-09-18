@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="custom_purchase_order_template">
+        <t t-call="web.html_container">
+            <meta charset="UTF-8"/>
+            <t t-foreach="docs" t-as="o">
+                <div class="page" style="font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #222; margin: 0; padding: 0;">
+                    <!-- Outer Border Frame -->
+                    <div style="border: 2px solid #0070c0; padding: 12px; min-height: 980px; box-sizing: border-box; background-color: #fff;">
+
+                        <!-- Top Header: Logo & Company on Left, ORDER Box on Right -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+                            <tr>
+                                <!-- Left: Logo and Company Info -->
+                                <td style="width: 48%; vertical-align: top;">
+                                    <div style="margin-bottom: 4px;">
+                                        <t t-if="o.company_id.logo">
+                                            <img t-att-src="image_data_uri(o.company_id.logo)" style="max-height: 52px; max-width: 180px;" alt="Company Logo"/>
+                                        </t>
+                                    </div>
+                                    <div style="border: 1px solid #70a4cc; padding: 5px 8px; line-height: 1.35; font-size: 10.5px; width: 85%;">
+                                        <div style="font-weight: bold; font-size: 12px; color: #0070c0; margin-bottom: 2px;">
+                                            <span t-field="o.company_id.name"/>
+                                        </div>
+                                        <t t-if="o.company_id.street"><span t-field="o.company_id.street"/><br/></t>
+                                        <t t-if="o.company_id.street2"><span t-field="o.company_id.street2"/><br/></t>
+                                        <t t-if="o.company_id.city or o.company_id.state_id or o.company_id.zip">
+                                            <span t-field="o.company_id.city"/><t t-if="o.company_id.state_id">, <span t-esc="o.company_id.state_id.code or o.company_id.state_id.name"/></t><t t-if="o.company_id.zip"> <span t-field="o.company_id.zip"/></t><br/>
+                                        </t>
+                                        <t t-if="o.company_id.phone">Phone: <span t-field="o.company_id.phone"/><br/></t>
+                                        <t t-if="o.company_id.email">Email: <span t-field="o.company_id.email"/><br/></t>
+                                        <t t-if="o.company_id.website">Website: <span t-field="o.company_id.website"/></t>
+                                    </div>
+                                </td>
+
+                                <!-- Spacer -->
+                                <td style="width: 4%;"></td>
+
+                                <!-- Right: ORDER Box -->
+                                <td style="width: 48%; vertical-align: top;">
+                                    <div style="border: 1px solid #70a4cc; width: 100%;">
+                                        <div style="text-align: right; padding: 8px 14px 6px 0; border-bottom: 1px solid #70a4cc;">
+                                            <span style="font-size: 26px; font-weight: bold; color: #0070c0; letter-spacing: 2px;">ORDER</span>
+                                        </div>
+                                        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                            <tr style="border-bottom: 1px solid #70a4cc;">
+                                                <td style="padding: 4px 10px; font-weight: bold; width: 40%; text-align: right; border-right: 1px solid #70a4cc; color: #222;">
+                                                    DATE
+                                                </td>
+                                                <td style="padding: 4px 10px; text-align: center; width: 60%; color: #222;">
+                                                    <span t-field="o.date_order" t-options='{"widget": "date", "format": "dd-MM-yyyy"}'/>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 4px 10px; font-weight: bold; width: 40%; text-align: right; border-right: 1px solid #70a4cc; color: #222;">
+                                                    PO #
+                                                </td>
+                                                <td style="padding: 4px 10px; text-align: center; width: 60%; font-weight: bold; color: #222;">
+                                                    <span t-field="o.name"/>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- VENDOR and SHIP TO boxes -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+                            <tr>
+                                <!-- VENDOR Box -->
+                                <td style="width: 48%; vertical-align: top;">
+                                    <div style="background: #0070c0; color: #fff; font-weight: bold; font-size: 11px; padding: 3px 8px; border: 1px solid #0070c0; letter-spacing: 0.5px;">
+                                        VENDOR
+                                    </div>
+                                    <div style="border: 1px solid #70a4cc; border-top: none; padding: 6px 8px; font-size: 10.5px; line-height: 1.35; min-height: 80px;">
+                                        <div style="font-weight: bold; color: #000;"><span t-field="o.partner_id.name"/></div>
+                                        <t t-if="o.partner_id.parent_id and o.partner_id.parent_id != o.partner_id">
+                                            <span t-field="o.partner_id.parent_id.name"/><br/>
+                                        </t>
+                                        <t t-if="o.partner_id.street"><span t-field="o.partner_id.street"/><br/></t>
+                                        <t t-if="o.partner_id.street2"><span t-field="o.partner_id.street2"/><br/></t>
+                                        <t t-if="o.partner_id.city or o.partner_id.state_id or o.partner_id.zip">
+                                            <span t-field="o.partner_id.city"/><t t-if="o.partner_id.state_id">, <span t-esc="o.partner_id.state_id.code or o.partner_id.state_id.name"/></t><t t-if="o.partner_id.zip"> <span t-field="o.partner_id.zip"/></t><br/>
+                                        </t>
+                                        <t t-if="o.partner_id.country_id"><span t-field="o.partner_id.country_id.name"/><br/></t>
+                                        <t t-if="o.partner_id.phone">Phone: <span t-field="o.partner_id.phone"/></t>
+                                    </div>
+                                </td>
+
+                                <!-- Spacer -->
+                                <td style="width: 4%;"></td>
+
+                                <!-- SHIP TO Box -->
+                                <td style="width: 48%; vertical-align: top;">
+                                    <div style="background: #0070c0; color: #fff; font-weight: bold; font-size: 11px; padding: 3px 8px; border: 1px solid #0070c0; letter-spacing: 0.5px;">
+                                        SHIP TO
+                                    </div>
+                                    <div style="border: 1px solid #70a4cc; border-top: none; padding: 6px 8px; font-size: 10.5px; line-height: 1.35; min-height: 80px;">
+                                        <!-- Custom Shipping Address -->
+                                        <t t-if="o.is_different_shipping_address">
+                                            <div style="font-weight: bold; color: #000;"><span t-field="o.company_id.name"/></div>
+                                            <t t-if="o.shipping_street"><span t-field="o.shipping_street"/><br/></t>
+                                            <t t-if="o.shipping_street2"><span t-field="o.shipping_street2"/><br/></t>
+                                            <t t-if="o.shipping_city or o.shipping_state_id or o.shipping_zip">
+                                                <span t-field="o.shipping_city"/><t t-if="o.shipping_state_id">, <span t-esc="o.shipping_state_id.code or o.shipping_state_id.name"/></t><t t-if="o.shipping_zip"> <span t-field="o.shipping_zip"/></t><br/>
+                                            </t>
+                                            <t t-if="o.shipping_country_id"><span t-field="o.shipping_country_id.name"/><br/></t>
+                                            <t t-if="o.company_id.phone">Phone: <span t-field="o.company_id.phone"/></t>
+                                        </t>
+                                        <!-- Destination Partner Address -->
+                                        <t t-elif="o.dest_address_id">
+                                            <div style="font-weight: bold; color: #000;"><span t-field="o.dest_address_id.name"/></div>
+                                            <t t-if="o.dest_address_id.street"><span t-field="o.dest_address_id.street"/><br/></t>
+                                            <t t-if="o.dest_address_id.street2"><span t-field="o.dest_address_id.street2"/><br/></t>
+                                            <t t-if="o.dest_address_id.city or o.dest_address_id.state_id or o.dest_address_id.zip">
+                                                <span t-field="o.dest_address_id.city"/><t t-if="o.dest_address_id.state_id">, <span t-esc="o.dest_address_id.state_id.code or o.dest_address_id.state_id.name"/></t><t t-if="o.dest_address_id.zip"> <span t-field="o.dest_address_id.zip"/></t><br/>
+                                            </t>
+                                            <t t-if="o.dest_address_id.country_id"><span t-field="o.dest_address_id.country_id.name"/><br/></t>
+                                            <t t-if="o.dest_address_id.phone">Phone: <span t-field="o.dest_address_id.phone"/></t>
+                                        </t>
+                                        <!-- Warehouse Partner Address -->
+                                        <t t-elif="o.picking_type_id and o.picking_type_id.warehouse_id and o.picking_type_id.warehouse_id.partner_id">
+                                            <div style="font-weight: bold; color: #000;"><span t-field="o.picking_type_id.warehouse_id.name"/></div>
+                                            <t t-set="wh_partner" t-value="o.picking_type_id.warehouse_id.partner_id"/>
+                                            <t t-if="wh_partner.street"><span t-field="wh_partner.street"/><br/></t>
+                                            <t t-if="wh_partner.street2"><span t-field="wh_partner.street2"/><br/></t>
+                                            <t t-if="wh_partner.city or wh_partner.state_id or wh_partner.zip">
+                                                <span t-field="wh_partner.city"/><t t-if="wh_partner.state_id">, <span t-esc="wh_partner.state_id.code or wh_partner.state_id.name"/></t><t t-if="wh_partner.zip"> <span t-field="wh_partner.zip"/></t><br/>
+                                            </t>
+                                            <t t-if="wh_partner.country_id"><span t-field="wh_partner.country_id.name"/><br/></t>
+                                            <t t-if="wh_partner.phone">Phone: <span t-field="wh_partner.phone"/></t>
+                                        </t>
+                                        <!-- Default to Company Address -->
+                                        <t t-else="">
+                                            <div style="font-weight: bold; color: #000;"><span t-field="o.company_id.name"/></div>
+                                            <t t-if="o.company_id.street"><span t-field="o.company_id.street"/><br/></t>
+                                            <t t-if="o.company_id.street2"><span t-field="o.company_id.street2"/><br/></t>
+                                            <t t-if="o.company_id.city or o.company_id.state_id or o.company_id.zip">
+                                                <span t-field="o.company_id.city"/><t t-if="o.company_id.state_id">, <span t-esc="o.company_id.state_id.code or o.company_id.state_id.name"/></t><t t-if="o.company_id.zip"> <span t-field="o.company_id.zip"/></t><br/>
+                                            </t>
+                                            <t t-if="o.company_id.country_id"><span t-field="o.company_id.country_id.name"/><br/></t>
+                                            <t t-if="o.company_id.phone">Phone: <span t-field="o.company_id.phone"/></t>
+                                        </t>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- 4-Column Header Table: REQUISITIONER | SHIP VIA | F.O.B. | SHIPPING TERMS -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11px;">
+                            <thead>
+                                <tr style="background: #0070c0; color: #fff; font-weight: bold; text-align: center;">
+                                    <th style="border: 1px solid #0070c0; padding: 4px 6px; width: 25%; font-size: 10.5px; letter-spacing: 0.5px;">REQUISITIONER</th>
+                                    <th style="border: 1px solid #0070c0; padding: 4px 6px; width: 25%; font-size: 10.5px; letter-spacing: 0.5px;">SHIP VIA</th>
+                                    <th style="border: 1px solid #0070c0; padding: 4px 6px; width: 25%; font-size: 10.5px; letter-spacing: 0.5px;">F.O.B.</th>
+                                    <th style="border: 1px solid #0070c0; padding: 4px 6px; width: 25%; font-size: 10.5px; letter-spacing: 0.5px;">SHIPPING TERMS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="text-align: center; font-size: 10.5px;">
+                                    <td style="border: 1px solid #0070c0; padding: 5px 6px;">
+                                        <span t-field="o.user_id.name"/>
+                                    </td>
+                                    <td style="border: 1px solid #0070c0; padding: 5px 6px;">
+                                        <t t-if="o.incoterm_id"><span t-field="o.incoterm_id.code"/></t>
+                                        <t t-elif="o.incoterm_location"><span t-field="o.incoterm_location"/></t>
+                                        <t t-else="">-</t>
+                                    </td>
+                                    <td style="border: 1px solid #0070c0; padding: 5px 6px;">
+                                        <t t-if="o.origin"><span t-field="o.origin"/></t>
+                                        <t t-else="">-</t>
+                                    </td>
+                                    <td style="border: 1px solid #0070c0; padding: 5px 6px;">
+                                        <t t-if="o.payment_term_id"><span t-field="o.payment_term_id.name"/></t>
+                                        <t t-else="">-</t>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Line Items Table -->
+                        <table style="width: 100%; border-collapse: collapse; font-size: 10.5px;">
+                            <thead>
+                                <tr style="background: #0070c0; color: #fff; font-weight: bold; text-align: center;">
+                                    <th style="border: 1px solid #0070c0; padding: 5px 6px; width: 17%; letter-spacing: 0.5px;">ITEM #</th>
+                                    <th style="border: 1px solid #0070c0; padding: 5px 6px; width: 43%; letter-spacing: 0.5px;">DESCRIPTION</th>
+                                    <th style="border: 1px solid #0070c0; padding: 5px 6px; width: 10%; letter-spacing: 0.5px;">QTY</th>
+                                    <th style="border: 1px solid #0070c0; padding: 5px 6px; width: 15%; letter-spacing: 0.5px;">UNIT PRICE</th>
+                                    <th style="border: 1px solid #0070c0; padding: 5px 6px; width: 15%; letter-spacing: 0.5px;">TOTAL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-set="valid_lines" t-value="o.order_line.filtered(lambda l: not l.display_type)"/>
+                                <t t-foreach="valid_lines" t-as="line">
+                                    <tr style="line-height: 1.35;">
+                                        <td style="border-left: 1px solid #0070c0; border-right: 1px solid #0070c0; border-bottom: 1px solid #e0e0e0; padding: 4px 6px; text-align: center;">
+                                            <t t-if="line.product_id and line.product_id.default_code">
+                                                [<span t-field="line.product_id.default_code"/>]
+                                            </t>
+                                            <t t-elif="line.product_id and line.product_id.barcode">
+                                                [<span t-field="line.product_id.barcode"/>]
+                                            </t>
+                                            <t t-else="">
+                                                [<t t-esc="line_index + 1"/>]
+                                            </t>
+                                        </td>
+                                        <td style="border-right: 1px solid #0070c0; border-bottom: 1px solid #e0e0e0; padding: 4px 6px; text-align: left;">
+                                            <span t-field="line.name"/>
+                                        </td>
+                                        <td style="border-right: 1px solid #0070c0; border-bottom: 1px solid #e0e0e0; padding: 4px 6px; text-align: center;">
+                                            <span t-esc="'%g' % line.product_qty"/>
+                                        </td>
+                                        <td style="border-right: 1px solid #0070c0; border-bottom: 1px solid #e0e0e0; padding: 4px 6px; text-align: right;">
+                                            <span t-esc="'{:,.2f}'.format(line.price_unit)"/>
+                                        </td>
+                                        <td style="border-right: 1px solid #0070c0; border-bottom: 1px solid #e0e0e0; padding: 4px 6px; text-align: right;">
+                                            <span t-esc="'{:,.2f}'.format(line.price_subtotal)"/>
+                                        </td>
+                                    </tr>
+                                </t>
+
+                                <!-- Filler Rows to create the exact fixed height layout shown in the template image -->
+                                <t t-set="lines_count" t-value="len(valid_lines)"/>
+                                <t t-set="filler_rows" t-value="range(max(0, 14 - lines_count))"/>
+                                <t t-foreach="filler_rows" t-as="r">
+                                    <tr style="height: 20px;">
+                                        <td style="border-left: 1px solid #0070c0; border-right: 1px solid #0070c0; border-bottom: 1px solid #e0e0e0;"></td>
+                                        <td style="border-right: 1px solid #0070c0; border-bottom: 1px solid #e0e0e0;"></td>
+                                        <td style="border-right: 1px solid #0070c0; border-bottom: 1px solid #e0e0e0;"></td>
+                                        <td style="border-right: 1px solid #0070c0; border-bottom: 1px solid #e0e0e0;"></td>
+                                        <td style="border-right: 1px solid #0070c0; border-bottom: 1px solid #e0e0e0; text-align: right; padding-right: 8px; color: #888;">-</td>
+                                    </tr>
+                                </t>
+                                <!-- Bottom border of the table -->
+                                <tr>
+                                    <td colspan="5" style="border-top: 1px solid #0070c0; padding: 0; height: 0;"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Bottom Section: Comments on Left, Summary on Right -->
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 6px;">
+                            <tr>
+                                <!-- Comments or Special Instructions Box -->
+                                <td style="width: 63%; vertical-align: top;">
+                                    <div style="background: #0070c0; color: #fff; font-weight: bold; font-size: 11px; padding: 3px 8px; border: 1px solid #0070c0;">
+                                        Comments or Special Instructions
+                                    </div>
+                                    <div style="border: 1px solid #70a4cc; border-top: none; padding: 6px 8px; min-height: 95px; font-size: 10px; line-height: 1.35;">
+                                        <span t-field="o.note"/>
+                                    </div>
+                                </td>
+
+                                <!-- Spacer -->
+                                <td style="width: 3%;"></td>
+
+                                <!-- Summary Totals Table -->
+                                <td style="width: 34%; vertical-align: top;">
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 10.5px;">
+                                        <tr>
+                                            <td style="border: 1px solid #70a4cc; padding: 3px 6px; font-weight: bold; width: 45%; text-align: left;">SUBTOTAL</td>
+                                            <td style="border: 1px solid #70a4cc; padding: 3px 6px; text-align: right; width: 55%;">
+                                                <span t-esc="'{:,.2f}'.format(o.amount_untaxed)"/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #70a4cc; padding: 3px 6px; text-align: left;">TAX</td>
+                                            <td style="border: 1px solid #70a4cc; padding: 3px 6px; text-align: right;">
+                                                <t t-if="o.amount_tax"><span t-esc="'{:,.2f}'.format(o.amount_tax)"/></t>
+                                                <t t-else="">-</t>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #70a4cc; padding: 3px 6px; text-align: left;">SHIPPING</td>
+                                            <td style="border: 1px solid #70a4cc; padding: 3px 6px; text-align: right;">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid #70a4cc; padding: 3px 6px; text-align: left;">OTHER</td>
+                                            <td style="border: 1px solid #70a4cc; padding: 3px 6px; text-align: right;">-</td>
+                                        </tr>
+                                        <!-- TOTAL Row with Golden-Yellow / Orange Background -->
+                                        <tr style="background-color: #f7a600; font-weight: bold; font-size: 11.5px; color: #000;">
+                                            <td style="border: 1px solid #70a4cc; border-right: none; padding: 4px 6px; text-align: left;">
+                                                TOTAL
+                                            </td>
+                                            <td style="border: 1px solid #70a4cc; border-left: none; padding: 4px 6px; text-align: right;">
+                                                <span t-field="o.currency_id.symbol" style="margin-right: 8px;"/>
+                                                <span t-esc="'{:,.2f}'.format(o.amount_total)"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Bottom Footer Contact Box -->
+                        <div style="border: 1px solid #70a4cc; text-align: center; padding: 5px 8px; font-size: 10.5px; margin-top: 18px; line-height: 1.35; width: 85%; margin-left: auto; margin-right: auto;">
+                            <div>If you have any questions about this purchase order, please contact</div>
+                            <div style="font-weight: bold; margin-top: 2px;">
+                                [<span t-field="o.company_id.name"/><t t-if="o.company_id.phone">, <span t-field="o.company_id.phone"/></t><t t-if="o.company_id.email">, <span t-field="o.company_id.email"/></t>]
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

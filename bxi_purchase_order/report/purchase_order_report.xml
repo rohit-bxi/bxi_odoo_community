@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_custom_purchase_order_pdf" model="report.paperformat">
+        <field name="name">Custom Purchase Order PDF</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">6</field>
+        <field name="margin_bottom">6</field>
+        <field name="margin_left">6</field>
+        <field name="margin_right">6</field>
+    </record>
+
+    <record id="action_custom_purchase_order_pdf" model="ir.actions.report">
+        <field name="name">Purchase Order</field>
+        <field name="model">purchase.order</field>
+        <field name="report_name">bxi_purchase_order.custom_purchase_order_template</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="print_report_name">'Purchase Order - %s' % (object.name)</field>
+        <field name="paperformat_id" ref="paperformat_custom_purchase_order_pdf"/>
+        <field name="binding_model_id" ref="purchase.model_purchase_order"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>
