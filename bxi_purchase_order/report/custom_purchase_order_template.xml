@@ -40,7 +40,7 @@
                                 <td style="width: 48%; vertical-align: top;">
                                     <div style="border: 1px solid #70a4cc; width: 100%;">
                                         <div style="text-align: right; padding: 8px 14px 6px 0; border-bottom: 1px solid #70a4cc;">
-                                            <span style="font-size: 26px; font-weight: bold; color: #0070c0; letter-spacing: 2px;">ORDER</span>
+                                            <span style="font-size: 26px; font-weight: bold; color: #0070c0; letter-spacing: 2px;">PURCHASE ORDER</span>
                                         </div>
                                         <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                                             <tr style="border-bottom: 1px solid #70a4cc;">
@@ -158,7 +158,7 @@
                                     <th style="border: 1px solid #0070c0; padding: 4px 6px; width: 25%; font-size: 10.5px; letter-spacing: 0.5px;">REQUISITIONER</th>
                                     <th style="border: 1px solid #0070c0; padding: 4px 6px; width: 25%; font-size: 10.5px; letter-spacing: 0.5px;">SHIP VIA</th>
                                     <th style="border: 1px solid #0070c0; padding: 4px 6px; width: 25%; font-size: 10.5px; letter-spacing: 0.5px;">F.O.B.</th>
-                                    <th style="border: 1px solid #0070c0; padding: 4px 6px; width: 25%; font-size: 10.5px; letter-spacing: 0.5px;">SHIPPING TERMS</th>
+                                    <th style="border: 1px solid #0070c0; padding: 4px 6px; width: 25%; font-size: 10.5px; letter-spacing: 0.5px;">PAYMENT TERMS</th>
                                 </tr>
                             </thead>
                             <tbody>
