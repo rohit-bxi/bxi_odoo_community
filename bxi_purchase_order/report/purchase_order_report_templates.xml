@@ -6,6 +6,7 @@
                 <t t-set="information_block">
                     <strong class="d-block mt-3">Shipping address</strong>
                     <div name="purchase_custom_shipping_address">
+                        <t t-if="o.shipping_partner_id"><strong><span t-field="o.shipping_partner_id.name"/></strong><br/></t>
                         <t t-if="o.shipping_street"><span t-field="o.shipping_street"/><br/></t>
                         <t t-if="o.shipping_street2"><span t-field="o.shipping_street2"/><br/></t>
                         <t t-if="o.shipping_city"><span t-field="o.shipping_city"/><t t-if="o.shipping_state_id or o.shipping_zip">, </t></t>
@@ -33,6 +34,7 @@
                 <t t-set="information_block">
                     <strong class="d-block mt-3">Shipping address</strong>
                     <div name="purchase_custom_shipping_address">
+                        <t t-if="o.shipping_partner_id"><strong><span t-field="o.shipping_partner_id.name"/></strong><br/></t>
                         <t t-if="o.shipping_street"><span t-field="o.shipping_street"/><br/></t>
                         <t t-if="o.shipping_street2"><span t-field="o.shipping_street2"/><br/></t>
                         <t t-if="o.shipping_city"><span t-field="o.shipping_city"/><t t-if="o.shipping_state_id or o.shipping_zip">, </t></t>

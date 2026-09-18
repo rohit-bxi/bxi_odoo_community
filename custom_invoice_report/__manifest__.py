@@ -7,7 +7,7 @@
     'author': 'BXI',
     'summary': 'Invoice Report Customization',
     'description': 'Invoice Report Customization',
-    'depends': ['account', 'sale'],
+    'depends': ['account', 'sale', 'bxi_crm'],
     'data': [
         'report/account_invoice_report.xml',
         'views/custom_invoice_template.xml',

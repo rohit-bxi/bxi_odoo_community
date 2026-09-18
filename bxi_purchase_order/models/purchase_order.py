@@ -9,6 +9,11 @@ class PurchaseOrder(models.Model):
         string="Different Shipping Address",
         default=False
     )
+    shipping_partner_id = fields.Many2one(
+        'res.partner',
+        string="Ship To",
+        domain="[('customer_type', 'in', ('customer', 'vendor', 'customer_and_vendor'))]"
+    )
     shipping_street = fields.Char(string="Street 1")
     shipping_street2 = fields.Char(string="Street 2")
     shipping_city = fields.Char(string="City")
@@ -22,6 +27,16 @@ class PurchaseOrder(models.Model):
         'res.country',
         string="Country"
     )
+
+    @api.onchange('shipping_partner_id')
+    def _onchange_shipping_partner_id(self):
+        if self.shipping_partner_id:
+            self.shipping_street = self.shipping_partner_id.street
+            self.shipping_street2 = self.shipping_partner_id.street2
+            self.shipping_city = self.shipping_partner_id.city
+            self.shipping_state_id = self.shipping_partner_id.state_id
+            self.shipping_zip = self.shipping_partner_id.zip
+            self.shipping_country_id = self.shipping_partner_id.country_id
 
     @api.onchange('shipping_state_id')
     def _onchange_shipping_state_id(self):
@@ -47,6 +62,7 @@ class PurchaseOrder(models.Model):
         if self.is_different_shipping_address:
             res.update({
                 'is_different_shipping_address': True,
+                'shipping_partner_id': self.shipping_partner_id.id if self.shipping_partner_id else False,
                 'shipping_street': self.shipping_street,
                 'shipping_street2': self.shipping_street2,
                 'shipping_city': self.shipping_city,
@@ -55,4 +71,5 @@ class PurchaseOrder(models.Model):
                 'shipping_country_id': self.shipping_country_id.id if self.shipping_country_id else False,
             })
         return res
+
 
