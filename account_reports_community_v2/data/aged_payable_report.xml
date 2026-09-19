@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="aged_payable_report" model="account.report">
+            <field name="name">Aged Payable</field>
+            <field name="filter_date_range" eval="True"/>
+            <field name="availability_condition">always</field>
+            <field name="report_handler">aged_partner_balance</field>
+            <field name="aged_account_type">liability_payable</field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="account_reports_community_v2.JournalReportLines">
+        <t t-foreach="lines" t-as="line" t-key="line.id">
+            <tr class="o_account_reports_community_v2_gl_account_row">
+                <td colspan="4">
+                    <span class="o_account_reports_community_v2_caret" t-on-click="() => this.toggleJournalReportJournal(line)">
+                        <i class="fa fa-fw" t-att-class="line.unfolded ? 'fa-caret-down' : 'fa-caret-right'"/>
+                    </span>
+                    <strong t-esc="line.name"/>
+                </td>
+                <td class="text-end" t-esc="this.formatAmount(line.total_debit)"/>
+                <td class="text-end" t-esc="this.formatAmount(line.total_credit)"/>
+            </tr>
+            <t t-if="line.unfolded">
+                <tr t-foreach="line.aml_rows" t-as="row" t-key="row.id">
+                    <td t-esc="row.date"/>
+                    <td>
+                        <a href="#" t-on-click.prevent="() => this.onOpenMove(row)" t-esc="row.move_name"/>
+                    </td>
+                    <td t-esc="row.account"/>
+                    <td t-esc="row.label"/>
+                    <td class="text-end" t-esc="this.formatAmount(row.debit)"/>
+                    <td class="text-end" t-esc="this.formatAmount(row.credit)"/>
+                </tr>
+                <tr t-if="line.aml_rows_has_more" class="o_account_reports_community_v2_load_more_row">
+                    <td colspan="6" class="text-center">
+                        <button class="btn btn-link btn-sm" t-on-click="() => this.loadMoreAmlRows(line)" t-att-disabled="state.loadingMoreLineId === line.id">
+                            <t t-esc="state.loadingMoreLineId === line.id ? 'Loading...' : 'Load more'"/>
+                        </button>
+                    </td>
+                </tr>
+            </t>
+        </t>
+    </t>
+
+</templates>

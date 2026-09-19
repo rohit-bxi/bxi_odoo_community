@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!--
+            Indirect method. The math behind every "Change in X" line here
+            rests on one identity: for ANY non-cash balance-sheet account,
+            using Odoo's raw signed balance (assets positive-normal,
+            liabilities/equity negative-normal), the cash-flow contribution
+            of that account's movement over the period is simply
+            (balance at start of period) minus (balance at end of period);
+            this holds uniformly for asset AND liability/equity accounts
+            alike, which is why every line below uses the exact same
+            start-minus-end formula regardless of which side of the
+            balance sheet it's on. It falls directly out of the accounting
+            equation (Assets = Liabilities + Equity): since
+            Cash = Liabilities + Equity - NonCashAssets, then
+            deltaCash = deltaLiabilities + deltaEquity - deltaNonCashAssets,
+            and deltaEquity includes the period's Net Income - which is
+            exactly what "Total Operating + Investing + Financing" sums to
+            below. That's also what makes this report self-checking: its
+            "Net Change in Cash" total must equal the actual change in the
+            Cash accounts' balance over the same period (see the test file).
+
+            Each "Change in X" line has two hidden expressions ('start' at
+            date_scope=to_beginning_of_period, 'end' at
+            date_scope=from_beginning) and a visible 'balance' expression
+            that's their difference via the 'aggregation' engine - there's
+            no single domain+date_scope combination that computes a
+            balance *change*, only a snapshot, so subtracting two snapshots
+            via aggregation is the only way to express this with the
+            engines this module has.
+
+            account_type is intentionally excluded from any line here for
+            asset_cash (that's the reconciliation target, not an input) and
+            equity_unaffected (where a real year-end closing entry would
+            roll retained earnings into - since Net Income is already
+            computed directly from the period's income/expense flow rather
+            than from a closing entry, including equity_unaffected too
+            would double-count).
+        -->
+        <record id="cash_flow_statement_report" model="account.report">
+            <field name="name">Cash Flow Statement</field>
+            <field name="filter_date_range" eval="True"/>
+            <field name="availability_condition">always</field>
+            <field name="column_ids">
+                <record id="cf_col_balance" model="account.report.column">
+                    <field name="name">Amount</field>
+                    <field name="expression_label">balance</field>
+                    <field name="figure_type">monetary</field>
+                </record>
+            </field>
+            <field name="line_ids">
+
+                <record id="cf_line_operating_total" model="account.report.line">
+                    <field name="name">Total Operating Activities</field>
+                    <field name="code">CF_OPERATING_TOTAL</field>
+                    <field name="sequence">10</field>
+                    <field name="foldable" eval="True"/>
+                    <field name="expression_ids">
+                        <record id="cf_expr_operating_total" model="account.report.expression">
+                            <field name="label">balance</field>
+                            <field name="engine">aggregation</field>
+                            <field name="formula">sum_children</field>
+                            <field name="date_scope">strict_range</field>
+                        </record>
+                    </field>
+                    <field name="children_ids">
+
+                        <record id="cf_line_net_income" model="account.report.line">
+                            <field name="name">Net Income</field>
+                            <field name="code">CF_NET_INCOME</field>
+                            <field name="sequence">1</field>
+                            <field name="expression_ids">
+                                <record id="cf_expr_net_income" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', 'in', ['income', 'income_other', 'expense', 'expense_other', 'expense_depreciation', 'expense_direct_cost'])]</field>
+                                    <field name="subformula">-sum</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+
+                        <record id="cf_line_ar" model="account.report.line">
+                            <field name="name">Change in Accounts Receivable</field>
+                            <field name="code">CF_AR</field>
+                            <field name="sequence">2</field>
+                            <field name="expression_ids">
+                                <record id="cf_expr_ar_start" model="account.report.expression">
+                                    <field name="label">start</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', '=', 'asset_receivable')]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">to_beginning_of_period</field>
+                                </record>
+                                <record id="cf_expr_ar_end" model="account.report.expression">
+                                    <field name="label">end</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', '=', 'asset_receivable')]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">from_beginning</field>
+                                </record>
+                                <record id="cf_expr_ar_balance" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">aggregation</field>
+                                    <field name="formula">CF_AR.start - CF_AR.end</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+
+                        <record id="cf_line_ap" model="account.report.line">
+                            <field name="name">Change in Accounts Payable</field>
+                            <field name="code">CF_AP</field>
+                            <field name="sequence">3</field>
+                            <field name="expression_ids">
+                                <record id="cf_expr_ap_start" model="account.report.expression">
+                                    <field name="label">start</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', '=', 'liability_payable')]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">to_beginning_of_period</field>
+                                </record>
+                                <record id="cf_expr_ap_end" model="account.report.expression">
+                                    <field name="label">end</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', '=', 'liability_payable')]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">from_beginning</field>
+                                </record>
+                                <record id="cf_expr_ap_balance" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">aggregation</field>
+                                    <field name="formula">CF_AP.start - CF_AP.end</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+
+                        <record id="cf_line_other_ca" model="account.report.line">
+                            <field name="name">Change in Other Current Assets</field>
+                            <field name="code">CF_OTHER_CA</field>
+                            <field name="sequence">4</field>
+                            <field name="expression_ids">
+                                <record id="cf_expr_other_ca_start" model="account.report.expression">
+                                    <field name="label">start</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', 'in', ['asset_current', 'asset_prepayments'])]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">to_beginning_of_period</field>
+                                </record>
+                                <record id="cf_expr_other_ca_end" model="account.report.expression">
+                                    <field name="label">end</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', 'in', ['asset_current', 'asset_prepayments'])]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">from_beginning</field>
+                                </record>
+                                <record id="cf_expr_other_ca_balance" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">aggregation</field>
+                                    <field name="formula">CF_OTHER_CA.start - CF_OTHER_CA.end</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+
+                        <record id="cf_line_other_cl" model="account.report.line">
+                            <field name="name">Change in Other Current Liabilities</field>
+                            <field name="code">CF_OTHER_CL</field>
+                            <field name="sequence">5</field>
+                            <field name="expression_ids">
+                                <record id="cf_expr_other_cl_start" model="account.report.expression">
+                                    <field name="label">start</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', 'in', ['liability_current', 'liability_credit_card'])]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">to_beginning_of_period</field>
+                                </record>
+                                <record id="cf_expr_other_cl_end" model="account.report.expression">
+                                    <field name="label">end</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', 'in', ['liability_current', 'liability_credit_card'])]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">from_beginning</field>
+                                </record>
+                                <record id="cf_expr_other_cl_balance" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">aggregation</field>
+                                    <field name="formula">CF_OTHER_CL.start - CF_OTHER_CL.end</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+
+                    </field>
+                </record>
+
+                <record id="cf_line_investing_total" model="account.report.line">
+                    <field name="name">Total Investing Activities</field>
+                    <field name="code">CF_INVESTING_TOTAL</field>
+                    <field name="sequence">20</field>
+                    <field name="foldable" eval="True"/>
+                    <field name="expression_ids">
+                        <record id="cf_expr_investing_total" model="account.report.expression">
+                            <field name="label">balance</field>
+                            <field name="engine">aggregation</field>
+                            <field name="formula">sum_children</field>
+                            <field name="date_scope">strict_range</field>
+                        </record>
+                    </field>
+                    <field name="children_ids">
+                        <record id="cf_line_fixed_assets" model="account.report.line">
+                            <field name="name">Change in Fixed Assets</field>
+                            <field name="code">CF_FIXED_ASSETS</field>
+                            <field name="sequence">1</field>
+                            <field name="expression_ids">
+                                <record id="cf_expr_fixed_assets_start" model="account.report.expression">
+                                    <field name="label">start</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', 'in', ['asset_fixed', 'asset_non_current'])]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">to_beginning_of_period</field>
+                                </record>
+                                <record id="cf_expr_fixed_assets_end" model="account.report.expression">
+                                    <field name="label">end</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', 'in', ['asset_fixed', 'asset_non_current'])]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">from_beginning</field>
+                                </record>
+                                <record id="cf_expr_fixed_assets_balance" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">aggregation</field>
+                                    <field name="formula">CF_FIXED_ASSETS.start - CF_FIXED_ASSETS.end</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+                    </field>
+                </record>
+
+                <record id="cf_line_financing_total" model="account.report.line">
+                    <field name="name">Total Financing Activities</field>
+                    <field name="code">CF_FINANCING_TOTAL</field>
+                    <field name="sequence">30</field>
+                    <field name="foldable" eval="True"/>
+                    <field name="expression_ids">
+                        <record id="cf_expr_financing_total" model="account.report.expression">
+                            <field name="label">balance</field>
+                            <field name="engine">aggregation</field>
+                            <field name="formula">sum_children</field>
+                            <field name="date_scope">strict_range</field>
+                        </record>
+                    </field>
+                    <field name="children_ids">
+
+                        <record id="cf_line_loans" model="account.report.line">
+                            <field name="name">Change in Loans</field>
+                            <field name="code">CF_LOANS</field>
+                            <field name="sequence">1</field>
+                            <field name="expression_ids">
+                                <record id="cf_expr_loans_start" model="account.report.expression">
+                                    <field name="label">start</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', '=', 'liability_non_current')]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">to_beginning_of_period</field>
+                                </record>
+                                <record id="cf_expr_loans_end" model="account.report.expression">
+                                    <field name="label">end</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', '=', 'liability_non_current')]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">from_beginning</field>
+                                </record>
+                                <record id="cf_expr_loans_balance" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">aggregation</field>
+                                    <field name="formula">CF_LOANS.start - CF_LOANS.end</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+
+                        <record id="cf_line_equity" model="account.report.line">
+                            <field name="name">Change in Equity</field>
+                            <field name="code">CF_EQUITY</field>
+                            <field name="sequence">2</field>
+                            <field name="expression_ids">
+                                <record id="cf_expr_equity_start" model="account.report.expression">
+                                    <field name="label">start</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', '=', 'equity')]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">to_beginning_of_period</field>
+                                </record>
+                                <record id="cf_expr_equity_end" model="account.report.expression">
+                                    <field name="label">end</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', '=', 'equity')]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">from_beginning</field>
+                                </record>
+                                <record id="cf_expr_equity_balance" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">aggregation</field>
+                                    <field name="formula">CF_EQUITY.start - CF_EQUITY.end</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+
+                    </field>
+                </record>
+
+                <record id="cf_line_net_change" model="account.report.line">
+                    <field name="name">Net Change in Cash</field>
+                    <field name="code">CF_NET_CHANGE</field>
+                    <field name="sequence">40</field>
+                    <field name="expression_ids">
+                        <record id="cf_expr_net_change" model="account.report.expression">
+                            <field name="label">balance</field>
+                            <field name="engine">aggregation</field>
+                            <field name="formula">CF_OPERATING_TOTAL.balance + CF_INVESTING_TOTAL.balance + CF_FINANCING_TOTAL.balance</field>
+                            <field name="date_scope">strict_range</field>
+                        </record>
+                    </field>
+                </record>
+
+            </field>
+        </record>
+
+    </data>
+</odoo>

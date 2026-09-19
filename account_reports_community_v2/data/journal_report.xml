@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="journal_report_community" model="account.report">
+            <field name="name">Journal Report</field>
+            <field name="filter_date_range" eval="True"/>
+            <field name="availability_condition">always</field>
+            <field name="report_handler">journal_report</field>
+        </record>
+
+    </data>
+</odoo>
