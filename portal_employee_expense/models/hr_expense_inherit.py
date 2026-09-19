@@ -49,22 +49,33 @@ class HrExpense(models.Model):
         tracking=True,
     )  
 
+    @api.depends('account_move_id.payment_state', 'account_move_id.state', 'approval_state')
+    def _compute_state(self):
+        for expense in self:
+            if not expense.account_move_id and expense.state in ('finance_approval', 'approved', 'refused'):
+                continue
+            super(HrExpense, expense)._compute_state()
+
     @api.model_create_multi
     def create(self, vals_list):
-        for vals in vals_list:
-            if not vals.get('state') or vals.get('state') == 'draft':
-                vals['state'] = 'finance_approval'
-
         records = super().create(vals_list)
-
-        for rec in records:
-            if rec.state == 'finance_approval':
+        for rec, vals in zip(records, vals_list):
+            if vals.get('state') == 'finance_approval':
+                rec.state = 'finance_approval'
                 rec._send_state_email()
 
         return records
 
     # HR approval step removed; expenses go directly to finance approval on create
 
+
+    def action_submit(self):
+        for rec in self:
+            if rec.state != 'draft':
+                raise UserError("Only draft expenses can be submitted.")
+            if not rec.product_id:
+                raise UserError("You cannot submit an expense without a category.")
+            rec.write({'state': 'finance_approval'})
 
     def action_hr_approve(self):
         print("pass")

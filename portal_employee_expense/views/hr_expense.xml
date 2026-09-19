@@ -12,15 +12,24 @@
                     invisible="state != 'finance_approval'" />
             </xpath>
             <xpath expr="//button[@name='action_submit']" position="replace">
+                <button name="action_submit"
+                    type="object"
+                    string="Submit"
+                    class="oe_highlight btn-primary"
+                    invisible="state != 'draft'"
+                    data-hotkey="v" />
                 <button name="action_finance_approved"
                     type="object"
                     string="Finance Approve"
                     class="btn-primary"
                     invisible="state != 'finance_approval'" />
             </xpath>
+            <xpath expr="//button[@name='action_submit'][2]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
             <xpath expr="//field[@name='state']" position="replace">
                 <field name="state" widget="statusbar"
-                    statusbar_visible="finance_approval,approved,posted"/>
+                    statusbar_visible="draft,finance_approval,approved,posted"/>
             </xpath>
         </field>
     </record>
