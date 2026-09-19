@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="account_reports_community_v2.TaxReportLines">
+        <t t-foreach="lines" t-as="line" t-key="line.id">
+            <tr class="o_account_reports_community_v2_gl_account_row">
+                <td>
+                    <span class="o_account_reports_community_v2_caret" t-on-click="() => this.toggleTaxReportTax(line)">
+                        <i class="fa fa-fw" t-att-class="line.unfolded ? 'fa-caret-down' : 'fa-caret-right'"/>
+                    </span>
+                    <strong t-esc="line.name"/>
+                    <span class="text-muted"> (<t t-esc="line.tax_type === 'sale' ? 'Sale' : 'Purchase'"/>)</span>
+                    <span class="o_account_reports_community_v2_kebab ms-1"
+                          title="All Journal Items"
+                          t-on-click.stop="() => this.onOpenTaxJournalItems(line)">
+                        <i class="fa fa-list-alt"/>
+                    </span>
+                </td>
+                <td class="text-end" t-esc="this.formatAmount(line.base_amount)"/>
+                <td class="text-end"><strong t-esc="this.formatAmount(line.tax_amount)"/></td>
+            </tr>
+            <t t-if="line.unfolded">
+                <tr t-foreach="line.aml_rows" t-as="row" t-key="row.id">
+                    <td>
+                        <a href="#" t-on-click.prevent="() => this.onOpenMove(row)" t-esc="row.move_name"/>
+                        <span class="text-muted"> - <t t-esc="row.date"/><t t-if="row.partner"> - <t t-esc="row.partner"/></t></span>
+                    </td>
+                    <td class="text-end" t-esc="this.formatAmount(row.base_amount)"/>
+                    <td class="text-end" t-esc="this.formatAmount(row.tax_amount)"/>
+                </tr>
+                <tr t-if="line.aml_rows_has_more" class="o_account_reports_community_v2_load_more_row">
+                    <td colspan="3" class="text-center">
+                        <button class="btn btn-link btn-sm" t-on-click="() => this.loadMoreAmlRows(line)" t-att-disabled="state.loadingMoreLineId === line.id">
+                            <t t-esc="state.loadingMoreLineId === line.id ? 'Loading...' : 'Load more'"/>
+                        </button>
+                    </td>
+                </tr>
+            </t>
+        </t>
+    </t>
+
+</templates>

@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!--
+            Same account_type-based grouping approach as Balance Sheet, but
+            date_scope="strict_range" throughout (P&amp;L is a period figure,
+            reset each fiscal year, unlike the Balance Sheet's cumulative
+            "from_beginning" scope); this mirrors account.account's own
+            include_initial_balance field (True for BS-type accounts, False
+            for income/expense accounts).
+
+            Every leaf line also sets groupby="account_id" and foldable=True
+            (see the matching comment in balance_sheet_report.xml): collapsed
+            to a category total by default, expandable into the individual
+            accounts behind it, each with the General Ledger/Journal Items
+            drill-down menu.
+        -->
+        <record id="profit_and_loss_report" model="account.report">
+            <field name="name">Profit and Loss</field>
+            <field name="filter_date_range" eval="True"/>
+            <field name="availability_condition">always</field>
+            <field name="column_ids">
+                <record id="pl_col_balance" model="account.report.column">
+                    <field name="name">Balance</field>
+                    <field name="expression_label">balance</field>
+                    <field name="figure_type">monetary</field>
+                </record>
+            </field>
+            <field name="line_ids">
+
+                <record id="pl_line_income" model="account.report.line">
+                    <field name="name">INCOME</field>
+                    <field name="code">PL_INCOME</field>
+                    <field name="sequence">10</field>
+                    <field name="children_ids">
+                        <record id="pl_line_income_operating" model="account.report.line">
+                            <field name="name">Operating Income</field>
+                            <field name="code">PL_INCOME_OPERATING</field>
+                            <field name="sequence">1</field>
+                            <field name="groupby">account_id</field>
+                            <field name="foldable" eval="True"/>
+                            <field name="expression_ids">
+                                <record id="pl_expr_income_operating" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', '=', 'income')]</field>
+                                    <field name="subformula">-sum</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+                        <record id="pl_line_income_other" model="account.report.line">
+                            <field name="name">Other Income</field>
+                            <field name="code">PL_INCOME_OTHER</field>
+                            <field name="sequence">2</field>
+                            <field name="groupby">account_id</field>
+                            <field name="foldable" eval="True"/>
+                            <field name="expression_ids">
+                                <record id="pl_expr_income_other" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', '=', 'income_other')]</field>
+                                    <field name="subformula">-sum</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+                        <record id="pl_line_income_total" model="account.report.line">
+                            <field name="name">Total Income</field>
+                            <field name="code">PL_INCOME_TOTAL</field>
+                            <field name="sequence">3</field>
+                            <field name="expression_ids">
+                                <record id="pl_expr_income_total" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">aggregation</field>
+                                    <field name="formula">PL_INCOME_OPERATING.balance + PL_INCOME_OTHER.balance</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+                    </field>
+                </record>
+
+                <record id="pl_line_expenses" model="account.report.line">
+                    <field name="name">EXPENSES</field>
+                    <field name="code">PL_EXPENSES</field>
+                    <field name="sequence">20</field>
+                    <field name="children_ids">
+                        <record id="pl_line_expense_direct" model="account.report.line">
+                            <field name="name">Cost of Revenue</field>
+                            <field name="code">PL_EXPENSE_DIRECT</field>
+                            <field name="sequence">1</field>
+                            <field name="groupby">account_id</field>
+                            <field name="foldable" eval="True"/>
+                            <field name="expression_ids">
+                                <record id="pl_expr_expense_direct" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', '=', 'expense_direct_cost')]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+                        <record id="pl_line_expense_operating" model="account.report.line">
+                            <field name="name">Operating Expenses</field>
+                            <field name="code">PL_EXPENSE_OPERATING</field>
+                            <field name="sequence">2</field>
+                            <field name="groupby">account_id</field>
+                            <field name="foldable" eval="True"/>
+                            <field name="expression_ids">
+                                <record id="pl_expr_expense_operating" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', '=', 'expense')]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+                        <record id="pl_line_expense_other" model="account.report.line">
+                            <field name="name">Other Expenses</field>
+                            <field name="code">PL_EXPENSE_OTHER</field>
+                            <field name="sequence">3</field>
+                            <field name="groupby">account_id</field>
+                            <field name="foldable" eval="True"/>
+                            <field name="expression_ids">
+                                <record id="pl_expr_expense_other" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', '=', 'expense_other')]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+                        <record id="pl_line_expense_depreciation" model="account.report.line">
+                            <field name="name">Depreciation</field>
+                            <field name="code">PL_EXPENSE_DEPRECIATION</field>
+                            <field name="sequence">4</field>
+                            <field name="groupby">account_id</field>
+                            <field name="foldable" eval="True"/>
+                            <field name="expression_ids">
+                                <record id="pl_expr_expense_depreciation" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">domain</field>
+                                    <field name="formula">[('account_id.account_type', '=', 'expense_depreciation')]</field>
+                                    <field name="subformula">sum</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+                        <record id="pl_line_expense_total" model="account.report.line">
+                            <field name="name">Total Expenses</field>
+                            <field name="code">PL_EXPENSE_TOTAL</field>
+                            <field name="sequence">5</field>
+                            <field name="expression_ids">
+                                <record id="pl_expr_expense_total" model="account.report.expression">
+                                    <field name="label">balance</field>
+                                    <field name="engine">aggregation</field>
+                                    <field name="formula">PL_EXPENSE_DIRECT.balance + PL_EXPENSE_OPERATING.balance + PL_EXPENSE_OTHER.balance + PL_EXPENSE_DEPRECIATION.balance</field>
+                                    <field name="date_scope">strict_range</field>
+                                </record>
+                            </field>
+                        </record>
+                    </field>
+                </record>
+
+                <record id="pl_line_net_profit" model="account.report.line">
+                    <field name="name">Net Profit</field>
+                    <field name="code">PL_NET_PROFIT</field>
+                    <field name="sequence">30</field>
+                    <field name="expression_ids">
+                        <record id="pl_expr_net_profit" model="account.report.expression">
+                            <field name="label">balance</field>
+                            <field name="engine">aggregation</field>
+                            <field name="formula">PL_INCOME_TOTAL.balance - PL_EXPENSE_TOTAL.balance</field>
+                            <field name="date_scope">strict_range</field>
+                        </record>
+                    </field>
+                </record>
+
+            </field>
+        </record>
+
+    </data>
+</odoo>

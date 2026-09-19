@@ -1,0 +1,61 @@
+.o_account_reports_community_v2_caret {
+    cursor: pointer;
+    margin-right: 4px;
+}
+
+.o_account_reports_community_v2_cell {
+    cursor: pointer;
+}
+
+.o_account_reports_community_v2_cell:hover {
+    text-decoration: underline;
+}
+
+.o_account_reports_community_v2_kebab {
+    cursor: pointer;
+    opacity: 0.5;
+    padding: 0 4px;
+}
+
+.o_account_reports_community_v2_kebab:hover {
+    opacity: 1;
+}
+
+.o_account_reports_community_v2_menu {
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    min-width: 160px;
+}
+
+.o_account_reports_community_v2_gl_account_row {
+    background-color: var(--o-view-background-color, rgba(0, 0, 0, 0.03));
+}
+
+.o_account_reports_community_v2_toolbar {
+    flex: 0 0 auto;
+}
+
+.o_account_reports_community_v2_search {
+    width: 220px;
+    max-width: 220px;
+    flex: 0 0 auto;
+    padding: 2px 8px;
+    border: 1px solid var(--border-color, #ced4da);
+    border-radius: 4px;
+}
+
+.o_account_reports_community_v2_date {
+    flex: 0 0 auto;
+}
+
+.o_account_reports_community_v2_menu_scrollable {
+    max-height: 320px;
+    overflow-y: auto;
+    min-width: 220px;
+}
+
+.o_account_reports_community_v2_truncated_row td {
+    font-style: italic;
+    padding: 6px;
+}

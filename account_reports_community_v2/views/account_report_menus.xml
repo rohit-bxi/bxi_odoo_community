@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Advance Report top-level menu under Accounting (account.menu_finance) -->
+        <menuitem id="menu_advance_report_root"
+                  name="Advance Report"
+                  parent="account.menu_finance"
+                  sequence="21"/>
+
+        <menuitem id="menu_balance_sheet"
+                  name="Balance Sheet"
+                  parent="menu_advance_report_root"
+                  action="action_balance_sheet"
+                  sequence="1"/>
+
+        <menuitem id="menu_profit_and_loss"
+                  name="Profit and Loss"
+                  parent="menu_advance_report_root"
+                  action="action_profit_and_loss"
+                  sequence="2"/>
+
+        <menuitem id="menu_trial_balance"
+                  name="Trial Balance"
+                  parent="menu_advance_report_root"
+                  action="action_trial_balance"
+                  sequence="3"/>
+
+        <menuitem id="menu_general_ledger"
+                  name="General Ledger"
+                  parent="menu_advance_report_root"
+                  action="action_general_ledger"
+                  sequence="4"/>
+
+        <menuitem id="menu_partner_ledger"
+                  name="Partner Ledger"
+                  parent="menu_advance_report_root"
+                  action="action_partner_ledger"
+                  sequence="5"/>
+
+        <menuitem id="menu_aged_receivable"
+                  name="Aged Receivable"
+                  parent="menu_advance_report_root"
+                  action="action_aged_receivable"
+                  sequence="6"/>
+
+        <menuitem id="menu_aged_payable"
+                  name="Aged Payable"
+                  parent="menu_advance_report_root"
+                  action="action_aged_payable"
+                  sequence="7"/>
+
+        <menuitem id="menu_cash_flow_statement"
+                  name="Cash Flow Statement"
+                  parent="menu_advance_report_root"
+                  action="action_cash_flow_statement"
+                  sequence="8"/>
+
+        <menuitem id="menu_tax_report"
+                  name="Tax Report"
+                  parent="menu_advance_report_root"
+                  action="action_tax_report"
+                  sequence="9"/>
+
+        <menuitem id="menu_journal_report"
+                  name="Journal Report"
+                  parent="menu_advance_report_root"
+                  action="action_journal_report"
+                  sequence="10"/>
+
+    </data>
+</odoo>

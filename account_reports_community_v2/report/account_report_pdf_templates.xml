@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!--
+            Not bound to any real record: rendered via
+            _render_qweb_pdf(xmlid, res_ids=None, data={'report_data': ...}),
+            which Community's own ir_actions_report.py supports (confirmed by
+            source read). basic_layout tolerates a missing `o`/`doc`, which
+            is exactly the case here - there's no account.report *record*
+            being printed, just a computed data dict.
+        -->
+        <record id="account_report_pdf_action" model="ir.actions.report">
+            <field name="name">Account Report (Community)</field>
+            <field name="model">account.report</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">account_reports_community_v2.account_report_pdf_document</field>
+            <field name="attachment" eval="False"/>
+            <field name="print_report_name">'Account Report'</field>
+        </record>
+
+        <template id="account_report_pdf_document">
+            <t t-call="web.basic_layout">
+                <div class="page">
+                    <h2 t-esc="report_data['report_name']"/>
+                    <p class="text-muted">
+                        <t t-esc="report_data['options'].get('date_from', '')"/>
+                        →
+                        <t t-esc="report_data['options'].get('date_to', '')"/>
+                    </p>
+
+                    <t t-if="report_data['report_handler'] == 'generic'"
+                       t-call="account_reports_community_v2.PdfGenericReport"/>
+                    <t t-elif="report_data['report_handler'] == 'general_ledger'"
+                       t-call="account_reports_community_v2.PdfGeneralLedgerReport"/>
+                    <t t-elif="report_data['report_handler'] == 'partner_ledger'"
+                       t-call="account_reports_community_v2.PdfPartnerLedgerReport"/>
+                    <t t-elif="report_data['report_handler'] == 'journal_report'"
+                       t-call="account_reports_community_v2.PdfJournalReport"/>
+                    <t t-elif="report_data['report_handler'] == 'aged_partner_balance'"
+                       t-call="account_reports_community_v2.PdfAgedBalanceReport"/>
+                    <t t-elif="report_data['report_handler'] == 'tax_report'"
+                       t-call="account_reports_community_v2.PdfTaxReport"/>
+                </div>
+            </t>
+        </template>
+
+        <!-- Trial Balance / Balance Sheet / P&amp;L / Cash Flow Statement -->
+        <template id="PdfGenericReport">
+            <table class="table table-sm table-bordered">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <t t-foreach="report_data['periods']" t-as="period" t-key="period_index">
+                            <t t-foreach="report_data['columns']" t-as="column" t-key="column['expression_label']">
+                                <th class="text-end">
+                                    <t t-if="len(report_data['periods']) &gt; 1" t-esc="period['label']"/>
+                                    <t t-esc="column['name']"/>
+                                </th>
+                            </t>
+                        </t>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-call="account_reports_community_v2.PdfGenericReportLines">
+                        <t t-set="lines" t-value="report_data['lines']"/>
+                    </t>
+                </tbody>
+            </table>
+        </template>
+
+        <template id="PdfGenericReportLines">
+            <t t-foreach="lines" t-as="line" t-key="line['id']">
+                <tr>
+                    <td t-attf-style="padding-left: {{line['level'] * 12}}px"
+                        t-att-class="'fw-bold' if line['level'] == 0 else ''"
+                        t-esc="line['name']"/>
+                    <t t-foreach="line['periods']" t-as="period" t-key="period_index">
+                        <t t-foreach="period['columns']" t-as="column" t-key="column['expression_label']">
+                            <td class="text-end" t-esc="'%.2f' % column['value'] if column['value'] is not None else ''"/>
+                        </t>
+                    </t>
+                </tr>
+                <t t-if="line['children']" t-call="account_reports_community_v2.PdfGenericReportLines">
+                    <t t-set="lines" t-value="line['children']"/>
+                </t>
+            </t>
+        </template>
+
+        <!-- General Ledger: one section per account, aml_rows = Date/Journal Entry/Partner/Label/Debit/Credit/Balance -->
+        <template id="PdfGeneralLedgerReport">
+            <table class="table table-sm table-bordered">
+                <thead>
+                    <tr>
+                        <th>Date</th><th>Journal Entry</th><th>Partner</th><th>Label</th>
+                        <th class="text-end">Debit</th><th class="text-end">Credit</th><th class="text-end">Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="report_data['lines']" t-as="group" t-key="group['id']">
+                        <tr class="fw-bold"><td colspan="7" t-esc="group['name']"/></tr>
+                        <tr t-foreach="group.get('aml_rows') or []" t-as="aml" t-key="aml['id']">
+                            <td t-esc="aml.get('date')"/>
+                            <td t-esc="aml.get('move_name')"/>
+                            <td t-esc="aml.get('partner')"/>
+                            <td t-esc="aml.get('label')"/>
+                            <td class="text-end" t-esc="'%.2f' % aml.get('debit', 0.0)"/>
+                            <td class="text-end" t-esc="'%.2f' % aml.get('credit', 0.0)"/>
+                            <td class="text-end" t-esc="'%.2f' % aml.get('running_balance', 0.0)"/>
+                        </tr>
+                        <tr class="fw-bold">
+                            <td colspan="6">Closing Balance</td>
+                            <td class="text-end" t-esc="'%.2f' % group['closing_balance']"/>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+        </template>
+
+        <!-- Partner Ledger: one section per partner, aml_rows = Date/Journal Entry/Account/Label/Debit/Credit/Balance -->
+        <template id="PdfPartnerLedgerReport">
+            <table class="table table-sm table-bordered">
+                <thead>
+                    <tr>
+                        <th>Date</th><th>Journal Entry</th><th>Account</th><th>Label</th>
+                        <th class="text-end">Debit</th><th class="text-end">Credit</th><th class="text-end">Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="report_data['lines']" t-as="group" t-key="group['id']">
+                        <tr class="fw-bold"><td colspan="7" t-esc="group['name']"/></tr>
+                        <tr t-foreach="group.get('aml_rows') or []" t-as="aml" t-key="aml['id']">
+                            <td t-esc="aml.get('date')"/>
+                            <td t-esc="aml.get('move_name')"/>
+                            <td t-esc="aml.get('account')"/>
+                            <td t-esc="aml.get('label')"/>
+                            <td class="text-end" t-esc="'%.2f' % aml.get('debit', 0.0)"/>
+                            <td class="text-end" t-esc="'%.2f' % aml.get('credit', 0.0)"/>
+                            <td class="text-end" t-esc="'%.2f' % aml.get('running_balance', 0.0)"/>
+                        </tr>
+                        <tr class="fw-bold">
+                            <td colspan="6">Closing Balance</td>
+                            <td class="text-end" t-esc="'%.2f' % group['closing_balance']"/>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+        </template>
+
+        <!-- Journal Report: one section per journal, aml_rows = Date/Journal Entry/Account/Partner/Label/Debit/Credit -->
+        <template id="PdfJournalReport">
+            <table class="table table-sm table-bordered">
+                <thead>
+                    <tr>
+                        <th>Date</th><th>Journal Entry</th><th>Account</th><th>Partner</th><th>Label</th>
+                        <th class="text-end">Debit</th><th class="text-end">Credit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="report_data['lines']" t-as="group" t-key="group['id']">
+                        <tr class="fw-bold"><td colspan="7" t-esc="group['name']"/></tr>
+                        <tr t-foreach="group.get('aml_rows') or []" t-as="aml" t-key="aml['id']">
+                            <td t-esc="aml.get('date')"/>
+                            <td t-esc="aml.get('move_name')"/>
+                            <td t-esc="aml.get('account')"/>
+                            <td t-esc="aml.get('partner')"/>
+                            <td t-esc="aml.get('label')"/>
+                            <td class="text-end" t-esc="'%.2f' % aml.get('debit', 0.0)"/>
+                            <td class="text-end" t-esc="'%.2f' % aml.get('credit', 0.0)"/>
+                        </tr>
+                        <tr class="fw-bold">
+                            <td colspan="5">Total</td>
+                            <td class="text-end" t-esc="'%.2f' % group.get('total_debit', 0.0)"/>
+                            <td class="text-end" t-esc="'%.2f' % group.get('total_credit', 0.0)"/>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+        </template>
+
+        <!-- Aged Receivable / Payable -->
+        <template id="PdfAgedBalanceReport">
+            <table class="table table-sm table-bordered">
+                <thead>
+                    <tr>
+                        <th>Partner</th>
+                        <t t-foreach="report_data['bucket_columns']" t-as="bucket" t-key="bucket['key']">
+                            <th class="text-end" t-esc="bucket['label']"/>
+                        </t>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="report_data['lines']" t-as="line" t-key="line['id']">
+                        <tr class="fw-bold">
+                            <td t-esc="line['name']"/>
+                            <t t-foreach="report_data['bucket_columns']" t-as="bucket" t-key="bucket['key']">
+                                <td class="text-end" t-esc="'%.2f' % line['buckets'].get(bucket['key'], 0.0)"/>
+                            </t>
+                            <td class="text-end" t-esc="'%.2f' % line['total']"/>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+        </template>
+
+        <!-- Tax Report -->
+        <template id="PdfTaxReport">
+            <table class="table table-sm table-bordered">
+                <thead>
+                    <tr>
+                        <th>Tax</th>
+                        <th class="text-end">Base Amount</th>
+                        <th class="text-end">Tax Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="report_data['lines']" t-as="line" t-key="line['id']">
+                        <tr class="fw-bold">
+                            <td t-esc="line['name']"/>
+                            <td class="text-end" t-esc="'%.2f' % line['base_amount']"/>
+                            <td class="text-end" t-esc="'%.2f' % line['tax_amount']"/>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+        </template>
+
+    </data>
+</odoo>
