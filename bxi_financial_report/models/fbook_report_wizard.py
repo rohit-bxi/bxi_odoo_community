@@ -1155,8 +1155,11 @@ class FbookReportWizard(models.TransientModel):
                 b_date_str = b_date.strftime('%Y-%m-%d')
 
                 if partner_id not in vendor_data_map:
+                    tags = partner.category_id.mapped('name') or (partner.commercial_partner_id.category_id.mapped('name') if partner.commercial_partner_id else [])
+                    description = ', '.join([t for t in tags if t]) if tags else ''
                     vendor_data_map[partner_id] = {
                         'name': partner_name,
+                        'description': description,
                         'y1_q1': 0.0,
                         'y1_q2': 0.0,
                         'y1_q3': 0.0,
@@ -1166,6 +1169,10 @@ class FbookReportWizard(models.TransientModel):
                         'y2_q3': 0.0,
                         'y2_q4': 0.0,
                     }
+                elif not vendor_data_map[partner_id].get('description'):
+                    tags = partner.category_id.mapped('name') or (partner.commercial_partner_id.category_id.mapped('name') if partner.commercial_partner_id else [])
+                    if tags:
+                        vendor_data_map[partner_id]['description'] = ', '.join([t for t in tags if t])
 
                 sign = -1.0 if bill.move_type == 'in_refund' else 1.0
                 conv_y1 = sign * custom_convert(
@@ -1219,6 +1226,7 @@ class FbookReportWizard(models.TransientModel):
 
             vendor_rows.append({
                 'vendor': v_info['name'],
+                'description': v_info.get('description', ''),
                 'y1_q1': target_currency.round(y1_q1),
                 'y1_q2': target_currency.round(y1_q2),
                 'y1_q3': target_currency.round(y1_q3),

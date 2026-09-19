@@ -709,14 +709,14 @@
                 </table>
             </div>
 
-            <!-- SIXTH TABLE: VENDOR EXPENSES -->
-            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Vendor Expenses <span style="font-size: 14px; font-weight: 600; color: #64748b; margin-left: 8px;">(Top 5 of the year)</span></div>
+            <!-- SIXTH TABLE: COMPANY EXPENSES -->
+            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Company Expenses <span style="font-size: 14px; font-weight: 600; color: #64748b; margin-left: 8px;">(Top 5 of the year)</span></div>
             <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-                <table class="fbook-table" style="min-width: 1100px;">
+                <table class="fbook-table" style="min-width: 1200px;">
                     <thead>
                         <!-- Row 1: Main Headers -->
                         <tr>
-                            <th class="main-header" style="text-align: left; min-width: 260px;">
+                            <th colspan="2" class="main-header" style="text-align: left; min-width: 320px;">
                                 <t t-esc="state.report_data.currency_symbol"/>
                             </th>
                             <th colspan="5" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'">
@@ -728,7 +728,8 @@
                         </tr>
                         <!-- Row 2: Quarter Headers -->
                         <tr>
-                            <th style="text-align: left; min-width: 260px; background: #f8fafc; font-weight: 700;">Vendor</th>
+                            <th style="text-align: left; min-width: 220px; background: #f8fafc; font-weight: 700;">Vendor</th>
+                            <th style="text-align: left; min-width: 180px; background: #f8fafc; font-weight: 700;">Description</th>
                             <!-- Year 1 Quarters -->
                             <th class="text-center" style="width: 85px;">Q1</th>
                             <th class="text-center" style="width: 85px;">Q2</th>
@@ -748,6 +749,7 @@
                             <t t-foreach="state.report_data.vendor_rows" t-as="v" t-key="v.vendor">
                                 <tr class="metric-row">
                                     <td style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="v.vendor"/></td>
+                                    <td style="text-align: left; color: #475569;"><t t-esc="v.description"/></td>
                                     <!-- Year 1 -->
                                     <td><t t-out="formatAmt(v.y1_q1)"/></td>
                                     <td><t t-out="formatAmt(v.y1_q2)"/></td>
@@ -764,7 +766,7 @@
                             </t>
                             <!-- Totals row -->
                             <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
-                                <td style="text-align: left;">Total</td>
+                                <td colspan="2" style="text-align: left;">Total</td>
                                 <!-- Year 1 Totals -->
                                 <td><t t-out="formatAmt(state.report_data.vendor_totals.y1_q1)"/></td>
                                 <td><t t-out="formatAmt(state.report_data.vendor_totals.y1_q2)"/></td>
@@ -781,7 +783,7 @@
                         </t>
                         <t t-else="">
                             <tr>
-                                <td colspan="11" class="text-center text-muted" style="padding: 16px;">
+                                <td colspan="12" class="text-center text-muted" style="padding: 16px;">
                                     No vendor bills found for the selected period.
                                 </td>
                             </tr>
