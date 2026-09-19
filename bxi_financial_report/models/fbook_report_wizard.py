@@ -384,6 +384,7 @@ class FbookReportWizard(models.TransientModel):
                     ('company_id', 'in', company_ids),
                     ('move_type', 'in', ('in_invoice', 'in_receipt', 'in_refund')),
                     ('expense_ids', '=', False),
+                    ('state', '!=', 'cancel'),
                     ('invoice_date', '>=', qdef['start']),
                     ('invoice_date', '<=', qdef['end'])
                 ])
@@ -769,7 +770,7 @@ class FbookReportWizard(models.TransientModel):
                 return 'y2'
             return None
 
-        # A. hr.expense -> consolidated under "Employee(reimbursement)"
+        # A. hr.expense -> if company_account -> 'Company Expenses', else -> 'Employee Expenses'
         if 'hr.expense' in self.env:
             exps = self.env['hr.expense'].sudo().search([
                 ('company_id', 'in', company_ids),
@@ -784,21 +785,18 @@ class FbookReportWizard(models.TransientModel):
                     exp.total_amount_currency, exp.currency_id, target_currency,
                     date_val=exp.date, year_key=y_key, record=exp
                 )
-                _add_expense_val('Employee(reimbursement)', y_key, conv, conv)
+                if exp.payment_mode == 'company_account':
+                    _add_expense_val('Company Expenses', y_key, conv, conv)
+                else:
+                    _add_expense_val('Employee Expenses', y_key, conv, conv)
 
-        # B. Vendor Bills -> consolidated by vendor_category
-        category_labels = {
-            'technology': 'Technology',
-            'miscellaneous': 'Miscellaneous',
-            'employee': 'Employee',
-            'travel': 'Travel',
-            'administration': 'Administration',
-        }
+        # B. Vendor Bills -> consolidated under "Company Expenses"
         if 'account.move' in self.env:
             bills = self.env['account.move'].sudo().search([
                 ('company_id', 'in', company_ids),
                 ('move_type', 'in', ('in_invoice', 'in_receipt', 'in_refund')),
                 ('expense_ids', '=', False),
+                ('state', '!=', 'cancel'),
                 ('invoice_date', '>=', y1_start_date),
                 ('invoice_date', '<=', y2_end_date),
             ])
@@ -806,20 +804,14 @@ class FbookReportWizard(models.TransientModel):
                 y_key = _get_y_key(bill.invoice_date)
                 if not y_key:
                     continue
-                partner = bill.partner_id
-                vendor_cat = partner.vendor_category if partner else 'miscellaneous'
-                if not vendor_cat:
-                    vendor_cat = 'miscellaneous'
-                cat_label = category_labels.get(vendor_cat, 'Miscellaneous')
-
                 sign = -1.0 if bill.move_type == 'in_refund' else 1.0
                 conv = sign * custom_convert(
                     bill.amount_total, bill.currency_id, target_currency,
                     date_val=bill.invoice_date, year_key=y_key, record=bill
                 )
-                _add_expense_val(cat_label, y_key, conv, conv)
+                _add_expense_val('Company Expenses', y_key, conv, conv)
 
-        # C. Payroll / Payslips -> consolidated under "Employee(salary)"
+        # C. Payroll / Payslips -> consolidated under "Employee Expenses"
         if 'hr.payslip' in self.env:
             payslips = self.env['hr.payslip'].sudo().search([
                 ('company_id', 'in', company_ids),
@@ -867,12 +859,18 @@ class FbookReportWizard(models.TransientModel):
             y1_plan, y1_actual = _calc_year_salary(y1_salaries, y1_start_date, y1_end_date)
             y2_plan, y2_actual = _calc_year_salary(y2_salaries, y2_start_date, y2_end_date)
 
-            _add_expense_val('Employee(salary)', 'y1', y1_plan, y1_actual)
-            _add_expense_val('Employee(salary)', 'y2', y2_plan, y2_actual)
+            _add_expense_val('Employee Expenses', 'y1', y1_plan, y1_actual)
+            _add_expense_val('Employee Expenses', 'y2', y2_plan, y2_actual)
 
-        # Populate expenses_data
-        for cat_label in sorted(categories_dict.keys()):
-            r = categories_dict[cat_label]
+        # Populate expenses_data with strictly 2 rows: Employee Expenses and Company Expenses
+        for cat_label in ['Employee Expenses', 'Company Expenses']:
+            r = categories_dict.get(cat_label, {
+                'category': cat_label,
+                'y1_booked': 0.0,
+                'y1_billed': 0.0,
+                'y2_booked': 0.0,
+                'y2_billed': 0.0,
+            })
             expenses_data.append({
                 'category': r['category'],
                 'y1_booked': target_currency.round(r['y1_booked']),
@@ -1641,6 +1639,7 @@ class FbookReportWizard(models.TransientModel):
                 ('company_id', 'in', company_ids),
                 ('move_type', 'in', ('in_invoice', 'in_receipt', 'in_refund')),
                 ('expense_ids', '=', False),
+                ('state', '!=', 'cancel'),
                 ('invoice_date', '>=', y0_start_str),
                 ('invoice_date', '<=', y0_end_str),
             ])
