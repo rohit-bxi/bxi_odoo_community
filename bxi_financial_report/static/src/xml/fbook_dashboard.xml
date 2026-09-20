@@ -486,7 +486,7 @@
 
 
 
-            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Revenue <span style="font-size: 14px; font-weight: 600; color: #64748b; margin-left: 8px;">(Top 5 + Others)</span></div>
+            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Revenue</div>
             <table class="fbook-table">
                 <thead>
                     <!-- Row 1: FY Labels -->
@@ -710,7 +710,7 @@
             </div>
 
             <!-- SIXTH TABLE: COMPANY EXPENSES -->
-            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Company Expenses <span style="font-size: 14px; font-weight: 600; color: #64748b; margin-left: 8px;">(Top 5 of the year)</span></div>
+            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Company Expenses</div>
             <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <table class="fbook-table" style="min-width: 1200px;">
                     <thead>
