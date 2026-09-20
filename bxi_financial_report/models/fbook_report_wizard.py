@@ -703,28 +703,7 @@ class FbookReportWizard(models.TransientModel):
                 reverse=True
             )
 
-            # Limit to Top 5 and consolidate any remaining into a 6th "Others" row
-            if len(contracts_data) > 5:
-                top_5 = contracts_data[:5]
-                remaining = contracts_data[5:]
-                others_row = {
-                    'industry': 'Others',
-                    'customers': 'Others',
-                    'business': 'Consolidated',
-                    'engagement': 'Various',
-                    'contract_value': target_currency.round(sum(c['contract_value'] for c in remaining)),
-                    'y1_booking': target_currency.round(sum(c['y1_booking'] for c in remaining)),
-                    'y1_billed': target_currency.round(sum(c['y1_billed'] for c in remaining)),
-                    'y1_actual': target_currency.round(sum(c['y1_actual'] for c in remaining)),
-                    'y1_expenses': 0.0,
-                    'y1_margin': 0.0,
-                    'y2_booking': target_currency.round(sum(c['y2_booking'] for c in remaining)),
-                    'y2_billed': target_currency.round(sum(c['y2_billed'] for c in remaining)),
-                    'y2_actual': target_currency.round(sum(c['y2_actual'] for c in remaining)),
-                    'y2_expenses': 0.0,
-                    'y2_margin': 0.0,
-                }
-                contracts_data = top_5 + [others_row]
+
 
         total_contract_value = sum(c['contract_value'] for c in contracts_data)
         total_y1_booking = sum(c['y1_booking'] for c in contracts_data)
@@ -1237,12 +1216,12 @@ class FbookReportWizard(models.TransientModel):
                 'y2_total': target_currency.round(y2_total),
             })
 
-        # Sort vendors by highest spend in the respective year (y2_total descending, then y1_total descending) and keep only top 5
+        # Sort vendors by highest spend in the respective year (y2_total descending, then y1_total descending)
         vendor_rows = sorted(
             vendor_rows,
             key=lambda r: (r['y2_total'], r['y1_total']),
             reverse=True
-        )[:5]
+        )
 
         vendor_totals = {
             'y1_q1': target_currency.round(sum(r['y1_q1'] for r in vendor_rows)),
