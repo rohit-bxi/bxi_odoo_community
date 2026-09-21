@@ -13,6 +13,8 @@ class ResPartner(models.Model):
             ('customer', 'Customer'),
             ('vendor', 'Vendor'),
             ('customer_and_vendor', 'Customer and Vendor'),
+            ('employee', 'Employee'),
+            ('je_partner', 'JE-Partner'),
         ],
         string='Customer Type',
         default='prospect',
