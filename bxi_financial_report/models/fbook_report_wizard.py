@@ -648,7 +648,7 @@ class FbookReportWizard(models.TransientModel):
 
                 clients = contract.client_ids or [self.env['res.partner']]
                 for client in clients:
-                    partner_name = client.name or 'Unknown Customer'
+                    partner_name = (client.functional_name or client.name or 'Unknown Customer').strip()
                     partner_key = partner_name.strip().lower()
                     if partner_key not in partners_data:
                         partners_data[partner_key] = {
@@ -664,6 +664,9 @@ class FbookReportWizard(models.TransientModel):
                             'y2_billed': 0.0,
                             'y2_actual': 0.0,
                         }
+                    else:
+                        if not partners_data[partner_key]['industry']:
+                            partners_data[partner_key]['industry'] = client.industry_id.name or contract.industry_id.name or ''
                     pd = partners_data[partner_key]
                     service_line_name = contract.service_line_id.name if contract.service_line_id else ''
                     if service_line_name:
