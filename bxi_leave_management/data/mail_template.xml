@@ -7,7 +7,6 @@
             New Leave Request Submitted - {{ object.employee_id.name }}
         </field>
         <field name="email_from">hrsupport@bxitech.com</field>
-
         <field name="body_html" type="html">
 
             <div style="font-family: Arial, sans-serif;
