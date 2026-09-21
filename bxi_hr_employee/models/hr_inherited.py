@@ -66,7 +66,18 @@ class HrEmployee(models.Model):
         "hr.departure.reason",
         string="Departure Reason",
     )
-    departure_description = fields.Text(
+    departure_description = fields.Selection(
+        selection=[
+            ('better_opportunity', 'Better Opportunity'),
+            ('career_growth', 'Career Growth'),
+            ('higher_studies', 'Higher Studies'),
+            ('personal_reasons', 'Personal Reasons'),
+            ('health_reasons', 'Health Reasons'),
+            ('work_life_balance', 'Work-Life Balance'),
+            ('compensation', 'Compensation'),
+            ('performance', 'Performance'),
+            ('misconduct', 'Misconduct'),
+        ],
         string="Departure Description",
     )
     experience_letter_attachment_id = fields.Many2one(
