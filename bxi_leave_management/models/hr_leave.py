@@ -26,14 +26,14 @@ class HrEmployeeLeave(models.Model):
         return res
 
     def action_confirm(self):
-        # Validate compensation before submitting
         for leave in self:
             leave._validate_compensation_date()
-        # Confirm / submit the leave
+
         result = super().action_confirm()
-        # Send submission email after successful confirmation
+
         for leave in self:
             leave._check_and_send_leave_notification()
+
         return result
 
     def _check_and_send_leave_notification(self):
@@ -46,20 +46,18 @@ class HrEmployeeLeave(models.Model):
     def _send_leave_submission_email(self):
         """Send leave submission notification to HR Support and Employee Manager."""
 
-        template = self.env.ref(
-            'bxi_leave_management.email_template_leave_request_submitted',
-        )
-
-        if not template:
-            return
+        Mail = self.env["mail.mail"]
 
         for rec in self:
 
             if rec.is_submission_email_sent:
                 continue
 
+            # -------------------------------------------------
+            # RECIPIENTS
+            # -------------------------------------------------
             recipients = [
-                'hrsupport@bxitech.com'
+                "hrsupport@bxitech.com",
             ]
 
             manager = (
@@ -81,6 +79,7 @@ class HrEmployeeLeave(models.Model):
             if manager_email:
                 recipients.append(manager_email.strip())
 
+            # Remove duplicate / empty emails
             unique_recipients = list(
                 dict.fromkeys(
                     email.strip()
@@ -92,21 +91,143 @@ class HrEmployeeLeave(models.Model):
             if not unique_recipients:
                 continue
 
-            email_to_str = ','.join(unique_recipients)
+            email_to = ",".join(unique_recipients)
 
-            template.sudo().send_mail(
-                rec.id,
-                email_values={
-                    'email_to': email_to_str,
-                    'email_from': 'hrsupport@bxitech.com',
-                },
-                force_send=True
+            # -------------------------------------------------
+            # EMAIL SUBJECT
+            # -------------------------------------------------
+            subject = (
+                "New Leave Request Submitted - %s"
+                % rec.employee_id.name
             )
 
-            rec.sudo().write({
-                'is_submission_email_sent': True
-            })
+            # -------------------------------------------------
+            # EMAIL BODY
+            # -------------------------------------------------
+            body_html = """
+                <div style="font-family: Arial, sans-serif;
+                            font-size: 14px;
+                            max-width: 600px;
+                            margin: 0 auto;">
 
+                    <div style="background-color: #875a7b;
+                                color: white;
+                                padding: 15px 20px;
+                                border-radius: 6px 6px 0 0;">
+
+                        <h3 style="margin: 0;">
+                            New Leave Request Submitted
+                        </h3>
+
+                    </div>
+
+                    <div style="padding: 20px;
+                                border: 1px solid #e0e0e0;
+                                border-top: none;
+                                border-radius: 0 0 6px 6px;">
+
+                        <p>
+                            Dear Approver,
+                        </p>
+
+                        <p>
+                            A new leave request has been submitted by
+                            <strong>%s</strong>
+                            and requires your attention.
+                        </p>
+
+                        <table border="1"
+                            cellpadding="8"
+                            cellspacing="0"
+                            style="border-collapse: collapse;
+                                    width: 100%%;
+                                    border-color: #dddddd;">
+
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="text-align: left; width: 35%%;">
+                                    Employee
+                                </th>
+                                <td>%s</td>
+                            </tr>
+
+                            <tr>
+                                <th style="text-align: left;">
+                                    Leave Type
+                                </th>
+                                <td>%s</td>
+                            </tr>
+
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="text-align: left;">
+                                    From Date
+                                </th>
+                                <td>%s</td>
+                            </tr>
+
+                            <tr>
+                                <th style="text-align: left;">
+                                    To Date
+                                </th>
+                                <td>%s</td>
+                            </tr>
+
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="text-align: left;">
+                                    Duration
+                                </th>
+                                <td>%s Day(s)</td>
+                            </tr>
+
+                            <tr>
+                                <th style="text-align: left;">
+                                    Reason
+                                </th>
+                                <td>%s</td>
+                            </tr>
+
+                        </table>
+
+                        <p style="margin-top: 20px;">
+                            Please review this leave request.
+                        </p>
+
+                    </div>
+
+                </div>
+            """ % (
+                rec.employee_id.name or "",
+                rec.employee_id.name or "",
+                rec.holiday_status_id.name or "",
+                rec.request_date_from or "",
+                rec.request_date_to or "",
+                rec.number_of_days or 0,
+                rec.name or "N/A",
+            )
+
+            # -------------------------------------------------
+            # CREATE EMAIL DIRECTLY
+            # -------------------------------------------------
+            mail_values = {
+                "subject": subject,
+                "body_html": body_html,
+                "email_from": "hrsupport@bxitech.com",
+                "email_to": email_to,
+            }
+
+            mail = Mail.sudo().create(mail_values)
+
+            # -------------------------------------------------
+            # SEND EMAIL IMMEDIATELY
+            # -------------------------------------------------
+            mail.sudo().send()
+
+            # -------------------------------------------------
+            # MARK AS SENT
+            # -------------------------------------------------
+            rec.sudo().write({
+                "is_submission_email_sent": True,
+            })
+            
     @api.constrains('holiday_status_id', 'request_date_from', 'request_date_to')
     def _check_rh_leave_rules(self):
         for rec in self:
