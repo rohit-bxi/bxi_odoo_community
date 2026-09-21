@@ -158,18 +158,9 @@
         <field name="arch" type="xml">
             <xpath expr="//page[@name='hr_settings']" position="after">
                 <page string="Employee Documents">
-                    <group>
-                        <button name="action_send_data_privacy_doc"
-                            string="Send Employee Addtional Documents"
-                            type="object"
-                            class="btn-primary" />
-                        <button name="action_send_employee_doc"
-                            string="Send Employee Document"
-                            type="object"
-                            class="btn-primary" />
-                    </group>
                     <group name="name" string="Data Privacy Document">
                         <field name="data_privacy_doc" widget="many2many_binary" />
+                        <field name="data_security_doc" widget="many2many_binary"/>
                     </group>
                     <group string="Employee Documents">
                         <group>
@@ -178,12 +169,15 @@
                             <field name="pan_number_proof" widget="many2many_binary" />
                             <field name="doc_10th_id" widget="many2many_binary" />
                             <field name="doc_12th_id" widget="many2many_binary" />
+                            <field name="passport_doc" widget="many2many_binary"/>
+                            <field name="passport_number"/>
+
                         </group>
                         <group>
                             <field name="doc_graduation_id" widget="many2many_binary" />
                             <field name="doc_master_id" widget="many2many_binary" />
                             <field name="any_certificate" widget="many2many_binary" />
-                            <field name="photograph" widget="many2many_binary" />
+                            <field name="photograph" widget="many2many_binary" /> 
                         </group>
                         <group>
                             <field name="experience_ids"
