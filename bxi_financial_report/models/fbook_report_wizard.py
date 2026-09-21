@@ -752,7 +752,7 @@ class FbookReportWizard(models.TransientModel):
                 return 'y2'
             return None
 
-        # A. hr.expense -> if company_account -> 'Company Expenses', else -> 'Employee Expenses'
+        # A. hr.expense -> if company_account -> 'Company', else -> 'Employee'
         if 'hr.expense' in self.env:
             exps = self.env['hr.expense'].sudo().search([
                 ('company_id', 'in', company_ids),
@@ -768,11 +768,11 @@ class FbookReportWizard(models.TransientModel):
                     date_val=exp.date, year_key=y_key, record=exp
                 )
                 if exp.payment_mode == 'company_account':
-                    _add_expense_val('Company Expenses', y_key, conv, conv)
+                    _add_expense_val('Company', y_key, conv, conv)
                 else:
-                    _add_expense_val('Employee Expenses', y_key, conv, conv)
+                    _add_expense_val('Employee', y_key, conv, conv)
 
-        # B. Vendor Bills -> consolidated under "Company Expenses"
+        # B. Vendor Bills -> consolidated under "Company"
         if 'account.move' in self.env:
             bills = self.env['account.move'].sudo().search([
                 ('company_id', 'in', company_ids),
@@ -791,9 +791,9 @@ class FbookReportWizard(models.TransientModel):
                     bill.amount_total, bill.currency_id, target_currency,
                     date_val=bill.invoice_date, year_key=y_key, record=bill
                 )
-                _add_expense_val('Company Expenses', y_key, conv, conv)
+                _add_expense_val('Company', y_key, conv, conv)
 
-        # C. Payroll / Payslips -> consolidated under "Employee Expenses"
+        # C. Payroll / Payslips -> consolidated under "Employee"
         if 'hr.payslip' in self.env:
             payslips = self.env['hr.payslip'].sudo().search([
                 ('company_id', 'in', company_ids),
@@ -841,11 +841,11 @@ class FbookReportWizard(models.TransientModel):
             y1_plan, y1_actual = _calc_year_salary(y1_salaries, y1_start_date, y1_end_date)
             y2_plan, y2_actual = _calc_year_salary(y2_salaries, y2_start_date, y2_end_date)
 
-            _add_expense_val('Employee Expenses', 'y1', y1_plan, y1_actual)
-            _add_expense_val('Employee Expenses', 'y2', y2_plan, y2_actual)
+            _add_expense_val('Employee', 'y1', y1_plan, y1_actual)
+            _add_expense_val('Employee', 'y2', y2_plan, y2_actual)
 
-        # Populate expenses_data with strictly 2 rows: Employee Expenses and Company Expenses
-        for cat_label in ['Employee Expenses', 'Company Expenses']:
+        # Populate expenses_data with strictly 2 rows: Employee and Company
+        for cat_label in ['Employee', 'Company']:
             r = categories_dict.get(cat_label, {
                 'category': cat_label,
                 'y1_booked': 0.0,
