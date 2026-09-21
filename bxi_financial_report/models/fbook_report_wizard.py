@@ -1112,13 +1112,17 @@ class FbookReportWizard(models.TransientModel):
 
         # Vendor Report Calculation (Quarterly bill amounts for active billed vendors)
         vendor_data_map = {}
+        y1_fy_end_str = f"{y1_fy_start+1:04d}-03-31"
+        y2_fy_end_str = f"{y2_cy_start+1:04d}-03-31"
+
         if 'account.move' in self.env:
             vendor_bills = self.env['account.move'].sudo().search([
                 ('company_id', 'in', company_ids),
                 ('move_type', 'in', ('in_invoice', 'in_refund')),
+                ('expense_ids', '=', False),
                 ('state', '!=', 'cancel'),
                 ('invoice_date', '>=', min(y1_start_str, y2_start_str)),
-                ('invoice_date', '<=', max(y1_end_str, y2_end_str)),
+                ('invoice_date', '<=', max(y1_fy_end_str, y2_fy_end_str)),
             ])
             for bill in vendor_bills:
                 partner = bill.partner_id
@@ -1161,7 +1165,7 @@ class FbookReportWizard(models.TransientModel):
                     date_val=b_date, year_key='y2', record=bill
                 )
 
-                if y1_start_str <= b_date_str <= y1_end_str:
+                if y1_start_str <= b_date_str <= y1_fy_end_str:
                     q = get_q_num(b_date_str, y1_fy_start)
                     if q == 1:
                         vendor_data_map[partner_id]['y1_q1'] += conv_y1
@@ -1172,7 +1176,7 @@ class FbookReportWizard(models.TransientModel):
                     elif q == 4:
                         vendor_data_map[partner_id]['y1_q4'] += conv_y1
 
-                if y2_start_str <= b_date_str <= y2_end_str:
+                if y2_start_str <= b_date_str <= y2_fy_end_str:
                     q = get_q_num(b_date_str, y2_cy_start)
                     if q == 1:
                         vendor_data_map[partner_id]['y2_q1'] += conv_y2
@@ -1222,6 +1226,81 @@ class FbookReportWizard(models.TransientModel):
             key=lambda r: (r['y2_total'], r['y1_total']),
             reverse=True
         )
+
+        # Consolidated row on top of Company Expenses table for Expenses Paid by Company (hr.expense with payment_mode == 'company_account')
+        company_paid_row = {
+            'vendor': 'Expenses Paid by Company',
+            'description': 'Paid by Company',
+            'is_company_paid': True,
+            'y1_q1': 0.0,
+            'y1_q2': 0.0,
+            'y1_q3': 0.0,
+            'y1_q4': 0.0,
+            'y1_total': 0.0,
+            'y2_q1': 0.0,
+            'y2_q2': 0.0,
+            'y2_q3': 0.0,
+            'y2_q4': 0.0,
+            'y2_total': 0.0,
+        }
+        if 'hr.expense' in self.env:
+            company_exps = self.env['hr.expense'].sudo().search([
+                ('company_id', 'in', company_ids),
+                ('payment_mode', '=', 'company_account'),
+                ('date', '>=', min(y1_start_str, y2_start_str)),
+                ('date', '<=', max(y1_fy_end_str, y2_fy_end_str)),
+            ])
+            for exp in company_exps:
+                exp_date = exp.date
+                if not exp_date:
+                    continue
+                exp_date_str = exp_date.strftime('%Y-%m-%d') if hasattr(exp_date, 'strftime') else str(exp_date)[:10]
+
+                conv_y1 = custom_convert(
+                    exp.total_amount_currency, exp.currency_id, target_currency,
+                    date_val=exp_date, year_key='y1', record=exp
+                )
+                conv_y2 = custom_convert(
+                    exp.total_amount_currency, exp.currency_id, target_currency,
+                    date_val=exp_date, year_key='y2', record=exp
+                )
+
+                if y1_start_str <= exp_date_str <= y1_fy_end_str:
+                    q = get_q_num(exp_date_str, y1_fy_start)
+                    if q == 1:
+                        company_paid_row['y1_q1'] += conv_y1
+                    elif q == 2:
+                        company_paid_row['y1_q2'] += conv_y1
+                    elif q == 3:
+                        company_paid_row['y1_q3'] += conv_y1
+                    elif q == 4:
+                        company_paid_row['y1_q4'] += conv_y1
+
+                if y2_start_str <= exp_date_str <= y2_fy_end_str:
+                    q = get_q_num(exp_date_str, y2_cy_start)
+                    if q == 1:
+                        company_paid_row['y2_q1'] += conv_y2
+                    elif q == 2:
+                        company_paid_row['y2_q2'] += conv_y2
+                    elif q == 3:
+                        company_paid_row['y2_q3'] += conv_y2
+                    elif q == 4:
+                        company_paid_row['y2_q4'] += conv_y2
+
+        for k in ['y1_q1', 'y1_q2', 'y1_q3', 'y1_q4', 'y2_q1', 'y2_q2', 'y2_q3', 'y2_q4']:
+            company_paid_row[k] = target_currency.round(company_paid_row[k])
+        company_paid_row['y1_total'] = target_currency.round(
+            company_paid_row['y1_q1'] + company_paid_row['y1_q2'] +
+            company_paid_row['y1_q3'] + company_paid_row['y1_q4']
+        )
+        company_paid_row['y2_total'] = target_currency.round(
+            company_paid_row['y2_q1'] + company_paid_row['y2_q2'] +
+            company_paid_row['y2_q3'] + company_paid_row['y2_q4']
+        )
+
+        # Place the consolidated 'Expenses Paid by Company' row at the top of the table
+        if vendor_rows or abs(company_paid_row['y1_total']) >= 0.01 or abs(company_paid_row['y2_total']) >= 0.01:
+            vendor_rows = [company_paid_row] + vendor_rows
 
         vendor_totals = {
             'y1_q1': target_currency.round(sum(r['y1_q1'] for r in vendor_rows)),
