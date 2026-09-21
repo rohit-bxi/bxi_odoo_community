@@ -14,6 +14,7 @@
         'security/ir.model.access.csv',
         'views/payslip_view.xml',
         'views/wizard.xml',
+        'views/res_config_settings_view.xml',
     ],
     'external_dependencies': {
         'python': ['Cryptodome', 'requests'],

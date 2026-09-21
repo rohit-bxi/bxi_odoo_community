@@ -84,6 +84,11 @@ class HrPayslip(models.Model):
         for slip in self:
             slip.net_wage = slip.get_salary_line_total("NET")
 
+    def _get_icici_param(self, key, default=""):
+        """Fetch a company-dependent ICICI credential/config value."""
+        company = self.company_id or self.env.company
+        return getattr(company, "icici_%s" % key, None) or default
+
     def random_16(self):
         """Generate a cryptographically secure 16-digit numeric string."""
         return "".join(
@@ -217,7 +222,7 @@ class HrPayslip(models.Model):
             )
 
             return {
-                "requestId": "",
+                "requestId": uuid.uuid4().hex,
                 "service": "CIB",
                 "encryptedKey": encrypted_key,
                 "oaepHashingAlgorithm": "NONE",
@@ -338,10 +343,20 @@ class HrPayslip(models.Model):
     def call_icici_api(self, url, payload):
         """Call ICICI API using Hybrid Encryption."""
 
+        api_key = self._get_icici_param("api_key")
+
+        if not api_key:
+            raise ValidationError(
+                _(
+                    "ICICI API Key is not configured. Please set it "
+                    "under Settings > ICICI Bank."
+                )
+            )
+
         headers = {
             "accept": "*/*",
             "content-type": "application/json",
-            "APIKEY": "Xz1K4tKqhYwWEbo0qeTQ30XbRtdJtCNP",
+            "APIKEY": api_key,
         }
 
         encrypted_payload = self.encrypt_payload(payload)
@@ -401,12 +416,25 @@ class HrPayslip(models.Model):
                             or response.text
                         )
 
+                        error_code = (
+                            error_json.get("errorcode")
+                            or error_json.get("errorCode")
+                            or error_json.get("ERRORCODE")
+                        )
+
                     except Exception:
                         error_message = response.text
+                        error_code = None
+
+                    if error_code:
+                        raise ValidationError(
+                            _("ICICI API Error [%s] (HTTP %s):\n%s")
+                            % (error_code, response.status_code, error_message)
+                        )
 
                     raise ValidationError(
-                        _("ICICI API Error:\n%s")
-                        % error_message
+                        _("ICICI API Error (HTTP %s):\n%s")
+                        % (response.status_code, error_message)
                     )
 
                 try:
@@ -494,6 +522,21 @@ class HrPayslip(models.Model):
             _("Unable to process the ICICI request.")
         )
 
+    def _get_icici_base_url(self):
+        base_url = self._get_icici_param(
+            "base_url", "https://apibankingone.icici.bank.in"
+        ).rstrip("/")
+
+        if not base_url:
+            raise ValidationError(
+                _(
+                    "ICICI Base URL is not configured. Please set it "
+                    "under Settings > ICICI Bank."
+                )
+            )
+
+        return base_url
+
     def action_release_salary(self):
         """Validate payslips, call ICICI Create API and open OTP wizard."""
 
@@ -579,11 +622,11 @@ class HrPayslip(models.Model):
             unique_id = uuid.uuid4().hex[:16].upper()
 
         create_payload = {
-            "AGGRID": "BULK0173",
-            "AGGRNAME": "BXITECH",
-            "CORPID": "601902129",
-            "USERID": "BALCHAND",
-            "URN": "SR283346233",
+            "AGGRID": self._get_icici_param("aggr_id", "BULK0173"),
+            "AGGRNAME": self._get_icici_param("aggr_name", "BXITECH"),
+            "CORPID": self._get_icici_param("corp_id", "601902129"),
+            "USERID": self._get_icici_param("user_id", "BALCHAND"),
+            "URN": self._get_icici_param("urn", "SR283346233"),
             "UNIQUEID": unique_id,
         }
 
@@ -593,7 +636,8 @@ class HrPayslip(models.Model):
         _logger.info("=" * 80)
 
         result = self.call_icici_api(
-            "https://apibankingone.icici.bank.in/api/Corporate/CIB/v1/Create",
+            self._get_icici_base_url()
+            + "/api/Corporate/CIB/v1/Create",
             create_payload,
         )
 
@@ -691,8 +735,12 @@ class HrPayslip(models.Model):
             payment_date
         ).strftime("%m/%d/%Y")
 
-        debit_account = "693905601661"
-        debit_branch = "6939"
+        debit_account = self._get_icici_param(
+            "debit_account", "693905601661"
+        )
+        debit_branch = self._get_icici_param(
+            "debit_branch", "6939"
+        )
 
         transaction_count = 0
         total_amount = 0.00
@@ -855,10 +903,10 @@ class HrPayslip(models.Model):
             )
 
         payload = {
-            "AGGRID": "BULK0173",
-            "CORPID": "601902129",
-            "USERID": "601902129.BALCHAND",
-            "URN": "SR283346233",
+            "AGGRID": self._get_icici_param("aggr_id", "BULK0173"),
+            "CORPID": self._get_icici_param("corp_id", "601902129"),
+            "USERID": self._get_icici_param("user_id", "BALCHAND"),
+            "URN": self._get_icici_param("urn", "SR283346233"),
             "FILESEQNUM": file_seq_num,
             "UNIQUEID": self.icici_reference,
             "ISENCRYPTED": "N",
@@ -872,7 +920,7 @@ class HrPayslip(models.Model):
         _logger.info("=" * 80)
 
         result = self.call_icici_api(
-            "https://apibankingone.icici.bank.in/api/v1/ReverseMis",
+            self._get_icici_base_url() + "/api/v1/ReverseMis",
             payload,
         )
 
@@ -998,11 +1046,11 @@ class HrPayslip(models.Model):
 
         payload = {
             "FILE_DESCRIPTION": "Salary Payment",
-            "AGGR_ID": "BULK0173",
-            "URN": "SR283346233",
-            "AGGR_NAME": "BXITECH",
-            "USER_ID": "BALCHAND",
-            "CORP_ID": "601902129",
+            "AGGR_ID": self._get_icici_param("aggr_id", "BULK0173"),
+            "URN": self._get_icici_param("urn", "SR283346233"),
+            "AGGR_NAME": self._get_icici_param("aggr_name", "BXITECH"),
+            "USER_ID": self._get_icici_param("user_id", "BALCHAND"),
+            "CORP_ID": self._get_icici_param("corp_id", "601902129"),
             "UNIQUE_ID": self[0].icici_reference,
             "AGOTP": otp,
             "FILE_NAME": (
@@ -1020,8 +1068,8 @@ class HrPayslip(models.Model):
         _logger.info("=" * 80)
 
         result = self.call_icici_api(
-            "https://apibankingone.icici.bank.in"
-            "/api/v1/cibbulkpayment/bulkPayment",
+            self._get_icici_base_url()
+            + "/api/v1/cibbulkpayment/bulkPayment",
             payload,
         )
 
