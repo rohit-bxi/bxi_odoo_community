@@ -48,7 +48,6 @@ class HrEmployeeLeave(models.Model):
 
         template = self.env.ref(
             'bxi_leave_management.email_template_leave_request_submitted',
-            raise_if_not_found=False
         )
 
         if not template:
