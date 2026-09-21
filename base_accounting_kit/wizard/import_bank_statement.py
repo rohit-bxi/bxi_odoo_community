@@ -273,49 +273,38 @@ class ImportBankStatement(models.TransientModel):
                                                  values_only=True):
                     line = list(record)
                     # Reading the content from file
-                    if line[0] and line[1] and line[3]:
-                        partner = self.env['res.partner'].search(
-                            [('name', '=', line[3])])
-                        date_obj = self._parse_date(line[2])
-                        # Creating record
-                        if partner:
-                            statement = self.env[
-                                'account.bank.statement'].create({
-                                 'name': line[0],
-                                 'line_ids': [
-                                    (0, 0, {
-                                        'date': date_obj,
-                                        'payment_ref': 'xlsx file',
-                                        'partner_id': partner.id,
-                                        'journal_id': self.journal_id.id,
-                                        'amount': line[1],
-                                    }),
-                                 ],
-                                })
-                        else:
-                            raise ValidationError(_("Partner not exist"))
-                    else:
-                        if not line[0]:
-                            raise ValidationError(
-                                _("Account name is not set"))
-                        elif not line[1]:
-                            raise ValidationError(
-                                _("Amount is not set"))
-                        elif not line[3]:
-                            date_obj = self._parse_date(line[2])
-                            # Creating record
-                            statement = self.env[
-                                'account.bank.statement'].create({
-                                'name': line[0],
-                                'line_ids': [
-                                    (0, 0, {
-                                        'date': date_obj,
-                                        'payment_ref': 'xlsx file',
-                                        'journal_id': self.journal_id.id,
-                                        'amount': line[1],
-                                    }),
-                                ],
-                            })
+                    if not line[0]:
+                        raise ValidationError(_("Account name is not set"))
+                    if line[1] is None or line[1] == '':
+                        raise ValidationError(_("Amount is not set"))
+
+                    partner = False
+                    if len(line) > 3 and line[3]:
+                        partner = self.env['res.partner'].search([
+                            ('name', '=ilike', str(line[3]).strip()),
+                            '|', ('company_id', '=', False), ('company_id', '=', self.journal_id.company_id.id),
+                        ], limit=1)
+
+                    date_obj = self._parse_date(line[2])
+                    amount_val = self._parse_float(line[1])
+                    payment_ref = str(line[0]).strip() if line[0] else 'xlsx file'
+
+                    # Creating record
+                    statement = self.env['account.bank.statement'].create({
+                        'name': payment_ref,
+                        'journal_id': self.journal_id.id,
+                        'company_id': self.journal_id.company_id.id,
+                        'date': date_obj,
+                        'line_ids': [
+                            (0, 0, {
+                                'date': date_obj,
+                                'payment_ref': payment_ref,
+                                'partner_id': partner.id if partner else False,
+                                'journal_id': self.journal_id.id,
+                                'amount': amount_val,
+                            }),
+                        ],
+                    })
                 return {
                     'type': 'ir.actions.act_window',
                     'name': 'Statements',
