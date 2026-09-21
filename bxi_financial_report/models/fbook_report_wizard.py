@@ -241,6 +241,17 @@ class FbookReportWizard(models.TransientModel):
                     return True
             return False
 
+        # Tax partners: partners tagged as TAX in masters (res.partner.category)
+        tax_tags = self.env['res.partner.category'].sudo().search([]).filtered(
+            lambda t: t.name and t.name.strip().upper() in ('TAX', 'TAXES')
+        )
+        tax_partners = self.env['res.partner'].sudo().search([
+            '|',
+            ('category_id', 'in', tax_tags.ids),
+            ('commercial_partner_id.category_id', 'in', tax_tags.ids)
+        ]) if tax_tags else self.env['res.partner']
+        tax_partner_ids = set(tax_partners.ids)
+
         # Initial AR outstanding prior to Year 1 (posted customer invoices before y1_start with unpaid balance)
         initial_ar = 0.0
         if 'account.move' in self.env:
@@ -380,14 +391,17 @@ class FbookReportWizard(models.TransientModel):
 
             # B. Vendor Bills
             if 'account.move' in self.env:
-                bills = self.env['account.move'].sudo().search([
+                bill_domain = [
                     ('company_id', 'in', company_ids),
                     ('move_type', 'in', ('in_invoice', 'in_receipt', 'in_refund')),
                     ('expense_ids', '=', False),
                     ('state', '!=', 'cancel'),
                     ('invoice_date', '>=', qdef['start']),
-                    ('invoice_date', '<=', qdef['end'])
-                ])
+                    ('invoice_date', '<=', qdef['end']),
+                ]
+                if tax_partner_ids:
+                    bill_domain.append(('partner_id', 'not in', list(tax_partner_ids)))
+                bills = self.env['account.move'].sudo().search(bill_domain)
                 for bill in bills:
                     sign = -1.0 if bill.move_type == 'in_refund' else 1.0
                     expenses_val += sign * custom_convert(
@@ -414,6 +428,23 @@ class FbookReportWizard(models.TransientModel):
                     expenses_val += custom_convert(
                         net_amt, slip.company_id.currency_id, target_currency,
                         date_val=slip.date_to, year_key=year_key, record=slip
+                    )
+
+            # D. Tax (Journal items where partner tagged as TAX in masters)
+            if tax_partner_ids and 'account.move.line' in self.env:
+                tax_lines_q = self.env['account.move.line'].sudo().search([
+                    ('company_id', 'in', company_ids),
+                    ('partner_id', 'in', list(tax_partner_ids)),
+                    ('parent_state', '=', 'posted'),
+                    ('date', '>=', qdef['start']),
+                    ('date', '<=', qdef['end']),
+                    ('account_id.account_type', 'not in', ('asset_cash', 'liability_payable')),
+                ])
+                for tline in tax_lines_q:
+                    net_t = tline.debit - tline.credit
+                    expenses_val += custom_convert(
+                        net_t, tline.currency_id or tline.company_id.currency_id, target_currency,
+                        date_val=tline.date, year_key=year_key, record=tline
                     )
 
             # 6. Profit
@@ -768,20 +799,26 @@ class FbookReportWizard(models.TransientModel):
                     date_val=exp.date, year_key=y_key, record=exp
                 )
                 if exp.payment_mode == 'company_account':
-                    _add_expense_val('Company', y_key, conv, conv)
+                    if tax_partner_ids and exp.vendor_id and exp.vendor_id.id in tax_partner_ids:
+                        _add_expense_val('Tax', y_key, conv, conv)
+                    else:
+                        _add_expense_val('Company', y_key, conv, conv)
                 else:
                     _add_expense_val('Employee', y_key, conv, conv)
 
         # B. Vendor Bills -> consolidated under "Company"
         if 'account.move' in self.env:
-            bills = self.env['account.move'].sudo().search([
+            bill_domain = [
                 ('company_id', 'in', company_ids),
                 ('move_type', 'in', ('in_invoice', 'in_receipt', 'in_refund')),
                 ('expense_ids', '=', False),
                 ('state', '!=', 'cancel'),
                 ('invoice_date', '>=', y1_start_date),
                 ('invoice_date', '<=', y2_end_date),
-            ])
+            ]
+            if tax_partner_ids:
+                bill_domain.append(('partner_id', 'not in', list(tax_partner_ids)))
+            bills = self.env['account.move'].sudo().search(bill_domain)
             for bill in bills:
                 y_key = _get_y_key(bill.invoice_date)
                 if not y_key:
@@ -844,8 +881,29 @@ class FbookReportWizard(models.TransientModel):
             _add_expense_val('Employee', 'y1', y1_plan, y1_actual)
             _add_expense_val('Employee', 'y2', y2_plan, y2_actual)
 
-        # Populate expenses_data with strictly 2 rows: Employee and Company
-        for cat_label in ['Employee', 'Company']:
+        # D. Tax -> Journal items where partner is tagged as TAX in masters
+        if tax_partner_ids and 'account.move.line' in self.env:
+            tax_move_lines = self.env['account.move.line'].sudo().search([
+                ('company_id', 'in', company_ids),
+                ('partner_id', 'in', list(tax_partner_ids)),
+                ('parent_state', '=', 'posted'),
+                ('date', '>=', y1_start_date),
+                ('date', '<=', y2_end_date),
+                ('account_id.account_type', 'not in', ('asset_cash', 'liability_payable')),
+            ])
+            for tline in tax_move_lines:
+                y_key = _get_y_key(tline.date)
+                if not y_key:
+                    continue
+                net_amt = tline.debit - tline.credit
+                conv = custom_convert(
+                    net_amt, tline.currency_id or tline.company_id.currency_id, target_currency,
+                    date_val=tline.date, year_key=y_key, record=tline
+                )
+                _add_expense_val('Tax', y_key, conv, conv)
+
+        # Populate expenses_data with strictly 3 rows: Employee, Company, Tax
+        for cat_label in ['Employee', 'Company', 'Tax']:
             r = categories_dict.get(cat_label, {
                 'category': cat_label,
                 'y1_booked': 0.0,
@@ -1119,14 +1177,17 @@ class FbookReportWizard(models.TransientModel):
         y2_fy_end_str = f"{y2_cy_start+1:04d}-03-31"
 
         if 'account.move' in self.env:
-            vendor_bills = self.env['account.move'].sudo().search([
+            vbill_domain = [
                 ('company_id', 'in', company_ids),
                 ('move_type', 'in', ('in_invoice', 'in_refund')),
                 ('expense_ids', '=', False),
                 ('state', '!=', 'cancel'),
                 ('invoice_date', '>=', min(y1_start_str, y2_start_str)),
                 ('invoice_date', '<=', max(y1_fy_end_str, y2_fy_end_str)),
-            ])
+            ]
+            if tax_partner_ids:
+                vbill_domain.append(('partner_id', 'not in', list(tax_partner_ids)))
+            vendor_bills = self.env['account.move'].sudo().search(vbill_domain)
             for bill in vendor_bills:
                 partner = bill.partner_id
                 if not partner:
@@ -1191,12 +1252,15 @@ class FbookReportWizard(models.TransientModel):
                         vendor_data_map[partner_id]['y2_q4'] += conv_y2
 
         if 'hr.expense' in self.env:
-            company_exps = self.env['hr.expense'].sudo().search([
+            cexp_domain = [
                 ('company_id', 'in', company_ids),
                 ('payment_mode', '=', 'company_account'),
                 ('date', '>=', min(y1_start_str, y2_start_str)),
                 ('date', '<=', max(y1_fy_end_str, y2_fy_end_str)),
-            ])
+            ]
+            if tax_partner_ids:
+                cexp_domain.append(('vendor_id', 'not in', list(tax_partner_ids)))
+            company_exps = self.env['hr.expense'].sudo().search(cexp_domain)
             for exp in company_exps:
                 partner = exp.vendor_id
                 if partner:
