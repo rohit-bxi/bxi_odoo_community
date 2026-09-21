@@ -2,127 +2,241 @@
 <odoo>
     <data>
 
-    <record id="hr_job_form_inherit_location" model="ir.ui.view">
-        <field name="name">hr.job.form.location</field>
-        <field name="model">hr.job</field>
+        <!-- ===================================================== -->
+        <!-- JOB FORM - LOCATION / JOB DETAILS -->
+        <!-- ===================================================== -->
 
-        <field name="inherit_id" ref="hr.view_hr_job_form"/>
-                <field name="arch" type="xml">
+        <record id="hr_job_form_inherit_location" model="ir.ui.view">
+            <field name="name">hr.job.form.location</field>
+            <field name="model">hr.job</field>
+            <field name="inherit_id" ref="hr.view_hr_job_form"/>
 
-            <!-- Add Job Location after Expected Degree -->
-            <xpath expr='//div[@name="recruitment_target"]'
-                   position="after">
-                <field name="location_type"/>
-                  <field name="location_ids"
+            <field name="arch" type="xml">
+
+                <!-- Add Job Details after Recruitment Target -->
+                <xpath expr="//div[@name='recruitment_target']"
+                       position="after">
+
+                    <field name="location_type"/>
+
+                    <field name="location_ids"
                            widget="many2many_tags"
                            invisible="location_type == 'all'"/>
-                <field name="employee_category"/>
+
+                    <field name="employee_category"/>
+
                     <field name="min_experience"/>
+
                     <field name="max_experience"/>
-                <field name="salary"/>
-                <field name="requisition_id"/>
-                <field name="billed_unbilled"/>
-                <field name="job_category"/>
-                <field name="target_date"/>
-                <field name="status"/>
-                <field name="job_company_id" widget="many2one"/>
-            </xpath>
-        </field>
-    </record>
 
-    <record id="view_hr_job_form_inherit_approval" model="ir.ui.view">
-        <field name="name">hr.job.form.inherit.approval</field>
-        <field name="model">hr.job</field>
-        <field name="inherit_id" ref="hr.view_hr_job_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//header" position="inside">
-                <button
-                    name="action_submit_for_approval"
-                    type="object"
-                    string="Submit for Approval"
-                    class="btn-primary"
-                    invisible="approval_state not in ['draft', 'rejected']"
-                />
+                    <field name="salary"/>
 
-                <button
-                    name="action_rm_approve"
-                    type="object"
-                    string="RM Approve"
-                    class="btn-primary"
-                    invisible="approval_state != 'rm_approval'"
-                />
+                    <field name="requisition_id"/>
 
-                <button
-                    name="action_hr_approve"
-                    type="object"
-                    string="HR Approve"
-                    class="btn-primary"
-                    invisible="approval_state != 'hr_approval'"
-                />
+                    <field name="billed_unbilled"/>
 
-                <button
-                    name="action_reject"
-                    type="object"
-                    string="Reject"
-                    class="btn-secondary"
-                    invisible="approval_state not in ['rm_approval', 'hr_approval']"
-                />
+                    <!--
+                    <field name="job_category"/>
+                    -->
 
-                <field
-                    name="approval_state"
-                    widget="statusbar"
-                    statusbar_visible="draft,rm_approval,hr_approval,approved,rejected"
-                />
+                    <field name="target_date"/>
 
-            </xpath>
+                    <field name="status"/>
+
+                    <field name="job_company_id"
+                           widget="many2one"/>
+
+                </xpath>
+
+            </field>
+        </record>
 
 
-            <!-- ============================= -->
-            <!-- APPROVAL INFORMATION -->
-            <!-- ============================= -->
+        <!-- ===================================================== -->
+        <!-- JOB APPROVAL WORKFLOW -->
+        <!-- ===================================================== -->
 
-            <xpath expr="//sheet" position="inside">
+        <record id="view_hr_job_form_inherit_approval"
+                model="ir.ui.view">
 
-                <group string="Job Approval">
+            <field name="name">
+                hr.job.form.inherit.approval
+            </field>
 
-                    <group>
+            <field name="model">hr.job</field>
 
-                        <field
-                            name="approval_state"
-                            readonly="1"
-                        />
+            <field name="inherit_id" ref="hr.view_hr_job_form"/>
 
-                        <field
-                            name="rm_id"
-                            readonly="approval_state not in ['draft', 'rejected']"
-                        />
+            <field name="arch" type="xml">
 
-                        <field
-                            name="hr_approver_id"
-                            readonly="approval_state not in ['draft', 'rejected']"
-                        />
+                <!-- ================================================= -->
+                <!-- APPROVAL BUTTONS -->
+                <!-- ================================================= -->
+
+                <xpath expr="//header" position="inside">
+
+                    <!-- Submit -->
+                    <button
+                        name="action_submit_for_approval"
+                        type="object"
+                        string="Submit for Approval"
+                        class="btn-primary"
+                        invisible="approval_state not in ['draft', 'rejected']"
+                    />
+
+                    <!-- RM Approval -->
+                    <button
+                        name="action_rm_approve"
+                        type="object"
+                        string="RM Approve"
+                        class="btn-primary"
+                        invisible="approval_state != 'rm_approval'"
+                    />
+
+                    <!-- Manager Approval -->
+                    <button
+                        name="action_manager_approve"
+                        type="object"
+                        string="Manager Approve"
+                        class="btn-primary"
+                        invisible="approval_state != 'manager_approval'"
+                    />
+
+                    <!-- Finance Approval -->
+                    <button
+                        name="action_finance_approve"
+                        type="object"
+                        string="Finance Approve"
+                        class="btn-primary"
+                        invisible="approval_state != 'finance_approval'"
+                    />
+
+                    <!-- HR Approval -->
+                    <button
+                        name="action_hr_approve"
+                        type="object"
+                        string="HR Approve"
+                        class="btn-primary"
+                        invisible="approval_state != 'hr_approval'"
+                    />
+
+                    <!-- Reject -->
+                    <button
+                        name="action_reject"
+                        type="object"
+                        string="Reject"
+                        class="btn-secondary"
+                        invisible="approval_state not in [
+                            'rm_approval',
+                            'manager_approval',
+                            'finance_approval',
+                            'hr_approval'
+                        ]"
+                    />
+
+                    <!-- Approval Statusbar -->
+                    <field
+                        name="approval_state"
+                        widget="statusbar"
+                        statusbar_visible="
+                            draft,
+                            rm_approval,
+                            manager_approval,
+                            finance_approval,
+                            hr_approval,
+                            approved,
+                            rejected
+                        "
+                    />
+
+                </xpath>
+
+
+                <!-- ================================================= -->
+                <!-- APPROVAL INFORMATION -->
+                <!-- ================================================= -->
+
+                <xpath expr="//sheet" position="inside">
+
+                    <group string="Job Requisition Approval Matrix">
+
+                        <!-- LEFT COLUMN -->
+                        <group>
+
+                            <!-- Current Approval State -->
+                            <field
+                                name="approval_state"
+                                readonly="1"
+                            />
+
+                            <!-- Reporting Manager -->
+                            <field
+                                name="rm_id"
+                                readonly="approval_state not in ['draft', 'rejected']"
+                            />
+
+                            <!-- Manager Approver -->
+                            <field
+                                name="manager_approver_id"
+                                readonly="approval_state not in ['draft', 'rejected']"
+                            />
+
+                            <!-- Finance Approver -->
+                            <field
+                                name="finance_approver_id"
+                                readonly="approval_state not in ['draft', 'rejected']"
+                            />
+
+                            <!-- HR Approver -->
+                            <field
+                                name="hr_approver_id"
+                                readonly="approval_state not in ['draft', 'rejected']"
+                            />
+
+                        </group>
+
+
+                        <!-- RIGHT COLUMN -->
+                        <group>
+
+                            <!-- RM Approval Date -->
+                            <field
+                                name="rm_approval_date"
+                                readonly="1"
+                            />
+
+                            <!-- Manager Approval Date -->
+                            <field
+                                name="manager_approval_date"
+                                readonly="1"
+                            />
+
+                            <!-- Finance Approval Date -->
+                            <field
+                                name="finance_approval_date"
+                                readonly="1"
+                            />
+
+                            <!-- HR Approval Date -->
+                            <field
+                                name="hr_approval_date"
+                                readonly="1"
+                            />
+
+                            <!-- Rejection Reason -->
+                            <field
+                                name="rejection_reason"
+                                readonly="1"
+                                invisible="approval_state != 'rejected'"
+                            />
+
+                        </group>
 
                     </group>
 
-                    <group>
+                </xpath>
 
-                        <field
-                            name="rm_approval_date"
-                            readonly="1"
-                        />
-                        <field
-                            name="hr_approval_date"
-                            readonly="1"
-                        />
-                        <field
-                            name="rejection_reason"
-                            readonly="1"
-                            invisible="approval_state != 'rejected'"
-                        />
-                    </group>
-                </group>
-            </xpath>
-        </field>
+            </field>
         </record>
 
     </data>
