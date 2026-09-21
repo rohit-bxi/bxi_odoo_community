@@ -1,6 +1,10 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 from datetime import date, timedelta
+import logging
+
+
+_logger = logging.getLogger(__name__)
 
 
 class HrEmployeeLeave(models.Model):
@@ -12,16 +16,6 @@ class HrEmployeeLeave(models.Model):
         copy=False
     )
 
-    def action_confirm(self):
-        for leave in self:
-            leave._validate_compensation_date()
-
-        result = super().action_confirm()
-
-        for leave in self:
-            leave._check_and_send_leave_notification()
-
-        return result
 
     def _check_and_send_leave_notification(self):
         for rec in self:
@@ -31,43 +25,63 @@ class HrEmployeeLeave(models.Model):
                 rec._send_leave_submission_email()
 
     def _send_leave_submission_email(self):
-        """Send leave submission notification to HR Support and Employee Manager."""
+        """
+        Send the leave submission notification directly through mail.mail.
 
+        Sender:
+            hrsupport@bxitech.com
+
+        Recipients:
+            Employee manager + HR Support
+        """
         Mail = self.env["mail.mail"]
 
         for rec in self:
-
             if rec.is_submission_email_sent:
+                continue
+
+            # -------------------------------------------------
+            # FIND EMPLOYEE MANAGER
+            # -------------------------------------------------
+            manager = (
+                rec.employee_id.parent_id
+                or rec.employee_id.leave_manager_id
+            )
+
+            if not manager:
+                _logger.warning(
+                    "LEAVE EMAIL NOT SENT: Leave ID %s (%s) has no manager.",
+                    rec.id,
+                    rec.employee_id.name,
+                )
+                continue
+
+            manager_email = (
+                manager.work_email
+                or (
+                    manager.user_id
+                    and manager.user_id.email
+                )
+            )
+
+            if not manager_email:
+                _logger.warning(
+                    "LEAVE EMAIL NOT SENT: Manager %s has no email address "
+                    "for leave ID %s.",
+                    manager.name,
+                    rec.id,
+                )
                 continue
 
             # -------------------------------------------------
             # RECIPIENTS
             # -------------------------------------------------
             recipients = [
+                manager_email.strip(),
                 "hrsupport@bxitech.com",
             ]
 
-            manager = (
-                rec.employee_id.parent_id
-                or rec.employee_id.leave_manager_id
-            )
-
-            manager_email = False
-
-            if manager:
-                manager_email = (
-                    manager.work_email
-                    or (
-                        manager.user_id
-                        and manager.user_id.email
-                    )
-                )
-
-            if manager_email:
-                recipients.append(manager_email.strip())
-
-            # Remove duplicate / empty emails
-            unique_recipients = list(
+            recipients = list(
                 dict.fromkeys(
                     email.strip()
                     for email in recipients
@@ -75,17 +89,14 @@ class HrEmployeeLeave(models.Model):
                 )
             )
 
-            if not unique_recipients:
-                continue
-
-            email_to = ",".join(unique_recipients)
+            email_to = ",".join(recipients)
 
             # -------------------------------------------------
             # EMAIL SUBJECT
             # -------------------------------------------------
             subject = (
-                "New Leave Request Submitted - %s"
-                % rec.employee_id.name
+                "Leave Approval Required - %s"
+                % (rec.employee_id.name or "Employee")
             )
 
             # -------------------------------------------------
@@ -94,16 +105,16 @@ class HrEmployeeLeave(models.Model):
             body_html = """
                 <div style="font-family: Arial, sans-serif;
                             font-size: 14px;
-                            max-width: 600px;
+                            max-width: 650px;
                             margin: 0 auto;">
 
                     <div style="background-color: #875a7b;
-                                color: white;
-                                padding: 15px 20px;
+                                color: #ffffff;
+                                padding: 16px 20px;
                                 border-radius: 6px 6px 0 0;">
 
                         <h3 style="margin: 0;">
-                            New Leave Request Submitted
+                            Leave Approval Required
                         </h3>
 
                     </div>
@@ -114,21 +125,20 @@ class HrEmployeeLeave(models.Model):
                                 border-radius: 0 0 6px 6px;">
 
                         <p>
-                            Dear Approver,
+                            Dear <strong>%s</strong>,
                         </p>
 
                         <p>
-                            A new leave request has been submitted by
-                            <strong>%s</strong>
-                            and requires your attention.
+                            <strong>%s</strong> has submitted a leave request
+                            and it requires your approval.
                         </p>
 
                         <table border="1"
-                            cellpadding="8"
-                            cellspacing="0"
-                            style="border-collapse: collapse;
-                                    width: 100%%;
-                                    border-color: #dddddd;">
+                               cellpadding="8"
+                               cellspacing="0"
+                               style="border-collapse: collapse;
+                                      width: 100%%;
+                                      border-color: #dddddd;">
 
                             <tr style="background-color: #f8f9fa;">
                                 <th style="text-align: left; width: 35%%;">
@@ -175,14 +185,15 @@ class HrEmployeeLeave(models.Model):
                         </table>
 
                         <p style="margin-top: 20px;">
-                            Please review this leave request.
+                            Please review the leave request and approve or
+                            refuse it from Odoo.
                         </p>
 
                     </div>
-
                 </div>
             """ % (
-                rec.employee_id.name or "",
+                manager.name or "Manager",
+                rec.employee_id.name or "Employee",
                 rec.employee_id.name or "",
                 rec.holiday_status_id.name or "",
                 rec.request_date_from or "",
@@ -192,7 +203,9 @@ class HrEmployeeLeave(models.Model):
             )
 
             # -------------------------------------------------
-            # CREATE EMAIL DIRECTLY
+            # CREATE DIRECT MAIL
+            # IMPORTANT: email_from is explicitly HR SUPPORT.
+            # We do NOT use a mail.template here.
             # -------------------------------------------------
             mail_values = {
                 "subject": subject,
@@ -201,20 +214,34 @@ class HrEmployeeLeave(models.Model):
                 "email_to": email_to,
             }
 
+            _logger.info(
+                "LEAVE EMAIL: Creating submission email. "
+                "Leave ID=%s | Employee=%s | Manager=%s | "
+                "From=%s | To=%s",
+                rec.id,
+                rec.employee_id.name,
+                manager.name,
+                mail_values["email_from"],
+                mail_values["email_to"],
+            )
+
             mail = Mail.sudo().create(mail_values)
 
-            # -------------------------------------------------
-            # SEND EMAIL IMMEDIATELY
-            # -------------------------------------------------
+            # Send immediately using the configured outgoing mail server.
             mail.sudo().send()
 
-            # -------------------------------------------------
-            # MARK AS SENT
-            # -------------------------------------------------
+            # Only mark as sent after send() succeeds.
             rec.sudo().write({
                 "is_submission_email_sent": True,
             })
-            
+
+            _logger.info(
+                "LEAVE EMAIL: Submission email sent successfully. "
+                "Leave ID=%s | Mail ID=%s",
+                rec.id,
+                mail.id,
+            )
+
     @api.constrains('holiday_status_id', 'request_date_from', 'request_date_to')
     def _check_rh_leave_rules(self):
         for rec in self:
@@ -523,26 +550,21 @@ class HrEmployeeLeave(models.Model):
                 )
 
     def action_confirm(self):
-        # Validate compensation before submitting the leave
+        """
+        Submit the leave request and send the submission notification
+        from HR Support to the employee's manager (and HR Support).
+        """
         for leave in self:
             leave._validate_compensation_date()
-        # Submit / confirm the leave
+
+        # Let Odoo perform its standard confirmation/submission flow.
         result = super().action_confirm()
-        # Send notification after successful submission
+
+        # Send our custom notification only after successful submission.
         for leave in self:
             leave._check_and_send_leave_notification()
+
         return result
-
-
-    def write(self, vals):
-        result = super().write(vals)
-        self._validate_compensation_date()
-        return result
-
-    def action_confirm(self):
-        for leave in self:
-            leave._validate_compensation_date()
-        return super().action_confirm()
 
 
     sick_leave_policy = fields.Boolean(
@@ -957,5 +979,18 @@ class HrEmployeeLeave(models.Model):
             self._check_sick_leave_policy()
 
         self._validate_compensation_date()
+
+        # Fallback for standard/custom flows that change the leave state
+        # through write() instead of calling our action_confirm().
+        if (
+            "state" in vals
+            and not self.env.context.get("skip_leave_submission_email")
+        ):
+            for leave in self:
+                if (
+                    leave.state not in ("draft", "cancel", "refuse")
+                    and not leave.is_submission_email_sent
+                ):
+                    leave._check_and_send_leave_notification()
 
         return result
