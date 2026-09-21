@@ -12,19 +12,6 @@ class HrEmployeeLeave(models.Model):
         copy=False
     )
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        records = super().create(vals_list)
-        for rec in records:
-            rec._check_and_send_leave_notification()
-        return records
-
-    def write(self, vals):
-        res = super().write(vals)
-        for rec in self:
-            rec._check_and_send_leave_notification()
-        return res
-
     def action_confirm(self):
         for leave in self:
             leave._validate_compensation_date()
@@ -535,11 +522,16 @@ class HrEmployeeLeave(models.Model):
                     )
                 )
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        records = super().create(vals_list)
-        records._validate_compensation_date()
-        return records
+    def action_confirm(self):
+        # Validate compensation before submitting the leave
+        for leave in self:
+            leave._validate_compensation_date()
+        # Submit / confirm the leave
+        result = super().action_confirm()
+        # Send notification after successful submission
+        for leave in self:
+            leave._check_and_send_leave_notification()
+        return result
 
 
     def write(self, vals):
