@@ -26,10 +26,15 @@ class HrEmployeeLeave(models.Model):
         return res
 
     def action_confirm(self):
-        res = super().action_confirm()
-        for rec in self:
-            rec._check_and_send_leave_notification()
-        return res
+        # Validate compensation before submitting
+        for leave in self:
+            leave._validate_compensation_date()
+        # Confirm / submit the leave
+        result = super().action_confirm()
+        # Send submission email after successful confirmation
+        for leave in self:
+            leave._check_and_send_leave_notification()
+        return result
 
     def _check_and_send_leave_notification(self):
         for rec in self:
@@ -40,31 +45,31 @@ class HrEmployeeLeave(models.Model):
 
     def _send_leave_submission_email(self):
         """Send leave submission notification to HR Support and Employee Manager."""
+
         template = self.env.ref(
             'bxi_leave_management.email_template_leave_request_submitted',
             raise_if_not_found=False
         )
+
         if not template:
             return
+
         for rec in self:
+
             if rec.is_submission_email_sent:
                 continue
 
-            # -------------------------------------------------
-            # HR Support - Always receive leave notification
-            # -------------------------------------------------
             recipients = [
                 'hrsupport@bxitech.com'
             ]
 
-            # -------------------------------------------------
-            # Employee Manager
-            # -------------------------------------------------
             manager = (
                 rec.employee_id.parent_id
                 or rec.employee_id.leave_manager_id
             )
+
             manager_email = False
+
             if manager:
                 manager_email = (
                     manager.work_email
@@ -73,35 +78,32 @@ class HrEmployeeLeave(models.Model):
                         and manager.user_id.email
                     )
                 )
+
             if manager_email:
                 recipients.append(manager_email.strip())
 
-            # -------------------------------------------------
-            # Remove duplicate / empty emails
-            # -------------------------------------------------
             unique_recipients = list(
                 dict.fromkeys(
-                    email for email in recipients
-                    if email
+                    email.strip()
+                    for email in recipients
+                    if email and email.strip()
                 )
             )
 
+            if not unique_recipients:
+                continue
+
             email_to_str = ','.join(unique_recipients)
 
-            # -------------------------------------------------
-            # Send Email
-            # -------------------------------------------------
             template.sudo().send_mail(
                 rec.id,
                 email_values={
                     'email_to': email_to_str,
+                    'email_from': 'hrsupport@bxitech.com',
                 },
                 force_send=True
             )
 
-            # -------------------------------------------------
-            # Mark as sent
-            # -------------------------------------------------
             rec.sudo().write({
                 'is_submission_email_sent': True
             })
