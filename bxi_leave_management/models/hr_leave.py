@@ -252,23 +252,31 @@ class HrEmployeeLeave(models.Model):
     def _compute_compensation_required(self):
         for leave in self:
             leave.compensation_required = (
-                leave._is_earned_leave()
+                leave._is_compensation_applicable_leave()
                 and leave._is_mandatory_wfo_day()
             )
 
-    def _is_earned_leave(self):
-        """Return True when the leave type is Earned Leave."""
+    def _is_compensation_applicable_leave(self):
+        """Return True for leave types that require compensation."""
         self.ensure_one()
+
         leave_type = self.holiday_status_id
+
         code = (
             getattr(leave_type, "code", False)
             or getattr(leave_type, "leave_code", False)
-        )
-        if code:
-            return code.upper() == "EL"
+            or getattr(leave_type, "time_off_code", False)
+            or ""
+        ).strip().upper()
+
+        if code in ("EL", "SICK"):
+            return True
+
         return (leave_type.name or "").strip().upper() in (
             "EL",
             "EARNED LEAVE",
+            "SICK",
+            "SICK LEAVE",
         )
 
     def _is_mandatory_wfo_day(self):
@@ -325,18 +333,16 @@ class HrEmployeeLeave(models.Model):
                 raise ValidationError(
                     _(
                         "Compensation is required because you are applying "
-                        "Earned Leave on a mandatory WFO day. "
+                        "%s on a mandatory WFO day. "
                         "Please select a compensation date."
                     )
+                    % leave.holiday_status_id.name
                 )
 
             leave_date = leave.request_date_from
             compensation_date = leave.compensation_date
 
-            # --------------------------------------------------
             # Same week
-            # --------------------------------------------------
-
             monday = leave_date - timedelta(days=leave_date.weekday())
             sunday = monday + timedelta(days=6)
 
@@ -344,36 +350,26 @@ class HrEmployeeLeave(models.Model):
                 raise ValidationError(
                     _(
                         "The compensation date must be within the same "
-                        "week as the Earned Leave."
+                        "week as the leave."
                     )
                 )
 
-            # --------------------------------------------------
-            # Only Monday or Friday
-            # --------------------------------------------------
-
+            # ONLY MONDAY OR FRIDAY
             if compensation_date.weekday() not in (0, 4):
                 raise ValidationError(
                     _(
-                        "For Earned Leave taken on Tuesday, Wednesday or "
-                        "Thursday, compensation can only be completed on "
+                        "Compensation can only be completed on "
                         "Monday or Friday of the same week."
                     )
                 )
 
-            # --------------------------------------------------
             # Cannot be same as leave date
-            # --------------------------------------------------
-
             if compensation_date == leave_date:
                 raise ValidationError(
                     _("The compensation date cannot be the leave date.")
                 )
 
-            # --------------------------------------------------
-            # Employee must have a WFO location on compensation date
-            # --------------------------------------------------
-
+            # Compensation date must have WFO location
             compensation_location = leave._get_employee_day_location(
                 leave.employee_id,
                 compensation_date,
@@ -392,10 +388,7 @@ class HrEmployeeLeave(models.Model):
                     )
                 )
 
-            # --------------------------------------------------
-            # Compensation date cannot itself be leave
-            # --------------------------------------------------
-
+            # Compensation date cannot already have leave
             existing_leave = self.env["hr.leave"].search(
                 [
                     ("employee_id", "=", leave.employee_id.id),
@@ -817,11 +810,12 @@ class HrEmployeeLeave(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-
         leaves = super().create(vals_list)
 
-        if not self.env.context.get('skip_sick_leave_policy'):
+        if not self.env.context.get("skip_sick_leave_policy"):
             leaves._check_sick_leave_policy()
+
+        leaves._validate_compensation_date()
 
         return leaves
 
@@ -830,7 +824,6 @@ class HrEmployeeLeave(models.Model):
     # ---------------------------------------------------------
 
     def write(self, vals):
-
         result = super().write(vals)
 
         fields_to_check = {
@@ -840,12 +833,15 @@ class HrEmployeeLeave(models.Model):
             "request_date_to",
             "attachment_ids",
             "supported_attachment_ids",
+            "compensation_date",
         }
 
         if (
             fields_to_check.intersection(vals)
-            and not self.env.context.get('skip_sick_leave_policy')
+            and not self.env.context.get("skip_sick_leave_policy")
         ):
             self._check_sick_leave_policy()
+
+        self._validate_compensation_date()
 
         return result
