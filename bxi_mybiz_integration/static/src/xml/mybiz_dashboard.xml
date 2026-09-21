@@ -29,25 +29,25 @@
             <!-- KPI Cards -->
             <div class="row g-3 mb-4">
                 <div class="col-6 col-md-3">
-                    <div class="mybiz-kpi-card">
+                    <div class="mybiz-kpi-card mybiz-clickable" t-on-click="() => this.openTotalRequests()">
                         <div class="mybiz-kpi-value" t-esc="state.total_requests"/>
                         <div class="mybiz-kpi-label">Total Requests</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="mybiz-kpi-card">
+                    <div class="mybiz-kpi-card mybiz-clickable" t-on-click="() => this.openSuccessfulPushes()">
                         <div class="mybiz-kpi-value text-success" t-esc="state.success_rate + '%'"/>
                         <div class="mybiz-kpi-label">myBiz Push Success Rate</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="mybiz-kpi-card">
+                    <div class="mybiz-kpi-card mybiz-clickable" t-on-click="() => this.openPushFailures()">
                         <div class="mybiz-kpi-value text-danger" t-esc="state.failed_count"/>
                         <div class="mybiz-kpi-label">Push Failures</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="mybiz-kpi-card">
+                    <div class="mybiz-kpi-card mybiz-clickable" t-on-click="() => this.openTurnaroundTracked()">
                         <div class="mybiz-kpi-value" t-esc="state.avg_turnaround_days"/>
                         <div class="mybiz-kpi-label">Avg. Approval Turnaround (days)</div>
                     </div>
@@ -56,19 +56,19 @@
 
             <div class="row g-3 mb-4">
                 <div class="col-6 col-md-4">
-                    <div class="mybiz-kpi-card mybiz-kpi-card-sm">
+                    <div class="mybiz-kpi-card mybiz-kpi-card-sm mybiz-clickable" t-on-click="() => this.openPendingManager()">
                         <div class="mybiz-kpi-value" t-esc="state.pending_manager"/>
                         <div class="mybiz-kpi-label">Pending Manager Approval</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4">
-                    <div class="mybiz-kpi-card mybiz-kpi-card-sm">
+                    <div class="mybiz-kpi-card mybiz-kpi-card-sm mybiz-clickable" t-on-click="() => this.openPendingHr()">
                         <div class="mybiz-kpi-value" t-esc="state.pending_hr"/>
                         <div class="mybiz-kpi-label">Pending HR Approval</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4">
-                    <div class="mybiz-kpi-card mybiz-kpi-card-sm">
+                    <div class="mybiz-kpi-card mybiz-kpi-card-sm mybiz-clickable" t-on-click="() => this.openMybizPending()">
                         <div class="mybiz-kpi-value" t-esc="state.mybiz_pending"/>
                         <div class="mybiz-kpi-label">Awaiting myBiz Confirmation</div>
                     </div>
@@ -81,7 +81,7 @@
                     <div class="mybiz-panel">
                         <h5 class="mybiz-panel-title">Requests by Status</h5>
                         <t t-foreach="Object.keys(state.state_counts)" t-as="key" t-key="key">
-                            <div class="mybiz-bar-row">
+                            <div class="mybiz-bar-row mybiz-clickable" t-on-click="() => this.openByState(key)">
                                 <div class="mybiz-bar-label" t-esc="state.state_labels[key]"/>
                                 <div class="mybiz-bar-track">
                                     <div class="mybiz-bar-fill"
@@ -98,7 +98,7 @@
                     <div class="mybiz-panel">
                         <h5 class="mybiz-panel-title">myBiz Push Status</h5>
                         <t t-foreach="Object.keys(state.mybiz_counts)" t-as="key" t-key="key">
-                            <div class="mybiz-bar-row">
+                            <div class="mybiz-bar-row mybiz-clickable" t-on-click="() => this.openByMybizStatus(key)">
                                 <div class="mybiz-bar-label" t-esc="state.mybiz_labels[key]"/>
                                 <div class="mybiz-bar-track">
                                     <div class="mybiz-bar-fill"
@@ -118,7 +118,7 @@
                         <h5 class="mybiz-panel-title">Requests — Last 6 Months</h5>
                         <div class="mybiz-trend-row">
                             <t t-foreach="state.monthly_trend" t-as="m" t-key="m.label">
-                                <div class="mybiz-trend-col">
+                                <div class="mybiz-trend-col mybiz-clickable" t-on-click="() => this.openByMonth(m)">
                                     <div class="mybiz-trend-bar-wrap">
                                         <div class="mybiz-trend-bar"
                                              t-attf-style="height: #{this.barWidth(m.count, state.max_month_count)}%;"/>
@@ -139,7 +139,7 @@
                             <div class="text-muted small">No expense/advance data in this period.</div>
                         </t>
                         <t t-foreach="state.dept_spend" t-as="d" t-key="d.department">
-                            <div class="mybiz-bar-row">
+                            <div class="mybiz-bar-row mybiz-clickable" t-on-click="() => this.openByDepartment(d)">
                                 <div class="mybiz-bar-label" t-esc="d.department"/>
                                 <div class="mybiz-bar-track">
                                     <div class="mybiz-bar-fill bg-primary"

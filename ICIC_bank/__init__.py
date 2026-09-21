@@ -1,3 +1,3 @@
 # from . import controllers
-from . import model
-from . import wizard
+from . import model  # noqa: F401
+from . import wizard  # noqa: F401
