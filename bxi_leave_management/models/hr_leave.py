@@ -26,7 +26,8 @@ class HrEmployeeLeave(models.Model):
 
     def _send_leave_submission_email(self):
         """
-        Send the leave submission notification directly through mail.mail.
+        Send the leave submission notification using the
+        'email_template_leave_request_submitted' mail template.
 
         Sender:
             hrsupport@bxitech.com
@@ -92,143 +93,42 @@ class HrEmployeeLeave(models.Model):
             email_to = ",".join(recipients)
 
             # -------------------------------------------------
-            # EMAIL SUBJECT
+            # RENDER AND SEND USING THE CONFIGURED MAIL TEMPLATE
             # -------------------------------------------------
-            subject = (
-                "Leave Approval Required - %s"
-                % (rec.employee_id.name or "Employee")
+            template = self.env.ref(
+                "bxi_leave_management.email_template_leave_request_submitted",
+                raise_if_not_found=False,
             )
 
-            # -------------------------------------------------
-            # EMAIL BODY
-            # -------------------------------------------------
-            body_html = """
-                <div style="font-family: Arial, sans-serif;
-                            font-size: 14px;
-                            max-width: 650px;
-                            margin: 0 auto;">
-
-                    <div style="background-color: #875a7b;
-                                color: #ffffff;
-                                padding: 16px 20px;
-                                border-radius: 6px 6px 0 0;">
-
-                        <h3 style="margin: 0;">
-                            Leave Approval Required
-                        </h3>
-
-                    </div>
-
-                    <div style="padding: 20px;
-                                border: 1px solid #e0e0e0;
-                                border-top: none;
-                                border-radius: 0 0 6px 6px;">
-
-                        <p>
-                            Dear <strong>%s</strong>,
-                        </p>
-
-                        <p>
-                            <strong>%s</strong> has submitted a leave request
-                            and it requires your approval.
-                        </p>
-
-                        <table border="1"
-                               cellpadding="8"
-                               cellspacing="0"
-                               style="border-collapse: collapse;
-                                      width: 100%%;
-                                      border-color: #dddddd;">
-
-                            <tr style="background-color: #f8f9fa;">
-                                <th style="text-align: left; width: 35%%;">
-                                    Employee
-                                </th>
-                                <td>%s</td>
-                            </tr>
-
-                            <tr>
-                                <th style="text-align: left;">
-                                    Leave Type
-                                </th>
-                                <td>%s</td>
-                            </tr>
-
-                            <tr style="background-color: #f8f9fa;">
-                                <th style="text-align: left;">
-                                    From Date
-                                </th>
-                                <td>%s</td>
-                            </tr>
-
-                            <tr>
-                                <th style="text-align: left;">
-                                    To Date
-                                </th>
-                                <td>%s</td>
-                            </tr>
-
-                            <tr style="background-color: #f8f9fa;">
-                                <th style="text-align: left;">
-                                    Duration
-                                </th>
-                                <td>%s Day(s)</td>
-                            </tr>
-
-                            <tr>
-                                <th style="text-align: left;">
-                                    Reason
-                                </th>
-                                <td>%s</td>
-                            </tr>
-
-                        </table>
-
-                        <p style="margin-top: 20px;">
-                            Please review the leave request and approve or
-                            refuse it from Odoo.
-                        </p>
-
-                    </div>
-                </div>
-            """ % (
-                manager.name or "Manager",
-                rec.employee_id.name or "Employee",
-                rec.employee_id.name or "",
-                rec.holiday_status_id.name or "",
-                rec.request_date_from or "",
-                rec.request_date_to or "",
-                rec.number_of_days or 0,
-                rec.name or "N/A",
-            )
-
-            # -------------------------------------------------
-            # CREATE DIRECT MAIL
-            # IMPORTANT: email_from is explicitly HR SUPPORT.
-            # We do NOT use a mail.template here.
-            # -------------------------------------------------
-            mail_values = {
-                "subject": subject,
-                "body_html": body_html,
-                "email_from": "hrsupport@bxitech.com",
-                "email_to": email_to,
-            }
+            if not template:
+                _logger.warning(
+                    "LEAVE EMAIL NOT SENT: Mail template "
+                    "'email_template_leave_request_submitted' not found "
+                    "for leave ID %s.",
+                    rec.id,
+                )
+                continue
 
             _logger.info(
-                "LEAVE EMAIL: Creating submission email. "
-                "Leave ID=%s | Employee=%s | Manager=%s | "
-                "From=%s | To=%s",
+                "LEAVE EMAIL: Sending submission email via template. "
+                "Leave ID=%s | Employee=%s | Manager=%s | To=%s",
                 rec.id,
                 rec.employee_id.name,
                 manager.name,
-                mail_values["email_from"],
-                mail_values["email_to"],
+                email_to,
             )
 
-            mail = Mail.sudo().create(mail_values)
+            mail_id = template.sudo().send_mail(
+                rec.id,
+                force_send=True,
+                email_values={
+                    "email_to": email_to,
+                    "email_from": "hrsupport@bxitech.com",
+                    "recipient_ids": [],
+                },
+            )
 
-            # Send immediately using the configured outgoing mail server.
-            mail.sudo().send()
+            mail = Mail.sudo().browse(mail_id)
 
             # Only mark as sent after send() succeeds.
             rec.sudo().write({
@@ -557,8 +457,16 @@ class HrEmployeeLeave(models.Model):
         for leave in self:
             leave._validate_compensation_date()
 
-        # Let Odoo perform its standard confirmation/submission flow.
-        result = super().action_confirm()
+        # This Odoo version's hr.leave has no base action_confirm() (a new
+        # leave is created directly in the 'confirm' state, there is no
+        # 'draft' state), so only defer to super() when it actually
+        # exists instead of assuming a base implementation is present.
+        super_action_confirm = getattr(super(), "action_confirm", None)
+        if super_action_confirm:
+            result = super_action_confirm()
+        else:
+            self.write({"state": "confirm"})
+            result = True
 
         # Send our custom notification only after successful submission.
         for leave in self:
@@ -952,6 +860,16 @@ class HrEmployeeLeave(models.Model):
             leaves._check_sick_leave_policy()
 
         leaves._validate_compensation_date()
+
+        # hr.leave has no 'draft' state in this version: a new leave is
+        # created directly with state='confirm' (submitted), so the
+        # submission notification must be sent right here rather than
+        # waiting on action_confirm()/write(), which are never invoked
+        # for a plain "New > Save" submission.
+        if not self.env.context.get("skip_leave_submission_email"):
+            for leave in leaves:
+                if leave.state not in ("draft", "cancel", "refuse"):
+                    leave._check_and_send_leave_notification()
 
         return leaves
 
