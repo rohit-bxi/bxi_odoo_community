@@ -217,6 +217,14 @@ class HrEmployeeAppraisal(models.Model):
             }
         }
 
+    def action_release(self):
+        for record in self:
+            record.state = 'released'
+
+    def action_cancel(self):
+        for record in self:
+            record.state = 'cancelled'
+            
     @api.constrains('bonus_amount')
     def _check_bonus_amount(self):
         for rec in self:
