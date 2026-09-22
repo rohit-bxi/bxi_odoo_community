@@ -42,7 +42,7 @@ class AccountAgedTrialBalance(models.TransientModel):
                                           column2="sub_report_id")
     name = fields.Char(string="Account Aged Trial balance Report", default="Account Aged Trial balance Report", required=True, translate=True)
 
-    journal_ids = fields.Many2many('account.journal', string='Journals',
+    journal_ids = fields.Many2many('account.journal', string='Journal(s)',
                                    required=True)
     period_length = fields.Integer(string='Period Length (days)',
                                    required=True, default=30)

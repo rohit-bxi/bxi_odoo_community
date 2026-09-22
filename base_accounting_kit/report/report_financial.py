@@ -27,6 +27,7 @@ from odoo import api, fields, models
 # ---------------------------------------------------------
 class AccountTypes(models.Model):
     _name = "account.account.type"
+    _description = "Account Type"
 
     name = fields.Char(string='Account Type', required=True, translate=True)
     type = fields.Selection([
@@ -116,7 +117,7 @@ class AccountFinancialReport(models.Model):
             ("expense_direct_cost", "Cost of Revenue"),
             ("off_balance", "Off-Balance Sheet"),
         ],
-        string="Type",
+        string="Account Type",
         help="These types are defined according to your country. The type contains more information " \
              "about the account and its specificities."
     )

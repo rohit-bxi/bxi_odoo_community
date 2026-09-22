@@ -41,7 +41,7 @@ class AccountBalanceReport(models.TransientModel):
     journal_ids = fields.Many2many('account.journal',
                                    'account_balance_report_journal_rel',
                                    'account_id', 'journal_id',
-                                   string='Journals', required=True,
+                                   string='Journal(s)', required=True,
                                    default=[])
 
     @api.model

@@ -15,6 +15,13 @@ class HrEmployee(models.Model):
 
     version_id = fields.Many2one('hr.version', groups="base.group_user")
     current_version_id = fields.Many2one('hr.version', groups="base.group_user")
+    is_contractor = fields.Boolean(
+        string="Is Contractor",
+        compute="_compute_is_contractor",
+        help="Technical field used to show/hide contractor-specific UI "
+             "elements without requiring direct access to the group-"
+             "restricted 'employee_type' field.",
+    )
     employee_code = fields.Char(string="Employee Code")
     pa_name = fields.Char(string="PA Name")  
     psa = fields.Char(string="PSA")
@@ -185,6 +192,11 @@ class HrEmployee(models.Model):
             "url": "/web/content/%s?download=true" % attachment.id,
             "target": "self",
         }
+
+    @api.depends('employee_type')
+    def _compute_is_contractor(self):
+        for rec in self:
+            rec.is_contractor = rec.employee_type == 'contractor'
 
     @api.depends('epf_number')
     def _compute_pf_number(self):

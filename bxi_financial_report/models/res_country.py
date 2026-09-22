@@ -8,7 +8,6 @@ class ResCountry(models.Model):
     country_code_3 = fields.Char(
         string='Country Code(3 Alphabet)',
         size=3,
-        required=True,
     )
 
     @api.onchange('country_code_3')

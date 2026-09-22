@@ -79,7 +79,6 @@ class HrEmployeeAppraisal(models.Model):
         compute="_compute_salary",
         store=True,
         readonly=True,
-        force_save=True,
         compute_sudo=True,
     )
 
@@ -130,6 +129,7 @@ class HrEmployeeAppraisal(models.Model):
     ], string="Type", default='revenue', tracking=True)
 
     current_band = fields.Char(
+            string="Current Role Band",
             related='employee_id.role_band',
             readonly=False,
         )
@@ -143,11 +143,10 @@ class HrEmployeeAppraisal(models.Model):
         readonly=True
     )  
     current_flexible_allowance = fields.Float(
-        "Flexible Allowance",
+        "Current Flexible Allowance",
         compute="_compute_current_salary",
         store=True,
         readonly=True,
-        force_save=True,
         compute_sudo=True,
     )
 
@@ -164,19 +163,19 @@ class HrEmployeeAppraisal(models.Model):
         tracking=True,
         compute_sudo=True,
     )
-    current_pf = fields.Float("Provident Fund", default=21600.0, tracking=True) 
-    current_insurance = fields.Float("Medical Insurance", default=50000.0, tracking=True) 
-    current_nps = fields.Float("NPS", default=15000, tracking=True)
-    current_performance_bonus_percentage = fields.Integer(string="Performance Bonus %")
-    current_org_bonus_percentage = fields.Integer(string="Organisation Bonus %")
+    current_pf = fields.Float("Current Provident Fund", default=21600.0, tracking=True)
+    current_insurance = fields.Float("Current Medical Insurance", default=50000.0, tracking=True)
+    current_nps = fields.Float("Current NPS", default=15000, tracking=True)
+    current_performance_bonus_percentage = fields.Integer(string="Current Performance Bonus %")
+    current_org_bonus_percentage = fields.Integer(string="Current Organisation Bonus %")
     current_retiral_total = fields.Float(
         compute="_compute_current_salary",
         store=True,
         tracking=True,
         compute_sudo=True,
     )
-    current_org_bonus = fields.Float("Org Bonus", compute="_compute_current_bonus", tracking=True,store=True,readonly=False) 
-    current_performance_bonus = fields.Float("Performance Bonus", compute="_compute_current_bonus", tracking=True,store=True,readonly=False)
+    current_org_bonus = fields.Float("Current Org Bonus", compute="_compute_current_bonus", tracking=True,store=True,readonly=False)
+    current_performance_bonus = fields.Float("Current Performance Bonus", compute="_compute_current_bonus", tracking=True,store=True,readonly=False)
     current_variable_total = fields.Float(
         compute="_compute_current_salary",
         store=True,

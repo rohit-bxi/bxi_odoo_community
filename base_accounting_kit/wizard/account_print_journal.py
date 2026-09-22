@@ -41,7 +41,7 @@ class AccountPrintJournal(models.TransientModel):
     sort_selection = fields.Selection(
         [('date', 'Date'), ('move_name', 'Journal Entry Number')],
         'Entries Sorted by', required=True, default='move_name')
-    journal_ids = fields.Many2many('account.journal', string='Journals',
+    journal_ids = fields.Many2many('account.journal', string='Journal(s)',
                                    required=True,
                                    default=lambda self: self.env[
                                        'account.journal'].search(
