@@ -23,6 +23,7 @@
         'views/employee_letter_wizard.xml',
         'views/hr_employee_view.xml',
         'views/hr_apprsail_promotion.xml',
+        'views/bonus_template.xml',
         'report/employee_paperformate.xml',
         'report/report_employee_bonus_letter.xml',
         'report/report_apprsail_promotion.xml',

@@ -24,6 +24,17 @@
                             type="object"
                             string="Letter Action"
                             class="oe_highlight"/>
+                    <button name="action_release"
+                        type="object"
+                        string="Release"
+                        class="oe_highlight"
+                        invisible="state != 'draft'"
+                    />
+                    <button name="action_cancel"
+                        type="object"
+                        string="Cancel"
+                        invisible="state != 'draft'"
+                    />
                     <field name="state"
                            widget="statusbar"
                            statusbar_visible="draft,released,cancelled"/>
