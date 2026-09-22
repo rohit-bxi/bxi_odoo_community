@@ -557,13 +557,14 @@
                 <thead>
                     <!-- Row 1: FY Labels -->
                     <tr>
-                        <th colspan="1" class="main-header" style="text-align: left;"><t t-esc="state.report_data.currency_symbol"/></th>
+                        <th colspan="2" class="main-header" style="text-align: left;"><t t-esc="state.report_data.currency_symbol"/></th>
                         <th colspan="2" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year1_label"/></th>
                         <th colspan="2" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year2_label"/></th>
                     </tr>
                     <!-- Row 3: Column names -->
                     <tr>
                         <th style="text-align: left;">Category</th>
+                        <th style="text-align: left;">Sub Category</th>
                         <th style="text-align: right; width: 120px;">Plan</th>
                         <th style="text-align: right; width: 120px;">Actual</th>
                         <th style="text-align: right; width: 120px;">Plan</th>
@@ -574,6 +575,7 @@
                     <t t-foreach="state.report_data.expenses_data" t-as="e" t-key="e.category">
                         <tr class="metric-row">
                             <td style="text-align: left;"><t t-esc="e.category"/></td>
+                            <td style="text-align: left; color: #475569;"><t t-esc="e.sub_category"/></td>
                             <td><t t-out="formatAmt(e.y1_booked)"/></td>
                             <td><t t-out="formatAmt(e.y1_billed)"/></td>
                             <td><t t-out="formatAmt(e.y2_booked)"/></td>
@@ -582,7 +584,7 @@
                     </t>
                     <!-- Totals row -->
                     <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
-                        <td style="text-align: left;">Total</td>
+                        <td colspan="2" style="text-align: left;">Total</td>
                         <td><t t-out="formatAmt(state.report_data.total_exp_y1_booked)"/></td>
                         <td><t t-out="formatAmt(state.report_data.total_exp_y1_billed)"/></td>
                         <td><t t-out="formatAmt(state.report_data.total_exp_y2_booked)"/></td>

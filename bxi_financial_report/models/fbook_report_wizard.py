@@ -241,15 +241,22 @@ class FbookReportWizard(models.TransientModel):
                     return True
             return False
 
-        # Tax partners: partners tagged as TAX in masters (res.partner.category)
+        # Tax partners: partners tagged as TAX in masters (res.partner.category) and customer_type == 'je_partner'
         tax_tags = self.env['res.partner.category'].sudo().search([]).filtered(
             lambda t: t.name and t.name.strip().upper() in ('TAX', 'TAXES')
         )
-        tax_partners = self.env['res.partner'].sudo().search([
-            '|',
-            ('category_id', 'in', tax_tags.ids),
-            ('commercial_partner_id.category_id', 'in', tax_tags.ids)
-        ]) if tax_tags else self.env['res.partner']
+        if tax_tags:
+            candidate_partners = self.env['res.partner'].sudo().search([
+                '|',
+                ('category_id', 'in', tax_tags.ids),
+                ('commercial_partner_id.category_id', 'in', tax_tags.ids)
+            ])
+            tax_partners = candidate_partners.filtered(
+                lambda p: (getattr(p, 'customer_type', False) in ('je_partner', 'je_entries')) or
+                          (p.commercial_partner_id and getattr(p.commercial_partner_id, 'customer_type', False) in ('je_partner', 'je_entries'))
+            )
+        else:
+            tax_partners = self.env['res.partner']
         tax_partner_ids = set(tax_partners.ids)
 
         # Initial AR outstanding prior to Year 1 (posted customer invoices before y1_start with unpaid balance)
@@ -430,7 +437,7 @@ class FbookReportWizard(models.TransientModel):
                         date_val=slip.date_to, year_key=year_key, record=slip
                     )
 
-            # D. Tax (Journal items where partner tagged as TAX in masters)
+            # D. Tax (Journal items where partner tagged as TAX in masters, customer_type is JE-Entries, and COA is Bank)
             if tax_partner_ids and 'account.move.line' in self.env:
                 tax_lines_q = self.env['account.move.line'].sudo().search([
                     ('company_id', 'in', company_ids),
@@ -438,10 +445,10 @@ class FbookReportWizard(models.TransientModel):
                     ('parent_state', '=', 'posted'),
                     ('date', '>=', qdef['start']),
                     ('date', '<=', qdef['end']),
-                    ('account_id.account_type', 'not in', ('asset_cash', 'liability_payable')),
+                    ('account_id.account_type', '=', 'asset_cash'),
                 ])
                 for tline in tax_lines_q:
-                    net_t = tline.debit - tline.credit
+                    net_t = tline.credit - tline.debit
                     expenses_val += custom_convert(
                         net_t, tline.currency_id or tline.company_id.currency_id, target_currency,
                         date_val=tline.date, year_key=year_key, record=tline
@@ -881,7 +888,7 @@ class FbookReportWizard(models.TransientModel):
             _add_expense_val('Employee', 'y1', y1_plan, y1_actual)
             _add_expense_val('Employee', 'y2', y2_plan, y2_actual)
 
-        # D. Tax -> Journal items where partner is tagged as TAX in masters
+        # D. Tax -> Journal items where partner is tagged as TAX in masters, customer_type is JE-Entries, and COA is Bank
         if tax_partner_ids and 'account.move.line' in self.env:
             tax_move_lines = self.env['account.move.line'].sudo().search([
                 ('company_id', 'in', company_ids),
@@ -889,13 +896,13 @@ class FbookReportWizard(models.TransientModel):
                 ('parent_state', '=', 'posted'),
                 ('date', '>=', y1_start_date),
                 ('date', '<=', y2_end_date),
-                ('account_id.account_type', 'not in', ('asset_cash', 'liability_payable')),
+                ('account_id.account_type', '=', 'asset_cash'),
             ])
             for tline in tax_move_lines:
                 y_key = _get_y_key(tline.date)
                 if not y_key:
                     continue
-                net_amt = tline.debit - tline.credit
+                net_amt = tline.credit - tline.debit
                 conv = custom_convert(
                     net_amt, tline.currency_id or tline.company_id.currency_id, target_currency,
                     date_val=tline.date, year_key=y_key, record=tline
@@ -903,6 +910,11 @@ class FbookReportWizard(models.TransientModel):
                 _add_expense_val('Tax', y_key, conv, conv)
 
         # Populate expenses_data with strictly 3 rows: Employee, Company, Tax
+        exp_sub_categories = {
+            'Employee': '(Salary, Reimbursement)',
+            'Company': '(Vendor Payments , Company Paid Expenses)',
+            'Tax': '(TDS,EPF)',
+        }
         for cat_label in ['Employee', 'Company', 'Tax']:
             r = categories_dict.get(cat_label, {
                 'category': cat_label,
@@ -913,6 +925,7 @@ class FbookReportWizard(models.TransientModel):
             })
             expenses_data.append({
                 'category': r['category'],
+                'sub_category': exp_sub_categories.get(cat_label, ''),
                 'y1_booked': target_currency.round(r['y1_booked']),
                 'y1_billed': target_currency.round(r['y1_billed']),
                 'y2_booked': target_currency.round(r['y2_booked']),
@@ -1192,17 +1205,22 @@ class FbookReportWizard(models.TransientModel):
                 partner = bill.partner_id
                 if not partner:
                     continue
-                partner_id = partner.id
-                partner_name = partner.name.strip() if partner.name else 'Unknown Vendor'
+                partner_name = (
+                    partner.functional_name or
+                    (partner.commercial_partner_id.functional_name if partner.commercial_partner_id else False) or
+                    partner.name or
+                    'Unknown Vendor'
+                ).strip()
+                partner_key = partner_name.strip().lower()
                 b_date = bill.invoice_date or bill.date
                 if not b_date:
                     continue
                 b_date_str = b_date.strftime('%Y-%m-%d')
 
-                if partner_id not in vendor_data_map:
+                if partner_key not in vendor_data_map:
                     tags = partner.category_id.mapped('name') or (partner.commercial_partner_id.category_id.mapped('name') if partner.commercial_partner_id else [])
                     description = ', '.join([t for t in tags if t]) if tags else ''
-                    vendor_data_map[partner_id] = {
+                    vendor_data_map[partner_key] = {
                         'name': partner_name,
                         'description': description,
                         'y1_q1': 0.0,
@@ -1214,10 +1232,10 @@ class FbookReportWizard(models.TransientModel):
                         'y2_q3': 0.0,
                         'y2_q4': 0.0,
                     }
-                elif not vendor_data_map[partner_id].get('description'):
+                elif not vendor_data_map[partner_key].get('description'):
                     tags = partner.category_id.mapped('name') or (partner.commercial_partner_id.category_id.mapped('name') if partner.commercial_partner_id else [])
                     if tags:
-                        vendor_data_map[partner_id]['description'] = ', '.join([t for t in tags if t])
+                        vendor_data_map[partner_key]['description'] = ', '.join([t for t in tags if t])
 
                 sign = -1.0 if bill.move_type == 'in_refund' else 1.0
                 conv_y1 = sign * custom_convert(
@@ -1232,24 +1250,24 @@ class FbookReportWizard(models.TransientModel):
                 if y1_start_str <= b_date_str <= y1_fy_end_str:
                     q = get_q_num(b_date_str, y1_fy_start)
                     if q == 1:
-                        vendor_data_map[partner_id]['y1_q1'] += conv_y1
+                        vendor_data_map[partner_key]['y1_q1'] += conv_y1
                     elif q == 2:
-                        vendor_data_map[partner_id]['y1_q2'] += conv_y1
+                        vendor_data_map[partner_key]['y1_q2'] += conv_y1
                     elif q == 3:
-                        vendor_data_map[partner_id]['y1_q3'] += conv_y1
+                        vendor_data_map[partner_key]['y1_q3'] += conv_y1
                     elif q == 4:
-                        vendor_data_map[partner_id]['y1_q4'] += conv_y1
+                        vendor_data_map[partner_key]['y1_q4'] += conv_y1
 
                 if y2_start_str <= b_date_str <= y2_fy_end_str:
                     q = get_q_num(b_date_str, y2_cy_start)
                     if q == 1:
-                        vendor_data_map[partner_id]['y2_q1'] += conv_y2
+                        vendor_data_map[partner_key]['y2_q1'] += conv_y2
                     elif q == 2:
-                        vendor_data_map[partner_id]['y2_q2'] += conv_y2
+                        vendor_data_map[partner_key]['y2_q2'] += conv_y2
                     elif q == 3:
-                        vendor_data_map[partner_id]['y2_q3'] += conv_y2
+                        vendor_data_map[partner_key]['y2_q3'] += conv_y2
                     elif q == 4:
-                        vendor_data_map[partner_id]['y2_q4'] += conv_y2
+                        vendor_data_map[partner_key]['y2_q4'] += conv_y2
 
         if 'hr.expense' in self.env:
             cexp_domain = [
@@ -1264,13 +1282,18 @@ class FbookReportWizard(models.TransientModel):
             for exp in company_exps:
                 partner = exp.vendor_id
                 if partner:
-                    partner_id = partner.id
-                    partner_name = partner.name.strip() if partner.name else 'Unknown Vendor'
+                    partner_name = (
+                        partner.functional_name or
+                        (partner.commercial_partner_id.functional_name if partner.commercial_partner_id else False) or
+                        partner.name or
+                        'Unknown Vendor'
+                    ).strip()
+                    partner_key = partner_name.strip().lower()
                     tags = partner.category_id.mapped('name') or (partner.commercial_partner_id.category_id.mapped('name') if partner.commercial_partner_id else [])
                     description = ', '.join([t for t in tags if t]) if tags else ''
                 else:
-                    partner_id = 'unassigned_company_expense'
                     partner_name = 'Expenses Paid by Company'
+                    partner_key = 'unassigned_company_expense'
                     description = 'Paid by Company'
 
                 e_date = exp.date
@@ -1278,8 +1301,8 @@ class FbookReportWizard(models.TransientModel):
                     continue
                 e_date_str = e_date.strftime('%Y-%m-%d') if hasattr(e_date, 'strftime') else str(e_date)[:10]
 
-                if partner_id not in vendor_data_map:
-                    vendor_data_map[partner_id] = {
+                if partner_key not in vendor_data_map:
+                    vendor_data_map[partner_key] = {
                         'name': partner_name,
                         'description': description,
                         'y1_q1': 0.0,
@@ -1291,8 +1314,8 @@ class FbookReportWizard(models.TransientModel):
                         'y2_q3': 0.0,
                         'y2_q4': 0.0,
                     }
-                elif not vendor_data_map[partner_id].get('description') and description:
-                    vendor_data_map[partner_id]['description'] = description
+                elif not vendor_data_map[partner_key].get('description') and description:
+                    vendor_data_map[partner_key]['description'] = description
 
                 conv_y1 = custom_convert(
                     exp.total_amount_currency, exp.currency_id, target_currency,
@@ -1306,24 +1329,24 @@ class FbookReportWizard(models.TransientModel):
                 if y1_start_str <= e_date_str <= y1_fy_end_str:
                     q = get_q_num(e_date_str, y1_fy_start)
                     if q == 1:
-                        vendor_data_map[partner_id]['y1_q1'] += conv_y1
+                        vendor_data_map[partner_key]['y1_q1'] += conv_y1
                     elif q == 2:
-                        vendor_data_map[partner_id]['y1_q2'] += conv_y1
+                        vendor_data_map[partner_key]['y1_q2'] += conv_y1
                     elif q == 3:
-                        vendor_data_map[partner_id]['y1_q3'] += conv_y1
+                        vendor_data_map[partner_key]['y1_q3'] += conv_y1
                     elif q == 4:
-                        vendor_data_map[partner_id]['y1_q4'] += conv_y1
+                        vendor_data_map[partner_key]['y1_q4'] += conv_y1
 
                 if y2_start_str <= e_date_str <= y2_fy_end_str:
                     q = get_q_num(e_date_str, y2_cy_start)
                     if q == 1:
-                        vendor_data_map[partner_id]['y2_q1'] += conv_y2
+                        vendor_data_map[partner_key]['y2_q1'] += conv_y2
                     elif q == 2:
-                        vendor_data_map[partner_id]['y2_q2'] += conv_y2
+                        vendor_data_map[partner_key]['y2_q2'] += conv_y2
                     elif q == 3:
-                        vendor_data_map[partner_id]['y2_q3'] += conv_y2
+                        vendor_data_map[partner_key]['y2_q3'] += conv_y2
                     elif q == 4:
-                        vendor_data_map[partner_id]['y2_q4'] += conv_y2
+                        vendor_data_map[partner_key]['y2_q4'] += conv_y2
 
         vendor_rows = []
         for v_id in sorted(vendor_data_map.keys(), key=lambda k: vendor_data_map[k]['name'].lower()):

@@ -96,4 +96,28 @@
         sequence="110"
     />
 
+    <!-- ================================================================
+         5. Partner Search View — customer_type field & Vendor filter
+         ================================================================ -->
+    <record id="view_res_partner_filter_inherit_customer_type" model="ir.ui.view">
+        <field name="name">res.partner.select.inherit.customer.type</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='user_id']" position="after">
+                <field name="customer_type"/>
+            </xpath>
+            <xpath expr="//filter[@name='supplier']" position="after">
+                <filter string="Vendors" name="customer_type_vendor" domain="[('customer_type', 'in', ('vendor', 'customer_and_vendor'))]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         6. Accounting → Vendors: Add default filter for customer_type
+         ================================================================ -->
+    <record id="account.res_partner_action_supplier" model="ir.actions.act_window">
+        <field name="context">{'search_default_supplier': 1, 'search_default_customer_type_vendor': 1, 'res_partner_search_mode': 'supplier', 'default_is_company': True, 'default_supplier_rank': 1, 'default_customer_type': 'vendor'}</field>
+    </record>
+
 </odoo>
