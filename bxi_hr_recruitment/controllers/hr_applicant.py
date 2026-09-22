@@ -139,7 +139,7 @@ class ApplicantCreation(http.Controller):
     ######################## SUBMIT ##############################
 
 
-    @http.route('/api/application/submit', type='json', auth='public', methods=['POST'], csrf=False)
+    @http.route('/api/application/submit', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
     def submit_application(self, **kwargs):
         try:
             data = kwargs

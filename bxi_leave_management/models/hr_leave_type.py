@@ -10,9 +10,10 @@ class HrLeaveType(models.Model):
         help="Unique code for Time Off Type"
     )
 
-    _sql_constraints = [
-        ('time_off_code_unique', 'unique(time_off_code)', 'Time Off Code must be unique!')
-    ]
+    _time_off_code_unique = models.Constraint(
+        'unique(time_off_code)',
+        'Time Off Code must be unique!',
+    )
 
     @api.onchange('time_off_code')
     def _onchange_time_off_code(self):

@@ -97,9 +97,10 @@ class HelpdeskChannel(models.Model):
         help='Number of open tickets from this channel'
     )
 
-    _sql_constraints = [
-        ('code_unique', 'UNIQUE(code)', 'Channel code must be unique!'),
-    ]
+    _code_unique = models.Constraint(
+        'UNIQUE(code)',
+        'Channel code must be unique!',
+    )
 
     @api.depends('name')
     @api.depends('name')
