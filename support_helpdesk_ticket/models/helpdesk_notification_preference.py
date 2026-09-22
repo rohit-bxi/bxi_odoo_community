@@ -68,10 +68,10 @@ class HelpdeskNotificationPreference(models.Model):
             type_label = dict(pref._fields['notification_type'].selection).get(pref.notification_type, pref.notification_type)
             pref.display_name = _('%s - %s') % (user_name, type_label)
 
-    _sql_constraints = [
-        ('user_type_unique', 'unique(user_id, notification_type)', 
-         'A user can only have one preference per notification type.')
-    ]
+    _user_type_unique = models.Constraint(
+        'unique(user_id, notification_type)',
+        'A user can only have one preference per notification type.',
+    )
 
     @api.model
     def get_preference(self, user_id, notification_type):

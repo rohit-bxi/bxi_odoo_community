@@ -10,6 +10,7 @@ class BxiShiftEmployeeLocation(models.Model):
     location_id = fields.Many2one('hr.work.location', string='Work Location')
     exception_id = fields.Many2one('bxi.shift.exception', string='Source Exception', ondelete='cascade')
 
-    _sql_constraints = [
-        ('employee_date_unique', 'unique(employee_id, date)', 'An override for this employee and date already exists.'),
-    ]
+    _employee_date_unique = models.Constraint(
+        'unique(employee_id, date)',
+        'An override for this employee and date already exists.',
+    )
