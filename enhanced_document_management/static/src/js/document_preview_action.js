@@ -14,7 +14,6 @@ class DocumentPreview extends Component {
         this.stamp = this.props.action.params['stamp'];
         onMounted(async () => {
             this.render_template();
-            this.prevent_reload();
         });
     }
     /**
@@ -24,29 +23,9 @@ class DocumentPreview extends Component {
         if (this.el && this.el.parentElement) {
             this.el.parentElement.classList.add('document_preview_action')
         }
-        if (this.template_div.el) {
-            if (localStorage.getItem("myContent")) {
-                this.template_div.el.innerHTML = localStorage.getItem("myContent");
-            }
-            if (this.template) {
-                this.template_div.el.innerHTML = this.template;
-            }
+        if (this.template_div.el && this.template) {
+            this.template_div.el.innerHTML = this.template;
         }
-    }
-    /**
-     * Method to prevent reload and set the template contents into local storage
-     */
-    prevent_reload() {
-        var self = this
-        window.addEventListener('beforeunload', function (event) {
-            /**
-             * If method
-             * @param {any} self.template_div.el
-             */
-            if (self.template_div.el) {
-                localStorage.setItem("myContent", self.template_div.el.innerHTML);
-            }
-        });
     }
 }
 DocumentPreview.template = "DocumentPreviewTemplate";
