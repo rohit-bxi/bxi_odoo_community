@@ -15,17 +15,34 @@ class HrEmployeeLeave(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
+        records._validate_compensation_date()
+        records._check_sick_leave_policy()
         for rec in records:
             rec._check_and_send_leave_notification()
         return records
 
     def write(self, vals):
         res = super().write(vals)
+        self._validate_compensation_date()
+
+        fields_to_check = {
+            "employee_id",
+            "holiday_status_id",
+            "request_date_from",
+            "request_date_to",
+            "attachment_ids",
+            "supported_attachment_ids",
+        }
+        if fields_to_check.intersection(vals):
+            self._check_sick_leave_policy()
+
         for rec in self:
             rec._check_and_send_leave_notification()
         return res
 
     def action_confirm(self):
+        for leave in self:
+            leave._validate_compensation_date()
         res = super().action_confirm()
         for rec in self:
             rec._check_and_send_leave_notification()
@@ -358,24 +375,6 @@ class HrEmployeeLeave(models.Model):
                     )
                 )
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        records = super().create(vals_list)
-        records._validate_compensation_date()
-        return records
-
-
-    def write(self, vals):
-        result = super().write(vals)
-        self._validate_compensation_date()
-        return result
-
-    def action_confirm(self):
-        for leave in self:
-            leave._validate_compensation_date()
-        return super().action_confirm()
-
-
     sick_leave_policy = fields.Boolean(
         string="Sick Leave Policy",
         compute="_compute_sick_leave_policy",
@@ -655,37 +654,3 @@ class HrEmployeeLeave(models.Model):
                     )
                 )
 
-    # ---------------------------------------------------------
-    # Create
-    # ---------------------------------------------------------
-
-    @api.model_create_multi
-    def create(self, vals_list):
-
-        leaves = super().create(vals_list)
-
-        leaves._check_sick_leave_policy()
-
-        return leaves
-
-    # ---------------------------------------------------------
-    # Write
-    # ---------------------------------------------------------
-
-    def write(self, vals):
-
-        result = super().write(vals)
-
-        fields_to_check = {
-            "employee_id",
-            "holiday_status_id",
-            "request_date_from",
-            "request_date_to",
-            "attachment_ids",
-            "supported_attachment_ids",
-        }
-
-        if fields_to_check.intersection(vals):
-            self._check_sick_leave_policy()
-
-        return result
