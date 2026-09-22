@@ -212,7 +212,6 @@ class TravelRequest(models.Model):
         string='Total Expense Amount',
         compute='_compute_total_expense_amount',
         store=True,
-        currency_field='currency_id'
     )
 
     @api.depends('expense_line_ids.amount')

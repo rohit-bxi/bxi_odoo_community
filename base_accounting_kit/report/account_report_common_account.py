@@ -42,6 +42,13 @@ class AccountCommonAccountReport(models.TransientModel):
         [('all', 'All'), ('movement', 'With movements'),
          ('not_zero', 'With balance is not equal to 0')],
         string='Display Accounts', required=True, default='movement')
+
+    def _unlink_if_no_variant(self):
+        """This is a transient wizard, not a real account.report definition,
+        so the core 'variant' check inherited from account.report does not
+        apply and would otherwise block autovacuum from cleaning up old
+        wizard records."""
+        return
     target_move = fields.Selection([('posted', 'All Posted Entries'),
                                     ('all', 'All Entries'),
                                     ], string='Target Moves', required=True, default='posted')

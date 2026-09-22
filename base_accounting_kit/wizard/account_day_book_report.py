@@ -30,7 +30,7 @@ class DayBookWizard(models.TransientModel):
     company_id = fields.Many2one('res.company', string='Company',
                                  readonly=True,
                                  default=lambda self: self.env.company)
-    journal_ids = fields.Many2many('account.journal', string='Journals',
+    journal_ids = fields.Many2many('account.journal', string='Journal(s)',
                                    required=True,
                                    default=lambda self: self.env[
                                        'account.journal'].search([]))

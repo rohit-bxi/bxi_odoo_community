@@ -66,7 +66,7 @@ class BankBookWizard(models.TransientModel):
     journal_ids = fields.Many2many('account.journal',
                                    'account_report_bankbook_journal_rel',
                                    'account_id', 'journal_id',
-                                   string='Journals', required=True,
+                                   string='Journal(s)', required=True,
                                    default=lambda self: self.env[
                                        'account.journal'].search([]))
 

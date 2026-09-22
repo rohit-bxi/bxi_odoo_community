@@ -50,6 +50,12 @@ class FinancialReport(models.TransientModel):
         default='vertical',
         string="Format")
 
+    def _unlink_if_no_variant(self):
+        """This is a transient wizard, not a real account.report definition,
+        so the core 'variant' check inherited from account.report does not
+        apply and would otherwise block autovacuum from cleaning up old
+        wizard records."""
+        return
 
     def _build_contexts(self, data):
         result = {}

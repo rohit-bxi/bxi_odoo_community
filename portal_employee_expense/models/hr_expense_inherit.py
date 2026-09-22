@@ -32,22 +32,18 @@ class HrExpense(models.Model):
                 rec.reimbursement_date = False
 
     state = fields.Selection(
-        selection=[
-            ('draft', 'Draft'),
+        selection_add=[
             ('finance_approval', 'Finance Approval'),
-            ('approved', 'Approved'),
-            ('posted', 'Posted'),
-            ('in_payment', 'In Payment'),
-            ('paid', 'Paid'),
-            ('refused', 'Refused'),
         ],
+        ondelete={'finance_approval': 'set default'},
         string="Status",
+        compute=None,
         store=True, readonly=True,
         index=True,
         copy=False,
         default='draft',
         tracking=True,
-    )  
+    )
 
     @api.depends('account_move_id.payment_state', 'account_move_id.state', 'approval_state')
     def _compute_state(self):

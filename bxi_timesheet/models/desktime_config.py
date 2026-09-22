@@ -43,7 +43,6 @@ class BxiDesktimeConfig(models.Model):
         help='Timesheet entries created from DeskTime data will be linked to this project. '
              'If not set, timesheets will be created without a project.',
         tracking=True,
-        options="{'no_create': True, 'no_open': True, 'no_edit': True}",
     )
     company_id = fields.Many2one(
         'res.company',

@@ -50,44 +50,51 @@ class EmployeeOnboardingOffboarding(models.Model):
     # Source: hr.bxi.employee
     employee_id = fields.Many2one(
         'hr.bxi.employee',
-        string='Employee',
+        string='Onboarding Employee',
         tracking=True,
     )
 
     onboarding_department_id = fields.Many2one(
         'hr.department',
         related='employee_id.department_id',
+        string='Onboarding Department',
         readonly=True,
     )
 
     onboarding_position_id = fields.Many2one(
         'hr.job',
         related='employee_id.job_id',
+        string='Onboarding Job Position',
         readonly=True,
     )
 
     onboarding_job_title = fields.Char(
         related='employee_id.job_title',
+        string='Onboarding Job Title',
         readonly=True,
     )
 
     onboarding_employee_code = fields.Char(
         related='employee_id.employee_code',
+        string='Onboarding Employee Code',
         readonly=True,
     )
 
     onboarding_role_band = fields.Char(
         related='employee_id.role_band',
+        string='Onboarding Role Band',
         readonly=True,
     )
 
     onboarding_emp_category = fields.Char(
         related='employee_id.emp_category',
+        string='Onboarding EMP Category',
         readonly=True,
     )
 
     onboarding_emp_skill_category = fields.Char(
         related='employee_id.emp_skill_category',
+        string='Onboarding EMP Skill Category',
         readonly=True,
     )
     onboarding_manager_id = fields.Many2one(
@@ -97,7 +104,7 @@ class EmployeeOnboardingOffboarding(models.Model):
     )
     onboarding_company_id = fields.Many2one(
         related='employee_id.company_id',
-        string='Company',
+        string='Onboarding Company',
         readonly=True,
     )
     onboarding_phone_number = fields.Char(

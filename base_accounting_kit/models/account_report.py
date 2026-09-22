@@ -33,7 +33,7 @@ class AccountCommonReport(models.Model):
                                  default=lambda self: self.env.company)
     journal_ids = fields.Many2many(
         comodel_name='account.journal',
-        string='Journals',
+        string='Journal(s)',
         required=True,
         default=lambda self: self.env['account.journal'].search([('company_id', '=', self.company_id.id)]),
         domain="[('company_id', '=', company_id)]")
