@@ -1,7 +1,7 @@
 import base64
 from urllib.parse import quote
 
-from odoo import http, fields, _
+from odoo import http, fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.http import request
 
@@ -129,7 +129,7 @@ class CertificationPortal(http.Controller):
                     if not product_id or amount <= 0:
                         continue
                     if product_id not in allowed_products:
-                        raise UserError(_("Only certification expense categories can be claimed."))
+                        raise UserError(request.env._("Only certification expense categories can be claimed."))
                     lines.append(({
                         'name': description or request.env['product.product'].sudo().browse(product_id).name,
                         'product_id': product_id,
@@ -186,14 +186,14 @@ class CertificationPortal(http.Controller):
             return request.render(template, values)
         try:
             required = {
-                'certification_name': _("Certification name"), 'certifying_body': _("Certifying body"),
-                'area': _("Area of certification"), 'website': _("Website"), 'business_case': _("Business case"),
+                'certification_name': request.env._("Certification name"), 'certifying_body': request.env._("Certifying body"),
+                'area': request.env._("Area of certification"), 'website': request.env._("Website"), 'business_case': request.env._("Business case"),
             }
             missing = [label for field, label in required.items() if not (post.get(field) or '').strip()]
             if not (post.get('lob_id') or employee.lob_id):
-                missing.append(_("Line of Business"))
+                missing.append(request.env._("Line of Business"))
             if missing:
-                raise UserError(_("Please fill in: %(fields)s", fields=', '.join(missing)))
+                raise UserError(request.env._("Please fill in: %(fields)s", fields=', '.join(missing)))
             with request.env.cr.savepoint():
                 inclusion = request.env['bxi.certification.inclusion'].sudo().create({
                     'employee_id': employee.id,

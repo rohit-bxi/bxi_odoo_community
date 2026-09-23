@@ -3,7 +3,7 @@ import logging
 
 from dateutil.relativedelta import relativedelta
 
-from odoo import models, fields, api, _, Command
+from odoo import models, fields, api, Command
 from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -24,9 +24,9 @@ class BxiServiceAgreementTier(models.Model):
     def _check_amounts(self):
         for tier in self:
             if tier.months <= 0:
-                raise ValidationError(_("The service period must be at least one month."))
+                raise ValidationError(self.env._("The service period must be at least one month."))
             if tier.max_amount and tier.max_amount < tier.min_amount:
-                raise ValidationError(_("The upper amount must be greater than the lower amount."))
+                raise ValidationError(self.env._("The upper amount must be greater than the lower amount."))
 
     @api.model
     def _get_months(self, amount):
@@ -53,7 +53,7 @@ class BxiServiceAgreement(models.Model):
         required=True,
         copy=False,
         readonly=True,
-        default=lambda self: _('New'),
+        default=lambda self: self.env._('New'),
     )
     employee_id = fields.Many2one('hr.employee', string='Employee', required=True, tracking=True)
     company_id = fields.Many2one(
@@ -114,8 +114,8 @@ class BxiServiceAgreement(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get('name', _('New')) == _('New'):
-                vals['name'] = self.env['ir.sequence'].next_by_code('bxi.service.agreement') or _('New')
+            if vals.get('name', self.env._('New')) == self.env._('New'):
+                vals['name'] = self.env['ir.sequence'].next_by_code('bxi.service.agreement') or self.env._('New')
         return super().create(vals_list)
 
     # ── Signature ────────────────────────────────────────────────────────
@@ -124,18 +124,18 @@ class BxiServiceAgreement(models.Model):
         employee = self.employee_id.sudo()
         partner = employee.work_contact_id or employee.user_id.partner_id
         if not partner or not partner.email:
-            raise UserError(_("%(employee)s has no work email to receive the agreement.", employee=employee.name))
+            raise UserError(self.env._("%(employee)s has no work email to receive the agreement.", employee=employee.name))
         return partner
 
     def action_send_for_signature(self):
         for rec in self:
             if rec.state not in ('draft', 'sent'):
-                raise UserError(_("Only draft agreements can be sent for signature."))
+                raise UserError(self.env._("Only draft agreements can be sent for signature."))
             partner = rec._get_signer_partner()
             report = self.env.ref('bxi_certification_reimbursement.action_report_service_agreement')
             pdf, report_type = self.env['ir.actions.report'].sudo()._render_qweb_pdf(report, rec.ids)
             if report_type != 'pdf':
-                raise UserError(_("The service agreement could not be rendered as a PDF."))
+                raise UserError(self.env._("The service agreement could not be rendered as a PDF."))
             SignTemplate = self.env['sign.template'].sudo()
             template_info = SignTemplate.create_from_attachment_data([{
                 'name': f"{rec.name}.pdf",
@@ -163,9 +163,9 @@ class BxiServiceAgreement(models.Model):
             ])
             sign_request = self.env['sign.request'].sudo().create({
                 'template_id': template.id,
-                'reference': _("Service Agreement %(name)s", name=rec.name),
+                'reference': self.env._("Service Agreement %(name)s", name=rec.name),
                 'reference_doc': f"{rec._name},{rec.id}",
-                'subject': _("Certification Service Agreement to sign"),
+                'subject': self.env._("Certification Service Agreement to sign"),
                 'request_item_ids': [Command.create({
                     'partner_id': partner.id,
                     'role_id': role.id,
@@ -190,7 +190,7 @@ class BxiServiceAgreement(models.Model):
                 # Resolve lazy translated messages here, where the env gives the language.
                 message = str(error)
                 _logger.warning("Could not send service agreement %s for signature: %s", rec.name, message)
-                rec.message_post(body=_(
+                rec.message_post(body=self.env._(
                     "The agreement could not be sent for signature automatically (%(error)s). "
                     "Please send it manually or record a signed paper copy.",
                     error=message,
@@ -200,14 +200,14 @@ class BxiServiceAgreement(models.Model):
                     rec.activity_schedule(
                         'mail.mail_activity_data_todo',
                         user_id=user.id,
-                        summary=_("Send service agreement %(name)s", name=rec.name),
+                        summary=self.env._("Send service agreement %(name)s", name=rec.name),
                     )
 
     def action_mark_signed(self):
         """Record a signed (paper) copy without the electronic signature."""
         for rec in self:
             if rec.state not in ('draft', 'sent'):
-                raise UserError(_("Only agreements waiting for signature can be marked as signed."))
+                raise UserError(self.env._("Only agreements waiting for signature can be marked as signed."))
             if rec.sign_request_id.state in ('sent', 'shared'):
                 rec.sign_request_id.sudo().cancel()
         self._on_signed()
@@ -221,19 +221,19 @@ class BxiServiceAgreement(models.Model):
     def action_mark_recovered(self):
         for rec in self:
             if rec.state != 'active':
-                raise UserError(_("Only active agreements can be recovered."))
+                raise UserError(self.env._("Only active agreements can be recovered."))
         self.write({'state': 'recovered'})
 
     def action_waive(self):
         for rec in self:
             if rec.state != 'active':
-                raise UserError(_("Only active agreements can be waived."))
+                raise UserError(self.env._("Only active agreements can be waived."))
         self.write({'state': 'waived'})
 
     def action_cancel(self):
         for rec in self:
             if rec.state not in ('draft', 'sent'):
-                raise UserError(_("Only agreements not yet signed can be cancelled."))
+                raise UserError(self.env._("Only agreements not yet signed can be cancelled."))
             if rec.sign_request_id.state in ('sent', 'shared'):
                 rec.sign_request_id.sudo().cancel()
         self.write({'state': 'cancelled'})

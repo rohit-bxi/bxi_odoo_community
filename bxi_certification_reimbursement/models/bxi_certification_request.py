@@ -1,4 +1,4 @@
-from odoo import models, fields, api, _
+from odoo import models, fields, api
 from odoo.exceptions import AccessError, UserError, ValidationError
 
 # States in which the request is still open, i.e. not yet reimbursed or closed.
@@ -34,7 +34,7 @@ class BxiCertificationRequest(models.Model):
         required=True,
         copy=False,
         readonly=True,
-        default=lambda self: _('New'),
+        default=lambda self: self.env._('New'),
     )
     state = fields.Selection(
         [
@@ -228,21 +228,21 @@ class BxiCertificationRequest(models.Model):
     def _check_certification(self):
         for rec in self:
             if not rec.certification_id and not rec.certification_name:
-                raise ValidationError(_("Select an approved certification or enter the certification name."))
+                raise ValidationError(self.env._("Select an approved certification or enter the certification name."))
 
     @api.constrains('exam_clear_date')
     def _check_exam_clear_date(self):
         today = fields.Date.context_today(self)
         for rec in self:
             if rec.exam_clear_date and rec.exam_clear_date > today:
-                raise ValidationError(_("The exam clearing date cannot be in the future."))
+                raise ValidationError(self.env._("The exam clearing date cannot be in the future."))
 
     # ── CRUD ─────────────────────────────────────────────────────────────
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get('name', _('New')) == _('New'):
-                vals['name'] = self.env['ir.sequence'].next_by_code('bxi.certification.request') or _('New')
+            if vals.get('name', self.env._('New')) == self.env._('New'):
+                vals['name'] = self.env['ir.sequence'].next_by_code('bxi.certification.request') or self.env._('New')
         return super().create(vals_list)
 
     def write(self, vals):
@@ -251,18 +251,18 @@ class BxiCertificationRequest(models.Model):
             academy_edit = protected == {'udemy_max_amount'} and all(
                 rec.state == 'academy_approval' and rec._is_academy_user() for rec in self)
             if protected and not academy_edit:
-                raise AccessError(_("These fields are set by the approval workflow: %(fields)s",
+                raise AccessError(self.env._("These fields are set by the approval workflow: %(fields)s",
                                     fields=', '.join(sorted(protected))))
             if not protected and any(rec.state not in ('draft', 'approved') for rec in self):
-                raise UserError(_("The request can no longer be modified."))
+                raise UserError(self.env._("The request can no longer be modified."))
             if PRE_APPROVAL_FIELDS & vals.keys() and any(rec.state != 'draft' for rec in self):
-                raise UserError(_("The certification details were approved by your manager and cannot be changed."))
+                raise UserError(self.env._("The certification details were approved by your manager and cannot be changed."))
         return super().write(vals)
 
     @api.ondelete(at_uninstall=False)
     def _unlink_except_draft(self):
         if any(rec.state not in ('draft', 'cancelled') for rec in self):
-            raise UserError(_("Only draft or cancelled certification requests can be deleted."))
+            raise UserError(self.env._("Only draft or cancelled certification requests can be deleted."))
 
     # ── Helpers ──────────────────────────────────────────────────────────
     @api.model
@@ -294,12 +294,12 @@ class BxiCertificationRequest(models.Model):
             employee = rec.employee_id.sudo()
             employee.invalidate_recordset(['has_active_resignation'])
             if not employee.is_india_payroll:
-                raise UserError(_(
+                raise UserError(self.env._(
                     "%(employee)s is not on the India payroll; the Certification Policy does not apply.",
                     employee=employee.name,
                 ))
             if employee.has_active_resignation:
-                raise UserError(_(
+                raise UserError(self.env._(
                     "%(employee)s has submitted a resignation and is not eligible for certification "
                     "reimbursement.",
                     employee=employee.name,
@@ -332,16 +332,16 @@ class BxiCertificationRequest(models.Model):
     def action_submit(self):
         for rec in self:
             if rec.state != 'draft':
-                raise UserError(_("Only draft requests can be submitted."))
+                raise UserError(self.env._("Only draft requests can be submitted."))
             rec._check_employee_eligibility()
             if not rec.cost_centre_ack:
-                raise UserError(_(
+                raise UserError(self.env._(
                     "Please confirm that you have informed your Reporting Manager that the cost "
                     "will be charged to the Band 4 head's cost centre."
                 ))
             employee = rec.employee_id.sudo()
             if not employee.parent_id:
-                raise UserError(_("%(employee)s has no Reporting Manager.", employee=employee.name))
+                raise UserError(self.env._("%(employee)s has no Reporting Manager.", employee=employee.name))
             rec.sudo().write({
                 'state': 'rm_approval',
                 'manager_id': employee.parent_id.id,
@@ -349,23 +349,23 @@ class BxiCertificationRequest(models.Model):
             })
             rec._notify_user(
                 employee.parent_id.user_id,
-                _("Certification pre-approval: %(employee)s", employee=employee.name),
+                self.env._("Certification pre-approval: %(employee)s", employee=employee.name),
                 rec._get_certification_label(),
             )
 
     def action_rm_approve(self):
         for rec in self:
             if rec.state != 'rm_approval' or not rec.can_approve:
-                raise UserError(_("You are not allowed to approve this request."))
+                raise UserError(self.env._("You are not allowed to approve this request."))
             next_state = 'academy_approval' if rec.is_udemy else 'approved'
             rec.sudo().write({'state': next_state, 'rm_approved_date': fields.Datetime.now()})
-            rec._close_activities(_("Approved"))
+            rec._close_activities(self.env._("Approved"))
             if next_state == 'academy_approval':
                 lob = rec.lob_id.sudo()
                 for user in (lob.academy_head_id.user_id | lob.academy_user_ids):
-                    rec._notify_user(user, _("Udemy course approval: %(employee)s", employee=rec.sudo().employee_id.name))
+                    rec._notify_user(user, self.env._("Udemy course approval: %(employee)s", employee=rec.sudo().employee_id.name))
             else:
-                rec._notify_employee(_(
+                rec._notify_employee(self.env._(
                     "Your certification request has been approved. You may take the exam at your own "
                     "expense and claim the reimbursement after clearing it."
                 ))
@@ -373,12 +373,12 @@ class BxiCertificationRequest(models.Model):
     def action_academy_approve(self):
         for rec in self:
             if rec.state != 'academy_approval' or not rec.can_approve:
-                raise UserError(_("You are not allowed to approve this request."))
+                raise UserError(self.env._("You are not allowed to approve this request."))
             if rec.udemy_max_amount <= 0:
-                raise UserError(_("Enter the maximum reimbursable amount approved for this Udemy course."))
+                raise UserError(self.env._("Enter the maximum reimbursable amount approved for this Udemy course."))
             rec.sudo().state = 'approved'
-            rec._close_activities(_("Approved"))
-            rec._notify_employee(_(
+            rec._close_activities(self.env._("Approved"))
+            rec._notify_employee(self.env._(
                 "Your Udemy course has been approved by the academy. The maximum reimbursable "
                 "amount is %(amount)s.",
                 amount=rec.udemy_max_amount,
@@ -387,7 +387,7 @@ class BxiCertificationRequest(models.Model):
     def action_cancel(self):
         for rec in self:
             if rec.state not in ('draft', 'rm_approval', 'academy_approval', 'approved'):
-                raise UserError(_("Only requests that have not been claimed yet can be cancelled."))
+                raise UserError(self.env._("Only requests that have not been claimed yet can be cancelled."))
             rec.sudo().expense_ids.filtered(lambda exp: exp.state == 'draft').unlink()
             rec.sudo().state = 'cancelled'
             rec.sudo().activity_unlink(['mail.mail_activity_data_todo'])
@@ -395,7 +395,7 @@ class BxiCertificationRequest(models.Model):
     def action_reset_to_draft(self):
         for rec in self:
             if rec.state not in ('refused', 'cancelled'):
-                raise UserError(_("Only refused or cancelled requests can be reset to draft."))
+                raise UserError(self.env._("Only refused or cancelled requests can be reset to draft."))
             rec.approval_line_ids.sudo().unlink()
             rec.sudo().expense_ids.filtered(lambda exp: exp.state in ('refused', 'draft')).write({
                 'state': 'draft', 'approval_state': False,
@@ -406,7 +406,7 @@ class BxiCertificationRequest(models.Model):
         self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
-            'name': _('Refuse Certification Request'),
+            'name': self.env._('Refuse Certification Request'),
             'res_model': 'bxi.certification.refuse.wizard',
             'view_mode': 'form',
             'target': 'new',
@@ -422,32 +422,32 @@ class BxiCertificationRequest(models.Model):
         self.ensure_one()
         self._check_employee_eligibility()
         if not self.exam_clear_date:
-            raise UserError(_("Enter the date on which you cleared the certification exam."))
+            raise UserError(self.env._("Enter the date on which you cleared the certification exam."))
         if not self.attempt_passed:
-            raise UserError(_("Reimbursement is only applicable for the successful attempt leading to certification."))
+            raise UserError(self.env._("Reimbursement is only applicable for the successful attempt leading to certification."))
         if not self.certificate_attachment_ids:
-            raise UserError(_("Attach the certificate or the result proof."))
+            raise UserError(self.env._("Attach the certificate or the result proof."))
         expenses = self.sudo().expense_ids
         if not expenses:
-            raise UserError(_("Add the claim lines (exam fee, DD charges, courier charges)."))
+            raise UserError(self.env._("Add the claim lines (exam fee, DD charges, courier charges)."))
         for expense in expenses:
             if not expense.product_id.is_certification_expense:
-                raise UserError(_(
+                raise UserError(self.env._(
                     "%(line)s: only certification expense categories (exam fee, DD charges, courier "
                     "charges) are reimbursable.",
                     line=expense.name,
                 ))
             if expense.employee_id != self.employee_id:
-                raise UserError(_("All claim lines must belong to %(employee)s.", employee=self.employee_id.name))
+                raise UserError(self.env._("All claim lines must belong to %(employee)s.", employee=self.employee_id.name))
             if expense.state != 'draft':
-                raise UserError(_("%(line)s has already been submitted.", line=expense.name))
+                raise UserError(self.env._("%(line)s has already been submitted.", line=expense.name))
         if self.claim_total <= 0:
-            raise UserError(_("The claim total must be greater than zero."))
+            raise UserError(self.env._("The claim total must be greater than zero."))
         if self.is_udemy:
             if not self.pre_approval_attachment_ids:
-                raise UserError(_("Attach the approval email from the capability/training academy."))
+                raise UserError(self.env._("Attach the approval email from the capability/training academy."))
             if self.claim_total > self.udemy_max_amount:
-                raise UserError(_(
+                raise UserError(self.env._(
                     "The claim (%(total)s) exceeds the maximum amount approved by the academy (%(max)s).",
                     total=self.claim_total, max=self.udemy_max_amount,
                 ))
@@ -463,7 +463,7 @@ class BxiCertificationRequest(models.Model):
             if not approver:
                 return
             if not approver.user_id:
-                raise UserError(_(
+                raise UserError(self.env._(
                     "%(approver)s (%(role)s) has no user account and cannot approve the claim.",
                     approver=approver.name, role=role_labels[role],
                 ))
@@ -475,7 +475,7 @@ class BxiCertificationRequest(models.Model):
         if self.is_late_claim:
             skip_manager = employee._get_skip_manager()
             if not skip_manager:
-                raise UserError(_("%(employee)s has no Reporting Manager.", employee=employee.name))
+                raise UserError(self.env._("%(employee)s has no Reporting Manager.", employee=employee.name))
             add('skip_manager', skip_manager)
         # Approvals run from the junior to the senior band head.
         if self.claim_total > self._get_policy_param('band4_limit', 5000):
@@ -488,7 +488,7 @@ class BxiCertificationRequest(models.Model):
         if not self.is_on_approved_list:
             academy_head = self.lob_id.sudo().academy_head_id
             if not academy_head:
-                raise UserError(_(
+                raise UserError(self.env._(
                     "No LoB Academy head is configured for %(employee)s's Line of Business.",
                     employee=employee.name,
                 ))
@@ -498,13 +498,13 @@ class BxiCertificationRequest(models.Model):
     def action_submit_claim(self):
         for rec in self:
             if rec.state != 'approved':
-                raise UserError(_("A claim can only be raised on a pre-approved certification request."))
+                raise UserError(self.env._("A claim can only be raised on a pre-approved certification request."))
             rec._check_claim_is_valid()
             employee = rec.employee_id.sudo()
             band4_head = employee._get_band_head(4)
             cost_center = band4_head.cost_center_id
             if not cost_center:
-                raise UserError(_(
+                raise UserError(self.env._(
                     "No cost centre is set on the Band 4 head %(head)s. Please ask HR to configure it.",
                     head=band4_head.name,
                 ))
@@ -531,8 +531,8 @@ class BxiCertificationRequest(models.Model):
         if line:
             self._notify_user(
                 line.approver_id.user_id,
-                _("Certification claim approval: %(employee)s", employee=self.sudo().employee_id.name),
-                _("%(cert)s - %(amount)s %(currency)s",
+                self.env._("Certification claim approval: %(employee)s", employee=self.sudo().employee_id.name),
+                self.env._("%(cert)s - %(amount)s %(currency)s",
                   cert=self._get_certification_label(), amount=self.claim_total,
                   currency=self.currency_id.name),
             )
@@ -540,7 +540,7 @@ class BxiCertificationRequest(models.Model):
     def action_approve_claim(self):
         for rec in self:
             if rec.state != 'claim_approval' or not rec.can_approve:
-                raise UserError(_("You are not allowed to approve this claim."))
+                raise UserError(self.env._("You are not allowed to approve this claim."))
             line = rec._get_current_approval_line()
             line.sudo().write({
                 'state': 'approved',
@@ -549,7 +549,7 @@ class BxiCertificationRequest(models.Model):
             })
             rec.sudo().activity_ids.filtered(
                 lambda act: act.user_id == line.approver_id.user_id
-            ).action_feedback(feedback=_("Approved"))
+            ).action_feedback(feedback=self.env._("Approved"))
             if rec._get_current_approval_line():
                 rec._notify_current_approver()
             else:
@@ -571,7 +571,7 @@ class BxiCertificationRequest(models.Model):
         })
         self.sudo().write({'state': 'agreement_pending', 'service_agreement_id': agreement.id})
         agreement._try_send_for_signature()
-        self._notify_employee(_(
+        self._notify_employee(self.env._(
             "Your claim has been approved. As the amount is %(amount)s or above, please sign the "
             "service agreement %(agreement)s to proceed to Finance.",
             amount=self.env['bxi.service.agreement.tier']._get_min_amount(),
@@ -591,11 +591,11 @@ class BxiCertificationRequest(models.Model):
         for rec in self.sudo().filtered(lambda r: r.state == 'finance_approval'):
             states = set(rec.expense_ids.mapped('state'))
             if 'refused' in states:
-                rec.sudo().write({'state': 'refused', 'refuse_reason': _("Refused by Finance.")})
-                rec._notify_employee(_("Your certification claim has been refused by Finance."))
+                rec.sudo().write({'state': 'refused', 'refuse_reason': self.env._("Refused by Finance.")})
+                rec._notify_employee(self.env._("Your certification claim has been refused by Finance."))
             elif states and states <= set(PAID_EXPENSE_STATES):
                 rec.sudo().state = 'reimbursed'
-                rec._notify_employee(_("Your certification claim has been approved by Finance."))
+                rec._notify_employee(self.env._("Your certification claim has been approved by Finance."))
 
     def _action_refuse(self, reason):
         """Refuse the request or claim. Callers check the user's rights."""
@@ -611,7 +611,7 @@ class BxiCertificationRequest(models.Model):
                 rec.service_agreement_id.sudo().action_cancel()
             rec.sudo().write({'state': 'refused', 'refuse_reason': reason})
             rec.sudo().activity_unlink(['mail.mail_activity_data_todo'])
-            rec._notify_employee(_("Your certification request has been refused: %(reason)s", reason=reason))
+            rec._notify_employee(self.env._("Your certification request has been refused: %(reason)s", reason=reason))
 
     def _check_can_refuse(self):
         is_finance = self.env.user.has_group('hr_expense.group_hr_expense_manager')
@@ -621,15 +621,15 @@ class BxiCertificationRequest(models.Model):
             if rec.state in ('agreement_pending', 'finance_approval') and (
                     is_finance or self.env.user.has_group('bxi_certification_reimbursement.group_certification_manager')):
                 continue
-            raise UserError(_("You are not allowed to refuse %(request)s.", request=rec.name))
+            raise UserError(self.env._("You are not allowed to refuse %(request)s.", request=rec.name))
 
     def _refuse_for_resignation(self):
         """Resigned employees are not eligible; refuse everything not yet disbursed."""
         for rec in self.filtered(lambda r: r.state in OPEN_STATES):
             posted = rec.expense_ids.filtered('account_move_id')
-            rec._action_refuse(_("Ineligible: resignation submitted before disbursement."))
+            rec._action_refuse(self.env._("Ineligible: resignation submitted before disbursement."))
             if posted:
-                rec.sudo().message_post(body=_(
+                rec.sudo().message_post(body=self.env._(
                     "Some claim lines already have journal entries (%(moves)s). Finance must reverse "
                     "them if the payment has not been disbursed.",
                     moves=', '.join(posted.account_move_id.mapped('name')),
@@ -640,7 +640,7 @@ class BxiCertificationRequest(models.Model):
         self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
-            'name': _('Claim Lines'),
+            'name': self.env._('Claim Lines'),
             'res_model': 'hr.expense',
             'view_mode': 'list,form',
             'domain': [('certification_request_id', '=', self.id)],

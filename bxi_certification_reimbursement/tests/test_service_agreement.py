@@ -5,6 +5,7 @@ from dateutil.relativedelta import relativedelta
 
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import tagged
+from odoo.tools import mute_logger
 
 from .common import CertificationCommon
 
@@ -89,6 +90,7 @@ class TestServiceAgreement(CertificationCommon):
         with self.assertRaises(UserError):
             agreement.action_mark_signed()
 
+    @mute_logger('odoo.addons.bxi_certification_reimbursement.models.bxi_service_agreement')
     def test_failed_sending_is_reported(self):
         # The agreement cannot be rendered as a PDF: sending fails and HR is asked to act.
         Report = type(self.env['ir.actions.report'])

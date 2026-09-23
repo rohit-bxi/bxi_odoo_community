@@ -1,4 +1,4 @@
-from odoo import models, fields, api, _
+from odoo import models, fields, api
 from odoo.exceptions import UserError
 
 
@@ -14,7 +14,7 @@ class BxiCertificationInclusion(models.Model):
         required=True,
         copy=False,
         readonly=True,
-        default=lambda self: _('New'),
+        default=lambda self: self.env._('New'),
     )
     employee_id = fields.Many2one(
         'hr.employee',
@@ -80,8 +80,8 @@ class BxiCertificationInclusion(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get('name', _('New')) == _('New'):
-                vals['name'] = self.env['ir.sequence'].next_by_code('bxi.certification.inclusion') or _('New')
+            if vals.get('name', self.env._('New')) == self.env._('New'):
+                vals['name'] = self.env['ir.sequence'].next_by_code('bxi.certification.inclusion') or self.env._('New')
         return super().create(vals_list)
 
     def _get_deadline(self):
@@ -108,7 +108,7 @@ class BxiCertificationInclusion(models.Model):
     def action_submit(self):
         for rec in self:
             if rec.state != 'draft':
-                raise UserError(_("Only draft requests can be submitted."))
+                raise UserError(self.env._("Only draft requests can be submitted."))
             rec.sudo().write({
                 'state': 'submitted',
                 'submit_date': fields.Date.context_today(rec),
@@ -120,13 +120,13 @@ class BxiCertificationInclusion(models.Model):
                     'mail.mail_activity_data_todo',
                     date_deadline=rec.deadline_date,
                     user_id=user.id,
-                    summary=_("Certification inclusion request: %(name)s", name=rec.certification_name),
+                    summary=self.env._("Certification inclusion request: %(name)s", name=rec.certification_name),
                 )
 
     def action_approve(self):
         for rec in self:
             if rec.state != 'submitted' or not rec._is_academy_user():
-                raise UserError(_("You are not allowed to approve this request."))
+                raise UserError(self.env._("You are not allowed to approve this request."))
             certification = self.env['bxi.certification'].sudo().create({
                 'name': rec.certification_name,
                 'version_exam_no': rec.version_exam_no,
@@ -140,7 +140,7 @@ class BxiCertificationInclusion(models.Model):
                 'company_id': rec.company_id.id,
             })
             rec.sudo().write({'state': 'approved', 'certification_id': certification.id})
-            rec._close_and_notify(_(
+            rec._close_and_notify(self.env._(
                 "%(name)s has been included in the approved certification list. You may proceed with "
                 "the certification as per the process.",
                 name=rec.certification_name,
@@ -149,11 +149,11 @@ class BxiCertificationInclusion(models.Model):
     def action_reject(self):
         for rec in self:
             if rec.state != 'submitted' or not rec._is_academy_user():
-                raise UserError(_("You are not allowed to reject this request."))
+                raise UserError(self.env._("You are not allowed to reject this request."))
             if not rec.response:
-                raise UserError(_("Enter the academy response explaining why it is not included."))
+                raise UserError(self.env._("Enter the academy response explaining why it is not included."))
             rec.sudo().state = 'rejected'
-            rec._close_and_notify(_(
+            rec._close_and_notify(self.env._(
                 "%(name)s has not been included in the approved list: %(response)s. Please reach out to "
                 "your LoB Academy for further clarifications.",
                 name=rec.certification_name, response=rec.response,
@@ -172,4 +172,4 @@ class BxiCertificationInclusion(models.Model):
     def _cron_remind_overdue(self):
         today = fields.Date.context_today(self)
         for rec in self.search([('state', '=', 'submitted'), ('deadline_date', '<', today)]):
-            rec.message_post(body=_("This inclusion request is past its response date (%(date)s).", date=rec.deadline_date))
+            rec.message_post(body=self.env._("This inclusion request is past its response date (%(date)s).", date=rec.deadline_date))

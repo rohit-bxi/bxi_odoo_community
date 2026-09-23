@@ -1,4 +1,4 @@
-from odoo import models, fields, api, _
+from odoo import models, fields, api
 from odoo.exceptions import ValidationError
 
 
@@ -60,7 +60,7 @@ class BxiCertification(models.Model):
                 ('company_id', '=', rec.company_id.id),
             ])
             if duplicate:
-                raise ValidationError(_("%(name)s already exists in the approved list.", name=rec.name))
+                raise ValidationError(self.env._("%(name)s already exists in the approved list.", name=rec.name))
 
     @api.depends('name', 'code', 'version_exam_no')
     def _compute_display_name(self):

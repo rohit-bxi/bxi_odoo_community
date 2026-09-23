@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from odoo import models, fields, api, _
+from odoo import models, fields, api
 from odoo.exceptions import AccessError, UserError
 
 
@@ -16,7 +16,7 @@ class BxiCertificationVoucher(models.Model):
         required=True,
         copy=False,
         readonly=True,
-        default=lambda self: _('New'),
+        default=lambda self: self.env._('New'),
     )
     employee_id = fields.Many2one('hr.employee', string='Employee', required=True, tracking=True)
     company_id = fields.Many2one(
@@ -66,26 +66,26 @@ class BxiCertificationVoucher(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get('name', _('New')) == _('New'):
-                vals['name'] = self.env['ir.sequence'].next_by_code('bxi.certification.voucher') or _('New')
+            if vals.get('name', self.env._('New')) == self.env._('New'):
+                vals['name'] = self.env['ir.sequence'].next_by_code('bxi.certification.voucher') or self.env._('New')
         return super().create(vals_list)
 
     def write(self, vals):
         if not self.env.su and not self.env.user.has_group('bxi_certification_reimbursement.group_certification_academy'):
             if vals.keys() - {'exam_clear_date', 'certificate_attachment_ids'}:
-                raise AccessError(_("Only the LoB Academy can change voucher details."))
+                raise AccessError(self.env._("Only the LoB Academy can change voucher details."))
         return super().write(vals)
 
     def action_issue(self):
         for rec in self:
             if rec.state != 'draft':
-                raise UserError(_("Only draft vouchers can be issued."))
+                raise UserError(self.env._("Only draft vouchers can be issued."))
             if rec.deadline < rec.issue_date:
-                raise UserError(_("The deadline cannot be before the issue date."))
+                raise UserError(self.env._("The deadline cannot be before the issue date."))
             rec.state = 'issued'
             partner = rec.employee_id.sudo().work_contact_id
             rec.message_post(
-                body=_("A voucher for %(cert)s has been issued to you. Complete the certification by %(date)s.",
+                body=self.env._("A voucher for %(cert)s has been issued to you. Complete the certification by %(date)s.",
                        cert=rec.certification_id.display_name, date=rec.deadline),
                 partner_ids=partner.ids,
                 subtype_xmlid='mail.mt_comment',
@@ -94,9 +94,9 @@ class BxiCertificationVoucher(models.Model):
     def action_mark_used(self):
         for rec in self:
             if rec.state not in ('issued', 'expired'):
-                raise UserError(_("Only issued vouchers can be marked as used."))
+                raise UserError(self.env._("Only issued vouchers can be marked as used."))
             if not rec.exam_clear_date or not rec.certificate_attachment_ids:
-                raise UserError(_("Enter the exam clearing date and attach the certificate."))
+                raise UserError(self.env._("Enter the exam clearing date and attach the certificate."))
             vals = {'state': 'used'}
             months = self.env['bxi.service.agreement.tier']._get_months(rec.cost)
             if months and not rec.service_agreement_id:
@@ -121,7 +121,7 @@ class BxiCertificationVoucher(models.Model):
     def action_cancel(self):
         for rec in self:
             if rec.state not in ('draft', 'issued'):
-                raise UserError(_("Only draft or issued vouchers can be cancelled."))
+                raise UserError(self.env._("Only draft or issued vouchers can be cancelled."))
         self.write({'state': 'cancelled'})
 
     @api.model
@@ -131,19 +131,19 @@ class BxiCertificationVoucher(models.Model):
         expired.write({'state': 'expired'})
         managers = self.env.ref('bxi_certification_reimbursement.group_certification_manager').user_ids
         for voucher in expired:
-            voucher.message_post(body=_("The certification was not completed by the deadline; the voucher cost must be recovered."))
+            voucher.message_post(body=self.env._("The certification was not completed by the deadline; the voucher cost must be recovered."))
             for user in managers[:5]:
                 voucher.activity_schedule(
                     'mail.mail_activity_data_todo',
                     user_id=user.id,
-                    summary=_("Recover voucher cost from %(employee)s", employee=voucher.employee_id.name),
+                    summary=self.env._("Recover voucher cost from %(employee)s", employee=voucher.employee_id.name),
                 )
         days = int(self.env['bxi.certification.request']._get_policy_param('voucher_reminder_days', 7))
         reminder_date = today + timedelta(days=days)
         for voucher in self.search([('state', '=', 'issued'), ('deadline', '=', reminder_date)]):
             partner = voucher.employee_id.sudo().work_contact_id
             voucher.message_post(
-                body=_("Reminder: complete %(cert)s by %(date)s, otherwise the voucher cost will be recovered.",
+                body=self.env._("Reminder: complete %(cert)s by %(date)s, otherwise the voucher cost will be recovered.",
                        cert=voucher.certification_id.display_name, date=voucher.deadline),
                 partner_ids=partner.ids,
                 subtype_xmlid='mail.mt_comment',

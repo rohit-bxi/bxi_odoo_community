@@ -1,6 +1,6 @@
 import re
 
-from odoo import models, fields, api, _
+from odoo import models, fields, api
 from odoo.exceptions import UserError
 
 
@@ -100,7 +100,7 @@ class HrEmployee(models.Model):
             manager = manager.parent_id
         head = fallback or (top if top and not top.is_band_set else self.env['hr.employee'])
         if not head and raise_if_not_found:
-            raise UserError(_(
+            raise UserError(self.env._(
                 "No Band %(level)s head found in the reporting line of %(employee)s. "
                 "Please check the managers and role bands.",
                 level=level, employee=employee.name,
