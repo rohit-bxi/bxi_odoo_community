@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_bxi_line_of_business_list" model="ir.ui.view">
+        <field name="name">bxi.line.of.business.list</field>
+        <field name="model">bxi.line.of.business</field>
+        <field name="arch" type="xml">
+            <list string="Lines of Business">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="academy_head_id"/>
+                <field name="is_digital_business"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_line_of_business_form" model="ir.ui.view">
+        <field name="name">bxi.line.of.business.form</field>
+        <field name="model">bxi.line.of.business</field>
+        <field name="arch" type="xml">
+            <form string="Line of Business">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="is_digital_business"/>
+                        </group>
+                        <group>
+                            <field name="academy_head_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Academy Team">
+                        <field name="academy_user_ids" widget="many2many_tags" nolabel="1" colspan="2"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_bxi_line_of_business" model="ir.actions.act_window">
+        <field name="name">Lines of Business</field>
+        <field name="res_model">bxi.line.of.business</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

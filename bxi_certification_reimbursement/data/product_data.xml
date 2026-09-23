@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="product_certification_exam_fee" model="product.product">
+        <field name="name">Certification - Exam Fee</field>
+        <field name="description">Technical / Domain / Process certification exam or re-certification fee.</field>
+        <field name="standard_price">0.0</field>
+        <field name="type">service</field>
+        <field name="default_code">CERT-FEE</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="is_certification_expense" eval="True"/>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
+    </record>
+
+    <record id="product_certification_dd_charges" model="product.product">
+        <field name="name">Certification - DD Charges</field>
+        <field name="description">Demand draft charges paid for the certification fee.</field>
+        <field name="standard_price">0.0</field>
+        <field name="type">service</field>
+        <field name="default_code">CERT-DD</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="is_certification_expense" eval="True"/>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
+    </record>
+
+    <record id="product_certification_courier" model="product.product">
+        <field name="name">Certification - Courier Charges</field>
+        <field name="description">Courier charges for sending the certification fee payment.</field>
+        <field name="standard_price">0.0</field>
+        <field name="type">service</field>
+        <field name="default_code">CERT-COURIER</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="is_certification_expense" eval="True"/>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
+    </record>
+
+</odoo>

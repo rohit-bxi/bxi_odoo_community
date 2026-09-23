@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Claims raised later than this many days after clearing the exam
+         are routed to the Reporting Manager's Reporting Manager. -->
+    <record id="param_claim_days_limit" model="ir.config_parameter">
+        <field name="key">bxi_certification_reimbursement.claim_days_limit</field>
+        <field name="value">90</field>
+    </record>
+
+    <!-- Claims above this amount (company currency) also need the Band 2 head. -->
+    <record id="param_band4_limit" model="ir.config_parameter">
+        <field name="key">bxi_certification_reimbursement.band4_limit</field>
+        <field name="value">5000</field>
+    </record>
+
+    <!-- Vouchers: remind the employee this many days before the deadline. -->
+    <record id="param_voucher_reminder_days" model="ir.config_parameter">
+        <field name="key">bxi_certification_reimbursement.voucher_reminder_days</field>
+        <field name="value">7</field>
+    </record>
+
+    <!-- Inclusion requests must be answered within this many working days. -->
+    <record id="param_inclusion_sla_days" model="ir.config_parameter">
+        <field name="key">bxi_certification_reimbursement.inclusion_sla_days</field>
+        <field name="value">10</field>
+    </record>
+
+</odoo>

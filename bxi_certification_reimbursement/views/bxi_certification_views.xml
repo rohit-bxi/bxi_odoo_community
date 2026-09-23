@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_bxi_certification_list" model="ir.ui.view">
+        <field name="name">bxi.certification.list</field>
+        <field name="model">bxi.certification</field>
+        <field name="arch" type="xml">
+            <list string="Approved Certifications">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="version_exam_no"/>
+                <field name="certifying_body"/>
+                <field name="area" optional="show"/>
+                <field name="lob_id" optional="show"/>
+                <field name="cost"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="is_udemy" optional="hide"/>
+                <field name="website" widget="url" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_certification_form" model="ir.ui.view">
+        <field name="name">bxi.certification.form</field>
+        <field name="model">bxi.certification</field>
+        <field name="arch" type="xml">
+            <form string="Certification">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. AWS Certified Solutions Architect - Associate"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="version_exam_no"/>
+                            <field name="certifying_body"/>
+                            <field name="area"/>
+                            <field name="website" widget="url"/>
+                        </group>
+                        <group>
+                            <field name="lob_id"/>
+                            <field name="cost"/>
+                            <field name="currency_id" groups="base.group_multi_currency"/>
+                            <field name="is_udemy"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Information">
+                        <field name="description" nolabel="1" colspan="2"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_certification_search" model="ir.ui.view">
+        <field name="name">bxi.certification.search</field>
+        <field name="model">bxi.certification</field>
+        <field name="arch" type="xml">
+            <search string="Certifications">
+                <field name="name" filter_domain="['|', '|', ('name', 'ilike', self), ('code', 'ilike', self), ('version_exam_no', 'ilike', self)]"/>
+                <field name="certifying_body"/>
+                <field name="lob_id"/>
+                <filter name="udemy" string="Udemy" domain="[('is_udemy', '=', True)]"/>
+                <separator/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="group_lob" string="Line of Business" context="{'group_by': 'lob_id'}"/>
+                    <filter name="group_body" string="Certifying Body" context="{'group_by': 'certifying_body'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bxi_certification" model="ir.actions.act_window">
+        <field name="name">Approved Certifications</field>
+        <field name="res_model">bxi.certification</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add an approved certification</p>
+            <p>LoB Academies maintain the list of external certifications eligible for reimbursement.</p>
+        </field>
+    </record>
+
+</odoo>

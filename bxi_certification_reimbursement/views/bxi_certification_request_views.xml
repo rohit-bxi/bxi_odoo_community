@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_bxi_certification_request_list" model="ir.ui.view">
+        <field name="name">bxi.certification.request.list</field>
+        <field name="model">bxi.certification.request</field>
+        <field name="arch" type="xml">
+            <list string="Certification Requests" decoration-muted="state in ('cancelled', 'refused')" decoration-success="state == 'reimbursed'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="certification_id"/>
+                <field name="certification_name" optional="hide"/>
+                <field name="is_on_approved_list" optional="show"/>
+                <field name="exam_clear_date" optional="show"/>
+                <field name="claim_total" sum="Total"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="current_approver_id" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-info="state in ('rm_approval', 'academy_approval', 'claim_approval', 'agreement_pending', 'finance_approval')"
+                       decoration-success="state in ('approved', 'reimbursed')"
+                       decoration-danger="state == 'refused'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_certification_request_form" model="ir.ui.view">
+        <field name="name">bxi.certification.request.form</field>
+        <field name="model">bxi.certification.request</field>
+        <field name="arch" type="xml">
+            <form string="Certification Request">
+                <header>
+                    <button name="action_submit" type="object" string="Submit for Approval"
+                            class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_rm_approve" type="object" string="Approve"
+                            class="oe_highlight" invisible="state != 'rm_approval' or not can_approve"/>
+                    <button name="action_academy_approve" type="object" string="Approve Udemy Course"
+                            class="oe_highlight" invisible="state != 'academy_approval' or not can_approve"/>
+                    <button name="action_submit_claim" type="object" string="Submit Claim"
+                            class="oe_highlight" invisible="state != 'approved'"
+                            confirm="Submit the reimbursement claim? It cannot be changed afterwards."/>
+                    <button name="action_approve_claim" type="object" string="Approve Claim"
+                            class="oe_highlight" invisible="state != 'claim_approval' or not can_approve"/>
+                    <button name="action_open_refuse_wizard" type="object" string="Refuse"
+                            invisible="not can_approve"/>
+                    <button name="action_open_refuse_wizard" type="object" string="Refuse"
+                            invisible="state not in ('agreement_pending', 'finance_approval')"
+                            groups="bxi_certification_reimbursement.group_certification_manager,hr_expense.group_hr_expense_manager"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state not in ('draft', 'rm_approval', 'academy_approval', 'approved')"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft"
+                            invisible="state not in ('refused', 'cancelled')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,rm_approval,approved,claim_approval,finance_approval,reimbursed"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_agreement" type="object" class="oe_stat_button"
+                                icon="fa-file-text-o" invisible="not service_agreement_id">
+                            <span>Service Agreement</span>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Late Claim" bg_color="text-bg-warning"
+                            invisible="not is_late_claim or state in ('draft', 'rm_approval', 'academy_approval')"/>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Certification">
+                            <field name="employee_id" readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
+                            <field name="certification_id" readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
+                            <field name="certification_name" readonly="state != 'draft'"
+                                   invisible="certification_id" required="not certification_id"/>
+                            <field name="certifying_body" readonly="state != 'draft'"
+                                   invisible="certification_id"/>
+                            <field name="is_on_approved_list" invisible="1"/>
+                            <field name="is_udemy" invisible="not is_udemy"/>
+                            <field name="estimated_cost" readonly="state != 'draft'"/>
+                            <field name="planned_exam_date" readonly="state != 'draft'"/>
+                            <field name="voucher_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                        </group>
+                        <group string="Approval">
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="can_approve" invisible="1"/>
+                            <field name="manager_id"/>
+                            <field name="rm_approved_date" invisible="not rm_approved_date"/>
+                            <field name="lob_id"/>
+                            <field name="udemy_max_amount" invisible="not is_udemy"
+                                   readonly="state != 'academy_approval'"/>
+                            <field name="band4_head_id" invisible="not band4_head_id"/>
+                            <field name="cost_center_id" invisible="not cost_center_id"/>
+                            <field name="current_approver_id" invisible="not current_approver_id"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="certification_id or state != 'draft'">
+                        This certification is not in the approved list. The claim will also need the
+                        approval of the Band 3 head and the LoB Academy head. You can instead ask your
+                        LoB Academy to include it in the approved list.
+                    </div>
+                    <group invisible="state != 'draft'">
+                        <field name="cost_centre_ack" string="I have informed my Reporting Manager that the cost will be charged to the Band 4 head's cost centre"/>
+                    </group>
+                    <notebook>
+                        <page string="Claim" name="claim" invisible="state in ('draft', 'rm_approval', 'academy_approval', 'cancelled')">
+                            <group>
+                                <group>
+                                    <field name="exam_clear_date" readonly="state != 'approved'"
+                                           required="state == 'approved'"/>
+                                    <field name="attempt_passed" readonly="state != 'approved'"/>
+                                    <field name="claim_submit_date" invisible="not claim_submit_date"/>
+                                    <field name="claim_age_days" invisible="not exam_clear_date"/>
+                                    <field name="is_late_claim" invisible="1"/>
+                                </group>
+                                <group>
+                                    <field name="certificate_attachment_ids" widget="many2many_binary"
+                                           readonly="state != 'approved'"/>
+                                    <field name="claim_total"/>
+                                </group>
+                            </group>
+                            <div class="text-muted mb-2" invisible="state != 'approved'">
+                                Reimbursable: exam fee, DD charges and courier charges. Training books,
+                                travel and conveyance are not reimbursable. Only the successful attempt
+                                can be claimed, and the full cost must be claimed at once.
+                            </div>
+                            <field name="expense_ids" readonly="state != 'approved'"
+                                   context="{'default_employee_id': employee_id, 'default_company_id': company_id}">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="product_id" domain="[('is_certification_expense', '=', True)]"
+                                           options="{'no_create': True}"/>
+                                    <field name="date"/>
+                                    <field name="total_amount_currency" string="Amount"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="employee_id" column_invisible="1"/>
+                                    <field name="company_id" column_invisible="1"/>
+                                    <field name="state" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Approvals" name="approvals" invisible="not approval_line_ids">
+                            <field name="approval_line_ids" readonly="1">
+                                <list>
+                                    <field name="sequence" widget="handle" column_invisible="1"/>
+                                    <field name="role"/>
+                                    <field name="approver_id"/>
+                                    <field name="state" widget="badge"
+                                           decoration-success="state == 'approved'"
+                                           decoration-danger="state == 'refused'"/>
+                                    <field name="date"/>
+                                    <field name="done_by_user_id" optional="hide"/>
+                                    <field name="comment" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Approval Emails" name="attachments">
+                            <group>
+                                <field name="pre_approval_attachment_ids" widget="many2many_binary"
+                                       readonly="state not in ('draft', 'approved')"/>
+                            </group>
+                            <div class="text-muted">
+                                For Udemy courses, attach the approval email from the capability/training academy.
+                            </div>
+                        </page>
+                        <page string="Refusal" name="refusal" invisible="not refuse_reason">
+                            <field name="refuse_reason"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_certification_request_search" model="ir.ui.view">
+        <field name="name">bxi.certification.request.search</field>
+        <field name="model">bxi.certification.request</field>
+        <field name="arch" type="xml">
+            <search string="Certification Requests">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="certification_id"/>
+                <filter name="my_requests" string="My Requests" domain="[('employee_id.user_id', '=', uid)]"/>
+                <filter name="to_approve" string="To Approve"
+                        domain="['|',
+                                 '&amp;', ('state', '=', 'rm_approval'), ('manager_id.user_id', '=', uid),
+                                 '&amp;', ('state', '=', 'claim_approval'),
+                                          ('approval_line_ids', 'any', [('state', '=', 'pending'), ('approver_user_id', '=', uid)])]"/>
+                <separator/>
+                <filter name="in_progress" string="In Progress"
+                        domain="[('state', 'not in', ('reimbursed', 'refused', 'cancelled'))]"/>
+                <filter name="not_listed" string="Not in Approved List" domain="[('is_on_approved_list', '=', False)]"/>
+                <group>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_certification" string="Certification" context="{'group_by': 'certification_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bxi_certification_request" model="ir.actions.act_window">
+        <field name="name">My Certification Requests</field>
+        <field name="res_model">bxi.certification.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_my_requests': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Request approval for a certification</p>
+            <p>Get your Reporting Manager's approval before the exam, then claim the reimbursement
+                within 90 days of clearing it.</p>
+        </field>
+    </record>
+
+    <record id="action_bxi_certification_request_to_approve" model="ir.actions.act_window">
+        <field name="name">Certifications to Approve</field>
+        <field name="res_model">bxi.certification.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_to_approve': 1, 'create': False}</field>
+    </record>
+
+    <record id="action_bxi_certification_request_all" model="ir.actions.act_window">
+        <field name="name">All Certification Requests</field>
+        <field name="res_model">bxi.certification.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_in_progress': 1}</field>
+    </record>
+
+</odoo>

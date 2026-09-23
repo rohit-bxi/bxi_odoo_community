@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="action_report_service_agreement" model="ir.actions.report">
+        <field name="name">Service Agreement</field>
+        <field name="model">bxi.service.agreement</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_certification_reimbursement.report_service_agreement</field>
+        <field name="report_file">bxi_certification_reimbursement.report_service_agreement</field>
+        <field name="print_report_name">'Service Agreement - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_bxi_service_agreement"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_service_agreement_document">
+        <t t-call="web.external_layout">
+            <t t-set="employee" t-value="doc.employee_id.sudo()"/>
+            <div class="page" style="font-size: 13px;">
+                <h3 class="text-center mb-4">Certification Service Agreement</h3>
+                <p>
+                    <strong>Reference:</strong> <span t-field="doc.name"/><br/>
+                    <strong>Date:</strong> <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                </p>
+                <p>
+                    This Service Agreement is entered into between <strong t-field="doc.company_id.name"/>
+                    (the "Company") and <strong t-esc="employee.name"/>
+                    <t t-if="employee.employee_code">(Employee Code <span t-esc="employee.employee_code"/>)</t>
+                    (the "Employee") under the Company's Certification Policy.
+                </p>
+                <table class="table table-sm table-bordered">
+                    <tr>
+                        <th style="width: 40%;">Certification</th>
+                        <td><span t-field="doc.certification_label"/></td>
+                    </tr>
+                    <tr>
+                        <th>Amount reimbursed / borne by the Company</th>
+                        <td><span t-field="doc.amount" t-options="{'widget': 'monetary', 'display_currency': doc.currency_id}"/></td>
+                    </tr>
+                    <tr>
+                        <th>Date of clearing the certification exam (start date)</th>
+                        <td><span t-field="doc.start_date"/></td>
+                    </tr>
+                    <tr>
+                        <th>Minimum service period</th>
+                        <td><span t-field="doc.period_months"/> months</td>
+                    </tr>
+                    <tr>
+                        <th>Service period ends on</th>
+                        <td><span t-field="doc.end_date"/></td>
+                    </tr>
+                </table>
+                <ol>
+                    <li>The Service Agreement becomes effective from the date of clearing the certification exam.</li>
+                    <li>The Employee agrees to serve the Company for the minimum service period stated above.</li>
+                    <li>The amount above will be recorded as dues in the Employee's offboarding until the
+                        Employee has served the Company for the period specified in this agreement.</li>
+                    <li>If the Employee separates from the Company before completing the agreed-upon
+                        period, the Employee shall repay the amount above to the Company.</li>
+                    <li>Where the certification was taken on a voucher provided by the Company and is not
+                        completed within the specified timeframe, the cost of the voucher shall be
+                        recovered from the Employee.</li>
+                </ol>
+                <p class="mt-4">I have read and understood the terms of this agreement and accept them.</p>
+                <div class="row" style="margin-top: 60px;">
+                    <div class="col-6">
+                        <p style="margin-top: 70px;">Employee signature<br/><span t-esc="employee.name"/></p>
+                    </div>
+                    <div class="col-6">
+                        <p style="margin-top: 70px;">Date</p>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_service_agreement">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="bxi_certification_reimbursement.report_service_agreement_document"/>
+            </t>
+        </t>
+    </template>
+
+</odoo>

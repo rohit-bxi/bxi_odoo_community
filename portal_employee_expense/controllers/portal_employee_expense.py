@@ -62,9 +62,11 @@ class EmployeePortalExpense(http.Controller):
             ('work_email', '=ilike', user.email or user.login)
         ], limit=1)
 
+        product_domain = request.env['hr.expense'].sudo()._portal_expense_product_domain()
+
         # Render form (GET request)
         if not post:
-            products = request.env['product.product'].sudo().search([])
+            products = request.env['product.product'].sudo().search(product_domain)
             return request.render(
                 'portal_employee_expense.portal_submit_expense_template',
                 {'products': products}
@@ -79,6 +81,7 @@ class EmployeePortalExpense(http.Controller):
         dates = form.getlist('date[]')
         amounts = form.getlist('amount[]')
         receipts = files.getlist('receipt[]') or files.getlist('receipt') or []
+        allowed_product_ids = set(request.env['product.product'].sudo().search(product_domain).ids)
 
         for index, (name, product, date, amount) in enumerate(
             zip(names, product_ids, dates, amounts)
@@ -87,6 +90,8 @@ class EmployeePortalExpense(http.Controller):
                 continue
 
             product_id = int(product) if product else False
+            if product_id not in allowed_product_ids:
+                continue
 
             expense = request.env['hr.expense'].sudo().create({
                 'name': name,

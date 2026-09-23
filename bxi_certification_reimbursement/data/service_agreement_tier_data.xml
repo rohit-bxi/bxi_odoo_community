@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Annexure A: Service Agreement -->
+    <record id="service_agreement_tier_6" model="bxi.service.agreement.tier">
+        <field name="min_amount">8000</field>
+        <field name="max_amount">19999.99</field>
+        <field name="months">6</field>
+    </record>
+
+    <record id="service_agreement_tier_12" model="bxi.service.agreement.tier">
+        <field name="min_amount">20000</field>
+        <field name="max_amount">50000</field>
+        <field name="months">12</field>
+    </record>
+
+    <record id="service_agreement_tier_18" model="bxi.service.agreement.tier">
+        <field name="min_amount">50000.01</field>
+        <field name="max_amount">0</field>
+        <field name="months">18</field>
+    </record>
+
+</odoo>

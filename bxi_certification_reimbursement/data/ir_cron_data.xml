@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="ir_cron_complete_service_agreements" model="ir.cron">
+        <field name="name">Certification: complete service agreements</field>
+        <field name="model_id" ref="model_bxi_service_agreement"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_complete_agreements()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+    </record>
+
+    <record id="ir_cron_certification_voucher_deadlines" model="ir.cron">
+        <field name="name">Certification: voucher deadlines</field>
+        <field name="model_id" ref="model_bxi_certification_voucher"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_check_deadlines()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+    </record>
+
+    <record id="ir_cron_certification_inclusion_overdue" model="ir.cron">
+        <field name="name">Certification: overdue inclusion requests</field>
+        <field name="model_id" ref="model_bxi_certification_inclusion"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_remind_overdue()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+    </record>
+
+</odoo>
