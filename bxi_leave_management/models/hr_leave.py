@@ -378,34 +378,62 @@ class HrEmployeeLeave(models.Model):
             leave_date = leave.request_date_from
             compensation_date = leave.compensation_date
 
-            # Same week
-            monday = leave_date - timedelta(days=leave_date.weekday())
-            sunday = monday + timedelta(days=6)
+            # ==========================================================
+            # COMPENSATION DATE WINDOW
+            # Allow compensation from 7 days before the leave date
+            # until 7 days after the leave date.
+            # ==========================================================
+            min_allowed_date = leave_date - timedelta(days=7)
+            max_allowed_date = leave.request_date_to + timedelta(days=7)
 
-            if not (monday <= compensation_date <= sunday):
+            if not (
+                min_allowed_date
+                <= compensation_date
+                <= max_allowed_date
+            ):
                 raise ValidationError(
                     _(
-                        "The compensation date must be within the same "
-                        "week as the leave."
+                        "The compensation date must be within 7 days "
+                        "before or 7 days after the leave period.\n\n"
+                        "Allowed period: %s to %s."
+                    )
+                    % (
+                        min_allowed_date,
+                        max_allowed_date,
                     )
                 )
 
+            # ==========================================================
             # ONLY MONDAY OR FRIDAY
+            # Monday = 0
+            # Friday = 4
+            # ==========================================================
             if compensation_date.weekday() not in (0, 4):
                 raise ValidationError(
                     _(
                         "Compensation can only be completed on "
-                        "Monday or Friday of the same week."
+                        "Monday or Friday."
                     )
                 )
 
-            # Cannot be same as leave date
-            if compensation_date == leave_date:
+            # ==========================================================
+            # CANNOT BE SAME AS LEAVE PERIOD
+            # ==========================================================
+            if (
+                leave.request_date_from
+                <= compensation_date
+                <= leave.request_date_to
+            ):
                 raise ValidationError(
-                    _("The compensation date cannot be the leave date.")
+                    _(
+                        "The compensation date cannot fall "
+                        "within the leave period."
+                    )
                 )
 
-            # Compensation date must have WFO location
+            # ==========================================================
+            # COMPENSATION DATE MUST HAVE WFO LOCATION
+            # ==========================================================
             compensation_location = leave._get_employee_day_location(
                 leave.employee_id,
                 compensation_date,
@@ -424,7 +452,9 @@ class HrEmployeeLeave(models.Model):
                     )
                 )
 
-            # Compensation date cannot already have leave
+            # ==========================================================
+            # COMPENSATION DATE CANNOT ALREADY HAVE LEAVE
+            # ==========================================================
             existing_leave = self.env["hr.leave"].search(
                 [
                     ("employee_id", "=", leave.employee_id.id),
