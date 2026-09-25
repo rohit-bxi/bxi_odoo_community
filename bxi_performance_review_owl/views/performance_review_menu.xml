@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_performance_review_root" name="Performance Reviews" sequence="20" groups="bxi_performance_review_owl.group_performance_review_employee"/>
+    <menuitem id="menu_performance_review_dashboard" name="Dashboard" parent="menu_performance_review_root" action="action_performance_review_screen" sequence="5" groups="bxi_performance_review_owl.group_performance_review_employee"/>
+    <menuitem id="menu_performance_review_my" name="My Reviews" parent="menu_performance_review_root" action="action_my_performance_reviews" sequence="10" groups="bxi_performance_review_owl.group_performance_review_employee"/>
+    <menuitem id="menu_performance_review_approve" name="Reviews to Approve" parent="menu_performance_review_root" action="action_manager_pending_reviews" sequence="20" groups="bxi_performance_review_owl.group_performance_review_manager"/>
+    <menuitem id="menu_performance_review_all" name="All Reviews" parent="menu_performance_review_root" action="action_performance_reviews" sequence="30" groups="bxi_performance_review_owl.group_performance_review_hr"/>
+    <menuitem id="menu_performance_review_generate" name="Generate Reviews" parent="menu_performance_review_root" action="action_generate_performance_review_wizard" sequence="40" groups="bxi_performance_review_owl.group_performance_review_hr"/>
+    <menuitem id="menu_performance_review_period" name="Review Periods" parent="menu_performance_review_root" action="action_performance_review_period" sequence="50" groups="bxi_performance_review_owl.group_performance_review_hr"/>
+    <menuitem id="menu_performance_review_template" name="Review Templates" parent="menu_performance_review_root" action="action_performance_review_template" sequence="60" groups="bxi_performance_review_owl.group_performance_review_hr"/>
+</odoo>

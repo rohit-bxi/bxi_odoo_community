@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===================================================== -->
+    <!-- Performance Review List View -->
+    <!-- ===================================================== -->
+    <record id="view_performance_review_list" model="ir.ui.view">
+        <field name="name">performance.review.list</field>
+        <field name="model">performance.review</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="manager_id"/>
+                <field name="second_manager_id"/>
+                <field name="period_id"/>
+                <field name="template_id"/>
+                <field name="final_score"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ===================================================== -->
+    <!-- Performance Review Search View -->
+    <!-- ===================================================== -->
+    <record id="view_performance_review_search" model="ir.ui.view">
+        <field name="name">performance.review.search</field>
+        <field name="model">performance.review</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="manager_id"/>
+                <field name="period_id"/>
+                <field name="state"/>
+
+                <filter
+                    name="my_reviews"
+                    string="My Reviews"
+                    domain="[('employee_user_id', '=', uid)]"
+                />
+
+                <filter
+                    name="to_approve"
+                    string="Reviews to Approve"
+                    domain="['|', ('manager_user_id', '=', uid), ('second_manager_user_id', '=', uid)]"
+                />
+
+                <group>
+                    <filter
+                        name="group_period"
+                        string="Period"
+                        context="{'group_by': 'period_id'}"
+                    />
+
+                    <filter
+                        name="group_manager"
+                        string="Manager"
+                        context="{'group_by': 'manager_id'}"
+                    />
+
+                    <filter
+                        name="group_state"
+                        string="Status"
+                        context="{'group_by': 'state'}"
+                    />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ===================================================== -->
+    <!-- Performance Review Form View -->
+    <!-- ===================================================== -->
+    <record id="view_performance_review_form" model="ir.ui.view">
+        <field name="name">performance.review.form</field>
+        <field name="model">performance.review</field>
+        <field name="arch" type="xml">
+            <form string="Performance Review">
+
+                <header>
+
+                    <button
+                        name="action_submit_employee"
+                        type="object"
+                        string="Submit"
+                        class="btn-primary"
+                        invisible="state != 'draft'"
+                    />
+
+                    <button
+                        name="action_submit_manager"
+                        type="object"
+                        string="Submit Manager Review"
+                        class="btn-primary"
+                        invisible="state != 'manager_review'"
+                    />
+
+                    <button
+                        name="action_submit_second_manager"
+                        type="object"
+                        string="Submit Final Review"
+                        class="btn-primary"
+                        invisible="state != 'second_manager_review'"
+                    />
+
+                    <button
+                        name="action_reset_to_draft"
+                        type="object"
+                        string="Reset to Draft"
+                        invisible="state != 'cancelled'"
+                        groups="bxi_performance_review_owl.group_performance_review_hr"
+                    />
+
+                    <button
+                        name="action_cancel"
+                        type="object"
+                        string="Cancel"
+                        invisible="state in ['completed', 'cancelled']"
+                        groups="bxi_performance_review_owl.group_performance_review_hr"
+                    />
+
+                    <button
+                        name="action_print_report"
+                        type="object"
+                        string="Print PDF"
+                    />
+
+                    <field
+                        name="state"
+                        widget="statusbar"
+                        statusbar_visible="draft,manager_review,second_manager_review,completed"
+                    />
+
+                </header>
+
+                <sheet>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group col="4">
+                        <field name="employee_id" readonly="1"/>
+                        <field name="employee_email" readonly="1"/>
+                        <field name="manager_id" />
+                        <field name="manager_email" readonly="1"/>
+                        <field name="second_manager_id" />
+                        <field name="period_id" readonly="1"/>
+                        <field name="template_id" readonly="1"/>
+                        <field name="final_score" readonly="1"/>
+                    </group>
+
+                    <notebook>
+
+                        <!-- ================================================= -->
+                        <!-- Performance Parameters -->
+                        <!-- ================================================= -->
+                        <page string="Performance Parameters">
+
+                            <field
+                                name="line_ids"
+                                readonly="state == 'completed' or state == 'cancelled'"
+                            >
+                                <list editable="bottom">
+                                    <field name="category" readonly="1"/>
+                                    <field name="weightage" readonly="1"/>
+                                    <field name="target" readonly="1"/>
+                                    <field name="self_achievement"/>
+                                    <field name="manager_review"/>
+                                    <field name="manager_score"/>
+                                </list>
+                            </field>
+
+                        </page>
+
+                        <!-- ================================================= -->
+                        <!-- Successor -->
+                        <!-- ================================================= -->
+                        <page string="Successor">
+                            <group>
+                                <field name="successor_1"/>
+                                <field name="successor_2"/>
+                            </group>
+                        </page>
+
+                        <!-- ================================================= -->
+                        <!-- Overall Remarks -->
+                        <!-- ================================================= -->
+                        <page string="Overall Remarks">
+                            <group>
+                                <field name="appraisee_remarks"/>
+                                <field name="manager_remarks"/>
+                                <field name="calibration"/>
+                                <field name="reviewer_remarks"/>
+                            </group>
+                        </page>
+
+                    </notebook>
+
+                    <!-- ================================================= -->
+                    <!-- Submission History -->
+                    <!-- ================================================= -->
+                    <group string="Submission History">
+                        <field
+                            name="employee_submitted_date"
+                            readonly="1"
+                        />
+                        <field
+                            name="manager_submitted_date"
+                            readonly="1"
+                        />
+                        <field
+                            name="second_manager_submitted_date"
+                            readonly="1"
+                        />
+                        <field
+                            name="completed_date"
+                            readonly="1"
+                        />
+                    </group>
+
+                    <chatter/>
+
+                </sheet>
+
+            </form>
+        </field>
+    </record>
+
+    <!-- ===================================================== -->
+    <!-- All Performance Reviews -->
+    <!-- ===================================================== -->
+    <record id="action_performance_reviews" model="ir.actions.act_window">
+        <field name="name">Performance Reviews</field>
+        <field name="res_model">performance.review</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_performance_review_search"/>
+    </record>
+
+    <!-- ===================================================== -->
+    <!-- My Performance Reviews -->
+    <!-- ===================================================== -->
+    <record id="action_my_performance_reviews" model="ir.actions.act_window">
+        <field name="name">My Reviews</field>
+        <field name="res_model">performance.review</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('employee_user_id', '=', uid)]</field>
+        <field name="search_view_id" ref="view_performance_review_search"/>
+    </record>
+
+    <!-- ===================================================== -->
+    <!-- Manager Pending Reviews -->
+    <!-- ===================================================== -->
+    <record id="action_manager_pending_reviews" model="ir.actions.act_window">
+        <field name="name">Reviews to Approve</field>
+        <field name="res_model">performance.review</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">
+            ['|', ('manager_user_id', '=', uid), ('second_manager_user_id', '=', uid)]
+        </field>
+        <field name="search_view_id" ref="view_performance_review_search"/>
+    </record>
+
+</odoo>
