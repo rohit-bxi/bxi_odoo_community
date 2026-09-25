@@ -129,8 +129,10 @@ class HrPayslip(models.Model):
         sandbox setup never mixes in production identifiers.
         """
         company = self.company_id[:1] or self.env.company
+        # Values pasted into Settings often carry stray spaces.
+        value = (getattr(company, "icici_%s" % key, None) or "").strip()
         return (
-            getattr(company, "icici_%s" % key, None)
+            value
             or self._get_icici_environment()["defaults"].get(key)
             or default
         )
