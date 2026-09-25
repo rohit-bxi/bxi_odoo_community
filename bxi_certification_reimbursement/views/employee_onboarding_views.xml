@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_employee_onboarding_offboarding_form_certification" model="ir.ui.view">
+        <field name="name">employee.onboarding.offboarding.form.certification</field>
+        <field name="model">employee.onboarding.offboarding</field>
+        <field name="inherit_id" ref="employee_onboarding.view_employee_onboarding_offboarding_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Certification Dues" name="certification_dues" invisible="not offboarding_employee_id">
+                    <group>
+                        <field name="certification_due_amount"/>
+                        <field name="certification_currency_id" invisible="1"/>
+                    </group>
+                    <separator string="Service Agreements not yet served"/>
+                    <field name="certification_agreement_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="certification_label"/>
+                            <field name="amount"/>
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                    <separator string="Expired vouchers to recover"/>
+                    <field name="certification_voucher_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="certification_id"/>
+                            <field name="cost"/>
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="deadline"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

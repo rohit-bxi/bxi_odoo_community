@@ -18,7 +18,7 @@
                 t-if="(request.env.user.has_group('base.group_portal') or request.env.user.has_group('base.group_user')) 
          and not request.env.user.sudo().vender_custmer_access">
                 <t t-call="portal.portal_docs_entry">
-                    <t t-set="icon" t-value="'bxi_travel_request/static/src/img/icon-travel-services.svg'"/>
+                    <t t-set="icon" t-value="'/bxi_travel_request/static/src/img/icon-travel-services.svg'"/>
                     <t t-set="title">Submit Travel Request</t>
                     <t t-set="text">View and update your Travel Request</t>
                     <t t-set="url" t-value="'/my/travel-request'" />

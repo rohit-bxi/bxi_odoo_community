@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_bxi_certification_voucher_list" model="ir.ui.view">
+        <field name="name">bxi.certification.voucher.list</field>
+        <field name="model">bxi.certification.voucher</field>
+        <field name="arch" type="xml">
+            <list string="Certification Vouchers" decoration-danger="state == 'expired'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="certification_id"/>
+                <field name="cost" sum="Total"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="issue_date"/>
+                <field name="deadline"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'issued'"
+                       decoration-success="state == 'used'"
+                       decoration-danger="state == 'expired'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_certification_voucher_form" model="ir.ui.view">
+        <field name="name">bxi.certification.voucher.form</field>
+        <field name="model">bxi.certification.voucher</field>
+        <field name="arch" type="xml">
+            <form string="Certification Voucher">
+                <header>
+                    <button name="action_issue" type="object" string="Issue" class="oe_highlight"
+                            invisible="state != 'draft'"
+                            groups="bxi_certification_reimbursement.group_certification_academy"/>
+                    <button name="action_mark_used" type="object" string="Certification Completed" class="oe_highlight"
+                            invisible="state not in ('issued', 'expired')"/>
+                    <button name="action_mark_recovered" type="object" string="Mark Recovered"
+                            invisible="state != 'expired'"
+                            groups="bxi_certification_reimbursement.group_certification_academy"/>
+                    <button name="action_waive" type="object" string="Waive"
+                            invisible="state != 'expired'"
+                            groups="bxi_certification_reimbursement.group_certification_manager"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state not in ('draft', 'issued')"
+                            groups="bxi_certification_reimbursement.group_certification_academy"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,issued,used"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="certification_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="voucher_code" readonly="state != 'draft'"/>
+                            <field name="cost" readonly="state != 'draft'"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="company_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="issue_date" readonly="state != 'draft'"/>
+                            <field name="deadline" readonly="state not in ('draft', 'issued')"/>
+                            <field name="exam_clear_date" readonly="state not in ('issued', 'expired')"/>
+                            <field name="certificate_attachment_ids" widget="many2many_binary"
+                                   readonly="state not in ('issued', 'expired')"/>
+                            <field name="service_agreement_id" invisible="not service_agreement_id"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_certification_voucher_search" model="ir.ui.view">
+        <field name="name">bxi.certification.voucher.search</field>
+        <field name="model">bxi.certification.voucher</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="certification_id"/>
+                <filter name="issued" string="Issued" domain="[('state', '=', 'issued')]"/>
+                <filter name="expired" string="To Recover" domain="[('state', '=', 'expired')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bxi_certification_voucher" model="ir.actions.act_window">
+        <field name="name">Certification Vouchers</field>
+        <field name="res_model">bxi.certification.voucher</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

@@ -19,7 +19,9 @@ class HrPayslip(models.Model):
                 SET amount_python_compute = REPLACE(amount_python_compute, 'version.', 'contract.')
                 WHERE amount_python_compute LIKE '%version.%';
             """)
-            self.env.cr.commit()
+            # No commit here: this hook also runs when models are reloaded in the
+            # middle of a request (e.g. a new analytic plan), and committing would
+            # save that request's unfinished transaction.
         except Exception:
             pass
         return res

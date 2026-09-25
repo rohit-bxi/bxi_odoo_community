@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="portal_my_home_certifications" inherit_id="portal.portal_my_home" name="Portal Home - Certifications">
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
+            <t t-if="not request.env.user.sudo().vender_custmer_access">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon" t-value="'/bxi_certification_reimbursement/static/src/img/certification-icon.svg'"/>
+                    <t t-set="title">My Certifications</t>
+                    <t t-set="text">Request approval and claim certification reimbursement</t>
+                    <t t-set="url" t-value="'/my/certifications'"/>
+                    <t t-set="config_card" t-value="True"/>
+                </t>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="portal_certification_state_badge" name="Certification State Badge">
+        <t t-set="badge_class" t-value="{
+            'reimbursed': 'text-bg-success', 'approved': 'text-bg-success', 'active': 'text-bg-success',
+            'completed': 'text-bg-secondary', 'refused': 'text-bg-danger', 'rejected': 'text-bg-danger',
+            'cancelled': 'text-bg-secondary',
+        }.get(record.state, 'text-bg-info')"/>
+        <span t-attf-class="badge #{badge_class}" t-esc="dict(record._fields['state']._description_selection(record.env)).get(record.state)"/>
+    </template>
+
+    <template id="portal_my_certifications" name="My Certifications">
+        <t t-call="portal.portal_layout">
+            <div class="d-flex flex-wrap align-items-center gap-2 my-3">
+                <h3 class="mb-0 me-auto">My Certifications</h3>
+                <a href="/my/certifications/inclusion" class="btn btn-secondary">Request Inclusion in Approved List</a>
+                <a href="/my/certifications/new" class="btn btn-primary">+ New Certification Request</a>
+            </div>
+            <div t-if="not employee" class="alert alert-warning">No employee record is linked to your user.</div>
+            <div class="alert alert-light border small">
+                Get your Reporting Manager's approval <b>before</b> taking the exam. After clearing it, raise the
+                claim within <b>90 days</b>; later claims need the approval of your manager's manager.
+                Only the exam fee, DD charges and courier charges are reimbursable. Claims of INR 8,000 or more
+                require signing a service agreement.
+            </div>
+
+            <h5 class="mt-4">Requests</h5>
+            <p t-if="not cert_requests" class="text-muted">No certification requests yet.</p>
+            <div t-if="cert_requests" class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Certification</th>
+                            <th>Exam Cleared</th>
+                            <th class="text-end">Claim</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="cert_requests" t-as="record">
+                            <td><a t-attf-href="/my/certifications/#{record.id}" t-esc="record.name"/></td>
+                            <td t-esc="record._get_certification_label()"/>
+                            <td><span t-field="record.exam_clear_date"/></td>
+                            <td class="text-end"><span t-if="record.claim_total" t-field="record.claim_total"/></td>
+                            <td><t t-call="bxi_certification_reimbursement.portal_certification_state_badge"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <t t-if="agreements">
+                <h5 class="mt-4">Service Agreements</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Reference</th>
+                                <th>Certification</th>
+                                <th class="text-end">Amount</th>
+                                <th>Serve Until</th>
+                                <th>Status</th>
+                                <th/>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="agreements" t-as="record">
+                                <td t-esc="record.name"/>
+                                <td t-esc="record.certification_label"/>
+                                <td class="text-end"><span t-field="record.amount"/></td>
+                                <td><span t-field="record.end_date"/></td>
+                                <td><t t-call="bxi_certification_reimbursement.portal_certification_state_badge"/></td>
+                                <td>
+                                    <t t-set="sign_url" t-value="record._get_portal_sign_url()"/>
+                                    <a t-if="sign_url" t-att-href="sign_url" class="btn btn-sm btn-primary">Sign</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+
+            <t t-if="inclusions">
+                <h5 class="mt-4">Inclusion Requests</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Reference</th>
+                                <th>Certification</th>
+                                <th>Response By</th>
+                                <th>Status</th>
+                                <th>Response</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="inclusions" t-as="record">
+                                <td t-esc="record.name"/>
+                                <td t-esc="record.certification_name"/>
+                                <td><span t-field="record.deadline_date"/></td>
+                                <td><t t-call="bxi_certification_reimbursement.portal_certification_state_badge"/></td>
+                                <td t-esc="record.response or ''"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <template id="portal_certification_request_form" name="New Certification Request">
+        <t t-call="portal.portal_layout">
+            <div class="my-3">
+                <a href="/my/certifications">&#8592; My Certifications</a>
+                <h3 class="mt-2">New Certification Request</h3>
+            </div>
+            <div t-if="error" class="alert alert-danger" t-esc="error"/>
+            <form method="post" action="/my/certifications/new" enctype="multipart/form-data" class="row g-3">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="col-md-8">
+                    <label class="form-label" for="certification_id">Approved certification</label>
+                    <select name="certification_id" id="certification_id" class="form-select">
+                        <option value="">-- Not in the approved list --</option>
+                        <t t-foreach="certifications" t-as="cert">
+                            <option t-att-value="cert.id" t-att-selected="str(cert.id) == post.get('certification_id')"
+                                    t-esc="'%s - %s%s' % (cert.display_name, cert.certifying_body, ' (Udemy)' if cert.is_udemy else '')"/>
+                        </t>
+                    </select>
+                    <div class="form-text">
+                        Not listed? Fill in the name below. The claim will also need Band 3 head and LoB Academy
+                        head approval, or you can <a href="/my/certifications/inclusion">request its inclusion</a>.
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="certification_name">Certification name (if not listed)</label>
+                    <input type="text" name="certification_name" id="certification_name" class="form-control"
+                           t-att-value="post.get('certification_name')"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="certifying_body">Certifying body (if not listed)</label>
+                    <input type="text" name="certifying_body" id="certifying_body" class="form-control"
+                           t-att-value="post.get('certifying_body')"/>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="estimated_cost">Estimated cost</label>
+                    <input type="number" step="0.01" min="0" name="estimated_cost" id="estimated_cost"
+                           class="form-control" t-att-value="post.get('estimated_cost')"/>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="planned_exam_date">Planned exam date</label>
+                    <input type="date" name="planned_exam_date" id="planned_exam_date" class="form-control"
+                           t-att-value="post.get('planned_exam_date')"/>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label" for="approval_email">Approval email (Udemy: from the academy; optional otherwise)</label>
+                    <input type="file" name="approval_email" id="approval_email" class="form-control" multiple="multiple"/>
+                </div>
+                <div class="col-12">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" name="cost_centre_ack" id="cost_centre_ack" required="required"/>
+                        <label class="form-check-label" for="cost_centre_ack">
+                            I have informed my Reporting Manager that the certification cost will be debited to the
+                            respective Band 4 and charged to the Band 4's cost centre.
+                        </label>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Submit to Reporting Manager</button>
+                </div>
+            </form>
+        </t>
+    </template>
+
+    <template id="portal_certification_request" name="Certification Request">
+        <t t-call="portal.portal_layout">
+            <t t-set="record" t-value="cert_request"/>
+            <div class="my-3">
+                <a href="/my/certifications">&#8592; My Certifications</a>
+                <div class="d-flex align-items-center gap-2 mt-2">
+                    <h3 class="mb-0" t-esc="record.name"/>
+                    <t t-call="bxi_certification_reimbursement.portal_certification_state_badge"/>
+                </div>
+            </div>
+            <div t-if="error" class="alert alert-danger" t-esc="error"/>
+            <div t-if="record.refuse_reason" class="alert alert-danger">
+                <b>Refused:</b> <span t-esc="record.refuse_reason"/>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-sm">
+                        <tr><th>Certification</th><td t-esc="record._get_certification_label()"/></tr>
+                        <tr><th>In approved list</th><td t-esc="'Yes' if record.is_on_approved_list else 'No'"/></tr>
+                        <tr><th>Reporting Manager</th><td t-esc="record.manager_id.name or ''"/></tr>
+                        <tr t-if="record.is_udemy"><th>Approved maximum</th><td><span t-field="record.udemy_max_amount"/></td></tr>
+                        <tr t-if="record.exam_clear_date"><th>Exam cleared on</th><td><span t-field="record.exam_clear_date"/></td></tr>
+                        <tr t-if="record.claim_total"><th>Claim total</th><td><span t-field="record.claim_total"/></td></tr>
+                        <tr t-if="record.current_approver_id"><th>Waiting for</th><td t-esc="record.current_approver_id.name"/></tr>
+                    </table>
+                </div>
+                <div class="col-md-6" t-if="record.approval_line_ids">
+                    <h6>Approvals</h6>
+                    <table class="table table-sm">
+                        <tr t-foreach="record.approval_line_ids" t-as="line">
+                            <td t-esc="dict(line._fields['role']._description_selection(line.env)).get(line.role)"/>
+                            <td t-esc="line.approver_id.name"/>
+                            <td t-esc="dict(line._fields['state']._description_selection(line.env)).get(line.state)"/>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <t t-if="record.service_agreement_id">
+                <t t-set="sign_url" t-value="record.service_agreement_id._get_portal_sign_url()"/>
+                <div class="alert alert-info" t-if="record.state == 'agreement_pending'">
+                    Please sign service agreement <b t-esc="record.service_agreement_id.name"/>
+                    (serve <t t-esc="record.service_agreement_id.period_months"/> months from the exam date).
+                    <a t-if="sign_url" t-att-href="sign_url" class="btn btn-sm btn-primary ms-2">Sign now</a>
+                </div>
+            </t>
+
+            <form t-if="record.state in ('draft', 'rm_approval', 'academy_approval', 'approved')" method="post"
+                  t-attf-action="/my/certifications/#{record.id}/cancel" class="mb-3">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <button type="submit" class="btn btn-sm btn-outline-secondary">Cancel Request</button>
+            </form>
+
+            <t t-if="record.state == 'approved'">
+                <h5 class="mt-4">Claim Reimbursement</h5>
+                <p class="text-muted small">
+                    Claim only after clearing the exam, within 90 days. Training books, travel and conveyance are
+                    not reimbursable. The full cost must be claimed at once.
+                </p>
+                <form method="post" t-attf-action="/my/certifications/#{record.id}/claim" enctype="multipart/form-data" class="row g-3">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <div class="col-md-4">
+                        <label class="form-label" for="exam_clear_date">Exam cleared on</label>
+                        <input type="date" name="exam_clear_date" id="exam_clear_date" class="form-control"
+                               t-att-max="today" required="required"/>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label" for="certificate">Certificate / result</label>
+                        <input type="file" name="certificate" id="certificate" class="form-control" required="required"/>
+                    </div>
+                    <div class="col-md-8" t-if="record.is_udemy">
+                        <label class="form-label" for="approval_email">Academy approval email</label>
+                        <input type="file" name="approval_email" id="approval_email" class="form-control"/>
+                    </div>
+                    <div class="col-12 table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr><th>Category</th><th>Description</th><th>Amount</th><th>Receipt</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="products" t-as="product">
+                                    <td>
+                                        <input type="hidden" name="product_id[]" t-att-value="product.id"/>
+                                        <span t-esc="product.name"/>
+                                    </td>
+                                    <td><input type="text" name="description[]" class="form-control form-control-sm"/></td>
+                                    <td><input type="number" step="0.01" min="0" name="amount[]" class="form-control form-control-sm"/></td>
+                                    <td><input type="file" name="receipt[]" class="form-control form-control-sm"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="attempt_passed" id="attempt_passed" required="required"/>
+                            <label class="form-check-label" for="attempt_passed">
+                                I have passed the certification; this claim is for the successful attempt.
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Submit Claim</button>
+                    </div>
+                </form>
+            </t>
+        </t>
+    </template>
+
+    <template id="portal_certification_inclusion_form" name="Certification Inclusion Request">
+        <t t-call="portal.portal_layout">
+            <div class="my-3">
+                <a href="/my/certifications">&#8592; My Certifications</a>
+                <h3 class="mt-2">Request Inclusion in the Approved List</h3>
+                <p class="text-muted">Your LoB Academy will inform you within 10 working days.</p>
+            </div>
+            <div t-if="error" class="alert alert-danger" t-esc="error"/>
+            <form method="post" action="/my/certifications/inclusion" class="row g-3">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="col-md-8">
+                    <label class="form-label" for="certification_name">Certification name (expanded, as on the certifying body's site)</label>
+                    <input type="text" name="certification_name" id="certification_name" class="form-control" required="required"
+                           t-att-value="post.get('certification_name')"/>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="version_exam_no">Version / Exam #</label>
+                    <input type="text" name="version_exam_no" id="version_exam_no" class="form-control"
+                           t-att-value="post.get('version_exam_no')"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="certifying_body">Certifying body</label>
+                    <input type="text" name="certifying_body" id="certifying_body" class="form-control" required="required"
+                           t-att-value="post.get('certifying_body')"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="area">Area of certification</label>
+                    <input type="text" name="area" id="area" class="form-control" required="required"
+                           t-att-value="post.get('area')"/>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="cost">Cost</label>
+                    <input type="number" step="0.01" min="0" name="cost" id="cost" class="form-control" required="required"
+                           t-att-value="post.get('cost')"/>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="currency_id">Currency</label>
+                    <select name="currency_id" id="currency_id" class="form-select">
+                        <t t-foreach="currencies" t-as="currency">
+                            <option t-att-value="currency.id" t-att-selected="currency == employee.company_id.currency_id" t-esc="currency.name"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="lob_id">Line of Business</label>
+                    <select name="lob_id" id="lob_id" class="form-select" required="required">
+                        <t t-foreach="lobs" t-as="lob">
+                            <option t-att-value="lob.id" t-att-selected="lob == employee.lob_id" t-esc="lob.name"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label" for="website">Website (mandatory)</label>
+                    <input type="url" name="website" id="website" class="form-control" required="required"
+                           t-att-value="post.get('website')"/>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="is_du_specific">Specific to your DU?</label>
+                    <select name="is_du_specific" id="is_du_specific" class="form-select">
+                        <option value="n">N</option>
+                        <option value="y">Y</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="information">Information about the certification</label>
+                    <textarea name="information" id="information" class="form-control" rows="3" t-esc="post.get('information')"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="business_case">Business case</label>
+                    <textarea name="business_case" id="business_case" class="form-control" rows="3" required="required"
+                              t-esc="post.get('business_case')"/>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Submit to LoB Academy</button>
+                </div>
+            </form>
+        </t>
+    </template>
+
+</odoo>

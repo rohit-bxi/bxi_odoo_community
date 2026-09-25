@@ -52,6 +52,11 @@ class HrExpense(models.Model):
                 continue
             super(HrExpense, expense)._compute_state()
 
+    @api.model
+    def _portal_expense_product_domain(self):
+        """Expense categories employees can pick on the portal."""
+        return [('can_be_expensed', '=', True)]
+
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)

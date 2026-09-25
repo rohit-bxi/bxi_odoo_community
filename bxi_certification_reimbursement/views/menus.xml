@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem id="menu_certification_root"
+              name="Certifications"
+              parent="hr.menu_hr_root"
+              sequence="90"/>
+
+    <menuitem id="menu_bxi_certification_request"
+              name="My Requests"
+              parent="menu_certification_root"
+              action="action_bxi_certification_request"
+              sequence="10"/>
+
+    <menuitem id="menu_bxi_certification_request_to_approve"
+              name="To Approve"
+              parent="menu_certification_root"
+              action="action_bxi_certification_request_to_approve"
+              sequence="20"/>
+
+    <menuitem id="menu_bxi_certification_request_all"
+              name="All Requests"
+              parent="menu_certification_root"
+              action="action_bxi_certification_request_all"
+              sequence="25"
+              groups="group_certification_academy,hr_expense.group_hr_expense_manager"/>
+
+    <menuitem id="menu_bxi_certification_inclusion"
+              name="Inclusion Requests"
+              parent="menu_certification_root"
+              action="action_bxi_certification_inclusion"
+              sequence="30"/>
+
+    <menuitem id="menu_bxi_service_agreement"
+              name="Service Agreements"
+              parent="menu_certification_root"
+              action="action_bxi_service_agreement"
+              sequence="40"/>
+
+    <menuitem id="menu_bxi_certification_voucher"
+              name="Vouchers"
+              parent="menu_certification_root"
+              action="action_bxi_certification_voucher"
+              sequence="45"/>
+
+    <menuitem id="menu_bxi_certification"
+              name="Approved Certifications"
+              parent="menu_certification_root"
+              action="action_bxi_certification"
+              sequence="50"/>
+
+    <!-- Employees > Configuration > Certification -->
+    <menuitem id="menu_certification_config"
+              name="Certification"
+              parent="hr.menu_human_resources_configuration"
+              sequence="30"
+              groups="group_certification_manager,hr.group_hr_manager"/>
+
+    <menuitem id="menu_bxi_line_of_business"
+              name="Lines of Business"
+              parent="menu_certification_config"
+              action="action_bxi_line_of_business"
+              sequence="10"/>
+
+    <menuitem id="menu_bxi_service_agreement_tier"
+              name="Service Agreement Tiers"
+              parent="menu_certification_config"
+              action="action_bxi_service_agreement_tier"
+              sequence="20"/>
+
+</odoo>
