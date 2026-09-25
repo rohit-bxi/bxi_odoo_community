@@ -111,4 +111,4 @@ class EmployeePortalExpense(http.Controller):
                         })
                         expense.sudo().write({'message_main_attachment_id': attachment.id})
 
-        return request.redirect('/my/employee-expenses')
+        return request.redirect('/my/employee-expenses')

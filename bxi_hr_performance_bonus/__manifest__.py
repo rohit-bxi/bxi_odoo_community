@@ -28,7 +28,7 @@
         'report/report_employee_bonus_letter.xml',
         'report/report_apprsail_promotion.xml',
         'report/report_promotion_letter.xml',
-        'views/portal_performance_bonus_menu.xml',
+        # 'views/portal_performance_bonus_menu.xml',
         'views/portal_performance_bonus_templates.xml',
     ],
     'installable': True,
