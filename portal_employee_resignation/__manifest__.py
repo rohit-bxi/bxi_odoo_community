@@ -4,7 +4,8 @@
     'category': 'Human Resources',
     'version': '19.0.1.0.0',
     'sequence': 1,
-    'author': 'BXI',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'summary': 'Employee Resignation Portal',
     'description': 'Portal page for employees to apply for resignation',
     'depends': [
@@ -22,4 +23,5 @@
     'installable': True,
     'application': False,
     'auto_install': False,
+    'license': 'LGPL-3',
 }

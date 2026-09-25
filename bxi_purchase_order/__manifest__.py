@@ -2,7 +2,8 @@
     'name': 'bxi_purchase_order',
     'version': '1.0',
     'summary': 'API for creating purchase order',
-    'author': 'Kriti',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'category': 'Purchase',
     'depends': ['purchase', 'account', 'stock', 'bxi_crm'],
     'data': [
@@ -13,4 +14,5 @@
     ],
     'installable': True,
     'application': False,
+    'license': 'LGPL-3',
 }

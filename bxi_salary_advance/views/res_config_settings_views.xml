@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_salary_advance" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.salary.advance</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Salary Advance" string="Salary Advance" name="bxi_salary_advance"
+                     groups="bxi_salary_advance.group_salary_advance_admin">
+                    <block title="Eligibility and Limits" name="sa_limits">
+                        <setting id="sa_limit_percent" string="Advance Limit"
+                                 help="Maximum advance for Categories I and II, as a percentage of the monthly salary.">
+                            <field name="sa_limit_percent"/>
+                        </setting>
+                        <setting id="sa_salary_basis" string="Monthly Salary"
+                                 help="Salary the limit is based on. HR can correct it on each request.">
+                            <field name="sa_salary_basis"/>
+                        </setting>
+                        <setting id="sa_eligible_employee_types" string="Full-Time Employee Types"
+                                 help="Comma-separated employee types allowed to apply: employee, worker, student, trainee, contractor, freelance.">
+                            <field name="sa_eligible_employee_types"/>
+                        </setting>
+                        <setting id="sa_outstanding_scope" string="Outstanding Advance Rule"
+                                 help="The policy states 'no other outstanding advance' for emergency advances only.">
+                            <field name="sa_outstanding_scope"/>
+                        </setting>
+                        <setting id="sa_nonprocessing_require_service"
+                                 help="By default the minimum service is waived for Category I requests caused by joining or transfer formalities.">
+                            <field name="sa_nonprocessing_require_service"/>
+                        </setting>
+                        <setting id="sa_policy_id" string="Policy Document"
+                                 help="Linked on the employee portal; when it requires acknowledgement, employees must acknowledge the current version before submitting.">
+                            <field name="sa_policy_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting id="sa_min_service_months" string="Minimum Service"
+                                 help="Months of continuous service required for Category II, and for Category I except joining or transfer delays.">
+                            <field name="sa_min_service_months"/>
+                        </setting>
+                        <setting id="sa_housing_limit_percent" string="Housing Limit"
+                                 help="Housing advances above this percentage of the monthly salary need an exception approval. 0 = no limit.">
+                            <field name="sa_housing_limit_percent"/>
+                        </setting>
+                        <setting id="sa_request_form_optional"
+                                 help="Allow submitting without uploading the signed Advance Request Form.">
+                            <field name="sa_request_form_optional"/>
+                        </setting>
+                        <setting id="sa_request_form" string="Advance Request Form"
+                                 help="Blank form employees download from the portal. A pre-filled form can always be printed from the request.">
+                            <field name="sa_request_form" filename="sa_request_form_filename"/>
+                            <field name="sa_request_form_filename" invisible="1"/>
+                        </setting>
+                    </block>
+                    <block title="Recovery" name="sa_recovery">
+                        <setting id="sa_emergency_installments" string="Emergency EMIs"
+                                 help="Number of interest-free EMIs for Category II advances.">
+                            <field name="sa_emergency_installments"/>
+                        </setting>
+                        <setting id="sa_housing_tenancies" string="Housing Tenancies"
+                                 help="Tenancy durations (months, comma-separated) recovered without an exception.">
+                            <field name="sa_housing_tenancies"/>
+                        </setting>
+                        <setting id="sa_perquisite_threshold" string="Perquisite Threshold"
+                                 help="Flag advances when the employee's outstanding interest-free advances exceed this amount.">
+                            <field name="sa_perquisite_threshold"/>
+                        </setting>
+                    </block>
+                    <block title="Approvals" name="sa_approvals">
+                        <setting id="sa_hr_sla_days" string="HR Processing Time"
+                                 help="Working days after the manager's approval; late requests are escalated to the Salary Advance administrators.">
+                            <field name="sa_hr_sla_days"/>
+                        </setting>
+                        <setting id="sa_rm_reminder_days" string="Manager Reminder"
+                                 help="Remind the Reporting Manager after this many days without approval. 0 = never.">
+                            <field name="sa_rm_reminder_days"/>
+                        </setting>
+                        <setting id="sa_hr_user_id" string="HR Responsible"
+                                 help="Receives requests approved by managers. Empty: every Salary Advance HR Officer.">
+                            <field name="sa_hr_user_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting id="sa_finance_user_id" string="Finance Responsible"
+                                 help="Receives approved advances to disburse. Empty: every Salary Advance Finance user.">
+                            <field name="sa_finance_user_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting id="sa_geo_hr_head_id" string="Geo HR Head (Onsite)"
+                                 help="Approves exceptions for onsite employees. Offshore employees go to the LoB HR Head set on their Line of Business.">
+                            <field name="sa_geo_hr_head_id" options="{'no_create': True}"/>
+                        </setting>
+                    </block>
+                    <block title="Accounting" name="sa_accounting">
+                        <setting id="sa_advance_account_id" string="Employee Advance Account"
+                                 help="Debited on disbursement and credited on recovery. Empty: no journal entries are posted.">
+                            <field name="sa_advance_account_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting id="sa_disbursement_journal_id" string="Disbursement Journal">
+                            <field name="sa_disbursement_journal_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting id="sa_recovery_account_id" string="Recovery Debit Account"
+                                 help="Debited when an EMI is deducted from a payslip, usually Salary Payable.">
+                            <field name="sa_recovery_account_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting id="sa_recovery_journal_id" string="Recovery Journal">
+                            <field name="sa_recovery_journal_id" options="{'no_create': True}"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_bxi_salary_advance_settings" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'bxi_salary_advance', 'bin_size': False}</field>
+    </record>
+</odoo>

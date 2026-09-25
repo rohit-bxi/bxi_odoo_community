@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_deputation_user,bxi.deputation.user,model_bxi_deputation,base.group_user,1,0,0,0
+access_bxi_deputation_payroll,bxi.deputation.payroll,model_bxi_deputation,om_hr_payroll.group_hr_payroll_user,1,0,0,0
+access_bxi_deputation_officer,bxi.deputation.officer,model_bxi_deputation,group_deputation_officer,1,1,1,0
+access_bxi_deputation_manager,bxi.deputation.manager,model_bxi_deputation,group_deputation_manager,1,1,1,1
+access_bxi_deputation_country_rule_user,bxi.deputation.country.rule.user,model_bxi_deputation_country_rule,base.group_user,1,0,0,0
+access_bxi_deputation_country_rule_manager,bxi.deputation.country.rule.manager,model_bxi_deputation_country_rule,group_deputation_manager,1,1,1,1

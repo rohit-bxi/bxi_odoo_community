@@ -1,1 +1,1 @@
-from . import bulk_test
+from . import bulk_test  # noqa: F401

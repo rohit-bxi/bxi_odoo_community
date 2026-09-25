@@ -4,7 +4,8 @@
     'category': 'Human Resources',
     'version': '19.0.1.0.0',
     'summary': 'Automated shift-based late check-in time off management and auto check-out tracking for employee attendance.',
-    'author': 'BXI',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'license': 'LGPL-3',
     'depends': [
         'base',

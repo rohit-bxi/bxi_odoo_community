@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="portal_my_home_salary_advances" inherit_id="portal.portal_my_home" name="Portal Home - Salary Advances">
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
+            <t t-if="not request.env.user.sudo().vender_custmer_access">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon" t-value="'/bxi_salary_advance/static/src/img/salary-advance-icon.svg'"/>
+                    <t t-set="title">Salary Advances</t>
+                    <t t-set="text">Request a salary advance and follow its recovery</t>
+                    <t t-set="url" t-value="'/my/salary-advances'"/>
+                    <t t-set="config_card" t-value="True"/>
+                </t>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="portal_salary_advance_state_badge" name="Salary Advance State Badge">
+        <t t-set="badge_class" t-value="{
+            'approved': 'text-bg-success', 'closed': 'text-bg-secondary', 'disbursed': 'text-bg-warning',
+            'fnf': 'text-bg-warning', 'rejected': 'text-bg-danger', 'cancelled': 'text-bg-secondary',
+            'draft': 'text-bg-light',
+        }.get(record.state, 'text-bg-info')"/>
+        <span t-attf-class="badge #{badge_class}" t-esc="dict(record._fields['state']._description_selection(record.env)).get(record.state)"/>
+    </template>
+
+    <template id="portal_salary_advance_policy_note" name="Salary Advance Policy Summary">
+        <div class="alert alert-light border small">
+            <b>Category I - Salary not processed</b> (India): up to 75% of the monthly salary, recovered in full
+            from the next payroll together with the arrears.
+            <b>Category II - Emergency</b> (birth of a child, own marriage, medical emergency, bereavement or any
+            other dire emergency): up to 75% of the monthly salary, recovered in 3 interest-free EMIs.
+            <b>Category III - Housing deposit / rent</b>: recovered in interest-free EMIs over the 6 or 12-month
+            tenancy; routed through a third party after HR approval and requires a signed loan undertaking.
+            <br/>
+            For full-time employees; not available during the notice period or while another advance is
+            outstanding. Category II, and Category I for reasons other than joining or transfer formalities, need
+            6 months of continuous service. Category I is recovered from the next payroll, the other categories
+            from the month after disbursement; any balance is recovered in the Full &amp; Final Settlement on
+            separation or transfer.
+            <t t-if="policy_status and policy_status['ack']">
+                <br/>
+                <a t-attf-href="/my/policies/#{policy_status['ack'].id}">
+                    <i class="fa fa-file-text-o me-1"/>Read the <t t-esc="policy_status['policy'].name"/>
+                </a>
+                <span t-if="policy_status['required']" class="text-danger ms-1">
+                    - acknowledge it before submitting a request.
+                </span>
+            </t>
+        </div>
+    </template>
+
+    <template id="portal_my_salary_advances" name="My Salary Advances">
+        <t t-call="portal.portal_layout">
+            <div class="d-flex flex-wrap align-items-center gap-2 my-3">
+                <h3 class="mb-0 me-auto">My Salary Advances</h3>
+                <a t-if="has_blank_form" href="/my/salary-advances/blank-form" class="btn btn-secondary">Download Request Form</a>
+                <a t-if="employee" href="/my/salary-advances/new" class="btn btn-primary">+ New Salary Advance</a>
+            </div>
+            <div t-if="not employee" class="alert alert-warning">No employee record is linked to your user.</div>
+            <t t-call="bxi_salary_advance.portal_salary_advance_policy_note"/>
+            <div t-if="outstanding" class="alert alert-warning">
+                Outstanding balance: <b t-esc="currency.format(outstanding)"/>
+            </div>
+
+            <p t-if="not advances" class="text-muted">No salary advances yet.</p>
+            <div t-if="advances" class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Category</th>
+                            <th class="text-end">Requested</th>
+                            <th class="text-end">Approved</th>
+                            <th class="text-end">Balance</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="advances" t-as="record">
+                            <td><a t-attf-href="/my/salary-advances/#{record.id}" t-esc="record.name"/></td>
+                            <td t-esc="record._category_label()"/>
+                            <td class="text-end"><span t-field="record.amount_requested"/></td>
+                            <td class="text-end"><span t-if="record.amount_approved" t-field="record.amount_approved"/></td>
+                            <td class="text-end"><span t-if="record.amount_disbursed" t-field="record.amount_balance"/></td>
+                            <td><t t-call="bxi_salary_advance.portal_salary_advance_state_badge"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_salary_advance_form" name="New Salary Advance">
+        <t t-call="portal.portal_layout">
+            <div class="my-3">
+                <a href="/my/salary-advances">&#8592; My Salary Advances</a>
+                <h3 class="mt-2">New Salary Advance</h3>
+            </div>
+            <div t-if="error" class="alert alert-danger" style="white-space: pre-line;" t-esc="error"/>
+            <t t-call="bxi_salary_advance.portal_salary_advance_policy_note"/>
+            <p>
+                You can request up to <b t-esc="currency.format(max_eligible)"/>
+                (<t t-esc="limit_percent"/>% of your monthly salary) under Categories I and II.
+            </p>
+            <t t-foreach="categories" t-as="category">
+                <div t-if="category_issues.get(category[0])" class="alert alert-warning small mb-2">
+                    <b t-esc="category[1]"/>: <t t-esc="' '.join(category_issues[category[0]])"/>
+                </div>
+            </t>
+            <form method="post" action="/my/salary-advances/new" enctype="multipart/form-data" class="row g-3">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="col-md-6">
+                    <label class="form-label" for="category">Category</label>
+                    <select name="category" id="category" class="form-select" required="required">
+                        <t t-foreach="categories" t-as="category">
+                            <option t-att-value="category[0]"
+                                    t-att-selected="category[0] == (post.get('category') or 'emergency')"
+                                    t-esc="category[1]"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="amount_requested">Amount requested</label>
+                    <input type="number" step="0.01" min="1" name="amount_requested" id="amount_requested"
+                           class="form-control" required="required" t-att-value="post.get('amount_requested')"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="nonprocessing_reason">Category I - Reason salary was not processed</label>
+                    <select name="nonprocessing_reason" id="nonprocessing_reason" class="form-select">
+                        <option value="">--</option>
+                        <t t-foreach="nonprocessing_reasons" t-as="option">
+                            <option t-att-value="option[0]" t-att-selected="option[0] == post.get('nonprocessing_reason')"
+                                    t-esc="option[1]"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="emergency_type">Category II - Emergency</label>
+                    <select name="emergency_type" id="emergency_type" class="form-select">
+                        <option value="">--</option>
+                        <t t-foreach="emergency_types" t-as="option">
+                            <option t-att-value="option[0]" t-att-selected="option[0] == post.get('emergency_type')"
+                                    t-esc="option[1]"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="tenancy_months">Category III - Tenancy (months)</label>
+                    <input type="number" min="1" step="1" name="tenancy_months" id="tenancy_months" class="form-control"
+                           t-att-value="post.get('tenancy_months')" list="tenancy_options"/>
+                    <datalist id="tenancy_options">
+                        <t t-foreach="tenancies" t-as="tenancy"><option t-att-value="tenancy"/></t>
+                    </datalist>
+                    <div class="form-text">
+                        Standard tenancies: <t t-esc="', '.join(str(t) for t in tenancies)"/> months. Others need
+                        an exception approval.
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="rental_agreement">Category III - Rental agreement / Letter of Intent</label>
+                    <input type="file" name="rental_agreement" id="rental_agreement" class="form-control" multiple="multiple"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="reason">Details</label>
+                    <textarea name="reason" id="reason" rows="3" class="form-control"
+                              placeholder="Briefly describe the situation" t-esc="post.get('reason')"/>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label" for="request_form">Signed Advance Request Form</label>
+                    <input type="file" name="request_form" id="request_form" class="form-control" multiple="multiple"/>
+                    <div class="form-text">
+                        <t t-if="has_blank_form"><a href="/my/salary-advances/blank-form">Download the blank form</a>, or </t>
+                        save a draft to download a pre-filled form, sign it and upload it before submitting.
+                        <t t-if="form_optional">The signed form is optional.</t>
+                    </div>
+                </div>
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" name="submit_now" value="1" class="btn btn-primary">Submit to Reporting Manager</button>
+                    <button type="submit" class="btn btn-secondary">Save Draft</button>
+                </div>
+            </form>
+        </t>
+    </template>
+
+    <template id="portal_salary_advance" name="Salary Advance">
+        <t t-call="portal.portal_layout">
+            <t t-set="record" t-value="advance"/>
+            <div class="my-3">
+                <a href="/my/salary-advances">&#8592; My Salary Advances</a>
+                <div class="d-flex align-items-center gap-2 mt-2">
+                    <h3 class="mb-0" t-esc="record.name"/>
+                    <t t-call="bxi_salary_advance.portal_salary_advance_state_badge"/>
+                </div>
+            </div>
+            <div t-if="error" class="alert alert-danger" style="white-space: pre-line;" t-esc="error"/>
+            <div t-if="record.state == 'rejected'" class="alert alert-danger">
+                <b>Rejected:</b> <span t-esc="record.rejection_reason"/>
+            </div>
+            <div t-if="sign_url" class="alert alert-info">
+                Please sign the loan undertaking before the housing advance is disbursed.
+                <a t-att-href="sign_url" class="btn btn-sm btn-primary ms-2">Sign now</a>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-sm">
+                        <tr><th>Category</th><td t-esc="record._category_label()"/></tr>
+                        <tr t-if="record.category == 'non_processing'"><th>Reason</th><td><span t-field="record.nonprocessing_reason"/></td></tr>
+                        <tr t-if="record.category == 'emergency'"><th>Emergency</th><td><span t-field="record.emergency_type"/></td></tr>
+                        <tr t-if="record.category == 'housing'"><th>Tenancy</th><td><t t-esc="record.tenancy_months"/> months</td></tr>
+                        <tr><th>Amount requested</th><td><span t-field="record.amount_requested"/></td></tr>
+                        <tr t-if="record.amount_approved"><th>Amount approved</th><td><span t-field="record.amount_approved"/></td></tr>
+                        <tr><th>Recovery</th><td><t t-esc="record.installment_count"/> EMI(s) of about <span t-field="record.installment_amount"/></td></tr>
+                        <tr t-if="record.manager_id"><th>Reporting Manager</th><td t-esc="record.manager_id.name"/></tr>
+                        <tr t-if="record.hr_deadline and record.state in ('hr_review', 'exception_review', 'approved')">
+                            <th>HR processing by</th><td><span t-field="record.hr_deadline"/></td>
+                        </tr>
+                        <tr t-if="record.disbursement_date"><th>Disbursed on</th><td><span t-field="record.disbursement_date"/></td></tr>
+                        <tr t-if="record.amount_disbursed"><th>Outstanding balance</th><td><span t-field="record.amount_balance"/></td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6>Documents</h6>
+                    <ul class="list-unstyled">
+                        <li t-foreach="record.request_form_ids" t-as="attachment">
+                            <i class="fa fa-file-o me-1"/>Request form: <t t-esc="attachment.name"/>
+                        </li>
+                        <li t-foreach="record.rental_agreement_ids" t-as="attachment">
+                            <i class="fa fa-file-o me-1"/>Rental agreement: <t t-esc="attachment.name"/>
+                        </li>
+                        <li t-if="not record.request_form_ids and not record.rental_agreement_ids" class="text-muted">None uploaded yet.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <t t-if="record.state == 'draft'">
+                <div t-if="issues" class="alert alert-warning">
+                    <b>Before submitting:</b>
+                    <ul class="mb-0"><li t-foreach="issues" t-as="issue" t-esc="issue"/></ul>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <a t-attf-href="/my/salary-advances/#{record.id}/request-form" class="btn btn-secondary">
+                        <i class="fa fa-download me-1"/>Download Pre-filled Request Form
+                    </a>
+                    <a t-if="has_blank_form" href="/my/salary-advances/blank-form" class="btn btn-outline-secondary">
+                        Download Blank Form
+                    </a>
+                </div>
+                <form method="post" t-attf-action="/my/salary-advances/#{record.id}/documents"
+                      enctype="multipart/form-data" class="row g-3 mb-3">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <div class="col-md-6">
+                        <label class="form-label" for="request_form">Signed Advance Request Form</label>
+                        <input type="file" name="request_form" id="request_form" class="form-control" multiple="multiple"/>
+                    </div>
+                    <div class="col-md-6" t-if="record.category == 'housing'">
+                        <label class="form-label" for="rental_agreement">Rental agreement / Letter of Intent</label>
+                        <input type="file" name="rental_agreement" id="rental_agreement" class="form-control" multiple="multiple"/>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-secondary">Upload</button>
+                    </div>
+                </form>
+                <form method="post" t-attf-action="/my/salary-advances/#{record.id}/submit" class="d-inline">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <button type="submit" class="btn btn-primary">Submit to Reporting Manager</button>
+                </form>
+            </t>
+            <form t-if="record.state in ('draft', 'submitted')" method="post"
+                  t-attf-action="/my/salary-advances/#{record.id}/cancel" class="d-inline ms-2">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <button type="submit" class="btn btn-outline-secondary">Cancel Request</button>
+            </form>
+
+            <t t-if="record.installment_ids">
+                <h5 class="mt-4">EMI Schedule</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr><th>#</th><th>Payroll month</th><th class="text-end">Amount</th><th class="text-end">Recovered</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="record.installment_ids" t-as="inst">
+                                <td t-esc="inst.sequence"/>
+                                <td>
+                                    <t t-esc="inst.due_date.strftime('%B %Y')"/>
+                                    <span t-if="inst.is_fnf" class="badge text-bg-warning ms-1">F&amp;F</span>
+                                </td>
+                                <td class="text-end"><span t-field="inst.amount"/></td>
+                                <td class="text-end"><span t-if="inst.amount_recovered" t-field="inst.amount_recovered"/></td>
+                                <td t-esc="dict(inst._fields['state']._description_selection(inst.env)).get(inst.state)"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

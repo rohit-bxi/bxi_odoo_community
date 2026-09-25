@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_hr_expense_form_inherit_certification" model="ir.ui.view">
+        <field name="name">hr.expense.form.certification</field>
+        <field name="model">hr.expense</field>
+        <field name="inherit_id" ref="hr_expense.hr_expense_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_id']" position="after">
+                <field name="certification_request_id" invisible="not certification_request_id" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

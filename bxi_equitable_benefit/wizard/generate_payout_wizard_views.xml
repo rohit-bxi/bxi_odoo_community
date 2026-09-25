@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bxi_eb_generate_payout_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.eb.generate.payout.wizard.form</field>
+        <field name="model">bxi.eb.generate.payout.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Generate Equitable Benefit Payouts">
+                <group>
+                    <group>
+                        <field name="reference_date"/>
+                        <field name="fy_start"/>
+                        <field name="fy_end"/>
+                    </group>
+                    <group>
+                        <field name="employee_ids" widget="many2many_tags"/>
+                    </group>
+                </group>
+                <p class="text-muted">
+                    Creates or recomputes a draft payout for each employee with an approved work pattern
+                    assignment in the financial year. Payouts already validated are left untouched.
+                </p>
+                <footer>
+                    <button name="action_generate" string="Generate" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_bxi_eb_generate_payout_wizard" model="ir.actions.act_window">
+        <field name="name">Generate Payouts</field>
+        <field name="res_model">bxi.eb.generate.payout.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

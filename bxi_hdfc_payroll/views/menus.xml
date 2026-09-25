@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_hdfc_payouts_root"
+              name="HDFC Payouts"
+              parent="om_hr_payroll.menu_hr_payroll_root"
+              sequence="60"
+              groups="group_hdfc_payout_user"/>
+
+    <menuitem id="menu_hdfc_payout_batch"
+              name="Payout Batches"
+              parent="menu_hdfc_payouts_root"
+              action="action_hdfc_payout_batch"
+              sequence="10"/>
+
+    <menuitem id="menu_hdfc_payout_line"
+              name="Transfers"
+              parent="menu_hdfc_payouts_root"
+              action="action_hdfc_payout_line"
+              sequence="20"/>
+
+    <menuitem id="menu_hdfc_api_log"
+              name="API Logs"
+              parent="menu_hdfc_payouts_root"
+              action="action_hdfc_api_log"
+              sequence="30"
+              groups="group_hdfc_payout_manager"/>
+
+    <menuitem id="menu_hdfc_bank_config"
+              name="HDFC Bank Settings"
+              parent="om_hr_payroll.menu_hr_payroll_configuration"
+              action="action_hdfc_bank_config"
+              sequence="50"
+              groups="base.group_system"/>
+</odoo>

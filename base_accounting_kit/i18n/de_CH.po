@@ -3211,7 +3211,7 @@ msgstr ""
 #. module: base_accounting_kit
 #: model_terms:ir.ui.view,arch_db:base_accounting_kit.view_account_asset_category_search
 msgid "Sales"
-msgstr "msgid "Der Umsatz""
+msgstr "Der Umsatz"
 
 #. module: base_accounting_kit
 #: model:ir.model,name:base_accounting_kit.model_sale_order

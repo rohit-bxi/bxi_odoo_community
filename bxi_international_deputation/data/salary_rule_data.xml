@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Pay for the days spent on a host country payroll. Negative allowance placed
+         before GROSS so that GROSS, PT and NET reflect the pay earned at home.
+         Amounts are computed on the inputs by hr.payslip._sync_deputation_input(). -->
+    <record id="hr_rule_deputation_nopay" model="hr.salary.rule">
+        <field name="name">Deputation - Days on Host Payroll</field>
+        <field name="sequence" eval="30"/>
+        <field name="code">DEP_NOPAY</field>
+        <field name="category_id" ref="om_hr_payroll.ALW"/>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = bool(inputs.DEP_NOPAY and inputs.DEP_NOPAY.amount)</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = -abs(inputs.DEP_NOPAY.amount)</field>
+    </record>
+    <record id="hr_rule_input_deputation_nopay" model="hr.rule.input">
+        <field name="name">Deputation - Days on Host Payroll</field>
+        <field name="code">DEP_NOPAY</field>
+        <field name="input_id" ref="hr_rule_deputation_nopay"/>
+    </record>
+
+    <!-- The PF rule charges 12% of the full monthly Basic; give back the part
+         for the Basic not paid at home. -->
+    <record id="hr_rule_deputation_pf_adjustment" model="hr.salary.rule">
+        <field name="name">PF Adjustment - Deputation</field>
+        <field name="sequence" eval="102"/>
+        <field name="code">DEP_PF_ADJ</field>
+        <field name="category_id" ref="om_hr_payroll.DED"/>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = bool(inputs.DEP_NOPAY_BASIC and inputs.DEP_NOPAY_BASIC.amount)</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = round(abs(inputs.DEP_NOPAY_BASIC.amount) * 0.12, 2)</field>
+    </record>
+    <record id="hr_rule_input_deputation_nopay_basic" model="hr.rule.input">
+        <field name="name">Deputation - Basic on Host Payroll</field>
+        <field name="code">DEP_NOPAY_BASIC</field>
+        <field name="input_id" ref="hr_rule_deputation_pf_adjustment"/>
+    </record>
+</odoo>

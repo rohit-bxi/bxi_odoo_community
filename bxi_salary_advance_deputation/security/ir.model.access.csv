@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_salary_advance_host_recovery_wizard,bxi.salary.advance.host.recovery.wizard,model_bxi_salary_advance_host_recovery_wizard,bxi_salary_advance.group_salary_advance_hr,1,1,1,1

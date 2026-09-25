@@ -365,7 +365,7 @@
                             <div class="row" id="team-cards-container">
                                 <!-- Team cards injected here by JS -->
                                 <div class="col-12 text-center py-4 text-muted" id="team-cards-loading">
-                                    <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
+                                    <i class="fa fa-circle-o-notch fa-spin fa-2x" title="Loading"/>
                                     <p class="mt-2">Loading teams...</p>
                                 </div>
                             </div>

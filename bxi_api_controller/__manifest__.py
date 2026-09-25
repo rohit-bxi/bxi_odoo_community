@@ -9,8 +9,8 @@
         Endpoint: GET /api/v1/employees
         Returns all active and archived employees with all standard + custom fields.
     """,
-    'author': 'BXI Tech',
-    'website': 'https://bxitech.com',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'depends': ['hr', 'base'],
     'data': [],
     'installable': True,

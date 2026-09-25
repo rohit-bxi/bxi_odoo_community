@@ -126,8 +126,8 @@ class ResPartner(models.Model):
                     ORDER BY fl.delay;
 
                     """
-        self._cr.execute(delay, [self.env.company.id])
-        record = self._cr.dictfetchall()
+        self.env.cr.execute(delay, [self.env.company.id])
+        record = self.env.cr.dictfetchall()
 
         return record
 

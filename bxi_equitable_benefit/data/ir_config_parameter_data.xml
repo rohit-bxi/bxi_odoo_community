@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="param_fy_start_month" model="ir.config_parameter">
+        <field name="key">bxi_equitable_benefit.fy_start_month</field>
+        <field name="value">4</field>
+    </record>
+    <record id="param_proration_basis" model="ir.config_parameter">
+        <field name="key">bxi_equitable_benefit.proration_basis</field>
+        <field name="value">months</field>
+    </record>
+    <record id="param_min_rating" model="ir.config_parameter">
+        <field name="key">bxi_equitable_benefit.min_rating</field>
+        <field name="value">meets</field>
+    </record>
+    <record id="param_max_unauthorized_days" model="ir.config_parameter">
+        <field name="key">bxi_equitable_benefit.max_unauthorized_days</field>
+        <field name="value">3</field>
+    </record>
+    <record id="param_unpaid_leave_threshold_days" model="ir.config_parameter">
+        <field name="key">bxi_equitable_benefit.unpaid_leave_threshold_days</field>
+        <field name="value">30</field>
+    </record>
+</odoo>

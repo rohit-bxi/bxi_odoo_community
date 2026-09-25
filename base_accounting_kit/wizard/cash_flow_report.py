@@ -46,11 +46,18 @@ class AccountingReport(models.TransientModel):
                                     ], string='Target Moves', required=True, default='posted')
     journal_ids = fields.Many2many(
         comodel_name='account.journal',
-        string='Journals',
+        string='Journal(s)',
         required=True,
         default=lambda self: self.env['account.journal'].search([('company_id', '=', self.company_id.id)]),
         domain="[('company_id', '=', company_id)]",
     )
+
+    def _unlink_if_no_variant(self):
+        """This is a transient wizard, not a real account.report definition,
+        so the core 'variant' check inherited from account.report does not
+        apply and would otherwise block autovacuum from cleaning up old
+        wizard records."""
+        return
 
     @api.model
     def _get_account_report(self):

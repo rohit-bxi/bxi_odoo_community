@@ -62,11 +62,11 @@ class EmployeePortalExpense(http.Controller):
             ('work_email', '=ilike', user.email or user.login)
         ], limit=1)
 
+        product_domain = request.env['hr.expense'].sudo()._portal_expense_product_domain()
+
         # Render form (GET request)
         if not post:
-            products = request.env['product.product'].sudo().search([('can_be_expensed', '=', True)])
-            if not products:
-                products = request.env['product.product'].sudo().search([])
+            products = request.env['product.product'].sudo().search(product_domain)
             return request.render(
                 'portal_employee_expense.portal_submit_expense_template',
                 {
@@ -84,6 +84,7 @@ class EmployeePortalExpense(http.Controller):
         dates = form.getlist('date[]')
         amounts = form.getlist('amount[]')
         receipts = files.getlist('receipt[]') or files.getlist('receipt') or []
+        allowed_product_ids = set(request.env['product.product'].sudo().search(product_domain).ids)
 
         company = (
             (employee.company_id if employee and employee.company_id else False)
@@ -98,7 +99,11 @@ class EmployeePortalExpense(http.Controller):
                 continue
 
             product_id = int(product) if product else False
+<<<<<<< HEAD
             if not product_id:
+=======
+            if product_id not in allowed_product_ids:
+>>>>>>> production
                 continue
 
             try:
@@ -141,4 +146,4 @@ class EmployeePortalExpense(http.Controller):
             # 3. Transition directly to finance_approval with all data and attachments in place
             expense.sudo().write({'state': 'finance_approval'})
 
-        return request.redirect('/my/employee-expenses')
+        return request.redirect('/my/employee-expenses')

@@ -52,11 +52,11 @@
                                     />
                                 </div>
                                 <div class="col-md-6">
-                                        <label>Medical Insurance No</label>
-                                        <input name="medical_insurance_no" class="form-control"
-                                            t-att-value="employee.medical_insurance_no"
-                                        />
-                                    </div>
+                                    <label>Medical Insurance No</label>
+                                    <input name="medical_insurance_no" class="form-control"
+                                        t-att-value="employee.medical_insurance_no"
+                                    />
+                                </div>
                             </div>
                             <h5 class="section-title mt-4">Professional Information</h5>
                             <div class="row g-3">
@@ -79,7 +79,7 @@
                                 <div class="col-md-6">
                                     <label>Role Band</label>
                                     <input name="role_band" class="form-control"
-                                        t-att-value="employee.role_band" readonly="1"/>
+                                        t-att-value="employee.role_band" readonly="1" />
                                 </div>
                                 <div class="col-md-6">
                                     <label>Department</label>
@@ -101,182 +101,1271 @@
                                     <input name="parent_id" class="form-control"
                                         t-att-value="employee.parent_id.name" readonly="1" />
                                 </div>
-                            </div>
-                            <h5 class="section-title mt-4">Bank Details</h5>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label>Enter Bank Name</label>
-                                    <input name="bank_name" class="form-control"
-                                        t-att-value="employee.bank_name"/>
-                                </div>
-                                <div class="col-md-6">
-                                    <label>Bank Account Number</label>
-                                    <input name="bank_account_number" class="form-control"
-                                        t-att-value="employee.bank_account_number" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label>IFSC Code</label>
-                                    <input name="bank_ifsc" class="form-control"
-                                        t-att-value="employee.bank_ifsc" />
-                                </div>
-                                <div class="col-md-6">
+                                <h5 class="section-title mt-4">Bank Details</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label>Enter Bank Name</label>
+                                        <input name="bank_name" class="form-control"
+                                            t-att-value="employee.bank_name" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label>Bank Account Number</label>
+                                        <input name="bank_account_number" class="form-control"
+                                            t-att-value="employee.bank_account_number" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label>IFSC Code</label>
+                                        <input name="bank_ifsc" class="form-control"
+                                            t-att-value="employee.bank_ifsc" />
+                                    </div>
                                     <label>Cancelled Cheque / Passbook Front Page</label>
-                                    <input type="file" name="bank_document" class="form-control" />
+                                    <div class="employee-file-wrapper">
+                                        <input type="text"
+                                            id="display_bank_document"
+                                            class="form-control employee-file-name"
+                                            readonly="1"
+                                            t-att-value="
+                                            employee.bank_document_filename
+                                            if employee.bank_document
+                                            and employee.bank_document_filename
+                                            else 'No file selected.'
+                                        " />
+
+                                        <label for="bank_document"
+                                            class="employee-file-browse">
+                                            Browse...
+                                        </label>
+                                        <input type="file"
+                                            id="bank_document"
+                                            name="bank_document"
+                                            class="employee-file-input"
+                                            accept=".jpg,.jpeg,.png,.pdf" />
+                                    </div>
                                     <t t-if="employee.bank_document">
-                                        <a
-                                            t-att-href="'/web/content/hr.employee/%s/bank_document?download=true' % employee.id"
-                                            class="btn btn-sm btn-primary mt-2">
-                                            Download Uploaded File
-                                        </a>
+                                        <div class="mt-1">
+                                            <a
+                                                t-att-href="'/web/content/hr.employee/%s/bank_document' % employee.id"
+                                                target="_blank"
+                                                class="small text-primary">
+                                                <i class="fa fa-eye me-1"></i> View Document </a>
+                                            <a
+                                                href="/my/employee-profile/document/remove?field=bank_document"
+                                                class="small text-danger ms-3">
+                                                <i class="fa fa-trash me-1"></i> Remove </a>
+                                        </div>
                                     </t>
                                 </div>
                             </div>
                             <h5 class="section-title mt-4">Emergency Contact</h5>
                             <div class="row g-3">
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label>Contact Name</label>
                                     <input name="emergency_contact" class="form-control"
                                         t-att-value="employee.emergency_contact"
                                         required="1" />
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label>Relationship</label>
                                     <input name="l10n_in_relationship" class="form-control"
                                         t-att-value="employee.l10n_in_relationship" />
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <label>Phone</label>
                                     <input name="emergency_phone" class="form-control"
                                         t-att-value="employee.emergency_phone"
                                         required="1"
                                     />
                                 </div>
-                            </div>
-
-                            <h5 class="section-title mt-4">Citizenship</h5>
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label>Nationality</label>
-                                    <select name="country_id" class="form-control">
-                                        <option value="">Select Nationality</option>
-                                        <t t-foreach="countries" t-as="c">
-                                            <option t-att-value="c.id"
-                                                t-att-selected="employee.country_id and c.id == employee.country_id.id">
-                                                <t t-esc="c.name" />
-                                            </option>
-                                        </t>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label>Passport No</label>
-                                    <input name="passport_id" class="form-control"
-                                        t-att-value="employee.passport_id" />
-                                </div>
-                                <div class="col-md-4">
-                                    <label>Non-Resident</label>
-                                    <br />
-                                    <input type="checkbox" name="is_non_resident"
-                                        t-att-checked="employee.is_non_resident"
-                                    />
-                                </div>
-                            </div>
-                            <h5 class="section-title mt-4">Family</h5>
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label>Marital Status</label>
-                                    <select name="marital" class="form-control">
-                                        <option value="">Select Marital Status</option>
-                                        <t
-                                            t-foreach="employee.fields_get(['marital'])['marital']['selection']"
-                                            t-as="opt">
-                                            <option t-att-value="opt[0]"
-                                                t-att-selected="opt[0] == employee.marital">
-                                                <t t-esc="opt[1]" />
-                                            </option>
-                                        </t>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label>Dependent Children</label>
-                                    <input type="number" name="children" class="form-control"
-                                        t-att-value="employee.children" />
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label>Disabled</label>
-                                    <br />
-                                    <input type="checkbox" name="disabled"
-                                        t-att-checked="employee.disabled" />
-                                </div>
-                            </div>
-                            <h5 class="section-title mt-4">Permanent Address</h5>
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label>House/Building No</label>
-                                    <input name="private_street" class="form-control"
-                                        t-att-value="employee.private_street" placeholder="House No., Flat, Street Name" required="1"/>
-                                </div>
-                                <div class="col-md-3">
-                                    <label>Street/Landmark Name</label>
-                                    <input name="private_street2" class="form-control"
-                                        t-att-value="employee.private_street2" placeholder="Apartment, Suite, Unit, Landmark" required="1"/>
-                                </div>
-                                <div class="col-md-3">
-                                    <label>City</label>
-                                    <input name="city" class="form-control"
-                                        t-att-value="employee.private_city"
-                                        required="1" placeholder="City"/>
-
-                                </div>
-                                <div class="col-md-3">
-                                    <label>Zip</label>
-                                    <input name="zip" class="form-control"
-                                        t-att-value="employee.private_zip" placeholder="Zip Code" required="1"/>
-                                </div>
-                            </div>
-
-                            <!-- Personal Information (Bottom Section) -->
-                            <div class="employee-personal-info mt-4">
-                                <h4>Personal Information</h4>
-                                <div class="row">
-                                    <!-- UAN -->
-                                    <div class="col-md-6 mb-3">
-                                        <label>UAN</label>
-                                        <input name="l10n_in_uan" type="text" class="form-control"
-                                            t-att-value="employee.l10n_in_uan"
-                                            required="1"
-                                        />
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label>ESIC Number</label>
-                                        <input name="l10n_in_esic_number" type="text"
-                                            class="form-control"
-                                            t-att-value="employee.l10n_in_esic_number"
-                                        />
+                                <h5 class="section-title mt-4">Citizenship</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label>Nationality</label>
+                                        <select name="country_id" class="form-control">
+                                            <option value="">Select Nationality</option>
+                                            <t t-foreach="countries" t-as="c">
+                                                <option t-att-value="c.id"
+                                                    t-att-selected="employee.country_id and c.id == employee.country_id.id">
+                                                    <t t-esc="c.name" />
+                                                </option>
+                                            </t>
+                                        </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label>Aadhar Number</label>
-                                        <input name="aadhar_card" class="form-control"
-                                            t-att-value="employee.aadhar_card"
-                                            required="1"
-                                        />
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label>PAN</label>
-                                        <input name="l10n_in_pan" type="text" class="form-control"
-                                            t-att-value="employee.l10n_in_pan"
-                                            required="1"
+                                        <label>Non-Resident</label>
+                                        <br />
+                                        <input type="checkbox" name="is_non_resident"
+                                            t-att-checked="employee.is_non_resident"
                                         />
                                     </div>
                                 </div>
-                            </div>
+                                <h5 class="section-title mt-4">Family</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label>Marital Status</label>
+                                        <select name="marital" class="form-control">
+                                            <option value="">Select Marital Status</option>
+                                            <t
+                                                t-foreach="employee.fields_get(['marital'])['marital']['selection']"
+                                                t-as="opt">
+                                                <option t-att-value="opt[0]"
+                                                    t-att-selected="opt[0] == employee.marital">
+                                                    <t t-esc="opt[1]" />
+                                                </option>
+                                            </t>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label>Dependent Children</label>
+                                        <input type="number" name="children" class="form-control"
+                                            t-att-value="employee.children" />
+                                    </div>
 
-                            <div class="mt-4 text-end">
-                                <button type="submit" class="btn btn-success px-4">
-                                    Update Profile
-                                </button>
-                            </div>
+                                    <div class="col-md-6">
+                                        <label>Disabled</label>
+                                        <br />
+                                        <input type="checkbox" name="disabled"
+                                            t-att-checked="employee.disabled" />
+                                    </div>
+                                </div>
+                                <h5 class="section-title mt-4">Permanent Address</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label>House/Building No</label>
+                                        <input name="private_street" class="form-control"
+                                            t-att-value="employee.private_street"
+                                            placeholder="House No., Flat, Street Name" required="1" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Street/Landmark Name</label>
+                                        <input name="private_street2" class="form-control"
+                                            t-att-value="employee.private_street2"
+                                            placeholder="Apartment, Suite, Unit, Landmark"
+                                            required="1" />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>City</label>
+                                        <input name="city" class="form-control"
+                                            t-att-value="employee.private_city"
+                                            required="1" placeholder="City" />
 
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Zip</label>
+                                        <input name="zip" class="form-control"
+                                            t-att-value="employee.private_zip"
+                                            placeholder="Zip Code"
+                                            required="1" />
+                                    </div>
+                                </div>
+
+                                <!-- Personal Information (Bottom Section) -->
+                                <div class="employee-personal-info mt-4">
+                                    <h4>Personal Information</h4>
+                                    <div class="row">
+                                        <!-- UAN -->
+                                        <div class="col-md-6 mb-3">
+                                            <label>UAN</label>
+                                            <input name="l10n_in_uan" type="text"
+                                                class="form-control"
+                                                t-att-value="employee.l10n_in_uan"
+                                                required="1"
+                                            />
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label>ESIC Number</label>
+                                            <input name="l10n_in_esic_number" type="text"
+                                                class="form-control"
+                                                t-att-value="employee.l10n_in_esic_number"
+                                            />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label>Aadhar Number</label>
+                                            <input name="aadhar_card" class="form-control"
+                                                t-att-value="employee.aadhar_card"
+                                                required="1"
+                                            />
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label>PAN</label>
+                                            <input name="l10n_in_pan" type="text"
+                                                class="form-control"
+                                                t-att-value="employee.l10n_in_pan"
+                                                required="1"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <h5 class="section-title mt-4">Employee Documents</h5>
+
+                                <div class="row g-3">
+
+                                    <!-- AADHAR FRONT -->
+                                    <div class="col-md-6">
+                                        <label>Aadhar Card Front</label>
+
+                                        <div class="employee-file-wrapper">
+
+                                            <input type="text"
+                                                id="display_adhar_card_front"
+                                                class="form-control employee-file-name"
+                                                readonly="1"
+                                                t-att-value="
+                       document_data.get('adhar_card_front')[0].get('name')
+                       if document_data.get('adhar_card_front')
+                       else 'No file selected.'
+                   " />
+
+                                            <label for="adhar_card_front"
+                                                class="employee-file-browse">
+                                                Browse...
+                                            </label>
+
+                                            <input type="file"
+                                                id="adhar_card_front"
+                                                name="adhar_card_front"
+                                                class="employee-file-input"
+                                                accept=".jpg,.jpeg,.png,.pdf" />
+
+                                        </div>
+
+                                        <t t-if="document_data.get('adhar_card_front')">
+                                            <div class="mt-1">
+                                                <a
+                                                    t-att-href="document_data.get('adhar_card_front')[0].get('url')"
+                                                    target="_blank"
+                                                    class="small text-primary">
+                                                    <i class="fa fa-eye me-1"></i> View Document </a>
+
+                                                <a
+                                                    href="/my/employee-profile/document/remove?field=adhar_card_front"
+                                                    class="small text-danger ms-3">
+                                                    <i class="fa fa-trash me-1"></i> Remove </a>
+                                            </div>
+                                        </t>
+
+                                    </div>
+
+
+                                    <!-- AADHAR BACK -->
+                                    <div class="col-md-6">
+                                        <label>Aadhar Card Back</label>
+
+                                        <div class="employee-file-wrapper">
+
+                                            <input type="text"
+                                                id="display_adhar_card_back"
+                                                class="form-control employee-file-name"
+                                                readonly="1"
+                                                t-att-value="
+                       document_data.get('adhar_card_back')[0].get('name')
+                       if document_data.get('adhar_card_back')
+                       else 'No file selected.'
+                   " />
+
+                                            <label for="adhar_card_back"
+                                                class="employee-file-browse">
+                                                Browse...
+                                            </label>
+
+                                            <input type="file"
+                                                id="adhar_card_back"
+                                                name="adhar_card_back"
+                                                class="employee-file-input"
+                                                accept=".jpg,.jpeg,.png,.pdf" />
+
+                                        </div>
+
+                                        <t t-if="document_data.get('adhar_card_back')">
+                                            <div class="mt-1">
+                                                <a
+                                                    t-att-href="document_data.get('adhar_card_back')[0].get('url')"
+                                                    target="_blank"
+                                                    class="small text-primary">
+                                                    <i class="fa fa-eye me-1"></i> View Document </a>
+
+                                                <a
+                                                    href="/my/employee-profile/document/remove?field=adhar_card_back"
+                                                    class="small text-danger ms-3">
+                                                    <i class="fa fa-trash me-1"></i> Remove </a>
+                                            </div>
+                                        </t>
+
+                                    </div>
+
+
+                                    <!-- PAN -->
+                                    <div class="col-md-6">
+                                        <label>PAN Card Proof</label>
+
+                                        <div class="employee-file-wrapper">
+
+                                            <input type="text"
+                                                id="display_pan_number_proof"
+                                                class="form-control employee-file-name"
+                                                readonly="1"
+                                                t-att-value="
+                       document_data.get('pan_number_proof')[0].get('name')
+                       if document_data.get('pan_number_proof')
+                       else 'No file selected.'
+                   " />
+
+                                            <label for="pan_number_proof"
+                                                class="employee-file-browse">
+                                                Browse...
+                                            </label>
+
+                                            <input type="file"
+                                                id="pan_number_proof"
+                                                name="pan_number_proof"
+                                                class="employee-file-input"
+                                                accept=".jpg,.jpeg,.png,.pdf" />
+
+                                        </div>
+
+                                        <t t-if="document_data.get('pan_number_proof')">
+                                            <div class="mt-1">
+                                                <a
+                                                    t-att-href="document_data.get('pan_number_proof')[0].get('url')"
+                                                    target="_blank"
+                                                    class="small text-primary">
+                                                    <i class="fa fa-eye me-1"></i> View Document </a>
+
+                                                <a
+                                                    href="/my/employee-profile/document/remove?field=pan_number_proof"
+                                                    class="small text-danger ms-3">
+                                                    <i class="fa fa-trash me-1"></i> Remove </a>
+                                            </div>
+                                        </t>
+
+                                    </div>
+
+
+                                    <!-- 10TH -->
+                                    <div class="col-md-6">
+                                        <label>10th Marksheet</label>
+
+                                        <div class="employee-file-wrapper">
+
+                                            <input type="text"
+                                                id="display_doc_10th_id"
+                                                class="form-control employee-file-name"
+                                                readonly="1"
+                                                t-att-value="
+                       document_data.get('doc_10th_id')[0].get('name')
+                       if document_data.get('doc_10th_id')
+                       else 'No file selected.'
+                   " />
+
+                                            <label for="doc_10th_id"
+                                                class="employee-file-browse">
+                                                Browse...
+                                            </label>
+
+                                            <input type="file"
+                                                id="doc_10th_id"
+                                                name="doc_10th_id"
+                                                class="employee-file-input"
+                                                accept=".jpg,.jpeg,.png,.pdf" />
+
+                                        </div>
+
+                                        <t t-if="document_data.get('doc_10th_id')">
+                                            <div class="mt-1">
+                                                <a
+                                                    t-att-href="document_data.get('doc_10th_id')[0].get('url')"
+                                                    target="_blank"
+                                                    class="small text-primary">
+                                                    <i class="fa fa-eye me-1"></i> View Document </a>
+
+                                                <a
+                                                    href="/my/employee-profile/document/remove?field=doc_10th_id"
+                                                    class="small text-danger ms-3">
+                                                    <i class="fa fa-trash me-1"></i> Remove </a>
+                                            </div>
+                                        </t>
+
+                                    </div>
+
+
+                                    <!-- 12TH -->
+                                    <div class="col-md-6">
+                                        <label>12th Marksheet</label>
+
+                                        <div class="employee-file-wrapper">
+
+                                            <input type="text"
+                                                id="display_doc_12th_id"
+                                                class="form-control employee-file-name"
+                                                readonly="1"
+                                                t-att-value="
+                       document_data.get('doc_12th_id')[0].get('name')
+                       if document_data.get('doc_12th_id')
+                       else 'No file selected.'
+                   " />
+
+                                            <label for="doc_12th_id"
+                                                class="employee-file-browse">
+                                                Browse...
+                                            </label>
+
+                                            <input type="file"
+                                                id="doc_12th_id"
+                                                name="doc_12th_id"
+                                                class="employee-file-input"
+                                                accept=".jpg,.jpeg,.png,.pdf" />
+
+                                        </div>
+
+                                        <t t-if="document_data.get('doc_12th_id')">
+                                            <div class="mt-1">
+                                                <a
+                                                    t-att-href="document_data.get('doc_12th_id')[0].get('url')"
+                                                    target="_blank"
+                                                    class="small text-primary">
+                                                    <i class="fa fa-eye me-1"></i> View Document </a>
+
+                                                <a
+                                                    href="/my/employee-profile/document/remove?field=doc_12th_id"
+                                                    class="small text-danger ms-3">
+                                                    <i class="fa fa-trash me-1"></i> Remove </a>
+                                            </div>
+                                        </t>
+
+                                    </div>
+
+
+                                    <!-- GRADUATION -->
+                                    <div class="col-md-6">
+                                        <label>Graduation Certificate</label>
+
+                                        <div class="employee-file-wrapper">
+
+                                            <input type="text"
+                                                id="display_doc_graduation_id"
+                                                class="form-control employee-file-name"
+                                                readonly="1"
+                                                t-att-value="
+                       document_data.get('doc_graduation_id')[0].get('name')
+                       if document_data.get('doc_graduation_id')
+                       else 'No file selected.'
+                   " />
+
+                                            <label for="doc_graduation_id"
+                                                class="employee-file-browse">
+                                                Browse...
+                                            </label>
+
+                                            <input type="file"
+                                                id="doc_graduation_id"
+                                                name="doc_graduation_id"
+                                                class="employee-file-input"
+                                                accept=".jpg,.jpeg,.png,.pdf" />
+
+                                        </div>
+
+                                        <t t-if="document_data.get('doc_graduation_id')">
+                                            <div class="mt-1">
+                                                <a
+                                                    t-att-href="document_data.get('doc_graduation_id')[0].get('url')"
+                                                    target="_blank"
+                                                    class="small text-primary">
+                                                    <i class="fa fa-eye me-1"></i> View Document </a>
+
+                                                <a
+                                                    href="/my/employee-profile/document/remove?field=doc_graduation_id"
+                                                    class="small text-danger ms-3">
+                                                    <i class="fa fa-trash me-1"></i> Remove </a>
+                                            </div>
+                                        </t>
+
+                                    </div>
+
+
+                                    <!-- MASTER -->
+                                    <div class="col-md-6">
+                                        <label>Master Degree Certificate</label>
+
+                                        <div class="employee-file-wrapper">
+
+                                            <input type="text"
+                                                id="display_doc_master_id"
+                                                class="form-control employee-file-name"
+                                                readonly="1"
+                                                t-att-value="
+                       document_data.get('doc_master_id')[0].get('name')
+                       if document_data.get('doc_master_id')
+                       else 'No file selected.'
+                   " />
+
+                                            <label for="doc_master_id"
+                                                class="employee-file-browse">
+                                                Browse...
+                                            </label>
+
+                                            <input type="file"
+                                                id="doc_master_id"
+                                                name="doc_master_id"
+                                                class="employee-file-input"
+                                                accept=".jpg,.jpeg,.png,.pdf" />
+
+                                        </div>
+
+                                        <t t-if="document_data.get('doc_master_id')">
+                                            <div class="mt-1">
+                                                <a
+                                                    t-att-href="document_data.get('doc_master_id')[0].get('url')"
+                                                    target="_blank"
+                                                    class="small text-primary">
+                                                    <i class="fa fa-eye me-1"></i> View Document </a>
+
+                                                <a
+                                                    href="/my/employee-profile/document/remove?field=doc_master_id"
+                                                    class="small text-danger ms-3">
+                                                    <i class="fa fa-trash me-1"></i> Remove </a>
+                                            </div>
+                                        </t>
+
+                                    </div>
+
+
+                                    <!-- ANY CERTIFICATE -->
+                                    <div class="col-md-6">
+                                        <label>Any Certificate (if any)</label>
+
+                                        <div class="employee-file-wrapper">
+
+                                            <input type="text"
+                                                id="display_any_certificate"
+                                                class="form-control employee-file-name"
+                                                readonly="1"
+                                                t-att-value="
+                       document_data.get('any_certificate')[0].get('name')
+                       if document_data.get('any_certificate')
+                       else 'No file selected.'
+                   " />
+
+                                            <label for="any_certificate"
+                                                class="employee-file-browse">
+                                                Browse...
+                                            </label>
+
+                                            <input type="file"
+                                                id="any_certificate"
+                                                name="any_certificate"
+                                                class="employee-file-input"
+                                                accept=".jpg,.jpeg,.png,.pdf" />
+
+                                        </div>
+
+                                        <t t-if="document_data.get('any_certificate')">
+                                            <div class="mt-1">
+                                                <a
+                                                    t-att-href="document_data.get('any_certificate')[0].get('url')"
+                                                    target="_blank"
+                                                    class="small text-primary">
+                                                    <i class="fa fa-eye me-1"></i> View Document </a>
+
+                                                <a
+                                                    href="/my/employee-profile/document/remove?field=any_certificate"
+                                                    class="small text-danger ms-3">
+                                                    <i class="fa fa-trash me-1"></i> Remove </a>
+                                            </div>
+                                        </t>
+
+                                    </div>
+
+
+                                    <!-- PHOTOGRAPH -->
+                                    <div class="col-md-6">
+                                        <label>Photograph</label>
+
+                                        <div class="employee-file-wrapper">
+
+                                            <input type="text"
+                                                id="display_photograph"
+                                                class="form-control employee-file-name"
+                                                readonly="1"
+                                                t-att-value="
+                       document_data.get('photograph')[0].get('name')
+                       if document_data.get('photograph')
+                       else 'No file selected.'
+                   " />
+
+                                            <label for="photograph"
+                                                class="employee-file-browse">
+                                                Browse...
+                                            </label>
+
+                                            <input type="file"
+                                                id="photograph"
+                                                name="photograph"
+                                                class="employee-file-input"
+                                                accept=".jpg,.jpeg,.png" />
+
+                                        </div>
+
+                                        <t t-if="document_data.get('photograph')">
+                                            <div class="mt-1">
+                                                <a
+                                                    t-att-href="document_data.get('photograph')[0].get('url')"
+                                                    target="_blank"
+                                                    class="small text-primary">
+                                                    <i class="fa fa-eye me-1"></i> View Document </a>
+
+                                                <a
+                                                    href="/my/employee-profile/document/remove?field=photograph"
+                                                    class="small text-danger ms-3">
+                                                    <i class="fa fa-trash me-1"></i> Remove </a>
+                                            </div>
+                                        </t>
+
+                                    </div>
+
+
+                                    <!-- DATA PRIVACY -->
+                                    <div class="col-md-6">
+                                        <label>Data Privacy Document</label>
+
+                                        <div class="employee-file-wrapper">
+
+                                            <input type="text"
+                                                id="display_data_privacy_doc"
+                                                class="form-control employee-file-name"
+                                                readonly="1"
+                                                t-att-value="
+                       document_data.get('data_privacy_doc')[0].get('name')
+                       if document_data.get('data_privacy_doc')
+                       else 'No file selected.'
+                   " />
+
+                                            <label for="data_privacy_doc"
+                                                class="employee-file-browse">
+                                                Browse...
+                                            </label>
+
+                                            <input type="file"
+                                                id="data_privacy_doc"
+                                                name="data_privacy_doc"
+                                                class="employee-file-input"
+                                                accept=".pdf,.jpg,.jpeg,.png" />
+
+                                        </div>
+
+                                        <t t-if="document_data.get('data_privacy_doc')">
+                                            <div class="mt-1">
+                                                <a
+                                                    t-att-href="document_data.get('data_privacy_doc')[0].get('url')"
+                                                    target="_blank"
+                                                    class="small text-primary">
+                                                    <i class="fa fa-eye me-1"></i> View Document </a>
+
+                                                <a
+                                                    href="/my/employee-profile/document/remove?field=data_privacy_doc"
+                                                    class="small text-danger ms-3">
+                                                    <i class="fa fa-trash me-1"></i> Remove </a>
+                                            </div>
+                                        </t>
+
+                                    </div>
+
+
+                                    <!-- DATA SECURITY -->
+                                    <div class="col-md-6">
+                                        <label>Data Security Document</label>
+
+                                        <div class="employee-file-wrapper">
+
+                                            <input type="text"
+                                                id="display_data_security_doc"
+                                                class="form-control employee-file-name"
+                                                readonly="1"
+                                                t-att-value="
+                       document_data.get('data_security_doc')[0].get('name')
+                       if document_data.get('data_security_doc')
+                       else 'No file selected.'
+                   " />
+
+                                            <label for="data_security_doc"
+                                                class="employee-file-browse">
+                                                Browse...
+                                            </label>
+
+                                            <input type="file"
+                                                id="data_security_doc"
+                                                name="data_security_doc"
+                                                class="employee-file-input"
+                                                accept=".pdf,.jpg,.jpeg,.png" />
+
+                                        </div>
+
+                                        <t t-if="document_data.get('data_security_doc')">
+                                            <div class="mt-1">
+                                                <a
+                                                    t-att-href="document_data.get('data_security_doc')[0].get('url')"
+                                                    target="_blank"
+                                                    class="small text-primary">
+                                                    <i class="fa fa-eye me-1"></i> View Document </a>
+
+                                                <a
+                                                    href="/my/employee-profile/document/remove?field=data_security_doc"
+                                                    class="small text-danger ms-3">
+                                                    <i class="fa fa-trash me-1"></i> Remove </a>
+                                            </div>
+                                        </t>
+
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">
+                                            Passport Number
+                                        </label>
+                                        <input type="text"
+                                            name="passport_number"
+                                            class="form-control"
+                                            t-att-value="employee.passport_number or ''" />
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Passport Document
+                                    </label>
+                                    <div class="employee-file-wrapper">
+                                        <input type="text"
+                                            id="display_passport_doc"
+                                            class="form-control employee-file-name"
+                                            readonly="1"
+                                            t-att-value="
+                                                document_data.get('passport_doc')[0].get('name')
+                                                if document_data.get('passport_doc')
+                                                else 'No file selected.'
+                                            " />
+                                        <label for="passport_doc"
+                                            class="employee-file-browse">
+                                            Browse...
+                                        </label>
+
+                                        <input type="file"
+                                            id="passport_doc"
+                                            name="passport_doc"
+                                            class="employee-file-input"
+                                            accept=".jpg,.jpeg,.png,.pdf" />
+
+                                    </div>
+
+                                    <t t-if="document_data.get('passport_doc')">
+
+                                        <div class="mt-1">
+
+                                            <a
+                                                t-att-href="document_data.get('passport_doc')[0].get('url')"
+                                                target="_blank"
+                                                class="small text-primary">
+                                                <i class="fa fa-eye me-1"></i> View Document </a>
+                                            <a
+                                                href="/my/employee-profile/document/remove?field=passport_doc"
+                                                class="small text-danger ms-3">
+                                                <i class="fa fa-trash me-1"></i> Remove </a>
+                                        </div>
+                                    </t>
+
+                                </div>
+                                <div class="mt-4">
+                                    <div
+                                        class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5 class="section-title mb-0">
+                                            Experience
+                                        </h5>
+
+                                        <button type="button"
+                                            class="btn btn-primary btn-sm"
+                                            id="add_experience_btn">
+                                            <i class="fa fa-plus me-1" /> Add Experience </button>
+                                    </div>
+
+                                    <div id="experience_container">
+
+                                        <!-- ================================================= -->
+                                        <!-- EXISTING EXPERIENCE RECORDS -->
+                                        <!-- ================================================= -->
+
+                                        <t t-foreach="experiences" t-as="experience">
+
+                                            <div class="experience-line card shadow-sm p-3 mb-3"
+                                                t-att-data-index="experience.get('index')">
+
+                                                <input type="hidden"
+                                                    t-att-name="'experience_id_%s' % experience.get('index')"
+                                                    t-att-value="experience.get('id')" />
+
+                                                <div
+                                                    class="d-flex justify-content-between align-items-center mb-3">
+
+                                                    <h6 class="mb-0"> Experience <span
+                                                            class="experience-number">
+                                                            <t t-esc="experience.get('index') + 1" />
+                                                        </span>
+                                                    </h6>
+
+                                                    <a href="#"
+                                                        class="text-danger remove-experience-line">
+                                                        <i class="fa fa-trash me-1" /> Remove </a>
+
+                                                </div>
+
+                                                <!-- ========================================= -->
+                                                <!-- BASIC EXPERIENCE DETAILS -->
+                                                <!-- ========================================= -->
+
+                                                <div class="row g-3">
+
+                                                    <div class="col-md-6">
+
+                                                        <label class="form-label">
+                                                            Company Name
+                                                        </label>
+
+                                                        <input type="text"
+                                                            class="form-control"
+                                                            t-att-name="'experience_company_name_%s' % experience.get('index')"
+                                                            t-att-value="experience.get('company_name')"
+                                                            placeholder="Enter company name" />
+
+                                                    </div>
+
+                                                    <div class="col-md-6">
+
+                                                        <label class="form-label">
+                                                            Years
+                                                        </label>
+
+                                                        <input type="number"
+                                                            step="0.01"
+                                                            min="0"
+                                                            class="form-control"
+                                                            t-att-name="'experience_years_%s' % experience.get('index')"
+                                                            t-att-value="experience.get('years')"
+                                                            placeholder="Enter years" />
+
+                                                    </div>
+
+                                                </div>
+
+                                                <!-- ========================================= -->
+                                                <!-- EXPERIENCE DOCUMENTS -->
+                                                <!-- ========================================= -->
+
+                                                <div class="row g-3 mt-1">
+
+                                                    <!-- Bank Statement -->
+                                                    <div class="col-md-6">
+
+                                                        <label class="form-label">
+                                                            Bank Statement
+                                                        </label>
+
+                                                        <div class="employee-file-wrapper">
+
+                                                            <input type="text"
+                                                                class="form-control employee-file-name"
+                                                                readonly="1"
+                                                                t-att-id="'display_bank_statement_id_%s' % experience.get('index')"
+                                                                t-att-value="
+                                       experience.get('documents', {}).get('bank_statement_id')[0].get('name')
+                                       if experience.get('documents', {}).get('bank_statement_id')
+                                       else 'No file selected.'
+                                   " />
+
+                                                            <label class="employee-file-browse"
+                                                                t-att-for="'bank_statement_id_%s' % experience.get('index')">
+                                                                Browse...
+                                                            </label>
+
+                                                            <input type="file"
+                                                                class="employee-file-input"
+                                                                accept=".jpg,.jpeg,.png,.pdf"
+                                                                t-att-id="'bank_statement_id_%s' % experience.get('index')"
+                                                                t-att-name="'bank_statement_id_%s' % experience.get('index')" />
+
+                                                        </div>
+
+                                                        <t
+                                                            t-if="experience.get('documents', {}).get('bank_statement_id')">
+
+                                                            <div class="mt-2">
+
+                                                                <t
+                                                                    t-foreach="experience.get('documents', {}).get('bank_statement_id')"
+                                                                    t-as="document">
+
+                                                                    <div class="small mb-1">
+
+                                                                        <a
+                                                                            t-att-href="document.get('download_url')"
+                                                                            target="_blank">
+                                                                            <i
+                                                                                class="fa fa-download me-1" />
+                                                                            <t
+                                                                                t-esc="document.get('name')" />
+                                                                        </a>
+
+                                                                        <a
+                                                                            t-att-href="'/my/employee-profile/experience/document/remove?experience_id=%s&amp;field_name=bank_statement_id' % experience.get('id')"
+                                                                            class="text-danger ms-2"
+                                                                            onclick="return confirm('Remove this document?');">
+                                                                            Remove
+                                                                        </a>
+
+                                                                    </div>
+
+                                                                </t>
+
+                                                            </div>
+
+                                                        </t>
+
+                                                    </div>
+
+
+                                                    <!-- Salary Slip -->
+                                                    <div class="col-md-6">
+
+                                                        <label class="form-label">
+                                                            Last 3 Month Salary Slip
+                                                        </label>
+
+                                                        <div class="employee-file-wrapper">
+
+                                                            <input type="text"
+                                                                class="form-control employee-file-name"
+                                                                readonly="1"
+                                                                t-att-id="'display_salary_slip_id_%s' % experience.get('index')"
+                                                                t-att-value="
+                                       (
+                                           str(len(experience.get('documents', {}).get('salary_slip_id')))
+                                           + ' files selected'
+                                       )
+                                       if experience.get('documents', {}).get('salary_slip_id')
+                                       else 'No file selected.'
+                                   " />
+
+                                                            <label class="employee-file-browse"
+                                                                t-att-for="'salary_slip_id_%s' % experience.get('index')">
+                                                                Browse...
+                                                            </label>
+
+                                                            <input type="file"
+                                                                class="employee-file-input"
+                                                                multiple="multiple"
+                                                                accept=".jpg,.jpeg,.png,.pdf"
+                                                                t-att-id="'salary_slip_id_%s' % experience.get('index')"
+                                                                t-att-name="'salary_slip_id_%s' % experience.get('index')" />
+
+                                                        </div>
+
+                                                        <t
+                                                            t-if="experience.get('documents', {}).get('salary_slip_id')">
+
+                                                            <div class="mt-2">
+
+                                                                <t
+                                                                    t-foreach="experience.get('documents', {}).get('salary_slip_id')"
+                                                                    t-as="document">
+
+                                                                    <div class="small mb-1">
+
+                                                                        <a
+                                                                            t-att-href="document.get('download_url')"
+                                                                            target="_blank">
+                                                                            <i
+                                                                                class="fa fa-download me-1" />
+                                                                            <t
+                                                                                t-esc="document.get('name')" />
+                                                                        </a>
+
+                                                                        <a
+                                                                            t-att-href="'/my/employee-profile/experience/document/remove?experience_id=%s&amp;field_name=salary_slip_id' % experience.get('id')"
+                                                                            class="text-danger ms-2"
+                                                                            onclick="return confirm('Remove salary slip?');">
+                                                                            Remove
+                                                                        </a>
+
+                                                                    </div>
+
+                                                                </t>
+
+                                                            </div>
+
+                                                        </t>
+
+                                                    </div>
+
+
+                                                    <!-- Experience Certificate -->
+                                                    <div class="col-md-6">
+
+                                                        <label class="form-label">
+                                                            Experience Letter
+                                                        </label>
+
+                                                        <div class="employee-file-wrapper">
+
+                                                            <input type="text"
+                                                                class="form-control employee-file-name"
+                                                                readonly="1"
+                                                                t-att-id="'display_experience_certificate_%s' % experience.get('index')"
+                                                                t-att-value="
+                                       experience.get('documents', {}).get('experience_certificate')[0].get('name')
+                                       if experience.get('documents', {}).get('experience_certificate')
+                                       else 'No file selected.'
+                                   " />
+
+                                                            <label class="employee-file-browse"
+                                                                t-att-for="'experience_certificate_%s' % experience.get('index')">
+                                                                Browse...
+                                                            </label>
+
+                                                            <input type="file"
+                                                                class="employee-file-input"
+                                                                accept=".jpg,.jpeg,.png,.pdf"
+                                                                t-att-id="'experience_certificate_%s' % experience.get('index')"
+                                                                t-att-name="'experience_certificate_%s' % experience.get('index')" />
+
+                                                        </div>
+
+                                                    </div>
+
+
+                                                    <!-- Joining Letter -->
+                                                    <div class="col-md-6">
+
+                                                        <label class="form-label">
+                                                            Offer / Joining Letter
+                                                        </label>
+
+                                                        <div class="employee-file-wrapper">
+
+                                                            <input type="text"
+                                                                class="form-control employee-file-name"
+                                                                readonly="1"
+                                                                t-att-id="'display_joining_letter_%s' % experience.get('index')"
+                                                                t-att-value="
+                                       experience.get('documents', {}).get('joining_letter')[0].get('name')
+                                       if experience.get('documents', {}).get('joining_letter')
+                                       else 'No file selected.'
+                                   " />
+
+                                                            <label class="employee-file-browse"
+                                                                t-att-for="'joining_letter_%s' % experience.get('index')">
+                                                                Browse...
+                                                            </label>
+
+                                                            <input type="file"
+                                                                class="employee-file-input"
+                                                                accept=".jpg,.jpeg,.png,.pdf"
+                                                                t-att-id="'joining_letter_%s' % experience.get('index')"
+                                                                t-att-name="'joining_letter_%s' % experience.get('index')" />
+
+                                                        </div>
+
+                                                    </div>
+
+
+                                                    <!-- Relieving Letter -->
+                                                    <div class="col-md-6">
+
+                                                        <label class="form-label">
+                                                            Relieving Letter
+                                                        </label>
+
+                                                        <div class="employee-file-wrapper">
+
+                                                            <input type="text"
+                                                                class="form-control employee-file-name"
+                                                                readonly="1"
+                                                                t-att-id="'display_relieving_letter_%s' % experience.get('index')"
+                                                                t-att-value="
+                                       experience.get('documents', {}).get('relieving_letter')[0].get('name')
+                                       if experience.get('documents', {}).get('relieving_letter')
+                                       else 'No file selected.'
+                                   " />
+
+                                                            <label class="employee-file-browse"
+                                                                t-att-for="'relieving_letter_%s' % experience.get('index')">
+                                                                Browse...
+                                                            </label>
+
+                                                            <input type="file"
+                                                                class="employee-file-input"
+                                                                accept=".jpg,.jpeg,.png,.pdf"
+                                                                t-att-id="'relieving_letter_%s' % experience.get('index')"
+                                                                t-att-name="'relieving_letter_%s' % experience.get('index')" />
+
+                                                        </div>
+
+                                                    </div>
+
+
+                                                    <!-- Appraisal Letter -->
+                                                    <div class="col-md-6">
+
+                                                        <label class="form-label">
+                                                            Appraisal Letter
+                                                        </label>
+
+                                                        <div class="employee-file-wrapper">
+
+                                                            <input type="text"
+                                                                class="form-control employee-file-name"
+                                                                readonly="1"
+                                                                t-att-id="'display_other_certificate_%s' % experience.get('index')"
+                                                                t-att-value="
+                                       experience.get('documents', {}).get('other_certificate')[0].get('name')
+                                       if experience.get('documents', {}).get('other_certificate')
+                                       else 'No file selected.'
+                                   " />
+
+                                                            <label class="employee-file-browse"
+                                                                t-att-for="'other_certificate_%s' % experience.get('index')">
+                                                                Browse...
+                                                            </label>
+
+                                                            <input type="file"
+                                                                class="employee-file-input"
+                                                                accept=".jpg,.jpeg,.png,.pdf"
+                                                                t-att-id="'other_certificate_%s' % experience.get('index')"
+                                                                t-att-name="'other_certificate_%s' % experience.get('index')" />
+
+                                                        </div>
+
+                                                    </div>
+
+                                                </div>
+
+                                            </div>
+
+                                        </t>
+
+
+                                        <!-- ================================================= -->
+                                        <!-- EMPTY EXPERIENCE LINE FOR NEW EMPLOYEE -->
+                                        <!-- ================================================= -->
+
+                                        <t t-if="not experiences">
+
+                                            <div class="experience-line card shadow-sm p-3 mb-3"
+                                                data-index="0">
+
+                                                <input type="hidden"
+                                                    name="experience_id_0"
+                                                    value="" />
+
+                                                <div
+                                                    class="d-flex justify-content-between align-items-center mb-3">
+
+                                                    <h6 class="mb-0"> Experience <span
+                                                            class="experience-number">1</span>
+                                                    </h6>
+
+                                                    <a href="#"
+                                                        class="text-danger remove-experience-line">
+                                                        <i class="fa fa-trash me-1" /> Remove </a>
+
+                                                </div>
+
+                                                <div class="row g-3">
+
+                                                    <div class="col-md-6">
+
+                                                        <label class="form-label">
+                                                            Company Name
+                                                        </label>
+
+                                                        <input type="text"
+                                                            class="form-control"
+                                                            name="experience_company_name_0"
+                                                            placeholder="Enter company name" />
+
+                                                    </div>
+
+                                                    <div class="col-md-6">
+
+                                                        <label class="form-label">
+                                                            Years
+                                                        </label>
+
+                                                        <input type="number"
+                                                            step="0.01"
+                                                            min="0"
+                                                            class="form-control"
+                                                            name="experience_years_0"
+                                                            placeholder="Enter years" />
+
+                                                    </div>
+
+                                                </div>
+
+                                                <div class="row g-3 mt-1">
+
+                                                    <t
+                                                        t-foreach="[
+                        ('bank_statement_id', 'Bank Statement', False),
+                        ('salary_slip_id', 'Last 3 Month Salary Slip', True),
+                        ('experience_certificate', 'Experience Letter', False),
+                        ('joining_letter', 'Offer / Joining Letter', False),
+                        ('relieving_letter', 'Relieving Letter', False),
+                        ('other_certificate', 'Appraisal Letter', False)
+                    ]"
+                                                        t-as="doc">
+
+                                                        <div class="col-md-6">
+
+                                                            <label class="form-label">
+                                                                <t t-esc="doc[1]" />
+                                                            </label>
+
+                                                            <div class="employee-file-wrapper">
+
+                                                                <input type="text"
+                                                                    class="form-control employee-file-name"
+                                                                    readonly="1"
+                                                                    t-att-id="'display_%s_0' % doc[0]"
+                                                                    value="No file selected." />
+
+                                                                <label class="employee-file-browse"
+                                                                    t-att-for="'%s_0' % doc[0]">
+                                                                    Browse...
+                                                                </label>
+
+                                                                <input type="file"
+                                                                    class="employee-file-input"
+                                                                    t-att-id="'%s_0' % doc[0]"
+                                                                    t-att-name="'%s_0' % doc[0]"
+                                                                    t-att-multiple="'multiple' if doc[2] else None"
+                                                                    accept=".jpg,.jpeg,.png,.pdf" />
+
+                                                            </div>
+
+                                                        </div>
+
+                                                    </t>
+
+                                                </div>
+
+                                            </div>
+
+                                        </t>
+
+                                    </div>
+
+                                </div>
+                                <!-- ONLY ONE UPDATE BUTTON -->
+                                <div class="mt-4 text-end">
+                                    <button type="submit"
+                                        class="btn btn-success px-4">
+                                        Update Profile
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </t>
@@ -297,5 +1386,490 @@
 
             </div>
         </t>
+        <style>
+            .employee-file-wrapper {
+                display: flex;
+                width: 100%;
+            }
+
+            .employee-file-name {
+                border-top-right-radius: 0;
+                border-bottom-right-radius: 0;
+                background-color: #ffffff;
+                min-height: 38px;
+            }
+
+            .employee-file-browse {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 90px;
+                padding: 6px 12px;
+                margin: 0;
+                border: 1px solid #ced4da;
+                border-left: 0;
+                border-radius: 0 0.375rem 0.375rem 0;
+                background-color: #f8f9fa;
+                cursor: pointer;
+                white-space: nowrap;
+            }
+
+            .employee-file-browse:hover {
+                background-color: #e9ecef;
+            }
+
+            .employee-file-input {
+                display: none !important;
+            }
+
+            .employee-file-name:focus {
+                box-shadow: none;
+            }
+        </style>
+
+        <script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+
+        document
+            .querySelectorAll('.employee-file-input')
+            .forEach(function (fileInput) {
+
+                fileInput.addEventListener(
+                    'change',
+                    function () {
+
+                        const displayInput =
+                            document.getElementById(
+                                'display_' + this.id
+                            );
+
+                        if (!displayInput) {
+                            return;
+                        }
+
+                        if (
+                            this.files
+                            &amp;&amp;
+                            this.files.length &gt; 0
+                        ) {
+
+                            if (this.files.length === 1) {
+
+                                displayInput.value =
+                                    this.files[0].name;
+
+                            } else {
+
+                                displayInput.value =
+                                    this.files.length
+                                    + ' files selected';
+
+                            }
+
+                        } else {
+
+                            displayInput.value =
+                                'No file selected.';
+
+                        }
+
+                    }
+                );
+
+            });
+
+    });
+</script>
+        <script type="text/javascript">
+<![CDATA[
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const container =
+        document.getElementById('experience_container');
+
+    const addButton =
+        document.getElementById('add_experience_btn');
+
+    if (!container || !addButton) {
+        return;
+    }
+
+
+    /* =====================================================
+       FILE INPUT HANDLER
+       ===================================================== */
+
+    function initializeFileInputs(parent) {
+
+        parent
+            .querySelectorAll('.employee-file-input')
+            .forEach(function (fileInput) {
+
+                if (fileInput.dataset.initialized) {
+                    return;
+                }
+
+                fileInput.dataset.initialized = '1';
+
+                fileInput.addEventListener(
+                    'change',
+                    function () {
+
+                        const displayInput =
+                            document.getElementById(
+                                'display_' + this.id
+                            );
+
+                        if (!displayInput) {
+                            return;
+                        }
+
+                        if (
+                            this.files &&
+                            this.files.length > 0
+                        ) {
+
+                            if (this.files.length === 1) {
+
+                                displayInput.value =
+                                    this.files[0].name;
+
+                            } else {
+
+                                displayInput.value =
+                                    this.files.length +
+                                    ' files selected';
+
+                            }
+
+                        } else {
+
+                            displayInput.value =
+                                'No file selected.';
+
+                        }
+
+                    }
+                );
+
+            });
+
+    }
+
+
+    /* =====================================================
+       UPDATE EXPERIENCE NUMBERS
+       ===================================================== */
+
+    function updateExperienceNumbers() {
+
+        const lines =
+            container.querySelectorAll(
+                '.experience-line'
+            );
+
+        lines.forEach(function (line, index) {
+
+            const number =
+                line.querySelector(
+                    '.experience-number'
+                );
+
+            if (number) {
+                number.textContent = index + 1;
+            }
+
+        });
+
+    }
+
+
+    /* =====================================================
+       CREATE NEW EXPERIENCE LINE
+       ===================================================== */
+
+    function createExperienceLine(index) {
+
+        const wrapper =
+            document.createElement('div');
+
+        wrapper.className =
+            'experience-line card shadow-sm p-3 mb-3';
+
+        wrapper.setAttribute(
+            'data-index',
+            index
+        );
+
+        wrapper.innerHTML = `
+
+            <input type="hidden"
+                   name="experience_id_${index}"
+                   value="">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+
+                <h6 class="mb-0">
+                    Experience
+                    <span class="experience-number">
+                        ${index + 1}
+                    </span>
+                </h6>
+
+                <a href="#"
+                   class="text-danger remove-experience-line">
+
+                    <i class="fa fa-trash me-1"></i>
+                    Remove
+
+                </a>
+
+            </div>
+
+
+            <div class="row g-3">
+
+                <div class="col-md-6">
+
+                    <label class="form-label">
+                        Company Name
+                    </label>
+
+                    <input type="text"
+                           class="form-control"
+                           name="experience_company_name_${index}"
+                           placeholder="Enter company name">
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                    <label class="form-label">
+                        Years
+                    </label>
+
+                    <input type="number"
+                           step="0.01"
+                           min="0"
+                           class="form-control"
+                           name="experience_years_${index}"
+                           placeholder="Enter years">
+
+                </div>
+
+            </div>
+
+
+            <div class="row g-3 mt-1">
+
+                ${createExperienceDocumentField(
+                    'bank_statement_id',
+                    'Bank Statement',
+                    index,
+                    false
+                )}
+
+                ${createExperienceDocumentField(
+                    'salary_slip_id',
+                    'Last 3 Month Salary Slip',
+                    index,
+                    true
+                )}
+
+                ${createExperienceDocumentField(
+                    'experience_certificate',
+                    'Experience Letter',
+                    index,
+                    false
+                )}
+
+                ${createExperienceDocumentField(
+                    'joining_letter',
+                    'Offer / Joining Letter',
+                    index,
+                    false
+                )}
+
+                ${createExperienceDocumentField(
+                    'relieving_letter',
+                    'Relieving Letter',
+                    index,
+                    false
+                )}
+
+                ${createExperienceDocumentField(
+                    'other_certificate',
+                    'Appraisal Letter',
+                    index,
+                    false
+                )}
+
+            </div>
+        `;
+
+        return wrapper;
+    }
+
+
+    /* =====================================================
+       EXPERIENCE DOCUMENT FIELD
+       ===================================================== */
+
+    function createExperienceDocumentField(
+        fieldName,
+        label,
+        index,
+        multiple
+    ) {
+
+        const multipleAttribute =
+            multiple
+                ? 'multiple="multiple"'
+                : '';
+
+        return `
+
+            <div class="col-md-6">
+
+                <label class="form-label">
+                    ${label}
+                </label>
+
+                <div class="employee-file-wrapper">
+
+                    <input type="text"
+                           class="form-control employee-file-name"
+                           id="display_${fieldName}_${index}"
+                           value="No file selected."
+                           readonly>
+
+                    <label class="employee-file-browse"
+                           for="${fieldName}_${index}">
+                        Browse...
+                    </label>
+
+                    <input type="file"
+                           class="employee-file-input"
+                           id="${fieldName}_${index}"
+                           name="${fieldName}_${index}"
+                           accept=".jpg,.jpeg,.png,.pdf"
+                           ${multipleAttribute}>
+
+                </div>
+
+            </div>
+
+        `;
+    }
+
+
+    /* =====================================================
+       ADD EXPERIENCE
+       ===================================================== */
+
+    addButton.addEventListener(
+        'click',
+        function () {
+
+            const lines =
+                container.querySelectorAll(
+                    '.experience-line'
+                );
+
+            const index = lines.length;
+
+            const newLine =
+                createExperienceLine(index);
+
+            container.appendChild(newLine);
+
+            initializeFileInputs(newLine);
+
+            updateExperienceNumbers();
+
+            newLine.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+
+        }
+    );
+
+
+    /* =====================================================
+       REMOVE EXPERIENCE
+       ===================================================== */
+
+    container.addEventListener(
+        'click',
+        function (event) {
+
+            const removeButton =
+                event.target.closest(
+                    '.remove-experience-line'
+                );
+
+            if (!removeButton) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const line =
+                removeButton.closest(
+                    '.experience-line'
+                );
+
+            if (!line) {
+                return;
+            }
+
+            const allLines =
+                container.querySelectorAll(
+                    '.experience-line'
+                );
+
+            /*
+             * Keep at least one experience line.
+             */
+            if (allLines.length === 1) {
+
+                alert(
+                    'At least one experience line must remain.'
+                );
+
+                return;
+            }
+
+            if (
+                !confirm(
+                    'Are you sure you want to remove this experience line?'
+                )
+            ) {
+                return;
+            }
+
+            line.remove();
+
+            updateExperienceNumbers();
+
+        }
+    );
+
+
+    /* =====================================================
+       INITIALIZE EXISTING FILE INPUTS
+       ===================================================== */
+
+    initializeFileInputs(container);
+
+    updateExperienceNumbers();
+
+});
+
+]]>
+</script>
     </template>
 </odoo>

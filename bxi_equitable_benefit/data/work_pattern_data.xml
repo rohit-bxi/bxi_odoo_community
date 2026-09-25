@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Seeded from the policy eligibility matrix. Rates are data, not code:
+     HR can adjust or version them from Configuration > Rate Matrix. -->
+<odoo noupdate="1">
+    <record id="work_pattern_hybrid" model="bxi.eb.work.pattern">
+        <field name="name">Hybrid (3 days WFO + 2 days WFH)</field>
+        <field name="code">HYBRID</field>
+        <field name="sequence">10</field>
+        <field name="days_per_week">3</field>
+    </record>
+    <record id="work_pattern_5_day" model="bxi.eb.work.pattern">
+        <field name="name">5 Days Work from Office</field>
+        <field name="code">WFO5</field>
+        <field name="sequence">20</field>
+        <field name="days_per_week">5</field>
+    </record>
+    <record id="work_pattern_6_day" model="bxi.eb.work.pattern">
+        <field name="name">6 Days Work from Office</field>
+        <field name="code">WFO6</field>
+        <field name="sequence">30</field>
+        <field name="days_per_week">6</field>
+    </record>
+    <record id="work_pattern_6_day_shift" model="bxi.eb.work.pattern">
+        <field name="name">6 Days Day Shift</field>
+        <field name="code">WFO6_DAY_SHIFT</field>
+        <field name="sequence">35</field>
+        <field name="days_per_week">6</field>
+        <field name="is_shift">True</field>
+        <field name="active" eval="False"/>
+        <field name="description">Appears only in the policy's illustrative examples (10.33%). Archived until HR confirms it.</field>
+    </record>
+    <record id="work_pattern_odd_shift" model="bxi.eb.work.pattern">
+        <field name="name">ODD Hour/Day/Week - Shift</field>
+        <field name="code">ODD_SHIFT</field>
+        <field name="sequence">40</field>
+        <field name="is_shift">True</field>
+    </record>
+
+    <record id="rate_hybrid" model="bxi.eb.rate">
+        <field name="work_pattern_id" ref="work_pattern_hybrid"/>
+        <field name="work_category">non_client</field>
+        <field name="deployment">any</field>
+        <field name="rate_percent">0</field>
+        <field name="note">Not Applicable</field>
+    </record>
+    <record id="rate_5_day_offshore" model="bxi.eb.rate">
+        <field name="work_pattern_id" ref="work_pattern_5_day"/>
+        <field name="work_category">any</field>
+        <field name="deployment">offshore</field>
+        <field name="rate_percent">5</field>
+    </record>
+    <record id="rate_6_day" model="bxi.eb.rate">
+        <field name="work_pattern_id" ref="work_pattern_6_day"/>
+        <field name="work_category">any</field>
+        <field name="deployment">any</field>
+        <field name="rate_percent">9.6</field>
+    </record>
+    <record id="rate_6_day_shift" model="bxi.eb.rate">
+        <field name="work_pattern_id" ref="work_pattern_6_day_shift"/>
+        <field name="work_category">any</field>
+        <field name="deployment">any</field>
+        <field name="rate_percent">10.33</field>
+        <field name="active" eval="False"/>
+        <field name="note">From the policy examples; to be confirmed by HR</field>
+    </record>
+    <record id="rate_odd_shift" model="bxi.eb.rate">
+        <field name="work_pattern_id" ref="work_pattern_odd_shift"/>
+        <field name="work_category">client</field>
+        <field name="deployment">any</field>
+        <field name="rate_percent">11</field>
+    </record>
+</odoo>

@@ -4,7 +4,8 @@
     'category': 'Human Resources',
     'version': '19.0.1.0.0',
     'sequence': 1,
-    'author': 'BXI',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'summary': 'Employee Appraisal, Promotion & Bonus Management',
     'description': """
         Employee Appraisal & Promotion Management
@@ -23,6 +24,7 @@
         'views/employee_letter_wizard.xml',
         'views/hr_employee_view.xml',
         'views/hr_apprsail_promotion.xml',
+        'views/bonus_template.xml',
         'report/employee_paperformate.xml',
         'report/report_employee_bonus_letter.xml',
         'report/report_apprsail_promotion.xml',
@@ -33,4 +35,5 @@
     'installable': True,
     'application': False,
     'auto_install': False,
+    'license': 'LGPL-3',
 }

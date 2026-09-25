@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="hr_rule_equitable_benefit" model="hr.salary.rule">
+        <field name="name">Equitable Benefit</field>
+        <field name="sequence" eval="20"/>
+        <field name="code">EQB</field>
+        <field name="category_id" ref="om_hr_payroll.ALW"/>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = bool(inputs.EQB and inputs.EQB.amount)</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = inputs.EQB and inputs.EQB.amount or 0.0</field>
+    </record>
+    <record id="hr_rule_input_equitable_benefit" model="hr.rule.input">
+        <field name="name">Equitable Benefit</field>
+        <field name="code">EQB</field>
+        <field name="input_id" ref="hr_rule_equitable_benefit"/>
+    </record>
+</odoo>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_contract_template_form_view_inherit_equitable_benefit" model="ir.ui.view">
+        <field name="name">hr.version.form.inherit.equitable.benefit</field>
+        <field name="model">hr.version</field>
+        <field name="inherit_id" ref="hr.hr_contract_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='wage']" position="after">
+                <field name="eb_annual_component_a"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

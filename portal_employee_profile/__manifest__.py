@@ -4,7 +4,8 @@
     'category': 'Human Resources',
     'version': '19.0.1.0.0',
     'sequence': 1,
-    'author': 'BXI',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'summary': 'Employee Self Service Portal',
     'description': 'Employee Self Service Portal',
     'depends': [
@@ -19,6 +20,7 @@
         'views/portal_menu.xml',
         'views/portal_templates.xml',
         'views/portal_my_payslips.xml',
+        # 'views/portal_employee_documents.xml',
     ],
     "assets": {
         "web.assets_frontend": [
@@ -28,4 +30,5 @@
     'installable': True,
     'application': False,
     'auto_install': False,
+    'license': 'LGPL-3',
 }

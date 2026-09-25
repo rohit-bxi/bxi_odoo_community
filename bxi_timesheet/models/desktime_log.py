@@ -156,13 +156,10 @@ class BxiDesktimeLog(models.Model):
         store=True,
     )
 
-    _sql_constraints = [
-        (
-            'unique_employee_date',
-            'UNIQUE(employee_id, date)',
-            'A DeskTime log entry already exists for this employee on this date.'
-        ),
-    ]
+    _unique_employee_date = models.Constraint(
+        'UNIQUE(employee_id, date)',
+        'A DeskTime log entry already exists for this employee on this date.',
+    )
 
     @api.depends('employee_id', 'date')
     def _compute_display_name(self):

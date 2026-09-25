@@ -107,7 +107,8 @@ class ICICIOtpWizard(models.TransientModel):
 
             raise ValidationError(
                 _(
-                    "An unexpected error occurred while processing the salary payment."
+                    "An unexpected error occurred while "
+                    "processing the salary payment."
                 )
             ) from exc
 

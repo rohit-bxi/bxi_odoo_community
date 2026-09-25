@@ -1,0 +1,12 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hdfc_bank_config_user,hdfc.bank.config user,model_hdfc_bank_config,group_hdfc_payout_user,1,0,0,0
+access_hdfc_bank_config_system,hdfc.bank.config system,model_hdfc_bank_config,base.group_system,1,1,1,1
+access_hdfc_payout_batch_user,hdfc.payout.batch user,model_hdfc_payout_batch,group_hdfc_payout_user,1,1,1,0
+access_hdfc_payout_batch_manager,hdfc.payout.batch manager,model_hdfc_payout_batch,group_hdfc_payout_manager,1,1,1,1
+access_hdfc_payout_line_user,hdfc.payout.line user,model_hdfc_payout_line,group_hdfc_payout_user,1,1,1,0
+access_hdfc_payout_line_manager,hdfc.payout.line manager,model_hdfc_payout_line,group_hdfc_payout_manager,1,1,1,1
+access_hdfc_api_log_manager,hdfc.api.log manager,model_hdfc_api_log,group_hdfc_payout_manager,1,0,0,0
+access_hdfc_api_log_system,hdfc.api.log system,model_hdfc_api_log,base.group_system,1,1,1,1
+access_hdfc_release_wizard_user,hdfc.release.wizard user,model_hdfc_release_wizard,group_hdfc_payout_user,1,1,1,1
+access_hdfc_otp_wizard_manager,hdfc.otp.wizard manager,model_hdfc_otp_wizard,group_hdfc_payout_manager,1,1,1,1
+access_hdfc_reverse_wizard_manager,hdfc.reverse.wizard manager,model_hdfc_reverse_wizard,group_hdfc_payout_manager,1,1,1,1

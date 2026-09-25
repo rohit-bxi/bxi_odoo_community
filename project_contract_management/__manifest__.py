@@ -4,7 +4,8 @@
     "version": "1.0",
     "summary": "Manage Contracts with Quarterly Breakdown",
     "category": "Project",
-    "author": "Your Company",
+    "author": "BXI Technologies",
+    "website": "https://bxitech.com/",
     "depends": ['base', 'project', 'mail', 'sale'],
     "data": [
         "security/ir.model.access.csv",
@@ -24,4 +25,5 @@
     'installable': True,
     'application': False,
     'auto_install': False,
+    'license': 'LGPL-3',
 }

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_antitrust_dashboard_form" model="ir.ui.view">
+        <field name="name">antitrust.dashboard.form</field>
+        <field name="model">antitrust.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="Compliance Dashboard" create="0" edit="0" delete="0">
+                <sheet>
+                    <h2 class="mb-4">Compliance Dashboard</h2>
+                    <div class="row g-3">
+                        <div class="col-lg-4 col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted">Policies acknowledged (current versions)</div>
+                                <h2><field name="ack_rate" widget="percentage" readonly="1" nolabel="1"/></h2>
+                                <button name="action_open_overdue" type="object" class="btn btn-link p-0">
+                                    <field name="ack_overdue" readonly="1" class="oe_inline"/> overdue
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted">Legal queries waiting for an answer</div>
+                                <button name="action_open_queries" type="object" class="btn btn-link p-0 fs-2">
+                                    <field name="open_queries" readonly="1"/>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted">Open meeting incidents</div>
+                                <button name="action_open_incidents" type="object" class="btn btn-link p-0 fs-2">
+                                    <field name="open_incidents" readonly="1"/>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted">Competitor interactions to review</div>
+                                <button name="action_open_interactions" type="object" class="btn btn-link p-0 fs-2">
+                                    <field name="interactions_to_review" readonly="1"/>
+                                </button>
+                                <div>
+                                    <button name="action_open_unconfirmed" type="object" class="btn btn-link p-0">
+                                        <field name="interactions_without_confirmation" readonly="1" class="oe_inline"/> awaiting post-event confirmation
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted">RFP/tender opportunities without a valid declaration</div>
+                                <button name="action_open_rfps" type="object" class="btn btn-link p-0 fs-2">
+                                    <field name="rfp_without_declaration" readonly="1"/>
+                                </button>
+                                <div>
+                                    <button name="action_open_declarations" type="object" class="btn btn-link p-0">
+                                        <field name="declarations_to_approve" readonly="1" class="oe_inline"/> declarations to approve
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted">Open compliance cases</div>
+                                <button name="action_open_cases" type="object" class="btn btn-link p-0 fs-2">
+                                    <field name="open_cases" readonly="1"/>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_antitrust_dashboard" model="ir.actions.act_window">
+        <field name="name">Compliance Dashboard</field>
+        <field name="res_model">antitrust.dashboard</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>

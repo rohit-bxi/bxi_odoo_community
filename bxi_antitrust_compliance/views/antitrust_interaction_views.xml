@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_antitrust_interaction_list" model="ir.ui.view">
+        <field name="name">antitrust.interaction.list</field>
+        <field name="model">antitrust.interaction</field>
+        <field name="arch" type="xml">
+            <list string="Competitor Interactions">
+                <field name="name"/>
+                <field name="event_date"/>
+                <field name="employee_id"/>
+                <field name="interaction_type"/>
+                <field name="organisations"/>
+                <field name="risk_level" widget="badge" decoration-danger="risk_level == 'high'"/>
+                <field name="state" widget="badge" decoration-info="state == 'cpo_review'"
+                       decoration-success="state in ('cleared', 'done')" decoration-danger="state in ('rejected', 'incident')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_antitrust_interaction_form" model="ir.ui.view">
+        <field name="name">antitrust.interaction.form</field>
+        <field name="model">antitrust.interaction</field>
+        <field name="arch" type="xml">
+            <form string="Competitor Interaction">
+                <header>
+                    <button name="action_submit" type="object" string="Submit" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_clear" type="object" string="Clear" class="oe_highlight"
+                            invisible="state != 'cpo_review'" groups="bxi_hr_policy.group_policy_cpo"/>
+                    <button name="action_reject" type="object" string="Not Allowed"
+                            invisible="state != 'cpo_review'" groups="bxi_hr_policy.group_policy_cpo"/>
+                    <button name="action_confirm_no_issue" type="object" string="No Prohibited Topic Discussed"
+                            class="oe_highlight" invisible="state != 'cleared'"/>
+                    <button name="action_report_incident" type="object" string="Report Incident"
+                            invisible="state != 'cleared'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,cleared,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="employee_id" readonly="1"/>
+                            <field name="interaction_type" readonly="state != 'draft'"/>
+                            <field name="event_date" readonly="state != 'draft'"/>
+                            <field name="risk_level"/>
+                        </group>
+                        <group>
+                            <field name="organisations" readonly="state != 'draft'"/>
+                            <field name="purpose" readonly="state != 'draft'"/>
+                            <field name="agenda" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <field name="attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
+                    <separator string="Prohibited Topics"/>
+                    <field name="topics_html" nolabel="1" readonly="1"/>
+                    <group>
+                        <field name="commit_no_topics" readonly="state != 'draft'"/>
+                        <field name="commit_report" readonly="state != 'draft'"/>
+                    </group>
+                    <group string="Compliance Review" invisible="state in ('draft',) or risk_level != 'high'">
+                        <field name="conditions" readonly="state != 'cpo_review'"/>
+                        <field name="cpo_attendance" readonly="state != 'cpo_review'"/>
+                        <field name="reject_reason" readonly="state != 'cpo_review'" invisible="state not in ('cpo_review', 'rejected')"/>
+                        <field name="reviewed_by_id" invisible="not reviewed_by_id"/>
+                    </group>
+                    <group invisible="not post_declared_date">
+                        <field name="post_declared_date"/>
+                        <field name="incident_id" invisible="not incident_id"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_antitrust_interaction_search" model="ir.ui.view">
+        <field name="name">antitrust.interaction.search</field>
+        <field name="model">antitrust.interaction</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="organisations"/>
+                <field name="employee_id"/>
+                <filter name="mine" string="My Declarations" domain="[('employee_user_id', '=', uid)]"/>
+                <filter name="team" string="My Team" domain="[('manager_id.user_id', '=', uid)]"/>
+                <filter name="to_review" string="To Review" domain="[('state', '=', 'cpo_review')]"/>
+                <filter name="high" string="High Risk" domain="[('risk_level', '=', 'high')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_antitrust_interaction_mine" model="ir.actions.act_window">
+        <field name="name">Declare Interaction</field>
+        <field name="res_model">antitrust.interaction</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_mine': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Meeting competitors or attending a trade association?</p>
+            <p>Declare it beforehand. High-risk interactions are reviewed by the compliance team.</p>
+        </field>
+    </record>
+
+    <record id="action_antitrust_interaction_review" model="ir.actions.act_window">
+        <field name="name">Interactions to Review</field>
+        <field name="res_model">antitrust.interaction</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_to_review': 1}</field>
+    </record>
+</odoo>

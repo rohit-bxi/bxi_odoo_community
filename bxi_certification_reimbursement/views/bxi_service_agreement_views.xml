@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_bxi_service_agreement_list" model="ir.ui.view">
+        <field name="name">bxi.service.agreement.list</field>
+        <field name="model">bxi.service.agreement</field>
+        <field name="arch" type="xml">
+            <list string="Service Agreements" decoration-muted="state in ('completed', 'cancelled', 'waived')">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="certification_label"/>
+                <field name="amount" sum="Total"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="start_date"/>
+                <field name="period_months"/>
+                <field name="end_date"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'sent'"
+                       decoration-success="state in ('active', 'completed')"
+                       decoration-warning="state == 'recovered'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_service_agreement_form" model="ir.ui.view">
+        <field name="name">bxi.service.agreement.form</field>
+        <field name="model">bxi.service.agreement</field>
+        <field name="arch" type="xml">
+            <form string="Service Agreement">
+                <header>
+                    <button name="action_send_for_signature" type="object" string="Send for Signature"
+                            class="oe_highlight" invisible="state != 'draft'"
+                            groups="bxi_certification_reimbursement.group_certification_manager,hr.group_hr_user"/>
+                    <button name="action_mark_signed" type="object" string="Mark as Signed (Paper Copy)"
+                            invisible="state not in ('draft', 'sent')"
+                            groups="bxi_certification_reimbursement.group_certification_manager,hr.group_hr_user"
+                            confirm="Confirm that the employee has signed a paper copy of this agreement."/>
+                    <button name="action_mark_recovered" type="object" string="Mark Recovered"
+                            invisible="state != 'active'"
+                            groups="bxi_certification_reimbursement.group_certification_manager,hr.group_hr_user"/>
+                    <button name="action_waive" type="object" string="Waive"
+                            invisible="state != 'active'"
+                            groups="bxi_certification_reimbursement.group_certification_manager"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state not in ('draft', 'sent')"
+                            groups="bxi_certification_reimbursement.group_certification_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,sent,active,completed"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_sign_request" type="object" class="oe_stat_button"
+                                icon="fa-pencil" invisible="not sign_request_id"
+                                groups="bxi_certification_reimbursement.group_certification_manager,hr.group_hr_user">
+                            <span>Signature</span>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id" readonly="1"/>
+                            <field name="certification_label"/>
+                            <field name="request_id" invisible="not request_id"/>
+                            <field name="voucher_id" invisible="not voucher_id"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="amount" readonly="state != 'draft'"/>
+                            <field name="start_date" readonly="state != 'draft'"/>
+                            <field name="period_months" readonly="state != 'draft'"/>
+                            <field name="end_date"/>
+                            <field name="signed_date" invisible="not signed_date"/>
+                            <field name="sign_request_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_service_agreement_search" model="ir.ui.view">
+        <field name="name">bxi.service.agreement.search</field>
+        <field name="model">bxi.service.agreement</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="employee_id"/>
+                <filter name="active_agreements" string="Active" domain="[('state', '=', 'active')]"/>
+                <filter name="to_sign" string="Waiting for Signature" domain="[('state', 'in', ('draft', 'sent'))]"/>
+                <group>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bxi_service_agreement" model="ir.actions.act_window">
+        <field name="name">Service Agreements</field>
+        <field name="res_model">bxi.service.agreement</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'create': False}</field>
+    </record>
+
+    <record id="view_bxi_service_agreement_tier_list" model="ir.ui.view">
+        <field name="name">bxi.service.agreement.tier.list</field>
+        <field name="model">bxi.service.agreement.tier</field>
+        <field name="arch" type="xml">
+            <list string="Service Agreement Tiers" editable="bottom">
+                <field name="min_amount"/>
+                <field name="max_amount"/>
+                <field name="months"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_bxi_service_agreement_tier" model="ir.actions.act_window">
+        <field name="name">Service Agreement Tiers</field>
+        <field name="res_model">bxi.service.agreement.tier</field>
+        <field name="view_mode">list</field>
+    </record>
+
+</odoo>

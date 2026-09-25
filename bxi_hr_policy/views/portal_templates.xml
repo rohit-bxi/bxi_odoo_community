@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="portal_my_home_policies" inherit_id="portal.portal_my_home" name="Portal Home - Company Policies">
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="icon" t-value="'/bxi_hr_policy/static/src/img/policy-icon.svg'"/>
+                <t t-set="title">Company Policies</t>
+                <t t-set="text">Read and acknowledge company policies</t>
+                <t t-set="url" t-value="'/my/policies'"/>
+                <t t-set="placeholder_count" t-value="'policy_ack_count'"/>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="portal_my_policies" name="My Company Policies">
+        <t t-call="portal.portal_layout">
+            <h3 class="my-3">Company Policies</h3>
+            <div t-if="locked" class="alert alert-warning">
+                Please acknowledge the overdue company policies below to continue using the employee portal.
+            </div>
+            <p t-if="not acks" class="text-muted">There are no company policies for you to acknowledge.</p>
+            <div t-if="acks" class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr><th>Policy</th><th>Version</th><th>Due</th><th>Status</th><th/></tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="acks" t-as="ack">
+                            <td t-esc="ack.policy_id.name"/>
+                            <td t-esc="ack.version_no"/>
+                            <td><span t-field="ack.due_date"/></td>
+                            <td>
+                                <span t-if="ack.state == 'overdue'" class="badge text-bg-danger">Overdue</span>
+                                <span t-elif="ack.state == 'pending'" class="badge text-bg-warning">Pending</span>
+                                <span t-elif="ack.state == 'acknowledged'" class="badge text-bg-success">Acknowledged</span>
+                                <span t-else="" class="badge text-bg-secondary">Waived</span>
+                            </td>
+                            <td class="text-end">
+                                <a t-attf-href="/my/policies/#{ack.id}" class="btn btn-sm"
+                                   t-att-class="'btn-primary' if ack.state in ('pending', 'overdue') else 'btn-outline-secondary'">
+                                    <t t-if="ack.state in ('pending', 'overdue')">Read &amp; Acknowledge</t>
+                                    <t t-else="">View</t>
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_policy_acknowledgement" name="Company Policy">
+        <t t-call="portal.portal_layout">
+            <div class="my-3">
+                <a href="/my/policies">&#8592; Company Policies</a>
+                <h3 class="mt-2"><t t-esc="ack.policy_id.name"/> <small class="text-muted">v<t t-esc="ack.version_no"/></small></h3>
+            </div>
+            <div t-if="error == 'agree'" class="alert alert-danger">Please tick the box to confirm you agree.</div>
+            <div t-if="error == 'open'" class="alert alert-danger">Please open and read the policy before acknowledging it.</div>
+            <div class="border rounded mb-3" style="height: 70vh;">
+                <iframe t-attf-src="/bxi_hr_policy/preview/version/#{ack.version_id.id}#toolbar=0&amp;navpanes=0"
+                        style="width: 100%; height: 100%; border: 0;" t-att-title="ack.policy_id.name"/>
+            </div>
+            <t t-if="ack.state in ('pending', 'overdue')">
+                <form method="post" t-attf-action="/my/policies/#{ack.id}/acknowledge">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" name="agree" id="agree" required="required"/>
+                        <label class="form-check-label" for="agree" t-esc="ack.statement"/>
+                    </div>
+                    <button type="submit" class="btn btn-primary">I Acknowledge</button>
+                </form>
+            </t>
+            <div t-elif="ack.state == 'acknowledged'" class="alert alert-success">
+                You acknowledged this policy on <span t-field="ack.acknowledged_date"/>.
+            </div>
+        </t>
+    </template>
+
+</odoo>

@@ -53,9 +53,10 @@ class DocumentWorkspace(models.Model):
              'workspace and all of its documents without distinction.\n\n')
 
 
-    _sql_constraints = [
-        ('name_company_uniq', 'unique (name, company_id)', 'The name of the workspace must be unique per company!'),
-    ]
+    _name_company_uniq = models.Constraint(
+        'unique (name, company_id)',
+        'The name of the workspace must be unique per company!',
+    )
 
     def action_button_view_document(self):
         """

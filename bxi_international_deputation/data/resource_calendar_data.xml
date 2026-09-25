@@ -1,0 +1,455 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- One working calendar per Working Days country: add the host public holidays
+         as Time Off on the calendar (Resource > Working Schedules > Time Off). -->
+    <record id="calendar_host_uk" model="resource.calendar">
+        <field name="name">Host: United Kingdom (Mon-Fri)</field>
+        <field name="tz">Europe/London</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_fr" model="resource.calendar">
+        <field name="name">Host: France (Mon-Fri)</field>
+        <field name="tz">Europe/Paris</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_it" model="resource.calendar">
+        <field name="name">Host: Italy (Mon-Fri)</field>
+        <field name="tz">Europe/Rome</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_nl" model="resource.calendar">
+        <field name="name">Host: Netherlands (Mon-Fri)</field>
+        <field name="tz">Europe/Amsterdam</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_be" model="resource.calendar">
+        <field name="name">Host: Belgium (Mon-Fri)</field>
+        <field name="tz">Europe/Brussels</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_ch" model="resource.calendar">
+        <field name="name">Host: Switzerland (Mon-Fri)</field>
+        <field name="tz">Europe/Zurich</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_pl" model="resource.calendar">
+        <field name="name">Host: Poland (Mon-Fri)</field>
+        <field name="tz">Europe/Warsaw</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_fi" model="resource.calendar">
+        <field name="name">Host: Finland (Mon-Fri)</field>
+        <field name="tz">Europe/Helsinki</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_za" model="resource.calendar">
+        <field name="name">Host: South Africa (Mon-Fri)</field>
+        <field name="tz">Africa/Johannesburg</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_ie" model="resource.calendar">
+        <field name="name">Host: Ireland (Mon-Fri)</field>
+        <field name="tz">Europe/Dublin</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_il" model="resource.calendar">
+        <field name="name">Host: Israel (Sun-Thu)</field>
+        <field name="tz">Asia/Jerusalem</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Sunday Morning', 'dayofweek': '6', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Sunday Afternoon', 'dayofweek': '6', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_ru" model="resource.calendar">
+        <field name="name">Host: Russia (Mon-Fri)</field>
+        <field name="tz">Europe/Moscow</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_sg" model="resource.calendar">
+        <field name="name">Host: Singapore (Mon-Fri)</field>
+        <field name="tz">Asia/Singapore</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_ae" model="resource.calendar">
+        <field name="name">Host: United Arab Emirates (Mon-Fri)</field>
+        <field name="tz">Asia/Dubai</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_sa" model="resource.calendar">
+        <field name="name">Host: Saudi Arabia (Sun-Thu)</field>
+        <field name="tz">Asia/Riyadh</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Sunday Morning', 'dayofweek': '6', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Sunday Afternoon', 'dayofweek': '6', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_qa" model="resource.calendar">
+        <field name="name">Host: Qatar (Sun-Thu)</field>
+        <field name="tz">Asia/Qatar</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Sunday Morning', 'dayofweek': '6', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Sunday Afternoon', 'dayofweek': '6', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_kw" model="resource.calendar">
+        <field name="name">Host: Kuwait (Sun-Thu)</field>
+        <field name="tz">Asia/Kuwait</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Sunday Morning', 'dayofweek': '6', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Sunday Afternoon', 'dayofweek': '6', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_bh" model="resource.calendar">
+        <field name="name">Host: Bahrain (Sun-Thu)</field>
+        <field name="tz">Asia/Bahrain</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Sunday Morning', 'dayofweek': '6', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Sunday Afternoon', 'dayofweek': '6', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_om" model="resource.calendar">
+        <field name="name">Host: Oman (Sun-Thu)</field>
+        <field name="tz">Asia/Muscat</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Sunday Morning', 'dayofweek': '6', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Sunday Afternoon', 'dayofweek': '6', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_us" model="resource.calendar">
+        <field name="name">Host: United States (Mon-Fri)</field>
+        <field name="tz">America/New_York</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_ca" model="resource.calendar">
+        <field name="name">Host: Canada (Mon-Fri)</field>
+        <field name="tz">America/Toronto</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_au" model="resource.calendar">
+        <field name="name">Host: Australia (Mon-Fri)</field>
+        <field name="tz">Australia/Sydney</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_nz" model="resource.calendar">
+        <field name="name">Host: New Zealand (Mon-Fri)</field>
+        <field name="tz">Pacific/Auckland</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_my" model="resource.calendar">
+        <field name="name">Host: Malaysia (Mon-Fri)</field>
+        <field name="tz">Asia/Kuala_Lumpur</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+    <record id="calendar_host_jp" model="resource.calendar">
+        <field name="name">Host: Japan (Mon-Fri)</field>
+        <field name="tz">Asia/Tokyo</field>
+        <field name="company_id" eval="False"/>
+        <field name="attendance_ids" eval="[(5, 0, 0),
+                (0, 0, {'name': 'Monday Morning', 'dayofweek': '0', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Monday Afternoon', 'dayofweek': '0', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Tuesday Morning', 'dayofweek': '1', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Tuesday Afternoon', 'dayofweek': '1', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Wednesday Morning', 'dayofweek': '2', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Wednesday Afternoon', 'dayofweek': '2', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Thursday Morning', 'dayofweek': '3', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Thursday Afternoon', 'dayofweek': '3', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+                (0, 0, {'name': 'Friday Morning', 'dayofweek': '4', 'hour_from': 9, 'hour_to': 13, 'day_period': 'morning'}),
+                (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 14, 'hour_to': 18, 'day_period': 'afternoon'}),
+            ]"/>
+    </record>
+
+</odoo>

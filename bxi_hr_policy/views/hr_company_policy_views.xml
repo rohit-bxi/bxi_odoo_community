@@ -17,6 +17,8 @@
                 <field name="upload_date" string="Upload Date"/>
                 <field name="uploaded_by_id" string="Uploaded By" widget="many2one_avatar_user"/>
                 <field name="company_id" groups="base.group_multi_company"/>
+                <field name="requires_acknowledgement" optional="show"/>
+                <field name="ack_rate" string="% Acknowledged" optional="show"/>
             </list>
         </field>
     </record>
@@ -27,7 +29,21 @@
         <field name="model">hr.company.policy</field>
         <field name="arch" type="xml">
             <form string="Upload Company Policy">
+                <header>
+                    <button name="action_request_acknowledgement" type="object" string="Request Acknowledgement"
+                            invisible="not requires_acknowledgement or not current_version_id"
+                            confirm="Ask every employee in scope who has not acknowledged the current version yet?"/>
+                </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_versions" type="object" class="oe_stat_button" icon="fa-files-o">
+                            <field name="version_count" widget="statinfo" string="Versions"/>
+                        </button>
+                        <button name="action_view_acknowledgements" type="object" class="oe_stat_button" icon="fa-check-square-o"
+                                invisible="not requires_acknowledgement">
+                            <field name="ack_rate" widget="statinfo" string="% Acknowledged"/>
+                        </button>
+                    </div>
                     <div class="oe_title mb-4">
                         <label for="name" string="Policy Document Name" class="oe_edit_only fw-bold text-uppercase fs-6 text-muted"/>
                         <h1>
@@ -38,11 +54,12 @@
                     <group>
                         <group string="Document Attachment">
                             <field name="policy_filename" invisible="1"/>
-                            <field name="policy_document" 
-                                   string="Policy Document" 
-                                   filename="policy_filename" 
+                            <field name="current_version_id" readonly="1"/>
+                            <field name="policy_document"
+                                   string="Published Document"
+                                   filename="policy_filename"
                                    widget="binary"
-                                   required="1"/>
+                                   readonly="1"/>
                             <field name="file_type" string="Format" readonly="1" invisible="not policy_filename"/>
                         </group>
                         <group string="Publication Information">
@@ -52,7 +69,47 @@
                         </group>
                     </group>
 
+                    <group>
+                        <group string="Acknowledgement">
+                            <field name="requires_acknowledgement"/>
+                            <field name="scope" invisible="not requires_acknowledgement"/>
+                            <field name="scope_company_ids" widget="many2many_tags"
+                                   invisible="scope != 'companies' or not requires_acknowledgement"
+                                   required="scope == 'companies'"/>
+                            <field name="scope_department_ids" widget="many2many_tags"
+                                   invisible="scope != 'departments' or not requires_acknowledgement"
+                                   required="scope == 'departments'"/>
+                            <field name="ack_statement" invisible="not requires_acknowledgement"/>
+                        </group>
+                        <group string="Deadline &amp; Escalation" invisible="not requires_acknowledgement">
+                            <field name="ack_due_days"/>
+                            <field name="reminder_interval_days"/>
+                            <field name="escalate_manager_after_days"/>
+                            <field name="escalate_hr_after_days"/>
+                            <field name="block_portal_until_ack"/>
+                        </group>
+                    </group>
+                    <div class="text-muted mb-3" invisible="company_id">
+                        This policy applies to every company.
+                    </div>
+
                     <notebook>
+                        <page string="Versions" name="versions">
+                            <field name="version_ids" context="{'default_policy_id': id}">
+                                <list decoration-muted="state == 'superseded'" decoration-success="state == 'published'">
+                                    <field name="version_no"/>
+                                    <field name="valid_from"/>
+                                    <field name="valid_to"/>
+                                    <field name="description"/>
+                                    <field name="author_id" widget="many2one_avatar_user"/>
+                                    <field name="approved_by_id" widget="many2one_avatar_user"/>
+                                    <field name="state" widget="badge"
+                                           decoration-info="state in ('submitted', 'approved')"
+                                           decoration-success="state == 'published'"
+                                           decoration-danger="state == 'rejected'"/>
+                                </list>
+                            </field>
+                        </page>
                         <page string="Policy Summary / Notes">
                             <field name="description" placeholder="Add any relevant notes, version history, or applicability guidelines for this policy..."/>
                         </page>

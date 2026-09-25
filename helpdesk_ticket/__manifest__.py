@@ -4,7 +4,8 @@
     'category': 'Human Resources',
     'version': '19.0.1.0.0',
     'sequence': 1,
-    'author': 'BXI',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'summary': 'Employee form customization',
     'description': 'Helpdesk Tickets Customizations',
     'depends': ['helpdesk'],
@@ -18,4 +19,5 @@
     'installable': True,
     'application': False,
     'auto_install': False,
+    'license': 'LGPL-3',
 }

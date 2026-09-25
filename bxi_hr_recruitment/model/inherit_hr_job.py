@@ -178,6 +178,8 @@ class HrJob(models.Model):
         [
             ('draft', 'Draft'),
             ('rm_approval', 'RM Approval'),
+            ('manager_approval', 'Manager Approval'),
+            ('finance_approval', 'Finance Approval'),
             ('hr_approval', 'HR Approval'),
             ('approved', 'Approved'),
             ('rejected', 'Rejected'),
@@ -201,9 +203,34 @@ class HrJob(models.Model):
         tracking=True,
         copy=False,
     )
+    manager_approver_id = fields.Many2one(
+        'hr.employee',
+        string='Manager Approver',
+        tracking=True,
+        copy=False,
+    )
+
+    finance_approver_id = fields.Many2one(
+        'hr.employee',
+        string='Finance Approver',
+        tracking=True,
+        copy=False,
+    )
 
     rm_approval_date = fields.Datetime(
         string='RM Approval Date',
+        readonly=True,
+        copy=False,
+    )
+
+    manager_approval_date = fields.Datetime(
+        string='Manager Approval Date',
+        readonly=True,
+        copy=False,
+    )
+
+    finance_approval_date = fields.Datetime(
+        string='Finance Approval Date',
         readonly=True,
         copy=False,
     )
@@ -239,6 +266,38 @@ class HrJob(models.Model):
                 raise UserError(
                     _(
                         "The selected Reporting Manager does not "
+                        "have a related user."
+                    )
+                )
+
+            if not job.manager_approver_id:
+                raise UserError(
+                    _(
+                        "Please select the Manager Approver "
+                        "before submitting the job for approval."
+                    )
+                )
+
+            if not job.manager_approver_id.user_id:
+                raise UserError(
+                    _(
+                        "The selected Manager Approver does not "
+                        "have a related user."
+                    )
+                )
+
+            if not job.finance_approver_id:
+                raise UserError(
+                    _(
+                        "Please select the Finance Approver "
+                        "before submitting the job for approval."
+                    )
+                )
+
+            if not job.finance_approver_id.user_id:
+                raise UserError(
+                    _(
+                        "The selected Finance Approver does not "
                         "have a related user."
                     )
                 )
@@ -293,40 +352,78 @@ class HrJob(models.Model):
                 )
 
             job.write({
-                'approval_state': 'hr_approval',
+                'approval_state': 'manager_approval',
                 'rm_approval_date': fields.Datetime.now(),
+            })
+
+            job._send_manager_approval_email()
+
+    def action_manager_approve(self):
+        current_employee = self.env['hr.employee'].search(
+            [('user_id', '=', self.env.user.id)],
+            limit=1,
+        )
+
+        for job in self:
+            if job.approval_state != 'manager_approval':
+                raise UserError(_("This job is not waiting for Manager approval."))
+
+            if not job.manager_approver_id:
+                raise UserError(_("Manager Approver is not configured."))
+
+            if job.manager_approver_id != current_employee:
+                raise UserError(
+                    _("Only the assigned Manager Approver can approve this job.")
+                )
+
+            job.write({
+                'approval_state': 'finance_approval',
+                'manager_approval_date': fields.Datetime.now(),
+            })
+
+            job._send_finance_approval_email()
+
+    def action_finance_approve(self):
+        current_employee = self.env['hr.employee'].search(
+            [('user_id', '=', self.env.user.id)],
+            limit=1,
+        )
+
+        for job in self:
+            if job.approval_state != 'finance_approval':
+                raise UserError(_("This job is not waiting for Finance approval."))
+
+            if not job.finance_approver_id:
+                raise UserError(_("Finance Approver is not configured."))
+
+            if job.finance_approver_id != current_employee:
+                raise UserError(
+                    _("Only the assigned Finance Approver can approve this job.")
+                )
+
+            job.write({
+                'approval_state': 'hr_approval',
+                'finance_approval_date': fields.Datetime.now(),
             })
 
             job._send_hr_approval_email()
 
     def action_hr_approve(self):
         current_employee = self.env['hr.employee'].search(
-            [
-                ('user_id', '=', self.env.user.id),
-            ],
+            [('user_id', '=', self.env.user.id)],
             limit=1,
         )
 
         for job in self:
-
             if job.approval_state != 'hr_approval':
-                raise UserError(
-                    _(
-                        "This job is not waiting for HR approval."
-                    )
-                )
+                raise UserError(_("This job is not waiting for HR approval."))
 
             if not job.hr_approver_id:
-                raise UserError(
-                    _("HR Approver is not configured.")
-                )
+                raise UserError(_("HR Approver is not configured."))
 
             if job.hr_approver_id != current_employee:
                 raise UserError(
-                    _(
-                        "Only the assigned HR Approver "
-                        "can approve this job."
-                    )
+                    _("Only the assigned HR Approver can approve this job.")
                 )
 
             job.write({
@@ -339,6 +436,8 @@ class HrJob(models.Model):
 
             if job.approval_state not in (
                 'rm_approval',
+                'manager_approval',
+                'finance_approval',
                 'hr_approval',
             ):
                 raise UserError(
@@ -465,6 +564,88 @@ class HrJob(models.Model):
         }
 
         self.env['mail.mail'].sudo().create(mail_values).send()
+
+    # =========================================================
+    # EMAIL - MANAGER
+    # =========================================================
+
+    def _send_manager_approval_email(self):
+        self.ensure_one()
+
+        if not self.manager_approver_id or not self.manager_approver_id.work_email:
+            _logger.warning(
+                "Cannot send Manager approval email for Job %s: Manager email is missing.",
+                self.display_name,
+            )
+            return
+
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        job_url = f"{base_url}/web#id={self.id}&model=hr.job&view_type=form"
+
+        subject = _("Manager Approval Required - %s") % self.name
+        body = f"""
+            <div style="font-family: Arial, sans-serif; font-size: 14px;">
+                <p>Hello {self.manager_approver_id.name},</p>
+                <p>The Reporting Manager has approved the following job position.</p>
+                <p>The job is now waiting for your Manager approval.</p>
+                <p><b>Job Position:</b> {self.name}</p>
+                <p><b>Department:</b> {self.department_id.name or ''}</p>
+                <p><b>Company:</b> {self.company_id.name or ''}</p>
+                <p><b>Positions:</b> {self.expected_employees or 0}</p>
+                <p><a href="{job_url}">Review Job Position</a></p>
+                <p>Regards,<br/>Recruitment Team</p>
+            </div>
+        """
+
+        self.env['mail.mail'].sudo().create({
+            'subject': subject,
+            'body_html': body,
+            'email_from': 'hrsupport@bxitech.com',
+            'email_to': self.manager_approver_id.work_email,
+            'model': 'hr.job',
+            'res_id': self.id,
+        }).send()
+
+    # =========================================================
+    # EMAIL - FINANCE
+    # =========================================================
+
+    def _send_finance_approval_email(self):
+        self.ensure_one()
+
+        if not self.finance_approver_id or not self.finance_approver_id.work_email:
+            _logger.warning(
+                "Cannot send Finance approval email for Job %s: Finance email is missing.",
+                self.display_name,
+            )
+            return
+
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        job_url = f"{base_url}/web#id={self.id}&model=hr.job&view_type=form"
+
+        subject = _("Finance Approval Required - %s") % self.name
+        body = f"""
+            <div style="font-family: Arial, sans-serif; font-size: 14px;">
+                <p>Hello {self.finance_approver_id.name},</p>
+                <p>The Manager has approved the following job position.</p>
+                <p>The job is now waiting for your Finance approval.</p>
+                <p><b>Job Position:</b> {self.name}</p>
+                <p><b>Department:</b> {self.department_id.name or ''}</p>
+                <p><b>Company:</b> {self.company_id.name or ''}</p>
+                <p><b>Positions:</b> {self.expected_employees or 0}</p>
+                <p><a href="{job_url}">Review Job Position</a></p>
+                <p>Regards,<br/>Recruitment Team</p>
+            </div>
+        """
+
+        self.env['mail.mail'].sudo().create({
+            'subject': subject,
+            'body_html': body,
+            'email_from': 'hrsupport@bxitech.com',
+            'email_to': self.finance_approver_id.work_email,
+            'model': 'hr.job',
+            'res_id': self.id,
+        }).send()
 
     # =========================================================
     # EMAIL - HR

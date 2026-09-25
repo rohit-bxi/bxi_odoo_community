@@ -15,6 +15,13 @@ class HrEmployee(models.Model):
 
     version_id = fields.Many2one('hr.version', groups="base.group_user")
     current_version_id = fields.Many2one('hr.version', groups="base.group_user")
+    is_contractor = fields.Boolean(
+        string="Is Contractor",
+        compute="_compute_is_contractor",
+        help="Technical field used to show/hide contractor-specific UI "
+             "elements without requiring direct access to the group-"
+             "restricted 'employee_type' field.",
+    )
     employee_code = fields.Char(string="Employee Code")
     pa_name = fields.Char(string="PA Name")  
     psa = fields.Char(string="PSA")
@@ -27,6 +34,9 @@ class HrEmployee(models.Model):
     medical_insurance_no = fields.Char(string="Medical Insurance No.")
     bank_ifsc = fields.Char(string="IFSC Code", compute="_compute_bank_details", inverse="_inverse_bank_details", store=True)
     bank_document = fields.Binary(string="Cancelled Cheque/Passbook Front Page")  
+    bank_document_filename = fields.Char(
+        string="Bank Document Filename"
+    )
     bank_account_number = fields.Char(string="Bank Acoount Number", compute="_compute_bank_details", inverse="_inverse_bank_details", store=True)
     bank_name = fields.Char(string="Bank Name", compute="_compute_bank_details", inverse="_inverse_bank_details", store=True)
     nps_contribution = fields.Monetary(
@@ -63,7 +73,18 @@ class HrEmployee(models.Model):
         "hr.departure.reason",
         string="Departure Reason",
     )
-    departure_description = fields.Text(
+    departure_description = fields.Selection(
+        selection=[
+            ('better_opportunity', 'Better Opportunity'),
+            ('career_growth', 'Career Growth'),
+            ('higher_studies', 'Higher Studies'),
+            ('personal_reasons', 'Personal Reasons'),
+            ('health_reasons', 'Health Reasons'),
+            ('work_life_balance', 'Work-Life Balance'),
+            ('compensation', 'Compensation'),
+            ('performance', 'Performance'),
+            ('misconduct', 'Misconduct'),
+        ],
         string="Departure Description",
     )
     experience_letter_attachment_id = fields.Many2one(
@@ -171,6 +192,11 @@ class HrEmployee(models.Model):
             "url": "/web/content/%s?download=true" % attachment.id,
             "target": "self",
         }
+
+    @api.depends('employee_type')
+    def _compute_is_contractor(self):
+        for rec in self:
+            rec.is_contractor = rec.employee_type == 'contractor'
 
     @api.depends('epf_number')
     def _compute_pf_number(self):
@@ -349,42 +375,60 @@ class HrEmployee(models.Model):
             if rec.bank_name:
                 domain = [('name', '=ilike', rec.bank_name)]
                 if rec.bank_ifsc:
-                    domain = ['|', ('name', '=ilike', rec.bank_name), ('bic', '=ilike', rec.bank_ifsc)]
-                bank = self.env['res.bank'].sudo().search(domain, limit=1)
+                    domain = [
+                        '|',
+                        ('name', '=ilike', rec.bank_name),
+                        ('bic', '=ilike', rec.bank_ifsc),
+                    ]
+
+                bank = self.env['res.bank'].sudo().search(
+                    domain,
+                    limit=1
+                )
+
                 if not bank:
                     bank = self.env['res.bank'].sudo().create({
                         'name': rec.bank_name,
                         'bic': rec.bank_ifsc or '',
                     })
+
                 elif rec.bank_ifsc and not bank.bic:
-                    bank.bic = rec.bank_ifsc
+                    bank.sudo().write({
+                        'bic': rec.bank_ifsc,
+                    })
 
-            bank_account = rec.bank_account_ids.filtered(lambda a: a.partner_id == partner)[:1]
+            # Find existing bank account for this employee's partner
+            bank_account = self.env['res.partner.bank'].sudo().search([
+                ('partner_id', '=', partner.id),
+                ('acc_number', '=', rec.bank_account_number),
+            ], limit=1)
+
+            # If no existing account, create one
             if not bank_account:
-                bank_account = self.env['res.partner.bank'].sudo().create([
-                    ('partner_id', '=', partner.id),
-                    ('acc_number', '=', rec.bank_account_number)
-                ], limit=1)
-
-            if bank_account:
                 vals = {
-                    'acc_number': rec.bank_account_number,
-                }
-                if bank:
-                    vals['bank_id'] = bank.id
-                bank_account.sudo().write(vals)
-            else:
-                vals = {
-                    'acc_number': rec.bank_account_number,
                     'partner_id': partner.id,
+                    'acc_number': rec.bank_account_number,
                 }
                 if bank:
                     vals['bank_id'] = bank.id
                 bank_account = self.env['res.partner.bank'].sudo().create(vals)
+            else:
+                # Update existing account
+                vals = {
+                    'acc_number': rec.bank_account_number,
+                }
 
+                if bank:
+                    vals['bank_id'] = bank.id
+
+                bank_account.sudo().write(vals)
+
+            # Make sure employee is linked to the bank account
             if bank_account not in rec.bank_account_ids:
-                rec.write({'bank_account_ids': [(4, bank_account.id)]})
-    # portal usage
+                rec.sudo().write({
+                    'bank_account_ids': [(4, bank_account.id)]
+                }) 
+
     portal_token = fields.Char(copy=False)
     portal_token_expiry = fields.Datetime(copy=False)
     portal_otp = fields.Char(copy=False)
@@ -610,10 +654,23 @@ class HrEmployee(models.Model):
         'attachment_id',
         string="Data Privacy Document"
     )
-    is_document_submitted = fields.Boolean(
-        string="Documents Submitted",
-        default=False
-    )
+    data_security_doc = fields.Many2many(
+        'ir.attachment',
+        'hr_employee_data_security_rel',
+        'employee_id',
+        'attachment_id',
+        string="Data Security Document"
+    ) 
+    passport_doc = fields.Many2many(
+        'ir.attachment',
+        'hr_employee_passport_rel',
+        'employee_id',
+        'attachment_id',
+        string="Passport Document"
+    )   
+    passport_number = fields.Char(
+            string='Passport Number'
+        ) 
     
     def action_send_data_privacy_doc(self):
         self.ensure_one()
@@ -739,10 +796,14 @@ class HrApplicantExperience(models.Model):
     _name = 'hr.experience.employee'
     _description = 'Applicant Experience'
 
-    employee_id = fields.Many2one('hr.employee')
+    employee_id = fields.Many2one(
+        'hr.employee',
+        string='Employee',
+        ondelete='cascade'
+    )
     company_name = fields.Char(
-            string='Company Name'
-        ) 
+        string='Company Name'
+    )
     bank_statement_id = fields.Many2many(
         'ir.attachment',
         'hr_employee_bank_stmt_rel',
@@ -757,7 +818,9 @@ class HrApplicantExperience(models.Model):
         'attachment_id',
         string="Last 3 Month Salary Slip"
     )
-    years = fields.Float("Years")
+    years = fields.Float(
+        string="Years"
+    )
     experience_certificate = fields.Many2many(
         'ir.attachment',
         'hr_employee_experience_certificate_rel',
@@ -765,6 +828,7 @@ class HrApplicantExperience(models.Model):
         'attachment_id',
         string="Experience Letter"
     )
+
     joining_letter = fields.Many2many(
         'ir.attachment',
         'hr_employee_joining_letter_rel',
@@ -772,6 +836,7 @@ class HrApplicantExperience(models.Model):
         'attachment_id',
         string="Offer/Joining Letter"
     )
+
     relieving_letter = fields.Many2many(
         'ir.attachment',
         'hr_employee_relieving_letter_rel',
@@ -779,12 +844,13 @@ class HrApplicantExperience(models.Model):
         'attachment_id',
         string="Relieving Letter"
     )
+
     other_certificate = fields.Many2many(
         'ir.attachment',
         'hr_employee_apprsail_letter_rel',
         'employee_id',
         'attachment_id',
-        string="Apprsail Letter"
+        string="Appraisal Letter"
     )
 
 

@@ -4,7 +4,7 @@ from odoo.http import request
 
 class EmployeeAppraisalAPI(http.Controller):
 
-    @http.route('/api/employee/appraisal',type='json',auth='public',methods=['POST'], csrf=False)
+    @http.route('/api/employee/appraisal', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
     def get_employee_appraisal(self, **kwargs):
         email = kwargs.get('employee_email')
         letter_type = kwargs.get('letter_type')
@@ -231,3 +231,158 @@ class EmployeeAppraisalAPI(http.Controller):
             'total_records': len(response),
             'data': response
         }
+
+    @http.route(
+        '/my/performance-bonus',
+        type='http',
+        auth='user',
+        website=True,
+    )
+    def performance_bonus(self, **kwargs):
+
+        employee = request.env['hr.employee'].sudo().search(
+            [
+                ('user_id', '=', request.env.user.id),
+            ],
+            limit=1,
+        )
+
+        if not employee:
+            return request.not_found()
+
+        appraisals = request.env['hr.employee.appraisal'].sudo().search(
+            [
+                ('employee_id', '=', employee.id),
+                ('state', '=', 'released'),
+                ('release_date', '!=', False),
+            ],
+            order='release_date desc, id desc',
+        )
+
+        values = {
+            'employee': employee,
+            'appraisals': appraisals,
+        }
+
+        return request.render(
+            'bxi_hr_performance_bonus.portal_performance_bonus',
+            values,
+        )
+    
+    @http.route('/api/employee/appraisal/letter_types', type='json', auth='public', methods=['POST'], csrf=False)
+    def get_available_letter_types(self, **kwargs):
+        email = kwargs.get('employee_email')
+        if not email:
+            return {
+                'status': False,
+                'message': 'Employee email is required'
+            }
+        employee = request.env['hr.employee'].sudo().search([
+            ('work_email', '=', email)
+        ])
+        if not employee:
+            return {
+                'status': False,
+                'message': 'Employee not found'
+            }
+        released_appraisals = request.env['hr.employee.appraisal'].sudo().search([
+            ('employee_id', 'in', employee.ids),
+            ('state', '=', 'released'),
+            ('release_date', '!=', False),
+        ])
+        if not released_appraisals:
+            return {
+                'status': False,
+                'message': 'No released appraisal records found'
+            }
+
+        # Selection field: (value, label) pairs
+        letter_type_selection = dict(
+            released_appraisals._fields['letter_type'].selection
+        )
+        available_types = sorted(set(released_appraisals.mapped('letter_type')))
+        letter_types = [
+            {'value': lt, 'label': letter_type_selection.get(lt, lt)}
+            for lt in available_types
+        ]
+        return {
+            'status': True,
+            'total_records': len(letter_types),
+            'data': letter_types
+        }
+    
+    @http.route('/my/performance-bonus/letter/<int:appraisal_id>',
+        type='http',
+        auth='user',
+        website=True,
+    )
+    def view_performance_letter(self, appraisal_id, **kwargs):
+        employee = request.env['hr.employee'].sudo().search(
+            [
+                ('user_id', '=', request.env.user.id),
+            ],
+            limit=1,
+        )
+        if not employee:
+            return request.not_found()
+        appraisal = request.env['hr.employee.appraisal'].sudo().search(
+            [
+                ('id', '=', appraisal_id),
+                ('employee_id', '=', employee.id),
+                ('state', '=', 'released'),
+                ('release_date', '!=', False),
+            ],
+            limit=1,
+        )
+
+        if not appraisal:
+            return request.not_found()
+
+        report_map = {
+            'bonus_letter':
+                'bxi_hr_performance_bonus.action_report_employee_bonus_letter',
+
+            'appraisal_letter':
+                'bxi_hr_performance_bonus.action_report_appraisal_letter',
+
+            'appraisal_promotion_letter':
+                'bxi_hr_performance_bonus.action_report_appraisal_letter',
+
+            'promotion_letter':
+                'bxi_hr_performance_bonus.action_report_promotion_letter',
+        }
+
+        report_xmlid = report_map.get(appraisal.letter_type)
+
+        if not report_xmlid:
+            return request.not_found()
+
+        report = request.env.ref(report_xmlid)
+
+        pdf_content, content_type = report._render_qweb_pdf(
+            report_ref=report_xmlid,
+            res_ids=appraisal.ids,
+        )
+
+        letter_type = dict(
+            appraisal._fields['letter_type'].selection
+        ).get(
+            appraisal.letter_type,
+            'Letter'
+        )
+
+        filename = '%s - %s.pdf' % (
+            letter_type,
+            appraisal.employee_id.name,
+        )
+
+        return request.make_response(
+            pdf_content,
+            headers=[
+                ('Content-Type', 'application/pdf'),
+                (
+                    'Content-Disposition',
+                    'inline; filename="%s"' % filename,
+                ),
+            ],
+        )

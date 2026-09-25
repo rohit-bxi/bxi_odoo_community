@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="topic_discussion_1" model="antitrust.topic">
+        <field name="name">Current or future prices, price changes, mark-ups, fees, commissions, discounts, credit terms or other terms affecting prices</field>
+        <field name="category">discussion</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="topic_discussion_2" model="antitrust.topic">
+        <field name="name">Company or industry figures on costs, production, capacity, inventories, sales or profit levels</field>
+        <field name="category">discussion</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="topic_discussion_3" model="antitrust.topic">
+        <field name="name">Plans concerning the design, production, distribution or marketing of products, territories or customers</field>
+        <field name="category">discussion</field>
+        <field name="sequence">30</field>
+    </record>
+    <record id="topic_discussion_4" model="antitrust.topic">
+        <field name="name">Eliminating or limiting the quantity or quality of products, or dividing sales by territory or customer</field>
+        <field name="category">discussion</field>
+        <field name="sequence">40</field>
+    </record>
+    <record id="topic_discussion_5" model="antitrust.topic">
+        <field name="name">Bids on contracts or procedures for responding to bid invitations</field>
+        <field name="category">discussion</field>
+        <field name="sequence">50</field>
+    </record>
+    <record id="topic_discussion_6" model="antitrust.topic">
+        <field name="name">Suppliers or customers in a way that could exclude them from a market</field>
+        <field name="category">discussion</field>
+        <field name="sequence">60</field>
+    </record>
+    <record id="topic_discussion_7" model="antitrust.topic">
+        <field name="name">Wage-fixing or hiring freezes (including cold calling and independent recruiting)</field>
+        <field name="category">discussion</field>
+        <field name="sequence">70</field>
+    </record>
+    <record id="topic_discussion_8" model="antitrust.topic">
+        <field name="name">Actions intended to discourage competition or innovation</field>
+        <field name="category">discussion</field>
+        <field name="sequence">80</field>
+    </record>
+    <record id="topic_discussion_9" model="antitrust.topic">
+        <field name="name">Dividing up or allocating customers, markets or territories</field>
+        <field name="category">discussion</field>
+        <field name="sequence">90</field>
+    </record>
+    <record id="topic_discussion_10" model="antitrust.topic">
+        <field name="name">Agreeing not to deal with certain suppliers or others</field>
+        <field name="category">discussion</field>
+        <field name="sequence">100</field>
+    </record>
+    <record id="topic_discussion_11" model="antitrust.topic">
+        <field name="name">Customers, or uniform terms of sale, warranties or contract provisions</field>
+        <field name="category">discussion</field>
+        <field name="sequence">110</field>
+    </record>
+    <record id="topic_discussion_12" model="antitrust.topic">
+        <field name="name">Preventing a supplier from selling to competitors</field>
+        <field name="category">discussion</field>
+        <field name="sequence">120</field>
+    </record>
+    <record id="topic_general_1" model="antitrust.topic">
+        <field name="name">Creation of trade barriers</field>
+        <field name="category">general</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="topic_general_2" model="antitrust.topic">
+        <field name="name">Creation of unfair market advantage</field>
+        <field name="category">general</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="topic_general_3" model="antitrust.topic">
+        <field name="name">Creation of monopolistic practices in the market</field>
+        <field name="category">general</field>
+        <field name="sequence">30</field>
+    </record>
+    <record id="topic_general_4" model="antitrust.topic">
+        <field name="name">Creation of wage-fixing or unfair hiring embargoes</field>
+        <field name="category">general</field>
+        <field name="sequence">40</field>
+    </record>
+    <record id="topic_general_5" model="antitrust.topic">
+        <field name="name">Participation in cartels</field>
+        <field name="category">general</field>
+        <field name="sequence">50</field>
+    </record>
+    <record id="topic_general_6" model="antitrust.topic">
+        <field name="name">Inappropriate exchange of information with competitors</field>
+        <field name="category">general</field>
+        <field name="sequence">60</field>
+    </record>
+</odoo>

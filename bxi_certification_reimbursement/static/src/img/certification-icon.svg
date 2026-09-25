@@ -1,0 +1,17 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#E6F0FA"/>
+  <!-- Certificate sheet -->
+  <rect x="12" y="15" width="40" height="28" rx="3" fill="#FFFFFF" stroke="#3A7BD5" stroke-width="1.5"/>
+  <rect x="15" y="18" width="34" height="22" rx="1.5" fill="none" stroke="#9DBDEB" stroke-width="0.8"/>
+  <!-- Text lines -->
+  <rect x="21" y="22" width="22" height="2.2" rx="1.1" fill="#3A7BD5"/>
+  <rect x="19" y="27" width="18" height="1.6" rx="0.8" fill="#9DBDEB"/>
+  <rect x="19" y="31" width="14" height="1.6" rx="0.8" fill="#9DBDEB"/>
+  <!-- Ribbon tails -->
+  <path d="M40 38 L37 52 L41 49.5 L44 53 L45 39 Z" fill="#E8833A"/>
+  <path d="M46 38 L49 52 L45 49.5 L42 53 L41 39 Z" fill="#F29A4E"/>
+  <!-- Seal -->
+  <circle cx="43" cy="36" r="6.5" fill="#F29A4E" stroke="#E8833A" stroke-width="1.2"/>
+  <path d="M40.3 36.2 L42.3 38.2 L45.9 34" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

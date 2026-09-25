@@ -4,7 +4,8 @@
     'category': 'Fleet',
     'version': '19.0.2.0.0',
     'sequence': 5,
-    'author': 'BXI',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'summary': 'Core Battery KPI Dashboard for EV Fleet Management with .dat Import',
     'description': """
 Core Battery KPIs:
@@ -42,4 +43,5 @@ Additional Features:
     'installable': True,
     'application': True,
     'auto_install': False,
+    'license': 'LGPL-3',
 }

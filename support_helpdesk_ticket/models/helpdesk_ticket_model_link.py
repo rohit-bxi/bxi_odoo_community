@@ -24,9 +24,10 @@ class HelpdeskTicketModelLink(models.Model):
     _rec_name = 'res_name'
     _order = 'id desc'
 
-    _sql_constraints = [
-        ('uniq_ticket_model_res', 'unique(ticket_id, model_name, res_id)', 'This record is already linked to the ticket.'),
-    ]
+    _uniq_ticket_model_res = models.Constraint(
+        'unique(ticket_id, model_name, res_id)',
+        'This record is already linked to the ticket.',
+    )
 
     ticket_id = fields.Many2one(
         'helpdesk.ticket',

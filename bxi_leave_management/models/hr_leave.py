@@ -1,6 +1,10 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 from datetime import date, timedelta
+import logging
+
+
+_logger = logging.getLogger(__name__)
 
 
 class HrEmployeeLeave(models.Model):
@@ -12,24 +16,6 @@ class HrEmployeeLeave(models.Model):
         copy=False
     )
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        records = super().create(vals_list)
-        for rec in records:
-            rec._check_and_send_leave_notification()
-        return records
-
-    def write(self, vals):
-        res = super().write(vals)
-        for rec in self:
-            rec._check_and_send_leave_notification()
-        return res
-
-    def action_confirm(self):
-        res = super().action_confirm()
-        for rec in self:
-            rec._check_and_send_leave_notification()
-        return res
 
     def _check_and_send_leave_notification(self):
         for rec in self:
@@ -39,72 +25,122 @@ class HrEmployeeLeave(models.Model):
                 rec._send_leave_submission_email()
 
     def _send_leave_submission_email(self):
-        """Send leave submission notification to HR Support and Employee Manager."""
-        template = self.env.ref(
-            'bxi_leave_management.email_template_leave_request_submitted',
-            raise_if_not_found=False
-        )
-        if not template:
-            return
+        """
+        Send the leave submission notification using the
+        'email_template_leave_request_submitted' mail template.
+
+        Sender:
+            hrsupport@bxitech.com
+
+        Recipients:
+            Employee manager + HR Support
+        """
+        Mail = self.env["mail.mail"]
+
         for rec in self:
             if rec.is_submission_email_sent:
                 continue
 
             # -------------------------------------------------
-            # HR Support - Always receive leave notification
-            # -------------------------------------------------
-            recipients = [
-                'hrsupport@bxitech.com'
-            ]
-
-            # -------------------------------------------------
-            # Employee Manager
+            # FIND EMPLOYEE MANAGER
             # -------------------------------------------------
             manager = (
                 rec.employee_id.parent_id
                 or rec.employee_id.leave_manager_id
             )
-            manager_email = False
-            if manager:
-                manager_email = (
-                    manager.work_email
-                    or (
-                        manager.user_id
-                        and manager.user_id.email
-                    )
+
+            if not manager:
+                _logger.warning(
+                    "LEAVE EMAIL NOT SENT: Leave ID %s (%s) has no manager.",
+                    rec.id,
+                    rec.employee_id.name,
                 )
-            if manager_email:
-                recipients.append(manager_email.strip())
+                continue
+
+            manager_email = (
+                manager.work_email
+                or (
+                    manager.user_id
+                    and manager.user_id.email
+                )
+            )
+
+            if not manager_email:
+                _logger.warning(
+                    "LEAVE EMAIL NOT SENT: Manager %s has no email address "
+                    "for leave ID %s.",
+                    manager.name,
+                    rec.id,
+                )
+                continue
 
             # -------------------------------------------------
-            # Remove duplicate / empty emails
+            # RECIPIENTS
             # -------------------------------------------------
-            unique_recipients = list(
+            recipients = [
+                manager_email.strip(),
+                "hrsupport@bxitech.com",
+            ]
+
+            recipients = list(
                 dict.fromkeys(
-                    email for email in recipients
-                    if email
+                    email.strip()
+                    for email in recipients
+                    if email and email.strip()
                 )
             )
 
-            email_to_str = ','.join(unique_recipients)
+            email_to = ",".join(recipients)
 
             # -------------------------------------------------
-            # Send Email
+            # RENDER AND SEND USING THE CONFIGURED MAIL TEMPLATE
             # -------------------------------------------------
-            template.sudo().send_mail(
-                rec.id,
-                email_values={
-                    'email_to': email_to_str,
-                },
-                force_send=True
+            template = self.env.ref(
+                "bxi_leave_management.email_template_leave_request_submitted",
+                raise_if_not_found=False,
             )
 
-            # -------------------------------------------------
-            # Mark as sent
-            # -------------------------------------------------
+            if not template:
+                _logger.warning(
+                    "LEAVE EMAIL NOT SENT: Mail template "
+                    "'email_template_leave_request_submitted' not found "
+                    "for leave ID %s.",
+                    rec.id,
+                )
+                continue
+
+            _logger.info(
+                "LEAVE EMAIL: Sending submission email via template. "
+                "Leave ID=%s | Employee=%s | Manager=%s | To=%s",
+                rec.id,
+                rec.employee_id.name,
+                manager.name,
+                email_to,
+            )
+
+            mail_id = template.sudo().send_mail(
+                rec.id,
+                force_send=True,
+                email_values={
+                    "email_to": email_to,
+                    "email_from": "hrsupport@bxitech.com",
+                    "recipient_ids": [],
+                },
+            )
+
+            mail = Mail.sudo().browse(mail_id)
+
+            # Only mark as sent after send() succeeds.
             rec.sudo().write({
-                'is_submission_email_sent': True
+                "is_submission_email_sent": True,
             })
+
+            _logger.info(
+                "LEAVE EMAIL: Submission email sent successfully. "
+                "Leave ID=%s | Mail ID=%s",
+                rec.id,
+                mail.id,
+            )
 
     @api.constrains('holiday_status_id', 'request_date_from', 'request_date_to')
     def _check_rh_leave_rules(self):
@@ -342,34 +378,62 @@ class HrEmployeeLeave(models.Model):
             leave_date = leave.request_date_from
             compensation_date = leave.compensation_date
 
-            # Same week
-            monday = leave_date - timedelta(days=leave_date.weekday())
-            sunday = monday + timedelta(days=6)
+            # ==========================================================
+            # COMPENSATION DATE WINDOW
+            # Allow compensation from 7 days before the leave date
+            # until 7 days after the leave date.
+            # ==========================================================
+            min_allowed_date = leave_date - timedelta(days=7)
+            max_allowed_date = leave.request_date_to + timedelta(days=7)
 
-            if not (monday <= compensation_date <= sunday):
+            if not (
+                min_allowed_date
+                <= compensation_date
+                <= max_allowed_date
+            ):
                 raise ValidationError(
                     _(
-                        "The compensation date must be within the same "
-                        "week as the leave."
+                        "The compensation date must be within 7 days "
+                        "before or 7 days after the leave period.\n\n"
+                        "Allowed period: %s to %s."
+                    )
+                    % (
+                        min_allowed_date,
+                        max_allowed_date,
                     )
                 )
 
+            # ==========================================================
             # ONLY MONDAY OR FRIDAY
+            # Monday = 0
+            # Friday = 4
+            # ==========================================================
             if compensation_date.weekday() not in (0, 4):
                 raise ValidationError(
                     _(
                         "Compensation can only be completed on "
-                        "Monday or Friday of the same week."
+                        "Monday or Friday."
                     )
                 )
 
-            # Cannot be same as leave date
-            if compensation_date == leave_date:
+            # ==========================================================
+            # CANNOT BE SAME AS LEAVE PERIOD
+            # ==========================================================
+            if (
+                leave.request_date_from
+                <= compensation_date
+                <= leave.request_date_to
+            ):
                 raise ValidationError(
-                    _("The compensation date cannot be the leave date.")
+                    _(
+                        "The compensation date cannot fall "
+                        "within the leave period."
+                    )
                 )
 
-            # Compensation date must have WFO location
+            # ==========================================================
+            # COMPENSATION DATE MUST HAVE WFO LOCATION
+            # ==========================================================
             compensation_location = leave._get_employee_day_location(
                 leave.employee_id,
                 compensation_date,
@@ -388,7 +452,9 @@ class HrEmployeeLeave(models.Model):
                     )
                 )
 
-            # Compensation date cannot already have leave
+            # ==========================================================
+            # COMPENSATION DATE CANNOT ALREADY HAVE LEAVE
+            # ==========================================================
             existing_leave = self.env["hr.leave"].search(
                 [
                     ("employee_id", "=", leave.employee_id.id),
@@ -413,22 +479,30 @@ class HrEmployeeLeave(models.Model):
                     )
                 )
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        records = super().create(vals_list)
-        records._validate_compensation_date()
-        return records
-
-
-    def write(self, vals):
-        result = super().write(vals)
-        self._validate_compensation_date()
-        return result
-
     def action_confirm(self):
+        """
+        Submit the leave request and send the submission notification
+        from HR Support to the employee's manager (and HR Support).
+        """
         for leave in self:
             leave._validate_compensation_date()
-        return super().action_confirm()
+
+        # This Odoo version's hr.leave has no base action_confirm() (a new
+        # leave is created directly in the 'confirm' state, there is no
+        # 'draft' state), so only defer to super() when it actually
+        # exists instead of assuming a base implementation is present.
+        super_action_confirm = getattr(super(), "action_confirm", None)
+        if super_action_confirm:
+            result = super_action_confirm()
+        else:
+            self.write({"state": "confirm"})
+            result = True
+
+        # Send our custom notification only after successful submission.
+        for leave in self:
+            leave._check_and_send_leave_notification()
+
+        return result
 
 
     sick_leave_policy = fields.Boolean(
@@ -817,6 +891,16 @@ class HrEmployeeLeave(models.Model):
 
         leaves._validate_compensation_date()
 
+        # hr.leave has no 'draft' state in this version: a new leave is
+        # created directly with state='confirm' (submitted), so the
+        # submission notification must be sent right here rather than
+        # waiting on action_confirm()/write(), which are never invoked
+        # for a plain "New > Save" submission.
+        if not self.env.context.get("skip_leave_submission_email"):
+            for leave in leaves:
+                if leave.state not in ("draft", "cancel", "refuse"):
+                    leave._check_and_send_leave_notification()
+
         return leaves
 
     # ---------------------------------------------------------
@@ -843,5 +927,18 @@ class HrEmployeeLeave(models.Model):
             self._check_sick_leave_policy()
 
         self._validate_compensation_date()
+
+        # Fallback for standard/custom flows that change the leave state
+        # through write() instead of calling our action_confirm().
+        if (
+            "state" in vals
+            and not self.env.context.get("skip_leave_submission_email")
+        ):
+            for leave in self:
+                if (
+                    leave.state not in ("draft", "cancel", "refuse")
+                    and not leave.is_submission_email_sent
+                ):
+                    leave._check_and_send_leave_notification()
 
         return result

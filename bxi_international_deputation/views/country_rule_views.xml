@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_bxi_deputation_country_rule_list" model="ir.ui.view">
+        <field name="name">bxi.deputation.country.rule.list</field>
+        <field name="model">bxi.deputation.country.rule</field>
+        <field name="arch" type="xml">
+            <list string="Country Salary Rules" editable="bottom">
+                <field name="country_id"/>
+                <field name="salary_approach"/>
+                <field name="effective_from"/>
+                <field name="annual_divisor"/>
+                <field name="calendar_id" required="salary_approach == 'working'"/>
+                <field name="note" optional="hide"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_deputation_country_rule_search" model="ir.ui.view">
+        <field name="name">bxi.deputation.country.rule.search</field>
+        <field name="model">bxi.deputation.country.rule</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="country_id"/>
+                <filter name="filter_working" string="Working Days" domain="[('salary_approach', '=', 'working')]"/>
+                <filter name="filter_calendar" string="Calendar Days" domain="[('salary_approach', '=', 'calendar')]"/>
+                <separator/>
+                <filter name="filter_archived" string="Archived" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bxi_deputation_country_rule" model="ir.actions.act_window">
+        <field name="name">Country Salary Rules</field>
+        <field name="res_model">bxi.deputation.country.rule</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Add a country salary rule</p>
+            <p>Countries listed here follow the Working Days approach. Any other country follows the Calendar Days approach.</p>
+        </field>
+    </record>
+
+    <record id="action_bxi_deputation_host_calendar" model="ir.actions.act_window">
+        <field name="name">Host Working Calendars</field>
+        <field name="res_model">resource.calendar</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('name', '=like', 'Host:%')]</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_salary_advance_user,bxi.salary.advance.user,model_bxi_salary_advance,base.group_user,1,1,1,1
+access_bxi_salary_advance_hr,bxi.salary.advance.hr,model_bxi_salary_advance,group_salary_advance_hr,1,1,1,1
+access_bxi_salary_advance_finance,bxi.salary.advance.finance,model_bxi_salary_advance,group_salary_advance_finance,1,1,0,0
+access_bxi_salary_advance_installment_user,bxi.salary.advance.installment.user,model_bxi_salary_advance_installment,base.group_user,1,0,0,0
+access_bxi_salary_advance_installment_hr,bxi.salary.advance.installment.hr,model_bxi_salary_advance_installment,group_salary_advance_hr,1,1,0,0
+access_bxi_salary_advance_reject_wizard,bxi.salary.advance.reject.wizard,model_bxi_salary_advance_reject_wizard,base.group_user,1,1,1,1
+access_bxi_salary_advance_disburse_wizard,bxi.salary.advance.disburse.wizard,model_bxi_salary_advance_disburse_wizard,group_salary_advance_finance,1,1,1,1
+access_bxi_salary_advance_fnf_wizard,bxi.salary.advance.fnf.wizard,model_bxi_salary_advance_fnf_wizard,group_salary_advance_hr,1,1,1,1
+access_bxi_line_of_business_salary_advance_admin,bxi.line.of.business.salary.advance.admin,bxi_certification_reimbursement.model_bxi_line_of_business,group_salary_advance_admin,1,1,1,0

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_deputation_root" name="International Deputation" parent="hr.menu_hr_root" sequence="93"/>
+
+    <menuitem id="menu_deputation_my" name="My Deputations" parent="menu_deputation_root"
+              action="action_bxi_deputation_my" sequence="10"/>
+    <menuitem id="menu_deputation_all" name="Deputations" parent="menu_deputation_root"
+              action="action_bxi_deputation" sequence="20"
+              groups="group_deputation_officer,om_hr_payroll.group_hr_payroll_user"/>
+    <menuitem id="menu_deputation_register" name="Deputation Register" parent="menu_deputation_root"
+              action="action_bxi_deputation_register" sequence="30"
+              groups="group_deputation_officer,om_hr_payroll.group_hr_payroll_user"/>
+
+    <menuitem id="menu_deputation_config" name="Configuration" parent="menu_deputation_root" sequence="90"
+              groups="group_deputation_manager"/>
+    <menuitem id="menu_deputation_country_rules" name="Country Salary Rules" parent="menu_deputation_config"
+              action="action_bxi_deputation_country_rule" sequence="10"/>
+    <menuitem id="menu_deputation_host_calendars" name="Host Working Calendars" parent="menu_deputation_config"
+              action="action_bxi_deputation_host_calendar" sequence="20"/>
+</odoo>

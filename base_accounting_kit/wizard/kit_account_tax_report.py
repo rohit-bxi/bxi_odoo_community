@@ -45,7 +45,7 @@ class AccountTaxReport(models.TransientModel):
     date_to = fields.Date(string='End Date')
     journal_ids = fields.Many2many(
         comodel_name='account.journal',
-        string='Journals',
+        string='Journal(s)',
         required=True,
         default=lambda self: self.env['account.journal'].search([('company_id', '=', self.company_id.id)]),
         domain="[('company_id', '=', company_id)]",
@@ -53,6 +53,13 @@ class AccountTaxReport(models.TransientModel):
     target_move = fields.Selection([('posted', 'All Posted Entries'),
                                     ('all', 'All Entries'),
                                     ], string='Target Moves', required=True, default='posted')
+
+    def _unlink_if_no_variant(self):
+        """This is a transient wizard, not a real account.report definition,
+        so the core 'variant' check inherited from account.report does not
+        apply and would otherwise block autovacuum from cleaning up old
+        wizard records."""
+        return
 
     def _build_contexts(self, data):
         result = {}

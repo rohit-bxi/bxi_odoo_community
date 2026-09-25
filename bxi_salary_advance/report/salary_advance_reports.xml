@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="action_report_salary_advance_request" model="ir.actions.report">
+        <field name="name">Advance Request Form</field>
+        <field name="model">bxi.salary.advance</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_salary_advance.report_salary_advance_request</field>
+        <field name="report_file">bxi_salary_advance.report_salary_advance_request</field>
+        <field name="print_report_name">'%s - Advance Request Form' % object.name.replace('/', '-')</field>
+        <field name="binding_model_id" ref="model_bxi_salary_advance"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <record id="action_report_loan_undertaking" model="ir.actions.report">
+        <field name="name">Loan Undertaking</field>
+        <field name="model">bxi.salary.advance</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_salary_advance.report_loan_undertaking</field>
+        <field name="report_file">bxi_salary_advance.report_loan_undertaking</field>
+        <field name="print_report_name">'%s - Loan Undertaking' % object.name.replace('/', '-')</field>
+    </record>
+
+    <template id="report_salary_advance_request">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="doc" t-value="doc.sudo()"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h3 class="text-center mb-4">Salary Advance Request Form</h3>
+                        <table class="table table-sm table-bordered">
+                            <tr><th style="width: 35%">Reference</th><td t-esc="doc.name"/></tr>
+                            <tr><th>Employee</th><td t-esc="doc.employee_id.name"/></tr>
+                            <tr><th>Employee Code</th><td t-esc="doc.employee_id.employee_code or ''"/></tr>
+                            <tr><th>Department</th><td t-esc="doc.department_id.name or ''"/></tr>
+                            <tr><th>Reporting Manager</th><td t-esc="(doc.manager_id or doc.employee_id.parent_id).name or ''"/></tr>
+                            <tr><th>Date of Joining</th><td t-esc="doc.employee_id._sa_get_service_start() or ''"/></tr>
+                            <tr><th>Category</th><td t-esc="doc._category_label()"/></tr>
+                            <tr t-if="doc.category == 'non_processing'">
+                                <th>Reason Salary Was Not Processed</th>
+                                <td><span t-field="doc.nonprocessing_reason"/></td>
+                            </tr>
+                            <tr t-if="doc.category == 'emergency'">
+                                <th>Emergency</th>
+                                <td><span t-field="doc.emergency_type"/></td>
+                            </tr>
+                            <tr t-if="doc.category == 'housing'">
+                                <th>Tenancy</th>
+                                <td><t t-esc="doc.tenancy_months"/> months</td>
+                            </tr>
+                            <tr><th>Details</th><td t-esc="doc.reason or ''"/></tr>
+                            <tr><th>Amount Requested</th><td><span t-field="doc.amount_requested"/></td></tr>
+                            <tr>
+                                <th>Recovery</th>
+                                <td>
+                                    <t t-esc="doc.installment_count"/> interest-free EMI(s) of about
+                                    <span t-field="doc.installment_amount"/>, starting the month after disbursement.
+                                </td>
+                            </tr>
+                        </table>
+
+                        <h5 class="mt-4">Declaration</h5>
+                        <p>
+                            I request a salary advance under the Salary Advance Policy of BXITech. I confirm that I
+                            am not serving my notice period and that the information above is true. I authorise
+                            BXITech to recover the advance from my salary as stated above and, if I leave the
+                            company or am transferred before it is fully recovered, to recover the outstanding
+                            balance in my Full &amp; Final Settlement. Statutory deductions and taxes, if any, are
+                            borne by me.
+                        </p>
+
+                        <div class="row mt-5">
+                            <div class="col-6">
+                                <p>______________________________</p>
+                                <p>Employee signature</p>
+                            </div>
+                            <div class="col-6">
+                                <p>______________________________</p>
+                                <p>Date</p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_loan_undertaking">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="doc" t-value="doc.sudo()"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h3 class="text-center mb-4">Loan Undertaking - Housing Deposit / Rent Advance</h3>
+                        <p>
+                            I, <b t-esc="doc.employee_id.name"/>
+                            <t t-if="doc.employee_id.employee_code">(employee code <t t-esc="doc.employee_id.employee_code"/>)</t>,
+                            acknowledge the housing advance <b t-esc="doc.name"/> of
+                            <b><span t-field="doc.amount_approved"/></b>, routed through
+                            <b t-esc="doc.vendor_partner_id.name or 'the third-party vendor'"/>.
+                        </p>
+                        <ol>
+                            <li>
+                                I undertake to repay the advance within the agreed timelines, in
+                                <t t-esc="doc.installment_count"/> interest-free monthly instalments of about
+                                <span t-field="doc.installment_amount"/>, aligned with my rental agreement.
+                            </li>
+                            <li>
+                                I authorise BXITech to deduct the instalments from my salary and to pay them to the
+                                third-party vendor.
+                            </li>
+                            <li>
+                                If I leave India because of a transfer or resignation, or return to my base location,
+                                the outstanding amount will be recovered in full in my Full &amp; Final Settlement.
+                            </li>
+                            <li>
+                                If the amount is not repaid, BXITech may recover it from my salary at my new location.
+                            </li>
+                            <li>Statutory deductions and taxes on the advance, if any, are borne by me.</li>
+                        </ol>
+                        <div style="margin-top: 180px;">
+                            <p>Employee signature and date</p>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

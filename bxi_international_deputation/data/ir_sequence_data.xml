@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_bxi_deputation" model="ir.sequence">
+        <field name="name">International Deputation</field>
+        <field name="code">bxi.deputation</field>
+        <field name="prefix">DEP/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_employee_form_inherit_equitable_benefit" model="ir.ui.view">
+        <field name="name">hr.employee.form.inherit.equitable.benefit</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_eb_assignments" type="object" class="oe_stat_button" icon="fa-calendar-check-o"
+                        groups="bxi_equitable_benefit.group_eb_revenue_assurance,bxi_equitable_benefit.group_eb_finance">
+                    <field name="eb_assignment_count" widget="statinfo" string="Work Patterns"/>
+                </button>
+                <button name="action_open_eb_payouts" type="object" class="oe_stat_button" icon="fa-inr"
+                        groups="bxi_equitable_benefit.group_eb_revenue_assurance,bxi_equitable_benefit.group_eb_finance">
+                    <field name="eb_payout_count" widget="statinfo" string="Equitable Benefit"/>
+                </button>
+            </xpath>
+            <xpath expr="//div[@name='wage']" position="after">
+                <field name="eb_annual_component_a" groups="hr.group_hr_user"/>
+                <field name="eb_current_assignment_id" readonly="1"
+                       groups="bxi_equitable_benefit.group_eb_revenue_assurance,bxi_equitable_benefit.group_eb_finance"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

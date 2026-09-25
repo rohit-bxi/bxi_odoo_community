@@ -32,22 +32,18 @@ class HrExpense(models.Model):
                 rec.reimbursement_date = False
 
     state = fields.Selection(
-        selection=[
-            ('draft', 'Draft'),
+        selection_add=[
             ('finance_approval', 'Finance Approval'),
-            ('approved', 'Approved'),
-            ('posted', 'Posted'),
-            ('in_payment', 'In Payment'),
-            ('paid', 'Paid'),
-            ('refused', 'Refused'),
         ],
+        ondelete={'finance_approval': 'set default'},
         string="Status",
+        compute=None,
         store=True, readonly=True,
         index=True,
         copy=False,
         default='draft',
         tracking=True,
-    )  
+    )
 
     @api.depends('account_move_id.payment_state', 'account_move_id.state', 'approval_state')
     def _compute_state(self):
@@ -55,6 +51,11 @@ class HrExpense(models.Model):
             if not expense.account_move_id and expense.state in ('finance_approval', 'approved', 'refused'):
                 continue
             super(HrExpense, expense)._compute_state()
+
+    @api.model
+    def _portal_expense_product_domain(self):
+        """Expense categories employees can pick on the portal."""
+        return [('can_be_expensed', '=', True)]
 
     @api.model_create_multi
     def create(self, vals_list):
