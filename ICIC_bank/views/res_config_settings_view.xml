@@ -8,7 +8,7 @@
             <xpath expr="//form" position="inside">
                 <app data-string="ICICI Bank" string="ICICI Bank" name="ICIC_bank">
                     <block title="ICICI Bank Integration" name="icici_setting_container">
-                        <setting id="icici_base_url_setting" title="ICICI Base URL" help="Production or UAT host provided by ICICI.">
+                        <setting id="icici_base_url_setting" title="ICICI Base URL" help="Production or sandbox host provided by ICICI. A sandbox URL (e.g. https://apibankingonesandbox.icici.bank.in) switches to the sandbox encryption key and endpoints.">
                             <field name="icici_base_url" placeholder="https://apibankingone.icici.bank.in"/>
                         </setting>
                         <setting id="icici_api_key_setting" title="ICICI API Key">
