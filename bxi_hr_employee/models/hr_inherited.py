@@ -894,6 +894,7 @@ class HrEmployee(models.Model):
         string="Finance Status",
         compute="_compute_clearance_status",
     )
+    expected_clearance = fields.Date(string ="Expected F&F Completion Date")
 
     @api.depends(
         "hr_clearance",

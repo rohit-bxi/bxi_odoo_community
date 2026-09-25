@@ -754,6 +754,7 @@ class EmployeeAPIController(http.Controller):
                     else False
                 ),
                 "fnf_status": employee.fnf_status or False,
+                "expected_clearance":employee.expected_clearance or False,
                 "hr_clearance": employee.hr_clearance or False,
                 "hr_clearance_reason": (
                     employee.hr_clearance_reason or False
