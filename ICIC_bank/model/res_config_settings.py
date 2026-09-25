@@ -15,7 +15,7 @@ class ResConfigSettings(models.TransientModel):
         string="ICICI Base URL",
         readonly=False,
         help="e.g. https://apibankingone.icici.bank.in for Production "
-        "or the UAT host provided by ICICI.",
+        "or https://apibankingonesandbox.icici.bank.in for Sandbox.",
     )
 
     icici_corp_id = fields.Char(

@@ -51,24 +51,64 @@ class TestICICICrypto(ICICICommon):
         self.assertGreater(len(values), 1)
 
     def test_get_icici_public_key_missing_file_raises(self):
-        self.mock_get_icici_public_key.stop()
-        with patch('os.path.isfile', return_value=False):
-            with self.assertRaises(ValidationError):
-                self.env['hr.payslip'].get_icici_public_key()
-        self.mock_get_icici_public_key.start()
+        self.patcher_icici_public_key.stop()
+        try:
+            with patch('os.path.isfile', return_value=False):
+                with self.assertRaises(ValidationError):
+                    self.env['hr.payslip'].get_icici_public_key()
+        finally:
+            self.patcher_icici_public_key.start()
+
+    def test_environment_follows_base_url(self):
+        payslip = self.env['hr.payslip']
+        company = self.env.company
+
+        company.icici_base_url = "https://apibankingone.icici.bank.in"
+        self.assertEqual(
+            payslip._get_icici_environment()["public_key"],
+            "icici_public.pem",
+        )
+
+        company.icici_base_url = "https://apibankingonesandbox.icici.bank.in"
+        self.assertEqual(
+            payslip._get_icici_environment()["public_key"],
+            "icici_public_sandbox.pem",
+        )
+
+    def test_get_icici_public_key_loads_key_of_environment(self):
+        """Sandbox requests must not be encrypted with the production key."""
+        payslip = self.env['hr.payslip']
+        company = self.env.company
+
+        self.patcher_icici_public_key.stop()
+        try:
+            company.icici_base_url = "https://apibankingone.icici.bank.in"
+            production_key = payslip.get_icici_public_key()
+            company.icici_base_url = (
+                "https://apibankingonesandbox.icici.bank.in")
+            sandbox_key = payslip.get_icici_public_key()
+        finally:
+            self.patcher_icici_public_key.start()
+
+        self.assertFalse(production_key.has_private())
+        self.assertFalse(sandbox_key.has_private())
+        self.assertNotEqual(production_key.n, sandbox_key.n)
 
     def test_get_private_key_missing_file_raises(self):
-        self.mock_get_private_key.stop()
-        with patch('os.path.isfile', return_value=False):
-            with self.assertRaises(ValidationError):
-                self.env['hr.payslip'].get_private_key()
-        self.mock_get_private_key.start()
+        self.patcher_private_key.stop()
+        try:
+            with patch('os.path.isfile', return_value=False):
+                with self.assertRaises(ValidationError):
+                    self.env['hr.payslip'].get_private_key()
+        finally:
+            self.patcher_private_key.start()
 
     def test_encrypt_payload_roundtrip(self):
         payload = {"AGGRID": "BULK0173", "UNIQUEID": "ABC123"}
         encrypted = self.env['hr.payslip'].encrypt_payload(payload)
 
         self.assertEqual(encrypted["service"], "CIB")
+        self.assertEqual(encrypted["requestId"], "")
         self.assertIn("encryptedKey", encrypted)
         self.assertIn("encryptedData", encrypted)
 
@@ -113,6 +153,10 @@ class TestICICICrypto(ICICICommon):
 @tagged('post_install', '-at_install')
 class TestICICIApiCall(ICICICommon):
     """Tests for ``call_icici_api``'s HTTP/retry/error handling."""
+
+    def setUp(self):
+        super().setUp()
+        self.env.company.icici_api_key = "TEST-API-KEY"
 
     def _success_response(self, payload):
         envelope = _encrypt_for(

@@ -18,6 +18,44 @@ from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
+ICICI_PRODUCTION_URL = "https://apibankingone.icici.bank.in"
+
+# ICICI sandbox and production gateways use different RSA keys, endpoint
+# paths and test credentials. Encrypting a sandbox request with the
+# production key makes ICICI reject it with "Decryption failed".
+ICICI_ENVIRONMENTS = {
+    "production": {
+        "public_key": "icici_public.pem",
+        "create_path": "/api/Corporate/CIB/v1/Create",
+        "bulk_payment_path": "/api/v1/cibbulkpayment/bulkPayment",
+        "reverse_path": "/api/v1/ReverseMis",
+        "defaults": {
+            "aggr_id": "BULK0173",
+            "aggr_name": "BXITECH",
+            "corp_id": "601902129",
+            "user_id": "BALCHAND",
+            "urn": "SR283346233",
+            "debit_account": "693905601661",
+            "debit_branch": "0011",
+        },
+    },
+    "sandbox": {
+        "public_key": "icici_public_sandbox.pem",
+        "create_path": "/api/Corporate/CIB_SV/v1/Create",
+        "bulk_payment_path": "/api/v1/cibbulkpayment_sv/bulkPayment",
+        "reverse_path": "/api/v1/ReverseMis_sv",
+        "defaults": {
+            "aggr_id": "CIBBULK001",
+            "aggr_name": "BULKTESTING",
+            "corp_id": "TXBCORP2",
+            "user_id": "USER2",
+            "urn": "CIBTESTING",
+            "debit_account": "000451000301",
+            "debit_branch": "0011",
+        },
+    },
+}
+
 
 class HrPayslip(models.Model):
     _inherit = "hr.payslip"
@@ -85,9 +123,27 @@ class HrPayslip(models.Model):
             slip.net_wage = slip.get_salary_line_total("NET")
 
     def _get_icici_param(self, key, default=""):
-        """Fetch a company-dependent ICICI credential/config value."""
-        company = self.company_id or self.env.company
-        return getattr(company, "icici_%s" % key, None) or default
+        """Fetch a company-dependent ICICI credential/config value.
+
+        Falls back to the default of the active ICICI environment, so a
+        sandbox setup never mixes in production identifiers.
+        """
+        company = self.company_id[:1] or self.env.company
+        # Values pasted into Settings often carry stray spaces.
+        value = (getattr(company, "icici_%s" % key, None) or "").strip()
+        return (
+            value
+            or self._get_icici_environment()["defaults"].get(key)
+            or default
+        )
+
+    def _get_icici_environment(self):
+        """Return the ICICI environment settings matching the base URL."""
+        company = self.company_id[:1] or self.env.company
+        base_url = company.icici_base_url or ICICI_PRODUCTION_URL
+        if "sandbox" in base_url.lower():
+            return ICICI_ENVIRONMENTS["sandbox"]
+        return ICICI_ENVIRONMENTS["production"]
 
     def random_16(self):
         """Generate a cryptographically secure 16-digit numeric string."""
@@ -97,35 +153,39 @@ class HrPayslip(models.Model):
         )
 
     def get_icici_public_key(self):
-        """Load and cache the ICICI public key."""
+        """Load and cache the ICICI public key of the active environment."""
 
         cls = type(self)
+        key_file = self._get_icici_environment()["public_key"]
+        cache = cls._icici_public_key_cache or {}
 
-        if cls._icici_public_key_cache:
-            return cls._icici_public_key_cache
+        if key_file in cache:
+            return cache[key_file]
 
         key_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "..",
-            "icici_public.pem",
+            key_file,
         )
 
         if not os.path.isfile(key_path):
             raise ValidationError(
-                _("ICICI public key file not found.")
+                _("ICICI public key file %s not found.") % key_file
             )
 
         try:
             with open(key_path, "rb") as f:
-                cls._icici_public_key_cache = RSA.import_key(
+                cache[key_file] = RSA.import_key(
                     f.read()
                 )
+            cls._icici_public_key_cache = cache
 
             _logger.info(
-                "ICICI public key loaded successfully."
+                "ICICI public key %s loaded successfully.",
+                key_file,
             )
 
-            return cls._icici_public_key_cache
+            return cache[key_file]
 
         except Exception as exc:
             _logger.exception(
@@ -222,7 +282,9 @@ class HrPayslip(models.Model):
             )
 
             return {
-                "requestId": uuid.uuid4().hex,
+                # Keep empty, as in the bank-tested integration; a random
+                # requestId coincided with ICICI error 8010.
+                "requestId": "",
                 "service": "CIB",
                 "encryptedKey": encrypted_key,
                 "oaepHashingAlgorithm": "NONE",
@@ -524,7 +586,7 @@ class HrPayslip(models.Model):
 
     def _get_icici_base_url(self):
         base_url = self._get_icici_param(
-            "base_url", "https://apibankingone.icici.bank.in"
+            "base_url", ICICI_PRODUCTION_URL
         ).rstrip("/")
 
         if not base_url:
@@ -622,11 +684,11 @@ class HrPayslip(models.Model):
             unique_id = uuid.uuid4().hex[:16].upper()
 
         create_payload = {
-            "AGGRID": self._get_icici_param("aggr_id", "BULK0173"),
-            "AGGRNAME": self._get_icici_param("aggr_name", "BXITECH"),
-            "CORPID": self._get_icici_param("corp_id", "601902129"),
-            "USERID": self._get_icici_param("user_id", "BALCHAND"),
-            "URN": self._get_icici_param("urn", "SR283346233"),
+            "AGGRID": self._get_icici_param("aggr_id"),
+            "AGGRNAME": self._get_icici_param("aggr_name"),
+            "CORPID": self._get_icici_param("corp_id"),
+            "USERID": self._get_icici_param("user_id"),
+            "URN": self._get_icici_param("urn"),
             "UNIQUEID": unique_id,
         }
 
@@ -637,7 +699,7 @@ class HrPayslip(models.Model):
 
         result = self.call_icici_api(
             self._get_icici_base_url()
-            + "/api/Corporate/CIB/v1/Create",
+            + self._get_icici_environment()["create_path"],
             create_payload,
         )
 
@@ -736,10 +798,10 @@ class HrPayslip(models.Model):
         ).strftime("%m/%d/%Y")
 
         debit_account = self._get_icici_param(
-            "debit_account", "693905601661"
+            "debit_account"
         )
         debit_branch = self._get_icici_param(
-            "debit_branch", "6939"
+            "debit_branch"
         )
 
         transaction_count = 0
@@ -809,14 +871,18 @@ class HrPayslip(models.Model):
             transaction_count += 1
             total_amount += amount
 
+            # Branch 0011 / ICIC0000011 is the format ICICI accepted in
+            # production testing for within-bank (MCW) transfers.
             if ifsc.startswith("ICIC"):
                 transaction_type = "MCW"
                 network = "WIB"
-                branch_code = ifsc[-4:]
+                branch_code = "0011"
+                beneficiary_ifsc = "ICIC0000011"
             else:
                 transaction_type = "MCO"
                 network = "NFT"
                 branch_code = "0011"
+                beneficiary_ifsc = ifsc
 
             employee_name = " ".join(
                 employee.name.split()
@@ -831,7 +897,7 @@ class HrPayslip(models.Model):
                 "INR",
                 "Salary",
                 network,
-                ifsc,
+                beneficiary_ifsc,
             ]) + "^"
 
             detail_lines.append(detail_line)
@@ -841,7 +907,7 @@ class HrPayslip(models.Model):
                 employee.name,
                 transaction_type,
                 amount,
-                ifsc,
+                beneficiary_ifsc,
             )
 
         if transaction_count == 0:
@@ -850,7 +916,8 @@ class HrPayslip(models.Model):
             )
 
         header = (
-            f"FHR|{transaction_count}|"
+            # The record count includes the MDR line.
+            f"FHR|{transaction_count + 1}|"
             f"{payment_date}|"
             f"SALARY|"
             f"{total_amount:.2f}|"
@@ -867,7 +934,7 @@ class HrPayslip(models.Model):
             f"{total_amount:.2f}|"
             f"INR|"
             f"Salary Batch|"
-            f"ICIC0006939|"
+            f"ICIC0{debit_branch.zfill(6)}|"
             f"WIB^"
         )
 
@@ -902,11 +969,18 @@ class HrPayslip(models.Model):
                 _("Only payments in Processing state can be reversed.")
             )
 
+        corp_id = self._get_icici_param("corp_id")
+        user_id = self._get_icici_param("user_id")
+
+        # ReverseMis expects the fully qualified "CORPID.USERID" login.
+        if "." not in user_id:
+            user_id = "%s.%s" % (corp_id, user_id)
+
         payload = {
-            "AGGRID": self._get_icici_param("aggr_id", "BULK0173"),
-            "CORPID": self._get_icici_param("corp_id", "601902129"),
-            "USERID": self._get_icici_param("user_id", "BALCHAND"),
-            "URN": self._get_icici_param("urn", "SR283346233"),
+            "AGGRID": self._get_icici_param("aggr_id"),
+            "CORPID": corp_id,
+            "USERID": user_id,
+            "URN": self._get_icici_param("urn"),
             "FILESEQNUM": file_seq_num,
             "UNIQUEID": self.icici_reference,
             "ISENCRYPTED": "N",
@@ -920,7 +994,8 @@ class HrPayslip(models.Model):
         _logger.info("=" * 80)
 
         result = self.call_icici_api(
-            self._get_icici_base_url() + "/api/v1/ReverseMis",
+            self._get_icici_base_url()
+            + self._get_icici_environment()["reverse_path"],
             payload,
         )
 
@@ -1046,11 +1121,11 @@ class HrPayslip(models.Model):
 
         payload = {
             "FILE_DESCRIPTION": "Salary Payment",
-            "AGGR_ID": self._get_icici_param("aggr_id", "BULK0173"),
-            "URN": self._get_icici_param("urn", "SR283346233"),
-            "AGGR_NAME": self._get_icici_param("aggr_name", "BXITECH"),
-            "USER_ID": self._get_icici_param("user_id", "BALCHAND"),
-            "CORP_ID": self._get_icici_param("corp_id", "601902129"),
+            "AGGR_ID": self._get_icici_param("aggr_id"),
+            "URN": self._get_icici_param("urn"),
+            "AGGR_NAME": self._get_icici_param("aggr_name"),
+            "USER_ID": self._get_icici_param("user_id"),
+            "CORP_ID": self._get_icici_param("corp_id"),
             "UNIQUE_ID": self[0].icici_reference,
             "AGOTP": otp,
             "FILE_NAME": (
@@ -1069,7 +1144,7 @@ class HrPayslip(models.Model):
 
         result = self.call_icici_api(
             self._get_icici_base_url()
-            + "/api/v1/cibbulkpayment/bulkPayment",
+            + self._get_icici_environment()["bulk_payment_path"],
             payload,
         )
 
