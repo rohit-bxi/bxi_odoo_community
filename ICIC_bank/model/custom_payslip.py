@@ -482,10 +482,17 @@ class HrPayslip(models.Model):
                             error_json.get("errorcode")
                             or error_json.get("errorCode")
                             or error_json.get("ERRORCODE")
+                            # e.g. {"response": 8017, "errormessage": ...}
+                            or error_json.get("response")
                         )
 
                     except Exception:
-                        error_message = response.text
+                        # Non-JSON bodies can be debug dumps that echo the
+                        # request headers (API key); show only the first line.
+                        error_message = (
+                            (response.text or "").strip().splitlines()
+                            or [""]
+                        )[0][:300]
                         error_code = None
 
                     if error_code:
@@ -608,8 +615,9 @@ class HrPayslip(models.Model):
             )
         for slip in self:
 
+            # "otp_pending" may be released again: it requests a new OTP,
+            # e.g. after the OTP expired or the Bulk Payment call failed.
             if slip.icici_payment_status in (
-                "otp_pending",
                 "processing",
                 "paid",
             ):
@@ -1128,8 +1136,10 @@ class HrPayslip(models.Model):
             "CORP_ID": self._get_icici_param("corp_id"),
             "UNIQUE_ID": self[0].icici_reference,
             "AGOTP": otp,
+            # ICICI rejects file names containing "_" with error 8017
+            # "Invalid Request".
             "FILE_NAME": (
-                f"SALARY_"
+                f"SALARY"
                 f"{datetime.now().strftime('%Y%m%d%H%M%S')}.txt"
             ),
             "FILE_CONTENT": encoded_file,
