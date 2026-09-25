@@ -482,6 +482,8 @@ class HrPayslip(models.Model):
                             error_json.get("errorcode")
                             or error_json.get("errorCode")
                             or error_json.get("ERRORCODE")
+                            # e.g. {"response": 8017, "errormessage": ...}
+                            or error_json.get("response")
                         )
 
                     except Exception:
