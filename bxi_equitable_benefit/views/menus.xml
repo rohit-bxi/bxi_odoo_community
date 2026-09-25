@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <menuitem id="menu_eb_root" name="Equitable Benefit" parent="hr.menu_hr_root" sequence="92"/>
+
+    <menuitem id="menu_eb_my_assignments" name="My Work Patterns" parent="menu_eb_root"
+              action="action_bxi_eb_assignment_my" sequence="10"/>
+    <menuitem id="menu_eb_my_payouts" name="My Payouts" parent="menu_eb_root"
+              action="action_bxi_eb_payout_my" sequence="20"/>
+
+    <menuitem id="menu_eb_review" name="Review" parent="menu_eb_root" sequence="30"
+              groups="group_eb_revenue_assurance,group_eb_finance"/>
+    <menuitem id="menu_eb_assignments_to_approve" name="Assignments to Approve" parent="menu_eb_review"
+              action="action_bxi_eb_assignment_to_approve" sequence="10" groups="group_eb_revenue_assurance"/>
+    <menuitem id="menu_eb_assignments" name="All Assignments" parent="menu_eb_review"
+              action="action_bxi_eb_assignment" sequence="20"/>
+    <menuitem id="menu_eb_payouts" name="Payouts" parent="menu_eb_review"
+              action="action_bxi_eb_payout" sequence="30"/>
+    <menuitem id="menu_eb_generate" name="Generate Payouts" parent="menu_eb_review"
+              action="action_bxi_eb_generate_payout_wizard" sequence="40" groups="group_eb_revenue_assurance"/>
+
+    <menuitem id="menu_eb_eligibility" name="Eligibility Records" parent="menu_eb_root" sequence="40"
+              groups="group_eb_revenue_assurance,hr.group_hr_user"/>
+    <menuitem id="menu_eb_ratings" name="Performance Ratings" parent="menu_eb_eligibility"
+              action="action_bxi_eb_performance_rating" sequence="10"/>
+    <menuitem id="menu_eb_disciplinary" name="Disciplinary Actions" parent="menu_eb_eligibility"
+              action="action_bxi_eb_disciplinary_action" sequence="20"/>
+
+    <menuitem id="menu_eb_config" name="Configuration" parent="menu_eb_root" sequence="90"
+              groups="group_eb_admin"/>
+    <menuitem id="menu_eb_rates" name="Rate Matrix" parent="menu_eb_config"
+              action="action_bxi_eb_rate" sequence="10"/>
+    <menuitem id="menu_eb_patterns" name="Work Patterns" parent="menu_eb_config"
+              action="action_bxi_eb_work_pattern" sequence="20"/>
+    <menuitem id="menu_eb_settings" name="Settings" parent="menu_eb_config"
+              action="action_bxi_eb_settings" sequence="30"/>
+</odoo>

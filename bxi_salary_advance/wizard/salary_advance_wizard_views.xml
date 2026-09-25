@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_bxi_salary_advance_reject_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.salary.advance.reject.wizard.form</field>
+        <field name="model">bxi.salary.advance.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reject">
+                <field name="advance_id" invisible="1"/>
+                <group>
+                    <field name="reason" placeholder="The employee receives this reason"/>
+                </group>
+                <footer>
+                    <button name="action_reject" type="object" string="Reject" class="btn-danger"/>
+                    <button string="Discard" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_salary_advance_disburse_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.salary.advance.disburse.wizard.form</field>
+        <field name="model">bxi.salary.advance.disburse.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Disburse">
+                <field name="advance_id" invisible="1"/>
+                <field name="company_id" invisible="1"/>
+                <field name="currency_id" invisible="1"/>
+                <field name="category" invisible="1"/>
+                <group>
+                    <group>
+                        <field name="amount"/>
+                        <field name="date"/>
+                        <field name="reference"/>
+                    </group>
+                    <group>
+                        <field name="create_entry"/>
+                        <field name="journal_id" invisible="not create_entry" required="create_entry"
+                               options="{'no_create': True}"/>
+                        <field name="vendor_partner_id" invisible="category != 'housing'"/>
+                    </group>
+                </group>
+                <div class="text-muted" invisible="category != 'housing'">
+                    Housing advances are credited to the third-party vendor, who is then paid as usual.
+                </div>
+                <div class="text-muted">
+                    Recovery starts with the payroll of the month after the disbursement date.
+                </div>
+                <footer>
+                    <button name="action_disburse" type="object" string="Disburse" class="btn-primary"/>
+                    <button string="Discard" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_salary_advance_fnf_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.salary.advance.fnf.wizard.form</field>
+        <field name="model">bxi.salary.advance.fnf.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Full &amp; Final Settlement">
+                <field name="advance_id" invisible="1"/>
+                <group>
+                    <field name="reason"/>
+                    <field name="last_day"/>
+                    <field name="note"/>
+                </group>
+                <div class="text-muted">
+                    The remaining EMIs are replaced by one deduction of the outstanding balance in the payroll of
+                    the last working month.
+                </div>
+                <footer>
+                    <button name="action_settle" type="object" string="Settle in F&amp;F" class="btn-primary"/>
+                    <button string="Discard" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

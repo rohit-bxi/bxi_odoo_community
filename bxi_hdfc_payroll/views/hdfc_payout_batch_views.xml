@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hdfc_payout_batch_list" model="ir.ui.view">
+        <field name="name">hdfc.payout.batch.list</field>
+        <field name="model">hdfc.payout.batch</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state in ('cancelled', 'reversed')">
+                <field name="name"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="payment_date"/>
+                <field name="line_count" string="Transfers"/>
+                <field name="currency_id" column_invisible="True"/>
+                <field name="amount_total" sum="Total"/>
+                <field name="amount_paid" sum="Paid"/>
+                <field name="file_sequence_number" optional="show"/>
+                <field name="environment" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-info="state in ('draft', 'otp_pending')"
+                       decoration-warning="state in ('processing', 'partially_done')"
+                       decoration-success="state == 'done'"
+                       decoration-danger="state == 'failed'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hdfc_payout_batch_form" model="ir.ui.view">
+        <field name="name">hdfc.payout.batch.form</field>
+        <field name="model">hdfc.payout.batch</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_request_otp" type="object" string="Request OTP" class="btn-primary"
+                            invisible="state != 'draft'" groups="bxi_hdfc_payroll.group_hdfc_payout_manager"/>
+                    <button name="action_open_otp_wizard" type="object" string="Enter OTP" class="btn-primary"
+                            invisible="state != 'otp_pending'" groups="bxi_hdfc_payroll.group_hdfc_payout_manager"/>
+                    <button name="action_request_otp" type="object" string="Resend OTP"
+                            invisible="state != 'otp_pending'" groups="bxi_hdfc_payroll.group_hdfc_payout_manager"/>
+                    <button name="action_refresh_status" type="object" string="Refresh Status"
+                            invisible="state not in ('processing', 'done', 'partially_done')"
+                            groups="bxi_hdfc_payroll.group_hdfc_payout_manager"/>
+                    <button name="action_download_file" type="object" string="Download Bank File"
+                            invisible="not file_attachment_id"/>
+                    <button name="action_open_reverse_wizard" type="object" string="Reverse" class="btn-danger"
+                            invisible="state not in ('processing', 'done', 'partially_done')"
+                            groups="bxi_hdfc_payroll.group_hdfc_payout_manager"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state not in ('draft', 'otp_pending')"
+                            groups="bxi_hdfc_payroll.group_hdfc_payout_manager"
+                            confirm="Cancel this HDFC payout batch?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,otp_pending,processing,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_payslips" type="object" class="oe_stat_button" icon="fa-file-text-o">
+                            <field name="payslip_count" widget="statinfo" string="Payslips"/>
+                        </button>
+                        <button name="action_view_moves" type="object" class="oe_stat_button" icon="fa-book"
+                                invisible="not move_count">
+                            <field name="move_count" widget="statinfo" string="Journal Entries"/>
+                        </button>
+                        <button name="action_view_logs" type="object" class="oe_stat_button" icon="fa-list"
+                                groups="bxi_hdfc_payroll.group_hdfc_payout_manager" invisible="not log_count">
+                            <field name="log_count" widget="statinfo" string="API Logs"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Mock" bg_color="text-bg-info" invisible="environment != 'mock'"/>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="config_id"/>
+                            <field name="environment" invisible="1"/>
+                            <field name="payment_date" readonly="state != 'draft'"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="amount_total"/>
+                            <field name="amount_paid"/>
+                        </group>
+                        <group>
+                            <field name="bank_reference"/>
+                            <field name="file_sequence_number"/>
+                            <field name="file_attachment_id" invisible="1"/>
+                            <field name="otp_expires_at" invisible="state != 'otp_pending'"/>
+                            <field name="otp_attempts" invisible="state != 'otp_pending'"/>
+                            <field name="submitted_at" invisible="not submitted_at"/>
+                            <field name="last_sync_at" invisible="not last_sync_at"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Transfers" name="lines">
+                            <field name="line_ids" readonly="1">
+                                <list decoration-success="state == 'paid'"
+                                      decoration-danger="state in ('failed', 'returned')"
+                                      decoration-muted="state in ('cancelled', 'reversed')">
+                                    <field name="line_reference" optional="hide"/>
+                                    <field name="employee_id"/>
+                                    <field name="payslip_id" optional="show"/>
+                                    <field name="beneficiary_name" optional="hide"/>
+                                    <field name="account_number_masked"/>
+                                    <field name="ifsc"/>
+                                    <field name="txn_type"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="amount" sum="Total"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="utr"/>
+                                    <field name="failure_reason" optional="show"/>
+                                    <field name="move_id" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Reversal" name="reversal" invisible="state != 'reversed'">
+                            <field name="reversal_reason"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_hdfc_payout_batch_search" model="ir.ui.view">
+        <field name="name">hdfc.payout.batch.search</field>
+        <field name="model">hdfc.payout.batch</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="file_sequence_number"/>
+                <field name="bank_reference"/>
+                <filter name="to_approve" string="Awaiting Approval" domain="[('state', 'in', ('draft', 'otp_pending'))]"/>
+                <filter name="processing" string="Processing" domain="[('state', '=', 'processing')]"/>
+                <filter name="issues" string="Failed / Partial" domain="[('state', 'in', ('failed', 'partially_done'))]"/>
+                <separator/>
+                <filter name="payment_date" string="Payment Date" date="payment_date"/>
+                <group>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_company" string="Company" context="{'group_by': 'company_id'}"
+                            groups="base.group_multi_company"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_hdfc_payout_batch" model="ir.actions.act_window">
+        <field name="name">HDFC Payout Batches</field>
+        <field name="res_model">hdfc.payout.batch</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No HDFC payout yet</p>
+            <p>Select done payslips and use <b>Pay via HDFC</b> to create a batch.</p>
+        </field>
+    </record>
+</odoo>

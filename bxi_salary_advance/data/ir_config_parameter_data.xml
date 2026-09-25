@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Defaults of the Salary Advance Policy; HR can change them in the settings. -->
+<odoo noupdate="1">
+    <record id="param_limit_percent" model="ir.config_parameter">
+        <field name="key">bxi_salary_advance.limit_percent</field>
+        <field name="value">75</field>
+    </record>
+    <record id="param_salary_basis" model="ir.config_parameter">
+        <field name="key">bxi_salary_advance.salary_basis</field>
+        <field name="value">gross</field>
+    </record>
+    <record id="param_min_service_months" model="ir.config_parameter">
+        <field name="key">bxi_salary_advance.min_service_months</field>
+        <field name="value">6</field>
+    </record>
+    <record id="param_emergency_installments" model="ir.config_parameter">
+        <field name="key">bxi_salary_advance.emergency_installments</field>
+        <field name="value">3</field>
+    </record>
+    <record id="param_housing_tenancies" model="ir.config_parameter">
+        <field name="key">bxi_salary_advance.housing_tenancies</field>
+        <field name="value">6,12</field>
+    </record>
+    <record id="param_hr_sla_days" model="ir.config_parameter">
+        <field name="key">bxi_salary_advance.hr_sla_days</field>
+        <field name="value">7</field>
+    </record>
+    <record id="param_rm_reminder_days" model="ir.config_parameter">
+        <field name="key">bxi_salary_advance.rm_reminder_days</field>
+        <field name="value">2</field>
+    </record>
+    <record id="param_perquisite_threshold" model="ir.config_parameter">
+        <field name="key">bxi_salary_advance.perquisite_threshold</field>
+        <field name="value">20000</field>
+    </record>
+    <record id="param_eligible_employee_types" model="ir.config_parameter">
+        <field name="key">bxi_salary_advance.eligible_employee_types</field>
+        <field name="value">employee,worker</field>
+    </record>
+    <record id="param_outstanding_scope" model="ir.config_parameter">
+        <field name="key">bxi_salary_advance.outstanding_scope</field>
+        <field name="value">all</field>
+    </record>
+</odoo>

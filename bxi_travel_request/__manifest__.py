@@ -5,7 +5,8 @@
     'version': '19.0.1.0.0',
     'summary': 'Manage employee travel requests in Odoo 19',
     'sequence': 1,
-    'author': 'BXI',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'license': 'LGPL-3',
     'description': 'Employee View Modification',
     'depends': [

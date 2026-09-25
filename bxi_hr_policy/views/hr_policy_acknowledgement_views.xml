@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════ POLICY VERSIONS ═══════════════════════════ -->
+    <record id="view_hr_company_policy_version_list" model="ir.ui.view">
+        <field name="name">hr.company.policy.version.list</field>
+        <field name="model">hr.company.policy.version</field>
+        <field name="arch" type="xml">
+            <list string="Policy Versions" decoration-muted="state == 'superseded'" decoration-success="state == 'published'">
+                <field name="policy_id"/>
+                <field name="version_no"/>
+                <field name="valid_from"/>
+                <field name="valid_to"/>
+                <field name="description"/>
+                <field name="author_id" widget="many2one_avatar_user"/>
+                <field name="approved_by_id" widget="many2one_avatar_user"/>
+                <field name="state" widget="badge"
+                       decoration-info="state in ('submitted', 'approved')"
+                       decoration-success="state == 'published'"
+                       decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hr_company_policy_version_form" model="ir.ui.view">
+        <field name="name">hr.company.policy.version.form</field>
+        <field name="model">hr.company.policy.version</field>
+        <field name="arch" type="xml">
+            <form string="Policy Version">
+                <header>
+                    <button name="action_submit" type="object" string="Submit to CPO" class="oe_highlight"
+                            invisible="state not in ('draft', 'rejected')"
+                            groups="hr.group_hr_manager,bxi_hr_policy.group_policy_cpo"/>
+                    <button name="action_approve" type="object" string="Approve" class="oe_highlight"
+                            invisible="state != 'submitted'" groups="bxi_hr_policy.group_policy_cpo"/>
+                    <button name="action_reject" type="object" string="Reject"
+                            invisible="state != 'submitted'" groups="bxi_hr_policy.group_policy_cpo"/>
+                    <button name="action_publish" type="object" string="Publish" class="oe_highlight"
+                            invisible="state != 'approved'"
+                            groups="hr.group_hr_manager,bxi_hr_policy.group_policy_cpo"
+                            confirm="Publish this version? The previous version is superseded and employees in scope are asked to acknowledge it."/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,published"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="display_name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="policy_id" readonly="state not in ('draft', 'rejected')" options="{'no_create': True}"/>
+                            <field name="version_no" readonly="state not in ('draft', 'rejected')"/>
+                            <field name="filename" invisible="1"/>
+                            <field name="document" filename="filename" readonly="state not in ('draft', 'rejected')"/>
+                            <field name="description"/>
+                        </group>
+                        <group>
+                            <field name="valid_from"/>
+                            <field name="valid_to"/>
+                            <field name="author_id"/>
+                            <field name="approved_by_id" invisible="not approved_by_id"/>
+                            <field name="approved_date" invisible="not approved_date"/>
+                            <field name="published_date" invisible="not published_date"/>
+                        </group>
+                    </group>
+                    <group invisible="state not in ('submitted', 'rejected')">
+                        <field name="reject_reason" readonly="state != 'submitted'"
+                               placeholder="Required to reject the version"/>
+                    </group>
+                    <notebook>
+                        <page string="Document" invisible="not id or not document">
+                            <field name="preview_html" widget="html" nolabel="1" readonly="1"/>
+                        </page>
+                        <page string="Acknowledgements" invisible="state not in ('published', 'superseded')">
+                            <field name="acknowledgement_ids" readonly="1">
+                                <list>
+                                    <field name="employee_id"/>
+                                    <field name="company_id" groups="base.group_multi_company"/>
+                                    <field name="due_date"/>
+                                    <field name="acknowledged_date"/>
+                                    <field name="state" widget="badge"
+                                           decoration-success="state == 'acknowledged'"
+                                           decoration-warning="state == 'pending'"
+                                           decoration-danger="state == 'overdue'"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_hr_company_policy_version" model="ir.actions.act_window">
+        <field name="name">Policy Versions</field>
+        <field name="res_model">hr.company.policy.version</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_hr_company_policy_version_to_approve" model="ir.actions.act_window">
+        <field name="name">Versions to Approve</field>
+        <field name="res_model">hr.company.policy.version</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', '=', 'submitted')]</field>
+        <field name="context">{'create': False}</field>
+    </record>
+
+    <!-- ═══════════════════════════ ACKNOWLEDGEMENTS ═══════════════════════════ -->
+    <record id="view_hr_policy_acknowledgement_list" model="ir.ui.view">
+        <field name="name">hr.policy.acknowledgement.list</field>
+        <field name="model">hr.policy.acknowledgement</field>
+        <field name="arch" type="xml">
+            <list string="Policy Acknowledgements" create="0" decoration-danger="state == 'overdue'"
+                  decoration-muted="state in ('cancelled', 'waived')">
+                <field name="policy_id"/>
+                <field name="version_no"/>
+                <field name="employee_id"/>
+                <field name="department_id" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
+                <field name="requested_date" optional="hide"/>
+                <field name="due_date"/>
+                <field name="acknowledged_date"/>
+                <field name="channel" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'acknowledged'"
+                       decoration-warning="state == 'pending'"
+                       decoration-danger="state == 'overdue'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hr_policy_acknowledgement_form" model="ir.ui.view">
+        <field name="name">hr.policy.acknowledgement.form</field>
+        <field name="model">hr.policy.acknowledgement</field>
+        <field name="arch" type="xml">
+            <form string="Policy Acknowledgement" create="0" delete="0">
+                <header>
+                    <button name="action_acknowledge" type="object" string="I Acknowledge" class="oe_highlight"
+                            invisible="state not in ('pending', 'overdue')"/>
+                    <button name="action_send_reminder" type="object" string="Send Reminder"
+                            invisible="state not in ('pending', 'overdue')"
+                            groups="hr.group_hr_manager,bxi_hr_policy.group_policy_cpo"/>
+                    <button name="action_waive" type="object" string="Waive"
+                            invisible="state not in ('pending', 'overdue')"
+                            groups="hr.group_hr_manager,bxi_hr_policy.group_policy_cpo"/>
+                    <button name="action_print_certificate" type="object" string="Print Certificate"
+                            invisible="state != 'acknowledged'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="pending,acknowledged"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="policy_id" readonly="1"/></h1>
+                        <span class="text-muted">Version <field name="version_no" readonly="1" class="oe_inline"/></span>
+                    </div>
+                    <div class="alert alert-info" role="alert" invisible="state not in ('pending', 'overdue') or document_opened">
+                        Read the policy below. The <b>I Acknowledge</b> button works once the document has been opened.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="department_id"/>
+                            <field name="requested_date"/>
+                            <field name="due_date"/>
+                        </group>
+                        <group>
+                            <field name="document_opened"/>
+                            <field name="acknowledged_date" invisible="not acknowledged_date"/>
+                            <field name="channel" invisible="not channel"/>
+                            <field name="ip_address" invisible="not ip_address" groups="hr.group_hr_manager,bxi_hr_policy.group_policy_cpo"/>
+                            <field name="waived_by_id" invisible="not waived_by_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="statement"/>
+                        <field name="waive_reason" invisible="state not in ('pending', 'overdue', 'waived')"
+                               readonly="state not in ('pending', 'overdue')"
+                               groups="hr.group_hr_manager,bxi_hr_policy.group_policy_cpo"/>
+                    </group>
+                    <field name="preview_html" widget="html" nolabel="1" readonly="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_hr_policy_acknowledgement_pivot" model="ir.ui.view">
+        <field name="name">hr.policy.acknowledgement.pivot</field>
+        <field name="model">hr.policy.acknowledgement</field>
+        <field name="arch" type="xml">
+            <pivot string="Acknowledgement Analysis" sample="1">
+                <field name="policy_id" type="row"/>
+                <field name="state" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_hr_policy_acknowledgement_graph" model="ir.ui.view">
+        <field name="name">hr.policy.acknowledgement.graph</field>
+        <field name="model">hr.policy.acknowledgement</field>
+        <field name="arch" type="xml">
+            <graph string="Acknowledgement Analysis" type="bar" stacked="1" sample="1">
+                <field name="department_id"/>
+                <field name="state"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_hr_policy_acknowledgement_search" model="ir.ui.view">
+        <field name="name">hr.policy.acknowledgement.search</field>
+        <field name="model">hr.policy.acknowledgement</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="policy_id"/>
+                <field name="department_id"/>
+                <filter name="mine" string="My Policies" domain="[('user_id', '=', uid)]"/>
+                <filter name="team" string="My Team" domain="[('manager_id.user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="to_do" string="To Acknowledge" domain="[('state', 'in', ('pending', 'overdue'))]"/>
+                <filter name="overdue" string="Overdue" domain="[('state', '=', 'overdue')]"/>
+                <filter name="done" string="Acknowledged" domain="[('state', '=', 'acknowledged')]"/>
+                <separator/>
+                <filter name="current_version" string="Current Version" domain="[('is_current_version', '=', True)]"/>
+                <group>
+                    <filter name="group_policy" string="Policy" context="{'group_by': 'policy_id'}"/>
+                    <filter name="group_company" string="Company" context="{'group_by': 'company_id'}"/>
+                    <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_hr_policy_acknowledgement_mine" model="ir.actions.act_window">
+        <field name="name">My Policies</field>
+        <field name="res_model">hr.policy.acknowledgement</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('user_id', '=', uid), ('state', '!=', 'cancelled')]</field>
+        <field name="context">{'create': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No policy to acknowledge</p>
+        </field>
+    </record>
+
+    <record id="action_hr_policy_acknowledgement_analysis" model="ir.actions.act_window">
+        <field name="name">Acknowledgements</field>
+        <field name="res_model">hr.policy.acknowledgement</field>
+        <field name="view_mode">pivot,graph,list,form</field>
+        <field name="context">{'search_default_current_version': 1, 'create': False}</field>
+    </record>
+
+    <record id="action_hr_policy_acknowledgement_overdue" model="ir.actions.act_window">
+        <field name="name">Overdue Acknowledgements</field>
+        <field name="res_model">hr.policy.acknowledgement</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_overdue': 1, 'create': False}</field>
+    </record>
+
+    <!-- ═══════════════════════════ MENUS ═══════════════════════════ -->
+    <menuitem id="menu_hr_policy_acknowledgement_mine"
+              name="My Policies"
+              parent="menu_hr_company_policy_root"
+              action="action_hr_policy_acknowledgement_mine"
+              sequence="5"/>
+
+    <menuitem id="menu_hr_company_policy_version"
+              name="Versions"
+              parent="menu_hr_company_policy_root"
+              action="action_hr_company_policy_version"
+              groups="hr.group_hr_manager,bxi_hr_policy.group_policy_cpo"
+              sequence="30"/>
+
+    <menuitem id="menu_hr_company_policy_version_to_approve"
+              name="Versions to Approve"
+              parent="menu_hr_company_policy_root"
+              action="action_hr_company_policy_version_to_approve"
+              groups="bxi_hr_policy.group_policy_cpo"
+              sequence="35"/>
+
+    <menuitem id="menu_hr_policy_acknowledgement_analysis"
+              name="Acknowledgements"
+              parent="menu_hr_company_policy_root"
+              action="action_hr_policy_acknowledgement_analysis"
+              groups="hr.group_hr_user,bxi_hr_policy.group_policy_cpo"
+              sequence="40"/>
+
+    <menuitem id="menu_hr_policy_acknowledgement_overdue"
+              name="Overdue"
+              parent="menu_hr_company_policy_root"
+              action="action_hr_policy_acknowledgement_overdue"
+              groups="hr.group_hr_user,bxi_hr_policy.group_policy_cpo"
+              sequence="45"/>
+
+</odoo>

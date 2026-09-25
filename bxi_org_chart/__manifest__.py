@@ -11,7 +11,8 @@
         - Click to expand/collapse subordinate branches.
         - Instant employee search, zoom controls, and quick employee profile access.
     """,
-    'author': 'BXI',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'license': 'LGPL-3',
     'depends': [
         'base',

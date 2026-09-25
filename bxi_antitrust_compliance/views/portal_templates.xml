@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="portal_my_home_compliance" inherit_id="portal.portal_my_home" name="Portal Home - Compliance">
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="icon" t-value="'/bxi_antitrust_compliance/static/src/img/compliance-icon.svg'"/>
+                <t t-set="title">Compliance</t>
+                <t t-set="text">Ask Legal, declare competitor interactions, report incidents</t>
+                <t t-set="url" t-value="'/my/compliance'"/>
+                <t t-set="config_card" t-value="True"/>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="portal_compliance_state" name="Compliance State Badge">
+        <span t-attf-class="badge #{'text-bg-success' if record.state in ('answered', 'closed', 'cleared', 'done') else 'text-bg-danger' if record.state in ('rejected', 'incident') else 'text-bg-info'}"
+              t-esc="dict(record._fields['state']._description_selection(record.env)).get(record.state)"/>
+    </template>
+
+    <template id="portal_compliance" name="Compliance">
+        <t t-call="portal.portal_layout">
+            <div class="d-flex flex-wrap align-items-center gap-2 my-3">
+                <h3 class="mb-0 me-auto">Compliance</h3>
+                <a href="/my/policies" class="btn btn-outline-secondary">Company Policies</a>
+                <a href="/my/compliance/query" class="btn btn-outline-primary">Ask Legal</a>
+                <a href="/my/compliance/interaction" class="btn btn-outline-primary">Declare Interaction</a>
+                <a href="/my/compliance/incident" class="btn btn-danger">Report Incident</a>
+            </div>
+            <div t-if="message" class="alert alert-info" t-esc="message"/>
+            <div t-if="not employee" class="alert alert-warning">No employee record is linked to your user.</div>
+            <p class="text-muted small">
+                In case of any doubt about the Antitrust policy, ask Legal (<t t-esc="contact_email"/>).
+                Declare meetings with competitors and trade associations beforehand, and report immediately if a
+                prohibited topic comes up.
+            </p>
+
+            <h5 class="mt-4">Competitor Interactions</h5>
+            <p t-if="not interactions" class="text-muted">No declarations.</p>
+            <table t-if="interactions" class="table table-sm align-middle">
+                <thead><tr><th>Reference</th><th>Date</th><th>Organisations</th><th>Status</th><th/></tr></thead>
+                <tbody>
+                    <tr t-foreach="interactions" t-as="record">
+                        <td t-esc="record.name"/>
+                        <td><span t-field="record.event_date"/></td>
+                        <td t-esc="record.organisations"/>
+                        <td><t t-call="bxi_antitrust_compliance.portal_compliance_state"/></td>
+                        <td class="text-end">
+                            <form t-if="record.state == 'cleared' and record.event_date &lt;= context_today()" method="post"
+                                  t-attf-action="/my/compliance/interaction/#{record.id}/confirm" class="d-inline">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <button type="submit" class="btn btn-sm btn-success">No prohibited topic discussed</button>
+                            </form>
+                            <a t-if="record.state == 'cleared'" href="/my/compliance/incident" class="btn btn-sm btn-outline-danger">Report incident</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h5 class="mt-4">Legal Queries</h5>
+            <p t-if="not queries" class="text-muted">No queries.</p>
+            <table t-if="queries" class="table table-sm align-middle">
+                <thead><tr><th>Reference</th><th>Subject</th><th>Status</th><th>Answer</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="queries" t-as="record">
+                        <td t-esc="record.name"/>
+                        <td t-esc="record.subject"/>
+                        <td><t t-call="bxi_antitrust_compliance.portal_compliance_state"/></td>
+                        <td><t t-out="record.answer or ''"/></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h5 class="mt-4">Incident Reports</h5>
+            <p t-if="not incidents" class="text-muted">No incident reports.</p>
+            <table t-if="incidents" class="table table-sm align-middle">
+                <thead><tr><th>Reference</th><th>Date</th><th>Meeting</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="incidents" t-as="record">
+                        <td t-esc="record.name"/>
+                        <td><span t-field="record.incident_date"/></td>
+                        <td t-esc="record.meeting_title"/>
+                        <td><t t-call="bxi_antitrust_compliance.portal_compliance_state"/></td>
+                    </tr>
+                </tbody>
+            </table>
+        </t>
+    </template>
+
+    <template id="portal_form_header" name="Compliance Form Header">
+        <div class="my-3">
+            <a href="/my/compliance">&#8592; Compliance</a>
+            <h3 class="mt-2" t-esc="form_title"/>
+        </div>
+        <div t-if="error" class="alert alert-danger" t-esc="error"/>
+    </template>
+
+    <template id="portal_query_form" name="Ask Legal">
+        <t t-call="portal.portal_layout">
+            <t t-set="form_title">Ask Legal</t>
+            <t t-call="bxi_antitrust_compliance.portal_form_header"/>
+            <form method="post" action="/my/compliance/query" enctype="multipart/form-data" class="row g-3">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="col-md-8">
+                    <label class="form-label" for="subject">Subject</label>
+                    <input type="text" name="subject" id="subject" class="form-control" required="required" t-att-value="post.get('subject')"/>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="urgency">Urgency</label>
+                    <select name="urgency" id="urgency" class="form-select">
+                        <option value="normal">Normal</option>
+                        <option value="urgent" t-att-selected="post.get('urgency') == 'urgent'">Urgent</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="situation">Situation</label>
+                    <textarea name="situation" id="situation" rows="6" class="form-control" required="required" t-esc="post.get('situation')"/>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label" for="attachments">Attachments</label>
+                    <input type="file" name="attachments" id="attachments" class="form-control" multiple="multiple"/>
+                </div>
+                <div class="col-12"><button type="submit" class="btn btn-primary">Send to Compliance</button></div>
+            </form>
+        </t>
+    </template>
+
+    <template id="portal_yes_no" name="Yes/No Radio">
+        <div class="col-md-6">
+            <label class="form-label d-block" t-esc="label"/>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" t-att-name="field" t-attf-id="#{field}_yes" value="yes" t-att-checked="post.get(field) == 'yes'"/>
+                <label class="form-check-label" t-attf-for="#{field}_yes">Yes</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" t-att-name="field" t-attf-id="#{field}_no" value="no" t-att-checked="post.get(field) == 'no'"/>
+                <label class="form-check-label" t-attf-for="#{field}_no">No</label>
+            </div>
+        </div>
+    </template>
+
+    <template id="portal_incident_form" name="Report Incident">
+        <t t-call="portal.portal_layout">
+            <t t-set="form_title">Report a Meeting Incident</t>
+            <t t-call="bxi_antitrust_compliance.portal_form_header"/>
+            <div class="alert alert-warning">
+                If prohibited topics came up: state your reservation, leave the meeting if the discussion continues,
+                make sure your departure is recorded, and report it here immediately.
+            </div>
+            <form method="post" action="/my/compliance/incident" enctype="multipart/form-data" class="row g-3">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="col-md-6">
+                    <label class="form-label" for="meeting_title">Meeting</label>
+                    <input type="text" name="meeting_title" id="meeting_title" class="form-control" required="required" t-att-value="post.get('meeting_title')"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="meeting_type">Type</label>
+                    <select name="meeting_type" id="meeting_type" class="form-select">
+                        <t t-foreach="meeting_types" t-as="option">
+                            <option t-att-value="option[0]" t-att-selected="post.get('meeting_type') == option[0]" t-esc="option[1]"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="incident_date">Date</label>
+                    <input type="date" name="incident_date" id="incident_date" class="form-control" required="required" t-att-value="post.get('incident_date')"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="other_parties">Organisations and people present</label>
+                    <textarea name="other_parties" id="other_parties" rows="2" class="form-control" required="required" t-esc="post.get('other_parties')"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Topics raised</label>
+                    <div t-foreach="topics" t-as="topic" class="form-check">
+                        <input class="form-check-input" type="checkbox" name="topic_ids" t-att-value="topic.id" t-attf-id="topic_#{topic.id}"/>
+                        <label class="form-check-label" t-attf-for="topic_#{topic.id}" t-esc="topic.name"/>
+                    </div>
+                </div>
+                <t t-call="bxi_antitrust_compliance.portal_yes_no"><t t-set="field" t-value="'reservation_stated'"/><t t-set="label">Did you officially state your reservation?</t></t>
+                <t t-call="bxi_antitrust_compliance.portal_yes_no"><t t-set="field" t-value="'discussion_stopped'"/><t t-set="label">Was the discussion stopped or resolved?</t></t>
+                <t t-call="bxi_antitrust_compliance.portal_yes_no"><t t-set="field" t-value="'left_meeting'"/><t t-set="label">Did you leave the meeting?</t></t>
+                <t t-call="bxi_antitrust_compliance.portal_yes_no"><t t-set="field" t-value="'departure_recorded'"/><t t-set="label">If you left, was your departure noted for the record?</t></t>
+                <div class="col-md-6">
+                    <label class="form-label" for="departure_record_note">How was it recorded?</label>
+                    <input type="text" name="departure_record_note" id="departure_record_note" class="form-control" t-att-value="post.get('departure_record_note')"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="explanation">If the discussion continued and you did not leave, explain why</label>
+                    <textarea name="explanation" id="explanation" rows="2" class="form-control" t-esc="post.get('explanation')"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="description">What happened</label>
+                    <textarea name="description" id="description" rows="5" class="form-control" required="required" t-esc="post.get('description')"/>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label" for="attachments">Evidence (minutes, emails)</label>
+                    <input type="file" name="attachments" id="attachments" class="form-control" multiple="multiple"/>
+                </div>
+                <div class="col-12"><button type="submit" class="btn btn-danger">Report to Compliance</button></div>
+            </form>
+        </t>
+    </template>
+
+    <template id="portal_interaction_form" name="Declare Interaction">
+        <t t-call="portal.portal_layout">
+            <t t-set="form_title">Declare a Competitor Interaction</t>
+            <t t-call="bxi_antitrust_compliance.portal_form_header"/>
+            <form method="post" action="/my/compliance/interaction" enctype="multipart/form-data" class="row g-3">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="col-md-6">
+                    <label class="form-label" for="interaction_type">Type</label>
+                    <select name="interaction_type" id="interaction_type" class="form-select">
+                        <t t-foreach="interaction_types" t-as="option">
+                            <option t-att-value="option[0]" t-att-selected="post.get('interaction_type') == option[0]" t-esc="option[1]"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="event_date">Date</label>
+                    <input type="date" name="event_date" id="event_date" class="form-control" required="required" t-att-value="post.get('event_date')"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="organisations">Organisations / competitors involved</label>
+                    <textarea name="organisations" id="organisations" rows="2" class="form-control" required="required" t-esc="post.get('organisations')"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="purpose">Purpose</label>
+                    <textarea name="purpose" id="purpose" rows="3" class="form-control" required="required" t-esc="post.get('purpose')"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="agenda">Agenda</label>
+                    <textarea name="agenda" id="agenda" rows="3" class="form-control" t-esc="post.get('agenda')"/>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label" for="attachments">Agenda / documents</label>
+                    <input type="file" name="attachments" id="attachments" class="form-control" multiple="multiple"/>
+                </div>
+                <div class="col-12">
+                    <p class="fw-bold mb-1">Prohibited topics</p>
+                    <ul class="small"><li t-foreach="topics" t-as="topic" t-esc="topic.name"/></ul>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="commit_no_topics" id="commit_no_topics" required="required"/>
+                        <label class="form-check-label" for="commit_no_topics">I will not discuss or agree on any of the prohibited topics</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="commit_report" id="commit_report" required="required"/>
+                        <label class="form-check-label" for="commit_report">If such topics come up, I will state my reservation, leave the meeting and report it</label>
+                    </div>
+                </div>
+                <div class="col-12"><button type="submit" class="btn btn-primary">Submit Declaration</button></div>
+            </form>
+        </t>
+    </template>
+
+</odoo>

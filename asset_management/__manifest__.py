@@ -21,8 +21,8 @@
         ✅ Chatter/messaging on asset records
     """,
     'category': 'Accounting/Fixed Assets',
-    'author': 'BXI Tech',
-    'website': '',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'depends': [
         'base',
         'product',

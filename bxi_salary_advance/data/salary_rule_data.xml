@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Deducted after the other deductions and before NET (sequence 200). The EMIs due are
+         put on the SAL_ADV input when the payslip is computed. -->
+    <record id="hr_rule_salary_advance" model="hr.salary.rule">
+        <field name="name">Salary Advance Recovery</field>
+        <field name="sequence" eval="107"/>
+        <field name="code">SAL_ADV</field>
+        <field name="category_id" ref="om_hr_payroll.DED"/>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = bool(inputs.SAL_ADV and inputs.SAL_ADV.amount)</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = -abs(inputs.SAL_ADV.amount)</field>
+    </record>
+    <record id="hr_rule_input_salary_advance" model="hr.rule.input">
+        <field name="name">Salary Advance Recovery</field>
+        <field name="code">SAL_ADV</field>
+        <field name="input_id" ref="hr_rule_salary_advance"/>
+    </record>
+</odoo>

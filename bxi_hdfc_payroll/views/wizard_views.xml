@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hdfc_release_wizard_form" model="ir.ui.view">
+        <field name="name">hdfc.release.wizard.form</field>
+        <field name="model">hdfc.release.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Pay via HDFC">
+                <div class="alert alert-danger" role="alert" invisible="not has_errors">
+                    <strong>Fix these issues first:</strong>
+                    <field name="error_message" class="d-block" style="white-space: pre-line;"/>
+                </div>
+                <group>
+                    <field name="payment_date"/>
+                    <field name="has_errors" invisible="1"/>
+                </group>
+                <field name="summary_html" invisible="has_errors"/>
+                <field name="payslip_ids" invisible="1"/>
+                <footer>
+                    <button name="action_release" type="object" string="Create Payout Batch" class="btn-primary"
+                            invisible="has_errors"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_hdfc_otp_wizard_form" model="ir.ui.view">
+        <field name="name">hdfc.otp.wizard.form</field>
+        <field name="model">hdfc.otp.wizard</field>
+        <field name="arch" type="xml">
+            <form string="HDFC OTP Verification">
+                <div class="alert alert-info" role="alert" invisible="not message">
+                    <field name="message"/>
+                </div>
+                <group>
+                    <field name="batch_id"/>
+                    <field name="line_count" string="Transfers"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="amount_total"/>
+                    <field name="otp_expires_at"/>
+                    <field name="otp" password="True" placeholder="OTP sent by HDFC to the authorised signatory"
+                           default_focus="1"/>
+                </group>
+                <footer>
+                    <button name="action_submit" type="object" string="Submit to HDFC" class="btn-primary"
+                            confirm="Submit this salary file to HDFC? Funds will be debited from the company account."/>
+                    <button name="action_resend" type="object" string="Resend OTP"/>
+                    <button string="Close" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_hdfc_reverse_wizard_form" model="ir.ui.view">
+        <field name="name">hdfc.reverse.wizard.form</field>
+        <field name="model">hdfc.reverse.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reverse HDFC Payout">
+                <div class="alert alert-warning" role="alert">
+                    Paid transfers get a reversal journal entry. The bank must accept the reversal.
+                </div>
+                <group>
+                    <field name="batch_id"/>
+                    <field name="reason" placeholder="Why is this payout reversed?"/>
+                </group>
+                <footer>
+                    <button name="action_reverse" type="object" string="Reverse" class="btn-danger"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

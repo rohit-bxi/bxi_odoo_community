@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_compliance_root" name="Compliance" parent="hr.menu_hr_root" sequence="26"/>
+
+    <!-- Everyone -->
+    <menuitem id="menu_compliance_my_policies" name="My Policies" parent="menu_compliance_root"
+              action="bxi_hr_policy.action_hr_policy_acknowledgement_mine" sequence="5"/>
+    <menuitem id="menu_compliance_query" name="Ask Legal" parent="menu_compliance_root"
+              action="action_antitrust_query_mine" sequence="10"/>
+    <menuitem id="menu_compliance_interaction" name="Declare Interaction" parent="menu_compliance_root"
+              action="action_antitrust_interaction_mine" sequence="20"/>
+    <menuitem id="menu_compliance_incident" name="Report Incident" parent="menu_compliance_root"
+              action="action_antitrust_incident_mine" sequence="30"/>
+
+    <!-- Compliance / CPO -->
+    <menuitem id="menu_compliance_cpo" name="Compliance Team" parent="menu_compliance_root"
+              sequence="50" groups="bxi_hr_policy.group_policy_cpo"/>
+    <menuitem id="menu_compliance_dashboard" name="Dashboard" parent="menu_compliance_cpo"
+              action="action_antitrust_dashboard" sequence="1"/>
+    <menuitem id="menu_compliance_queries_all" name="Queries" parent="menu_compliance_cpo"
+              action="action_antitrust_query_all" sequence="10"/>
+    <menuitem id="menu_compliance_incidents_all" name="Incidents" parent="menu_compliance_cpo"
+              action="action_antitrust_incident_all" sequence="20"/>
+    <menuitem id="menu_compliance_interactions_review" name="Interactions to Review" parent="menu_compliance_cpo"
+              action="action_antitrust_interaction_review" sequence="30"/>
+    <menuitem id="menu_compliance_bid_declarations" name="Bid Declarations" parent="menu_compliance_cpo"
+              action="action_antitrust_bid_declaration" sequence="40"/>
+    <menuitem id="menu_compliance_cases" name="Cases" parent="menu_compliance_cpo"
+              action="action_antitrust_case" sequence="50"/>
+    <menuitem id="menu_compliance_topics" name="Prohibited Topics" parent="menu_compliance_cpo"
+              action="action_antitrust_topic" sequence="90"/>
+</odoo>

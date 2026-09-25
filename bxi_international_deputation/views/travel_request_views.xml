@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_travel_request_form_inherit_deputation" model="ir.ui.view">
+        <field name="name">travel.request.form.inherit.deputation</field>
+        <field name="model">travel.request</field>
+        <field name="inherit_id" ref="bxi_travel_request.view_travel_request_form"/>
+        <field name="arch" type="xml">
+            <button name="action_cancel" position="before">
+                <button name="action_create_deputation" string="Create Deputation" type="object"
+                        invisible="state != 'approve' or deputation_ids"
+                        groups="bxi_international_deputation.group_deputation_officer"/>
+                <field name="deputation_ids" invisible="1"/>
+            </button>
+        </field>
+    </record>
+
+</odoo>

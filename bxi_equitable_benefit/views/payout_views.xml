@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bxi_eb_payout_list" model="ir.ui.view">
+        <field name="name">bxi.eb.payout.list</field>
+        <field name="model">bxi.eb.payout</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state in ('rejected', 'cancelled')" decoration-danger="not is_eligible and not is_exception and state == 'draft'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="department_id" optional="show"/>
+                <field name="fy_name"/>
+                <field name="payout_type"/>
+                <field name="period_end" optional="hide"/>
+                <field name="is_eligible"/>
+                <field name="is_exception" optional="hide"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount_computed" sum="Total" optional="hide"/>
+                <field name="amount_final" sum="Total"/>
+                <field name="payout_date" optional="show"/>
+                <field name="state" widget="badge" decoration-info="state == 'validated'"
+                       decoration-warning="state == 'approved'" decoration-success="state == 'paid'"
+                       decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_eb_payout_form" model="ir.ui.view">
+        <field name="name">bxi.eb.payout.form</field>
+        <field name="model">bxi.eb.payout</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_compute" string="Compute" type="object" class="btn-primary"
+                            invisible="state != 'draft'" groups="bxi_equitable_benefit.group_eb_revenue_assurance"/>
+                    <button name="action_validate" string="Validate" type="object" class="btn-primary"
+                            invisible="state != 'draft' or not computed_date" groups="bxi_equitable_benefit.group_eb_revenue_assurance"/>
+                    <button name="action_approve" string="Approve" type="object" class="btn-primary"
+                            invisible="state != 'validated'" groups="bxi_equitable_benefit.group_eb_finance"/>
+                    <button name="action_reject" string="Reject" type="object"
+                            invisible="state not in ('draft', 'validated')"
+                            groups="bxi_equitable_benefit.group_eb_revenue_assurance,bxi_equitable_benefit.group_eb_finance"/>
+                    <button name="action_reset_draft" string="Reset to Draft" type="object"
+                            invisible="state not in ('validated', 'approved', 'rejected', 'cancelled') or payslip_id"
+                            groups="bxi_equitable_benefit.group_eb_revenue_assurance"/>
+                    <button name="action_cancel" string="Cancel" type="object"
+                            invisible="state in ('paid', 'cancelled') or payslip_id"
+                            groups="bxi_equitable_benefit.group_eb_revenue_assurance"/>
+                    <button name="%(action_report_bxi_eb_payout_statement)d" string="Print Statement" type="action"
+                            invisible="not computed_date"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,validated,approved,paid"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="is_eligible or not computed_date">
+                        <strong>Not eligible</strong>
+                        <field name="ineligibility_reason" class="d-block" style="white-space: pre-line;"/>
+                    </div>
+                    <group>
+                        <group string="Employee">
+                            <field name="employee_id" readonly="state != 'draft' or computed_date"/>
+                            <field name="department_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="payout_type" readonly="1"/>
+                            <field name="resignation_id" invisible="not resignation_id"/>
+                        </group>
+                        <group string="Period">
+                            <field name="fy_name"/>
+                            <field name="fy_start" readonly="state != 'draft'"/>
+                            <field name="fy_end" readonly="state != 'draft'"/>
+                            <field name="period_end" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Eligibility">
+                            <field name="is_eligible"/>
+                            <field name="disciplinary_count"/>
+                            <field name="rating"/>
+                            <field name="unauthorized_absence_days"/>
+                            <field name="unpaid_leave_days"/>
+                            <field name="unpaid_leave_prorated"/>
+                            <field name="computed_date"/>
+                        </group>
+                        <group string="Payout">
+                            <field name="currency_id" invisible="1"/>
+                            <field name="amount_computed"/>
+                            <field name="amount_final" class="fw-bold"/>
+                            <field name="payout_date" readonly="state not in ('draft', 'validated')"/>
+                            <field name="payslip_id" invisible="not payslip_id"/>
+                            <field name="validated_by_id" invisible="not validated_by_id"/>
+                            <field name="approved_by_id" invisible="not approved_by_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Computation" name="lines">
+                            <field name="line_ids">
+                                <list>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="date_from"/>
+                                    <field name="date_to"/>
+                                    <field name="work_pattern_id"/>
+                                    <field name="assignment_id" optional="hide"/>
+                                    <field name="days"/>
+                                    <field name="unpaid_days" optional="show"/>
+                                    <field name="fraction"/>
+                                    <field name="component_a"/>
+                                    <field name="rate_percent"/>
+                                    <field name="amount" sum="Total"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Exception" name="exception" groups="bxi_equitable_benefit.group_eb_revenue_assurance">
+                            <p class="text-muted">
+                                Exceptions to the policy must be approved in writing by the designated leadership
+                                authority. The exception amount replaces the computed amount.
+                            </p>
+                            <group>
+                                <field name="is_exception" readonly="state != 'draft'"/>
+                                <field name="exception_amount" invisible="not is_exception" readonly="state != 'draft'"/>
+                                <field name="exception_approver_id" invisible="not is_exception" readonly="state != 'draft'"/>
+                                <field name="exception_reason" invisible="not is_exception" readonly="state != 'draft'"/>
+                                <field name="exception_attachment_ids" widget="many2many_binary"
+                                       invisible="not is_exception" readonly="state != 'draft'"/>
+                            </group>
+                        </page>
+                        <page string="Rejection" name="rejection" invisible="state != 'rejected'">
+                            <field name="rejection_reason"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_eb_payout_search" model="ir.ui.view">
+        <field name="name">bxi.eb.payout.search</field>
+        <field name="model">bxi.eb.payout</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="fy_name"/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="to_approve" string="To Approve" domain="[('state', '=', 'validated')]"/>
+                <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <separator/>
+                <filter name="not_eligible" string="Not Eligible" domain="[('is_eligible', '=', False)]"/>
+                <filter name="fnf" string="Full &amp; Final" domain="[('payout_type', '=', 'fnf')]"/>
+                <group>
+                    <filter name="group_fy" string="Financial Year" context="{'group_by': 'fy_name'}"/>
+                    <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_bxi_eb_payout_pivot" model="ir.ui.view">
+        <field name="name">bxi.eb.payout.pivot</field>
+        <field name="model">bxi.eb.payout</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="department_id" type="row"/>
+                <field name="fy_name" type="col"/>
+                <field name="amount_final" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_bxi_eb_payout" model="ir.actions.act_window">
+        <field name="name">Payouts</field>
+        <field name="res_model">bxi.eb.payout</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No equitable benefit payout yet</p>
+            <p>Use "Generate Payouts" after the close of the financial year.</p>
+        </field>
+    </record>
+
+    <record id="action_bxi_eb_payout_my" model="ir.actions.act_window">
+        <field name="name">My Payouts</field>
+        <field name="res_model">bxi.eb.payout</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('employee_id.user_id', '=', uid)]</field>
+    </record>
+</odoo>

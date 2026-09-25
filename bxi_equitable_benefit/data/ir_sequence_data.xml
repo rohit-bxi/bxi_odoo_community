@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_bxi_eb_assignment" model="ir.sequence">
+        <field name="name">Equitable Benefit Assignment</field>
+        <field name="code">bxi.eb.assignment</field>
+        <field name="prefix">EBA/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_bxi_eb_payout" model="ir.sequence">
+        <field name="name">Equitable Benefit Payout</field>
+        <field name="code">bxi.eb.payout</field>
+        <field name="prefix">EBP/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

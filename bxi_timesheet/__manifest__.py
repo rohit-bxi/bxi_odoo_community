@@ -4,7 +4,8 @@
     'category': 'Human Resources',
     'version': '19.0.1.0.0',
     'sequence': 1,
-    'author': 'BXI',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'license': 'LGPL-3',
     'summary': 'Sync employee attendance data from DeskTime API into Odoo Timesheets',
     'description': '''

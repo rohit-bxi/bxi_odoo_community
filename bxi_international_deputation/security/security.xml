@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record model="res.groups.privilege" id="res_groups_privilege_deputation">
+        <field name="name">International Deputation</field>
+        <field name="sequence">26</field>
+        <field name="category_id" ref="base.module_category_human_resources"/>
+    </record>
+
+    <!-- HR Employee Services: create, approve and transfer deputations. -->
+    <record id="group_deputation_officer" model="res.groups">
+        <field name="name">Officer</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="res_groups_privilege_deputation"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!-- Country rules, host calendars and corrections after transfer. -->
+    <record id="group_deputation_manager" model="res.groups">
+        <field name="name">Manager</field>
+        <field name="sequence">20</field>
+        <field name="privilege_id" ref="res_groups_privilege_deputation"/>
+        <field name="implied_ids" eval="[(4, ref('group_deputation_officer'))]"/>
+        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+    </record>
+
+    <record id="bxi_deputation_rule_own" model="ir.rule">
+        <field name="name">Deputation: own and team</field>
+        <field name="model_id" ref="model_bxi_deputation"/>
+        <field name="domain_force">['|', ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="bxi_deputation_rule_all" model="ir.rule">
+        <field name="name">Deputation: all</field>
+        <field name="model_id" ref="model_bxi_deputation"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_deputation_officer')), (4, ref('om_hr_payroll.group_hr_payroll_user'))]"/>
+    </record>
+
+    <record id="bxi_deputation_comp_rule" model="ir.rule">
+        <field name="name">Deputation: multi-company</field>
+        <field name="model_id" ref="model_bxi_deputation"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+</odoo>

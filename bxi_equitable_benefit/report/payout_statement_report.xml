@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_bxi_eb_payout_statement" model="ir.actions.report">
+        <field name="name">Equitable Benefit Statement</field>
+        <field name="model">bxi.eb.payout</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_equitable_benefit.report_payout_statement</field>
+        <field name="report_file">bxi_equitable_benefit.report_payout_statement</field>
+        <field name="print_report_name">'Equitable Benefit - %s - %s' % (object.employee_id.name, object.fy_name)</field>
+        <field name="binding_model_id" ref="model_bxi_eb_payout"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_payout_statement">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h3 class="text-center">Equitable Benefit Statement</h3>
+                        <table class="table table-sm table-borderless mt-3">
+                            <tr>
+                                <td><strong>Employee</strong></td><td t-field="o.employee_id"/>
+                                <td><strong>Reference</strong></td><td t-field="o.name"/>
+                            </tr>
+                            <tr>
+                                <td><strong>Department</strong></td><td t-field="o.department_id"/>
+                                <td><strong>Financial Year</strong></td><td t-field="o.fy_name"/>
+                            </tr>
+                            <tr>
+                                <td><strong>Payout Type</strong></td><td t-field="o.payout_type"/>
+                                <td><strong>Eligibility Period End</strong></td><td t-field="o.period_end"/>
+                            </tr>
+                        </table>
+
+                        <table class="table table-sm mt-3">
+                            <thead>
+                                <tr>
+                                    <th>Period</th>
+                                    <th>Work Pattern</th>
+                                    <th class="text-end">Share of Year</th>
+                                    <th class="text-end">Component A</th>
+                                    <th class="text-end">Rate</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="o.line_ids" t-as="line">
+                                    <td><span t-field="line.date_from"/> - <span t-field="line.date_to"/></td>
+                                    <td t-field="line.work_pattern_id"/>
+                                    <td class="text-end"><t t-esc="'%.4f' % line.fraction"/></td>
+                                    <td class="text-end" t-field="line.component_a"/>
+                                    <td class="text-end"><t t-esc="'%.2f' % line.rate_percent"/>%</td>
+                                    <td class="text-end" t-field="line.amount"/>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p t-if="not o.is_eligible" class="text-danger">
+                            <strong>Not eligible:</strong>
+                            <span t-field="o.ineligibility_reason" style="white-space: pre-line;"/>
+                        </p>
+                        <p t-if="o.is_exception"><strong>Approved exception:</strong> <span t-field="o.exception_reason"/></p>
+
+                        <div class="row justify-content-end">
+                            <div class="col-5">
+                                <table class="table table-sm">
+                                    <tr class="border-black">
+                                        <td><strong>Gross Benefit</strong></td>
+                                        <td class="text-end"><strong t-field="o.amount_final"/></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        <p class="text-muted small">
+                            Payable through payroll and subject to applicable statutory deductions.
+                        </p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
