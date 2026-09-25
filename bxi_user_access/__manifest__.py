@@ -3,7 +3,8 @@
     'category': 'Human Resources',
     'version': '19.0.1.0.0',
     'sequence': 1,
-    'author': 'BXI',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'summary': 'Manage Vendor and custmer access',
     'description': 'Manage Vendor and custmer access',
     'depends': [

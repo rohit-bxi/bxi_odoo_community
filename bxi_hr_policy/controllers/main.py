@@ -32,3 +32,28 @@ class HrPolicyController(http.Controller):
         ]
 
         return request.make_response(file_content, headers=headers)
+
+    @http.route('/bxi_hr_policy/preview/version/<int:version_id>', type='http', auth='user', methods=['GET'])
+    def preview_policy_version(self, version_id, **kwargs):
+        """Stream a policy version view-only and record that the employee opened it."""
+        Ack = request.env['hr.policy.acknowledgement'].sudo()
+        acks = Ack.search([('version_id', '=', version_id), ('user_id', '=', request.env.uid)])
+        version = request.env['hr.company.policy.version'].browse(version_id)
+        if acks:
+            version = version.sudo()
+        elif not version.exists() or not version.has_access('read'):
+            return request.not_found()
+        if not version.exists() or not version.document:
+            return request.not_found()
+        acks._mark_opened()
+
+        file_content = base64.b64decode(version.document)
+        filename = version.filename or f"policy_v{version.version_no}.pdf"
+        return request.make_response(file_content, headers=[
+            ('Content-Type', version.mimetype or 'application/pdf'),
+            ('Content-Length', len(file_content)),
+            ('Content-Disposition', f'inline; filename="{filename}"'),
+            ('X-Frame-Options', 'SAMEORIGIN'),
+            ('X-Content-Type-Options', 'nosniff'),
+            ('Cache-Control', 'private, no-store'),
+        ])

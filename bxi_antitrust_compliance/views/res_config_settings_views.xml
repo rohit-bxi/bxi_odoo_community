@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_antitrust" model="ir.ui.view">
+        <field name="name">res.config.settings.form.antitrust</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="hr.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='hr']" position="inside">
+                <block title="Compliance" name="antitrust_compliance_setting_container">
+                    <setting id="antitrust_contact_email_setting" string="Compliance contact"
+                             help="Compliance queries and incident reports are emailed to this address.">
+                        <field name="antitrust_contact_email"/>
+                    </setting>
+                    <setting id="antitrust_bid_signoff_setting" string="CPO sign-off for bids"
+                             help="RFP/tender bid declarations must be approved by the CPO before the bid goes out.">
+                        <field name="bid_cpo_signoff"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

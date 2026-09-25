@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_report_deputation_letter" model="ir.actions.report">
+        <field name="name">Deputation Commencement Letter</field>
+        <field name="model">bxi.deputation</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_international_deputation.report_deputation_letter</field>
+        <field name="report_file">bxi_international_deputation.report_deputation_letter</field>
+        <field name="print_report_name">'Deputation Letter - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_bxi_deputation"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_deputation_letter_document">
+        <t t-call="web.external_layout">
+            <t t-set="o" t-value="o.with_context(lang=o.employee_id.lang or o.env.lang)"/>
+            <t t-set="approaches" t-value="dict(o._fields['salary_approach'].selection)"/>
+            <div class="page">
+                <h4 class="text-center mb-4">Deputation Commencement Letter</h4>
+                <p>Ref: <span t-field="o.name"/><br/>Date: <span t-out="context_timestamp(datetime.datetime.now()).strftime('%d %B %Y')"/></p>
+                <p>
+                    To,<br/>
+                    <strong t-field="o.employee_id.name"/><br/>
+                    <t t-if="o.employee_id.employee_code">Employee Code: <span t-field="o.employee_id.employee_code"/><br/></t>
+                    <t t-if="o.employee_id.job_title"><span t-field="o.employee_id.job_title"/><br/></t>
+                </p>
+                <p><strong>Subject: Commencement of International Deputation to <span t-field="o.host_country_id.name"/></strong></p>
+                <p>
+                    Further to your long-term deputation to <span t-field="o.host_country_id.name"/><t t-if="o.host_city">
+                    (<span t-field="o.host_city"/>)</t><t t-if="o.client_name"> for <span t-field="o.client_name"/></t>,
+                    your payroll is transferred to the host country in line with the BXI Tech International Deputation -
+                    Salary Processing Policy. <span t-field="o.host_country_id.name"/> follows the
+                    <strong t-out="approaches.get(o.salary_approach)"/> approach for salary processing.
+                </p>
+                <table class="table table-sm table-bordered mt-3">
+                    <tbody>
+                        <tr><td class="w-50">Date of arrival in <span t-field="o.host_country_id.name"/></td><td><span t-field="o.arrival_date"/></td></tr>
+                        <tr><td>Last day on the home country payroll</td><td><span t-field="o.home_last_date"/></td></tr>
+                        <tr><td><strong>Date of commencement of deputation (host payroll start)</strong></td><td><strong t-field="o.host_start_date"/></td></tr>
+                        <t t-if="o.outbound_gap_days">
+                            <tr><td>Gap day(s) between the two payrolls</td><td><span t-field="o.outbound_gap_dates"/></td></tr>
+                            <tr><td>One-time ex-gratia for gap day(s) (Annual Gross / <span t-out="'%g' % o.annual_divisor"/> x <span t-field="o.outbound_gap_days"/>)</td>
+                                <td><span t-field="o.outbound_gap_amount"/>, paid with your first host country payroll</td></tr>
+                        </t>
+                    </tbody>
+                </table>
+                <p t-if="o.salary_approach == 'calendar'">
+                    Under the Calendar Days approach, your host country salary is processed from your date of arrival.
+                </p>
+                <p t-else="">
+                    Under the Working Days approach, your deputation commences on the first host working day on or after
+                    your arrival. Any weekend or public holiday between the two payrolls is paid by the host country as a
+                    one-time ex-gratia.
+                </p>
+                <p>
+                    On completion of the deputation, your last working day in the host country will be the basis of your
+                    host country final settlement.
+                </p>
+                <p class="mt-5">
+                    For BXI Technology LLP<br/><br/><br/>
+                    HR - Employee Services
+                </p>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_deputation_letter">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="bxi_international_deputation.report_deputation_letter_document"/>
+            </t>
+        </t>
+    </template>
+
+</odoo>

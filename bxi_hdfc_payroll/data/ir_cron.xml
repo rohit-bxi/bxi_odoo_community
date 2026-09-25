@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="ir_cron_hdfc_sync_status" model="ir.cron">
+        <field name="name">HDFC Payroll: Sync payout status</field>
+        <field name="model_id" ref="model_hdfc_payout_batch"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_sync_status()</field>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">15</field>
+        <field name="interval_type">minutes</field>
+    </record>
+
+    <record id="ir_cron_hdfc_expire_otp" model="ir.cron">
+        <field name="name">HDFC Payroll: Expire pending OTPs</field>
+        <field name="model_id" ref="model_hdfc_payout_batch"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_expire_otp()</field>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">15</field>
+        <field name="interval_type">minutes</field>
+    </record>
+
+    <record id="ir_cron_hdfc_log_cleanup" model="ir.cron">
+        <field name="name">HDFC Payroll: Purge old API logs</field>
+        <field name="model_id" ref="model_hdfc_api_log"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_cleanup()</field>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+    </record>
+</odoo>

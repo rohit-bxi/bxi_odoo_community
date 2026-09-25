@@ -5,7 +5,8 @@
     'version': '19.0.2.0.0',
     'summary': 'MakeMyTrip myBiz Corporate Travel Integration',
     'sequence': 1,
-    'author': 'BXI',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'license': 'LGPL-3',
     'description': '''
         MakeMyTrip myBiz Corporate Travel Request & Integration Module.

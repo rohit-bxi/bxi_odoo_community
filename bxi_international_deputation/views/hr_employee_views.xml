@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_employee_form_inherit_deputation" model="ir.ui.view">
+        <field name="name">hr.employee.form.inherit.deputation</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <button name="action_open_deputations" type="object" class="oe_stat_button" icon="fa-plane"
+                        groups="bxi_international_deputation.group_deputation_officer" invisible="not deputation_count">
+                    <field name="deputation_count" widget="statinfo" string="Deputations"/>
+                </button>
+            </div>
+            <div name="button_box" position="after">
+                <div class="alert alert-info mb-2" role="status" invisible="not is_on_deputation">
+                    On international deputation to <field name="deputation_country_id" readonly="1" class="fw-bold"/>.
+                </div>
+                <field name="is_on_deputation" invisible="1"/>
+            </div>
+        </field>
+    </record>
+
+    <record id="view_employee_filter_inherit_deputation" model="ir.ui.view">
+        <field name="name">hr.employee.search.inherit.deputation</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_filter"/>
+        <field name="arch" type="xml">
+            <filter name="my_team" position="after">
+                <filter name="filter_on_deputation" string="On International Deputation" domain="[('is_on_deputation', '=', True)]"/>
+            </filter>
+        </field>
+    </record>
+
+</odoo>

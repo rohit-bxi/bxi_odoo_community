@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_bxi_salary_advance_list" model="ir.ui.view">
+        <field name="name">bxi.salary.advance.list</field>
+        <field name="model">bxi.salary.advance</field>
+        <field name="arch" type="xml">
+            <list string="Salary Advances" decoration-muted="state in ('cancelled', 'rejected', 'closed')"
+                  decoration-danger="is_overdue">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="department_id" optional="hide"/>
+                <field name="category"/>
+                <field name="amount_requested" sum="Total"/>
+                <field name="amount_approved" optional="show" sum="Total"/>
+                <field name="installment_count" optional="show"/>
+                <field name="amount_balance" optional="show" sum="Total"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="manager_id" optional="show"/>
+                <field name="hr_deadline" optional="show"/>
+                <field name="is_overdue" column_invisible="1"/>
+                <field name="company_id" optional="hide" groups="base.group_multi_company"/>
+                <field name="state" widget="badge"
+                       decoration-info="state in ('submitted', 'hr_review', 'exception_review', 'approved')"
+                       decoration-warning="state in ('disbursed', 'fnf')"
+                       decoration-success="state == 'closed'"
+                       decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_salary_advance_form" model="ir.ui.view">
+        <field name="name">bxi.salary.advance.form</field>
+        <field name="model">bxi.salary.advance</field>
+        <field name="arch" type="xml">
+            <form string="Salary Advance">
+                <header>
+                    <button name="action_submit" type="object" string="Submit to Manager"
+                            class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_rm_approve" type="object" string="Approve"
+                            class="oe_highlight" invisible="not can_rm_approve"/>
+                    <button name="action_hr_approve" type="object" string="Approve (HR)"
+                            class="oe_highlight" invisible="not can_hr_process"/>
+                    <button name="action_exception_approve" type="object" string="Approve Exception"
+                            class="oe_highlight" invisible="not can_exception_approve"/>
+                    <button name="action_open_disburse_wizard" type="object" string="Disburse"
+                            class="oe_highlight" invisible="not can_disburse"/>
+                    <button name="action_send_undertaking" type="object" string="Send Undertaking for Signature"
+                            invisible="state != 'approved' or category != 'housing' or undertaking_signed"
+                            groups="bxi_salary_advance.group_salary_advance_hr"/>
+                    <button name="action_open_reject_wizard" type="object" string="Reject"
+                            invisible="not (can_rm_approve or can_hr_process or can_exception_approve)"/>
+                    <button name="action_open_reject_wizard" type="object" string="Reject"
+                            invisible="state != 'approved'" groups="bxi_salary_advance.group_salary_advance_hr"/>
+                    <button name="action_open_fnf_wizard" type="object" string="Settle in F&amp;F"
+                            invisible="state != 'disbursed'" groups="bxi_salary_advance.group_salary_advance_hr"/>
+                    <button name="action_print_request_form" type="object" string="Print Request Form"
+                            invisible="state != 'draft'"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state not in ('draft', 'submitted')"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft"
+                            invisible="state not in ('rejected', 'cancelled')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted,hr_review,approved,disbursed,closed"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Overdue" bg_color="text-bg-danger" invisible="not is_overdue"/>
+                    <widget name="web_ribbon" title="Closed" bg_color="text-bg-success" invisible="state != 'closed'"/>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="state != 'rejected'">
+                        <b>Rejected:</b> <field name="rejection_reason" class="d-inline"/>
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="state != 'exception_review'">
+                        <b>Exception approval required</b> from <field name="exception_approver_id" class="d-inline" readonly="1"/>:
+                        <field name="exception_reason" class="d-block"/>
+                    </div>
+                    <div class="alert alert-info" role="alert" invisible="not is_perquisite"
+                         groups="bxi_salary_advance.group_salary_advance_hr,bxi_salary_advance.group_salary_advance_finance">
+                        The employee's outstanding interest-free advances exceed the perquisite threshold. The benefit
+                        may be taxable (Rule 3(7)(i)); inform the payroll team for TDS.
+                    </div>
+                    <group>
+                        <group string="Request">
+                            <field name="employee_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="category" readonly="state != 'draft'"/>
+                            <field name="nonprocessing_reason" readonly="state != 'draft'"
+                                   invisible="category != 'non_processing'" required="category == 'non_processing'"/>
+                            <field name="emergency_type" readonly="state != 'draft'"
+                                   invisible="category != 'emergency'" required="category == 'emergency'"/>
+                            <field name="tenancy_months" readonly="state != 'draft'"
+                                   invisible="category != 'housing'" required="category == 'housing'"/>
+                            <field name="amount_requested" readonly="state != 'draft'"/>
+                            <field name="reason" readonly="state != 'draft'" placeholder="Describe the situation"/>
+                        </group>
+                        <group string="Approval">
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="is_overdue" invisible="1"/>
+                            <field name="is_perquisite" invisible="1"/>
+                            <field name="can_rm_approve" invisible="1"/>
+                            <field name="can_hr_process" invisible="1"/>
+                            <field name="can_exception_approve" invisible="1"/>
+                            <field name="can_disburse" invisible="1"/>
+                            <field name="monthly_salary" readonly="state not in ('draft', 'hr_review')"
+                                   groups="bxi_salary_advance.group_salary_advance_hr,bxi_salary_advance.group_salary_advance_finance"/>
+                            <field name="max_eligible" invisible="not max_eligible"
+                                   groups="bxi_salary_advance.group_salary_advance_hr,bxi_salary_advance.group_salary_advance_finance"/>
+                            <field name="amount_approved" readonly="state != 'hr_review'"
+                                   invisible="state in ('draft', 'submitted')"/>
+                            <field name="installment_count" readonly="state != 'hr_review' or category == 'non_processing'"/>
+                            <field name="installment_amount"/>
+                            <field name="vendor_partner_id" invisible="category != 'housing'"
+                                   readonly="state not in ('hr_review', 'exception_review', 'approved')"
+                                   required="category == 'housing' and state == 'hr_review'"/>
+                            <field name="manager_id"/>
+                            <field name="lob_id" invisible="not lob_id"/>
+                            <field name="hr_deadline" invisible="not hr_deadline"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Documents" name="documents">
+                            <group>
+                                <field name="request_form_ids" widget="many2many_binary" readonly="state != 'draft'"/>
+                                <field name="rental_agreement_ids" widget="many2many_binary" readonly="state != 'draft'"
+                                       invisible="category != 'housing'"/>
+                            </group>
+                            <group string="Loan Undertaking" invisible="category != 'housing'">
+                                <field name="sign_request_id" invisible="not sign_request_id"/>
+                                <field name="undertaking_signed" readonly="state != 'approved'"
+                                       groups="bxi_salary_advance.group_salary_advance_hr"/>
+                                <field name="undertaking_attachment_ids" widget="many2many_binary"
+                                       readonly="state != 'approved'"
+                                       groups="bxi_salary_advance.group_salary_advance_hr"/>
+                            </group>
+                        </page>
+                        <page string="EMI Schedule" name="schedule" invisible="not installment_ids">
+                            <field name="installment_ids" readonly="1">
+                                <list decoration-muted="state == 'deducted'" decoration-warning="is_fnf">
+                                    <field name="sequence"/>
+                                    <field name="due_date" widget="date" options="{'format': 'MMMM yyyy'}"/>
+                                    <field name="amount" sum="Total"/>
+                                    <field name="amount_recovered" sum="Total"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="payslip_id"/>
+                                    <field name="is_fnf" optional="show"/>
+                                    <field name="origin_installment_id" optional="hide"/>
+                                    <field name="move_id" optional="hide"/>
+                                    <field name="state" widget="badge" decoration-success="state == 'deducted'"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer">
+                                <field name="amount_disbursed"/>
+                                <field name="amount_recovered"/>
+                                <field name="amount_balance" class="oe_subtotal_footer_separator"/>
+                            </group>
+                        </page>
+                        <page string="History" name="history">
+                            <group>
+                                <group string="Approvals">
+                                    <field name="submitted_date"/>
+                                    <field name="rm_approved_by_id"/>
+                                    <field name="rm_approved_date"/>
+                                    <field name="hr_approved_by_id"/>
+                                    <field name="hr_approved_date"/>
+                                    <field name="exception_approved_by_id" invisible="not exception_approved_by_id"/>
+                                    <field name="exception_approved_date" invisible="not exception_approved_by_id"/>
+                                </group>
+                                <group string="Disbursement and Recovery">
+                                    <field name="disbursement_date"/>
+                                    <field name="disbursement_reference"/>
+                                    <field name="disbursement_move_id" groups="account.group_account_invoice"/>
+                                    <field name="recovery_start"/>
+                                    <field name="resignation_id" invisible="not resignation_id"/>
+                                    <field name="fnf_date" invisible="not fnf_date"/>
+                                    <field name="closed_date" invisible="not closed_date"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_salary_advance_search" model="ir.ui.view">
+        <field name="name">bxi.salary.advance.search</field>
+        <field name="model">bxi.salary.advance</field>
+        <field name="arch" type="xml">
+            <search string="Salary Advances">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <field name="manager_id"/>
+                <filter name="my_advances" string="My Advances" domain="[('employee_id.user_id', '=', uid)]"/>
+                <filter name="to_approve" string="To Approve (Manager)"
+                        domain="[('state', '=', 'submitted'), ('manager_id.user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="state_submitted" string="Manager Approval" domain="[('state', '=', 'submitted')]"/>
+                <filter name="state_hr_review" string="HR Review" domain="[('state', '=', 'hr_review')]"/>
+                <filter name="state_exception" string="Exception Approval" domain="[('state', '=', 'exception_review')]"/>
+                <filter name="state_approved" string="To Disburse" domain="[('state', '=', 'approved')]"/>
+                <filter name="state_recovering" string="Recovering" domain="[('state', 'in', ('disbursed', 'fnf'))]"/>
+                <filter name="state_closed" string="Closed" domain="[('state', '=', 'closed')]"/>
+                <separator/>
+                <filter name="overdue" string="Overdue" domain="[('is_overdue', '=', True)]"/>
+                <filter name="fnf" string="Full &amp; Final Settlement" domain="[('state', '=', 'fnf')]"/>
+                <separator/>
+                <filter name="category_non_processing" string="Category I" domain="[('category', '=', 'non_processing')]"/>
+                <filter name="category_emergency" string="Category II" domain="[('category', '=', 'emergency')]"/>
+                <filter name="category_housing" string="Category III" domain="[('category', '=', 'housing')]"/>
+                <group>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_category" string="Category" context="{'group_by': 'category'}"/>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_bxi_salary_advance_pivot" model="ir.ui.view">
+        <field name="name">bxi.salary.advance.pivot</field>
+        <field name="model">bxi.salary.advance</field>
+        <field name="arch" type="xml">
+            <pivot string="Salary Advances">
+                <field name="category" type="row"/>
+                <field name="state" type="col"/>
+                <field name="amount_disbursed" type="measure"/>
+                <field name="amount_balance" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ── Actions ───────────────────────────────────────────────────── -->
+    <record id="action_bxi_salary_advance_my" model="ir.actions.act_window">
+        <field name="name">My Salary Advances</field>
+        <field name="res_model">bxi.salary.advance</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('employee_id.user_id', '=', uid)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Request a salary advance</p>
+            <p>
+                Category I: salary not processed in the last payroll. Category II: emergencies.
+                Category III: housing deposit or rent. Up to 75% of the monthly salary, recovered in
+                interest-free EMIs.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_bxi_salary_advance_to_approve" model="ir.actions.act_window">
+        <field name="name">Advances to Approve</field>
+        <field name="res_model">bxi.salary.advance</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">['|',
+            '&amp;', ('state', '=', 'submitted'), ('manager_id.user_id', '=', uid),
+            '&amp;', ('state', '=', 'exception_review'), ('exception_approver_id', '=', uid)]</field>
+        <field name="context">{'create': False}</field>
+    </record>
+
+    <record id="action_bxi_salary_advance_hr" model="ir.actions.act_window">
+        <field name="name">HR Processing</field>
+        <field name="res_model">bxi.salary.advance</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ('hr_review', 'exception_review'))]</field>
+        <field name="context">{'create': False}</field>
+    </record>
+
+    <record id="action_bxi_salary_advance_disburse" model="ir.actions.act_window">
+        <field name="name">To Disburse</field>
+        <field name="res_model">bxi.salary.advance</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', '=', 'approved')]</field>
+        <field name="context">{'create': False}</field>
+    </record>
+
+    <record id="action_bxi_salary_advance_outstanding" model="ir.actions.act_window">
+        <field name="name">Outstanding Advances</field>
+        <field name="res_model">bxi.salary.advance</field>
+        <field name="view_mode">list,pivot,form</field>
+        <field name="domain">[('state', 'in', ('disbursed', 'fnf'))]</field>
+        <field name="context">{'create': False}</field>
+    </record>
+
+    <record id="action_bxi_salary_advance" model="ir.actions.act_window">
+        <field name="name">All Salary Advances</field>
+        <field name="res_model">bxi.salary.advance</field>
+        <field name="view_mode">list,pivot,form</field>
+    </record>
+
+</odoo>

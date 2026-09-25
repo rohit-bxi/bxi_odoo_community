@@ -3,17 +3,8 @@
     <record id="view_hr_payslip_tree_icici" model="ir.ui.view">
         <field name="name">hr.payslip.list.icici</field>
         <field name="model">hr.payslip</field>
-        <field name="inherit_id" ref="hr_payroll.view_hr_payslip_tree"/>
+        <field name="inherit_id" ref="om_hr_payroll.view_hr_payslip_tree"/>
         <field name="arch" type="xml">
-            <xpath expr="//header" position="inside">
-
-                <button
-                    name="action_release_salary"
-                    string="Release Salary"
-                    type="object"
-                    class="btn-primary"/>
-
-            </xpath>
             <xpath expr="//list" position="inside">
                 <field name="icici_payment_status"
                     decoration-success="icici_payment_status == 'paid'"
@@ -28,11 +19,15 @@
         </field>
     </record>
 
+    <!-- The list view has no <header/>, so bulk "Release Salary" is
+         exposed as a server action bound to the list view instead: it
+         shows up in the list's Action (cog) menu when payslips are
+         selected. -->
     <record id="action_bulk_salary_release"
             model="ir.actions.server">
         <field name="name">Bulk Salary Release</field>
-        <field name="model_id" ref="hr_payroll.model_hr_payslip"/>
-        <field name="binding_model_id" ref="hr_payroll.model_hr_payslip"/>
+        <field name="model_id" ref="om_hr_payroll.model_hr_payslip"/>
+        <field name="binding_model_id" ref="om_hr_payroll.model_hr_payslip"/>
         <field name="binding_view_types">list</field>
         <field name="state">code</field>
         <field name="code">action = records.action_release_salary()</field>
@@ -41,7 +36,7 @@
     <record id="view_hr_payslip_form_icici" model="ir.ui.view">
         <field name="name">hr.payslip.form.icici</field>
         <field name="model">hr.payslip</field>
-        <field name="inherit_id" ref="hr_payroll.view_hr_payslip_form"/>
+        <field name="inherit_id" ref="om_hr_payroll.view_hr_payslip_form"/>
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
                 <button
@@ -49,7 +44,7 @@
                     string="Release Salary"
                     type="object"
                     class="btn-primary"
-                    invisible="state != 'validated' or icici_payment_status in ('processing','paid','reversed')"/>
+                    invisible="state != 'done' or icici_payment_status in ('processing','paid','reversed')"/>
                 <button
                     name="action_open_reverse_wizard"
                     string="Reverse Payment"
@@ -58,15 +53,16 @@
                     invisible="icici_payment_status != 'processing'"/>
             </xpath>
 
-            <xpath expr="//group[@name='top']" position="inside">
-                <group string="ICICI Payment">
-                    <field name="icici_payment_status" readonly="1"/>
-                    <field name="icici_reference" readonly="1"/>
-                    <field name="icici_file_seq_num" readonly="1"/>
-                    <field name="icici_utr" readonly="1"/>
-                    <field name="icici_response" readonly="1" widget="text"/>
-                </group>
-
+            <xpath expr="//notebook/page[last()]" position="after">
+                <page string="ICICI Payment">
+                    <group>
+                        <field name="icici_payment_status" readonly="1"/>
+                        <field name="icici_reference" readonly="1"/>
+                        <field name="icici_file_seq_num" readonly="1"/>
+                        <field name="icici_utr" readonly="1"/>
+                        <field name="icici_response" readonly="1" widget="text"/>
+                    </group>
+                </page>
             </xpath>
 
         </field>

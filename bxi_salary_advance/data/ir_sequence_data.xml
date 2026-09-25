@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_bxi_salary_advance" model="ir.sequence">
+        <field name="name">Salary Advance</field>
+        <field name="code">bxi.salary.advance</field>
+        <field name="prefix">SADV/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

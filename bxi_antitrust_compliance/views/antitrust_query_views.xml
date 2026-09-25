@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_antitrust_query_list" model="ir.ui.view">
+        <field name="name">antitrust.query.list</field>
+        <field name="model">antitrust.query</field>
+        <field name="arch" type="xml">
+            <list string="Compliance Queries" decoration-danger="urgency == 'urgent' and state == 'submitted'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="subject"/>
+                <field name="urgency"/>
+                <field name="create_date" string="Asked On"/>
+                <field name="state" widget="badge" decoration-info="state == 'submitted'" decoration-success="state == 'answered'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_antitrust_query_form" model="ir.ui.view">
+        <field name="name">antitrust.query.form</field>
+        <field name="model">antitrust.query</field>
+        <field name="arch" type="xml">
+            <form string="Compliance Query">
+                <header>
+                    <button name="action_submit" type="object" string="Send to Compliance" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_answer" type="object" string="Send Answer" class="oe_highlight"
+                            invisible="state != 'submitted'" groups="bxi_hr_policy.group_policy_cpo"/>
+                    <button name="action_close" type="object" string="Close" invisible="state not in ('submitted', 'answered')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,answered,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <div class="alert alert-info" role="alert" invisible="state != 'draft'">
+                        In case of any doubt about the Antitrust policy, ask the compliance team. Your query is confidential.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="subject" readonly="state != 'draft'"/>
+                            <field name="employee_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="urgency" readonly="state != 'draft'"/>
+                            <field name="answered_by_id" invisible="not answered_by_id"/>
+                            <field name="answered_date" invisible="not answered_date"/>
+                        </group>
+                    </group>
+                    <label for="situation"/>
+                    <field name="situation" readonly="state != 'draft'" placeholder="Describe the situation"/>
+                    <field name="attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
+                    <label for="answer" invisible="state == 'draft'"/>
+                    <field name="answer" invisible="state == 'draft'" readonly="state != 'submitted'"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_antitrust_query_search" model="ir.ui.view">
+        <field name="name">antitrust.query.search</field>
+        <field name="model">antitrust.query</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="subject"/>
+                <field name="employee_id"/>
+                <filter name="mine" string="My Queries" domain="[('employee_user_id', '=', uid)]"/>
+                <filter name="open" string="Waiting for Answer" domain="[('state', '=', 'submitted')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_antitrust_query_mine" model="ir.actions.act_window">
+        <field name="name">Ask Legal</field>
+        <field name="res_model">antitrust.query</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('employee_user_id', '=', uid)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Have a doubt about the Antitrust policy?</p>
+            <p>Ask the compliance team. Your query is confidential.</p>
+        </field>
+    </record>
+
+    <record id="action_antitrust_query_all" model="ir.actions.act_window">
+        <field name="name">Queries</field>
+        <field name="res_model">antitrust.query</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_open': 1}</field>
+    </record>
+</odoo>

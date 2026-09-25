@@ -5,17 +5,20 @@
     'version': '19.0.1.0.0',
     'license': 'LGPL-3',
     'sequence': 1,
-    'author': 'BXI Technologies',
-    'website': 'https://bxitech.com/',
+    'author': 'BXI Technology',
     'depends': [
-        'hr_payroll',
+        'om_hr_payroll',
         'hr'
     ],
     'data': [
         'security/ir.model.access.csv',
         'views/payslip_view.xml',
         'views/wizard.xml',
+        'views/res_config_settings_view.xml',
     ],
+    'external_dependencies': {
+        'python': ['Cryptodome', 'requests'],
+    },
     'summary': 'Bank Integration ICICI',
     'description': 'Bank Integration ICICI',
     'installable': True,

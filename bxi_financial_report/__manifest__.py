@@ -8,7 +8,8 @@
         This module adds a custom sub-menu "BXI Reports" under Accounting -> Reporting,
         with a menu item "Fbook Report" which opens a parameters wizard and displays the comparative report.
     """,
-    'author': 'BXI',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'depends': ['base', 'account', 'sale', 'project_contract_management', 'l10n_in'],
     'data': [
         'security/ir.model.access.csv',

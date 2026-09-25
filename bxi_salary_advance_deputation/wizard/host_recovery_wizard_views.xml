@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bxi_salary_advance_host_recovery_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.salary.advance.host.recovery.wizard.form</field>
+        <field name="model">bxi.salary.advance.host.recovery.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Record Host Recovery">
+                <p class="text-muted">
+                    The employee is on a host country payroll. Record the balance recovered from the salary at the
+                    new location, or settled by the host entity.
+                </p>
+                <group>
+                    <field name="advance_id" readonly="1"/>
+                    <field name="company_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="amount"/>
+                    <field name="date"/>
+                    <field name="reference"/>
+                    <field name="post_entry"/>
+                    <field name="counterpart_account_id" invisible="not post_entry" required="post_entry"
+                           options="{'no_create': True}"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Confirm" class="btn-primary"/>
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

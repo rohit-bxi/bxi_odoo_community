@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_antitrust_query" model="ir.sequence">
+        <field name="name">Compliance Query</field>
+        <field name="code">antitrust.query</field>
+        <field name="prefix">CMP-Q/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_antitrust_incident" model="ir.sequence">
+        <field name="name">Antitrust Incident</field>
+        <field name="code">antitrust.incident</field>
+        <field name="prefix">CMP-INC/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_antitrust_interaction" model="ir.sequence">
+        <field name="name">Competitor Interaction</field>
+        <field name="code">antitrust.interaction</field>
+        <field name="prefix">CMP-INT/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_antitrust_bid_declaration" model="ir.sequence">
+        <field name="name">Bid Declaration</field>
+        <field name="code">antitrust.bid.declaration</field>
+        <field name="prefix">CMP-BID/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_antitrust_case" model="ir.sequence">
+        <field name="name">Compliance Case</field>
+        <field name="code">antitrust.case</field>
+        <field name="prefix">CMP-CASE/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

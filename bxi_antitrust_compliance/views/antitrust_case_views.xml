@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_antitrust_case_list" model="ir.ui.view">
+        <field name="name">antitrust.case.list</field>
+        <field name="model">antitrust.case</field>
+        <field name="arch" type="xml">
+            <list string="Compliance Cases">
+                <field name="name"/>
+                <field name="employee_ids" widget="many2many_tags"/>
+                <field name="source"/>
+                <field name="outcome"/>
+                <field name="follow_up_date"/>
+                <field name="state" widget="badge" decoration-info="state == 'open'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_antitrust_case_form" model="ir.ui.view">
+        <field name="name">antitrust.case.form</field>
+        <field name="model">antitrust.case</field>
+        <field name="arch" type="xml">
+            <form string="Compliance Case">
+                <header>
+                    <button name="action_close" type="object" string="Close Case" class="oe_highlight" invisible="state != 'open'"/>
+                    <button name="action_reopen" type="object" string="Reopen" invisible="state != 'closed'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="employee_ids" widget="many2many_tags"/>
+                            <field name="source"/>
+                            <field name="incident_id" invisible="not incident_id"/>
+                            <field name="interaction_id" invisible="not interaction_id"/>
+                        </group>
+                        <group>
+                            <field name="outcome"/>
+                            <field name="follow_up_date"/>
+                            <field name="closed_date" invisible="not closed_date"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="summary"/>
+                        <field name="actions_taken"/>
+                    </group>
+                    <label for="investigation"/>
+                    <field name="investigation"/>
+                    <field name="attachment_ids" widget="many2many_binary"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_antitrust_case" model="ir.actions.act_window">
+        <field name="name">Cases</field>
+        <field name="res_model">antitrust.case</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

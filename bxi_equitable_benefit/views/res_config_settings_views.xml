@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_equitable_benefit" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.equitable.benefit</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Equitable Benefit" string="Equitable Benefit" name="bxi_equitable_benefit"
+                     groups="bxi_equitable_benefit.group_eb_admin">
+                    <block title="Calculation" name="eb_calculation">
+                        <setting id="eb_fy_start_month" string="Financial Year Start Month"
+                                 help="Month number the financial year starts in (4 = April).">
+                            <field name="eb_fy_start_month"/>
+                        </setting>
+                        <setting id="eb_proration_basis" string="Pro-rata Basis"
+                                 help="Months reproduces the policy examples (6 months = half year); days is exact per calendar day.">
+                            <field name="eb_proration_basis"/>
+                        </setting>
+                    </block>
+                    <block title="Eligibility" name="eb_eligibility">
+                        <setting id="eb_min_rating" string="Minimum Performance Rating">
+                            <field name="eb_min_rating"/>
+                        </setting>
+                        <setting id="eb_allow_missing_rating">
+                            <field name="eb_allow_missing_rating"/>
+                        </setting>
+                        <setting id="eb_max_unauthorized_days" string="Unauthorized Absence Limit"
+                                 help="More unauthorized absence days than this in the year makes the employee ineligible.">
+                            <field name="eb_max_unauthorized_days"/>
+                        </setting>
+                        <setting id="eb_unpaid_leave_threshold_days" string="Long Unpaid Leave"
+                                 help="Beyond this many unpaid leave days in the year, unpaid days are deducted pro-rata.">
+                            <field name="eb_unpaid_leave_threshold_days"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_bxi_eb_settings" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'bxi_equitable_benefit', 'bin_size': False}</field>
+    </record>
+</odoo>

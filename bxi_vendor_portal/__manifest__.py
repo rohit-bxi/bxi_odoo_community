@@ -17,8 +17,8 @@ Full-feature vendor portal covering:
 - OWL-powered analytics dashboards
 - Approved Vendor List (AVL) management
     """,
-    'author': 'BXI',
-    'website': 'https://bxi.in',
+    'author': 'BXI Technologies',
+    'website': 'https://bxitech.com/',
     'depends': [
         'base',
         'mail',

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <menuitem id="menu_salary_advance_root" name="Salary Advances" parent="hr.menu_hr_root" sequence="93"/>
+
+    <menuitem id="menu_salary_advance_my" name="My Advances" parent="menu_salary_advance_root"
+              action="action_bxi_salary_advance_my" sequence="10"/>
+    <menuitem id="menu_salary_advance_to_approve" name="To Approve" parent="menu_salary_advance_root"
+              action="action_bxi_salary_advance_to_approve" sequence="20"/>
+
+    <menuitem id="menu_salary_advance_processing" name="Processing" parent="menu_salary_advance_root" sequence="30"
+              groups="group_salary_advance_hr,group_salary_advance_finance"/>
+    <menuitem id="menu_salary_advance_hr" name="HR Review" parent="menu_salary_advance_processing"
+              action="action_bxi_salary_advance_hr" sequence="10" groups="group_salary_advance_hr"/>
+    <menuitem id="menu_salary_advance_disburse" name="To Disburse" parent="menu_salary_advance_processing"
+              action="action_bxi_salary_advance_disburse" sequence="20"/>
+    <menuitem id="menu_salary_advance_outstanding" name="Outstanding Advances" parent="menu_salary_advance_processing"
+              action="action_bxi_salary_advance_outstanding" sequence="30"/>
+    <menuitem id="menu_salary_advance_installments" name="EMI Recoveries" parent="menu_salary_advance_processing"
+              action="action_bxi_salary_advance_installment" sequence="40"/>
+    <menuitem id="menu_salary_advance_all" name="All Advances" parent="menu_salary_advance_processing"
+              action="action_bxi_salary_advance" sequence="50"/>
+
+    <menuitem id="menu_salary_advance_config" name="Configuration" parent="menu_salary_advance_root" sequence="90"
+              groups="group_salary_advance_admin"/>
+    <menuitem id="menu_salary_advance_settings" name="Settings" parent="menu_salary_advance_config"
+              action="action_bxi_salary_advance_settings" sequence="10"/>
+    <menuitem id="menu_salary_advance_lob" name="Lines of Business" parent="menu_salary_advance_config"
+              action="bxi_certification_reimbursement.action_bxi_line_of_business" sequence="20"/>
+</odoo>

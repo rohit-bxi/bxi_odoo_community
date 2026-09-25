@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_antitrust_bid_declaration_list" model="ir.ui.view">
+        <field name="name">antitrust.bid.declaration.list</field>
+        <field name="model">antitrust.bid.declaration</field>
+        <field name="arch" type="xml">
+            <list string="Bid Declarations" create="0">
+                <field name="name"/>
+                <field name="lead_id"/>
+                <field name="declared_by_id" widget="many2one_avatar_user"/>
+                <field name="declared_date"/>
+                <field name="state" widget="badge" decoration-info="state == 'to_approve'"
+                       decoration-success="state == 'confirmed'" decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_antitrust_bid_declaration_form" model="ir.ui.view">
+        <field name="name">antitrust.bid.declaration.form</field>
+        <field name="model">antitrust.bid.declaration</field>
+        <field name="arch" type="xml">
+            <form string="Bid Compliance Declaration">
+                <header>
+                    <button name="action_approve" type="object" string="Approve" class="oe_highlight"
+                            invisible="state != 'to_approve'" groups="bxi_hr_policy.group_policy_cpo"/>
+                    <button name="action_reject" type="object" string="Reject"
+                            invisible="state != 'to_approve'" groups="bxi_hr_policy.group_policy_cpo"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="lead_id" readonly="1"/>
+                            <field name="declared_by_id"/>
+                        </group>
+                        <group>
+                            <field name="declared_date" invisible="not declared_date"/>
+                            <field name="approved_by_id" invisible="not approved_by_id"/>
+                        </group>
+                    </group>
+                    <separator string="I confirm that"/>
+                    <group>
+                        <field name="confirm_independent_pricing" readonly="state != 'draft'"/>
+                        <field name="confirm_no_exchange" readonly="state != 'draft'"/>
+                        <field name="confirm_no_agreement" readonly="state != 'draft'"/>
+                        <field name="confirm_confidentiality" readonly="state != 'draft'"/>
+                        <field name="pricing_basis" readonly="state != 'draft'"/>
+                        <field name="reject_reason" invisible="state not in ('to_approve', 'rejected')"
+                               readonly="state != 'to_approve'"/>
+                    </group>
+                </sheet>
+                <footer invisible="state != 'draft'">
+                    <button name="action_submit" type="object" string="Submit Declaration" class="oe_highlight"/>
+                    <button string="Discard" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_antitrust_bid_declaration" model="ir.actions.act_window">
+        <field name="name">Bid Declarations</field>
+        <field name="res_model">antitrust.bid.declaration</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_bxi_line_of_business_form_inherit_salary_advance" model="ir.ui.view">
+        <field name="name">bxi.line.of.business.form.inherit.salary.advance</field>
+        <field name="model">bxi.line.of.business</field>
+        <field name="inherit_id" ref="bxi_certification_reimbursement.view_bxi_line_of_business_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='academy_head_id']" position="after">
+                <field name="hr_head_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_bxi_line_of_business_list_inherit_salary_advance" model="ir.ui.view">
+        <field name="name">bxi.line.of.business.list.inherit.salary.advance</field>
+        <field name="model">bxi.line.of.business</field>
+        <field name="inherit_id" ref="bxi_certification_reimbursement.view_bxi_line_of_business_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='academy_head_id']" position="after">
+                <field name="hr_head_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

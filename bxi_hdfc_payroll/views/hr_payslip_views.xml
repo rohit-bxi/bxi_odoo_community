@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_payslip_tree_hdfc" model="ir.ui.view">
+        <field name="name">hr.payslip.list.hdfc</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="om_hr_payroll.view_hr_payslip_tree"/>
+        <field name="arch" type="xml">
+            <field name="state" position="after">
+                <field name="hdfc_payment_state" widget="badge" optional="show"
+                       decoration-success="hdfc_payment_state == 'paid'"
+                       decoration-warning="hdfc_payment_state in ('in_batch', 'processing', 'partially_paid')"
+                       decoration-danger="hdfc_payment_state == 'failed'"
+                       decoration-muted="hdfc_payment_state in ('not_paid', 'reversed')"/>
+                <field name="hdfc_utr" optional="hide"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_hr_payslip_form_hdfc" model="ir.ui.view">
+        <field name="name">hr.payslip.form.hdfc</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="om_hr_payroll.view_hr_payslip_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="hdfc_payment_state" invisible="1"/>
+                <button name="action_hdfc_release" type="object" string="Pay via HDFC" class="btn-primary"
+                        invisible="state != 'done' or credit_note or hdfc_payment_state not in ('not_paid', 'failed', 'reversed')"
+                        groups="bxi_hdfc_payroll.group_hdfc_payout_user"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="HDFC Payment" name="hdfc_payment"
+                      invisible="hdfc_payment_state == 'not_paid'"
+                      groups="bxi_hdfc_payroll.group_hdfc_payout_user">
+                    <group>
+                        <group>
+                            <field name="hdfc_payment_state"/>
+                            <field name="hdfc_batch_id"/>
+                            <field name="hdfc_utr"/>
+                        </group>
+                    </group>
+                    <field name="hdfc_line_ids" readonly="1">
+                        <list decoration-success="state == 'paid'"
+                              decoration-danger="state in ('failed', 'returned')"
+                              decoration-muted="state in ('cancelled', 'reversed')">
+                            <field name="batch_id"/>
+                            <field name="account_number_masked"/>
+                            <field name="ifsc"/>
+                            <field name="txn_type"/>
+                            <field name="currency_id" column_invisible="True"/>
+                            <field name="amount"/>
+                            <field name="state" widget="badge"/>
+                            <field name="utr"/>
+                            <field name="value_date"/>
+                            <field name="failure_reason"/>
+                            <field name="move_id"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_hr_payslip_filter_hdfc" model="ir.ui.view">
+        <field name="name">hr.payslip.select.hdfc</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="om_hr_payroll.view_hr_payslip_filter"/>
+        <field name="arch" type="xml">
+            <filter name="done" position="after">
+                <separator/>
+                <filter string="HDFC: To Pay" name="hdfc_to_pay"
+                        domain="[('state', '=', 'done'), ('credit_note', '=', False), ('hdfc_payment_state', 'in', ('not_paid', 'failed', 'reversed'))]"/>
+                <filter string="HDFC: In Progress" name="hdfc_in_progress"
+                        domain="[('hdfc_payment_state', 'in', ('in_batch', 'processing', 'partially_paid'))]"/>
+                <filter string="HDFC: Paid" name="hdfc_paid" domain="[('hdfc_payment_state', '=', 'paid')]"/>
+                <filter string="HDFC: Failed" name="hdfc_failed" domain="[('hdfc_payment_state', '=', 'failed')]"/>
+            </filter>
+            <filter name="group_state" position="after">
+                <filter string="HDFC Payment" name="group_hdfc_payment_state" context="{'group_by': 'hdfc_payment_state'}"/>
+            </filter>
+        </field>
+    </record>
+
+    <record id="action_server_hdfc_release" model="ir.actions.server">
+        <field name="name">Pay via HDFC</field>
+        <field name="model_id" ref="om_hr_payroll.model_hr_payslip"/>
+        <field name="binding_model_id" ref="om_hr_payroll.model_hr_payslip"/>
+        <field name="binding_view_types">list</field>
+        <field name="group_ids" eval="[(4, ref('bxi_hdfc_payroll.group_hdfc_payout_user'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = records.action_hdfc_release()</field>
+    </record>
+</odoo>

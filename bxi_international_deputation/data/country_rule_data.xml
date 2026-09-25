@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Countries following the Working Days approach (policy annexure).
+         Every other country follows the Calendar Days approach. -->
+    <record id="rule_uk" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.uk"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_uk"/>
+    </record>
+    <record id="rule_fr" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.fr"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_fr"/>
+    </record>
+    <record id="rule_it" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.it"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_it"/>
+    </record>
+    <record id="rule_nl" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.nl"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_nl"/>
+    </record>
+    <record id="rule_be" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.be"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_be"/>
+    </record>
+    <record id="rule_ch" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.ch"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_ch"/>
+    </record>
+    <record id="rule_pl" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.pl"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_pl"/>
+    </record>
+    <record id="rule_fi" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.fi"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_fi"/>
+    </record>
+    <record id="rule_za" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.za"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_za"/>
+    </record>
+    <record id="rule_ie" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.ie"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_ie"/>
+    </record>
+    <record id="rule_il" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.il"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_il"/>
+    </record>
+    <record id="rule_ru" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.ru"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_ru"/>
+    </record>
+    <record id="rule_sg" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.sg"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_sg"/>
+        <field name="note">Policy note: Singapore follows the Working Days approach for employees joining after the effective date. Set Effective From once HR confirms the date, and add a Calendar Days rule for earlier arrivals if needed.</field>
+    </record>
+    <record id="rule_ae" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.ae"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_ae"/>
+    </record>
+    <record id="rule_sa" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.sa"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_sa"/>
+    </record>
+    <record id="rule_qa" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.qa"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_qa"/>
+    </record>
+    <record id="rule_kw" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.kw"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_kw"/>
+    </record>
+    <record id="rule_bh" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.bh"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_bh"/>
+    </record>
+    <record id="rule_om" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.om"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_om"/>
+    </record>
+    <record id="rule_us" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.us"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_us"/>
+    </record>
+    <record id="rule_ca" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.ca"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_ca"/>
+    </record>
+    <record id="rule_au" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.au"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_au"/>
+    </record>
+    <record id="rule_nz" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.nz"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_nz"/>
+    </record>
+    <record id="rule_my" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.my"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_my"/>
+    </record>
+    <record id="rule_jp" model="bxi.deputation.country.rule">
+        <field name="country_id" ref="base.jp"/>
+        <field name="salary_approach">working</field>
+        <field name="annual_divisor">260</field>
+        <field name="calendar_id" ref="calendar_host_jp"/>
+    </record>
+</odoo>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bxi_salary_advance_form_deputation" model="ir.ui.view">
+        <field name="name">bxi.salary.advance.form.deputation</field>
+        <field name="model">bxi.salary.advance</field>
+        <field name="inherit_id" ref="bxi_salary_advance.view_bxi_salary_advance_form"/>
+        <field name="arch" type="xml">
+            <button name="action_open_fnf_wizard" position="after">
+                <button name="action_open_host_recovery_wizard" type="object" string="Record Host Recovery"
+                        invisible="not recover_at_host" groups="bxi_salary_advance.group_salary_advance_hr"/>
+                <field name="recover_at_host" invisible="1"/>
+            </button>
+        </field>
+    </record>
+
+    <record id="view_bxi_salary_advance_search_deputation" model="ir.ui.view">
+        <field name="name">bxi.salary.advance.search.deputation</field>
+        <field name="model">bxi.salary.advance</field>
+        <field name="inherit_id" ref="bxi_salary_advance.view_bxi_salary_advance_search"/>
+        <field name="arch" type="xml">
+            <filter name="fnf" position="after">
+                <filter name="recover_at_host" string="Recover at Host Location" domain="[('recover_at_host', '=', True)]"/>
+            </filter>
+        </field>
+    </record>
+
+    <record id="action_bxi_salary_advance_recover_at_host" model="ir.actions.act_window">
+        <field name="name">Recover at Host Location</field>
+        <field name="res_model">bxi.salary.advance</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('recover_at_host', '=', True)]</field>
+        <field name="context">{'create': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No balance to recover at a host location</p>
+            <p>Advances of employees on international deputation whose balance falls after their last home payslip.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_salary_advance_recover_at_host" name="Recover at Host Location"
+              parent="bxi_salary_advance.menu_salary_advance_processing"
+              action="action_bxi_salary_advance_recover_at_host" sequence="35"
+              groups="bxi_salary_advance.group_salary_advance_hr,bxi_salary_advance.group_salary_advance_finance"/>
+</odoo>

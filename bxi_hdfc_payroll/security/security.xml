@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="privilege_hdfc_payout" model="res.groups.privilege">
+        <field name="name">HDFC Payroll Payouts</field>
+    </record>
+
+    <record id="group_hdfc_payout_user" model="res.groups">
+        <field name="name">User</field>
+        <field name="privilege_id" ref="privilege_hdfc_payout"/>
+        <field name="implied_ids" eval="[(4, ref('om_hr_payroll.group_hr_payroll_user'))]"/>
+        <field name="comment">Prepare HDFC payout batches from confirmed payslips.</field>
+    </record>
+
+    <record id="group_hdfc_payout_manager" model="res.groups">
+        <field name="name">Manager</field>
+        <field name="privilege_id" ref="privilege_hdfc_payout"/>
+        <field name="implied_ids" eval="[(4, ref('group_hdfc_payout_user'))]"/>
+        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+        <field name="comment">Request OTP, submit, refresh and reverse HDFC payouts; read the API log.</field>
+    </record>
+
+    <!-- Multi-company isolation -->
+    <record id="rule_hdfc_bank_config_company" model="ir.rule">
+        <field name="name">HDFC Config: multi-company</field>
+        <field name="model_id" ref="model_hdfc_bank_config"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_hdfc_payout_batch_company" model="ir.rule">
+        <field name="name">HDFC Payout Batch: multi-company</field>
+        <field name="model_id" ref="model_hdfc_payout_batch"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_hdfc_payout_line_company" model="ir.rule">
+        <field name="name">HDFC Payout Line: multi-company</field>
+        <field name="model_id" ref="model_hdfc_payout_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_hdfc_api_log_company" model="ir.rule">
+        <field name="name">HDFC API Log: multi-company</field>
+        <field name="model_id" ref="model_hdfc_api_log"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crm_lead_view_form_antitrust" model="ir.ui.view">
+        <field name="name">crm.lead.form.antitrust</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_bid_declaration" type="object" class="oe_stat_button" icon="fa-balance-scale"
+                        invisible="not is_tender_rfp">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Bid Compliance</span>
+                        <field name="bid_compliance_state" readonly="1" class="o_stat_value"/>
+                    </div>
+                </button>
+            </xpath>
+            <xpath expr="(//field[@name='tag_ids'])[1]" position="after">
+                <field name="is_tender_rfp"/>
+            </xpath>
+            <xpath expr="(//field[@name='tag_ids'])[2]" position="after">
+                <field name="is_tender_rfp"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="crm_stage_form_antitrust" model="ir.ui.view">
+        <field name="name">crm.stage.form.antitrust</field>
+        <field name="model">crm.stage</field>
+        <field name="inherit_id" ref="crm.crm_stage_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='is_won']" position="after">
+                <field name="requires_bid_compliance"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="crm_stage_tree_antitrust" model="ir.ui.view">
+        <field name="name">crm.stage.list.antitrust</field>
+        <field name="model">crm.stage</field>
+        <field name="inherit_id" ref="crm.crm_stage_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='is_won']" position="after">
+                <field name="requires_bid_compliance" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="crm_tag_form_antitrust" model="ir.ui.view">
+        <field name="name">crm.tag.form.antitrust</field>
+        <field name="model">crm.tag</field>
+        <field name="inherit_id" ref="sales_team.sales_team_crm_tag_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='color']" position="after">
+                <field name="is_rfp_tag"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

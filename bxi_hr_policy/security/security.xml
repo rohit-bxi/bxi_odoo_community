@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record model="res.groups.privilege" id="res_groups_privilege_compliance">
+        <field name="name">Compliance</field>
+        <field name="sequence">30</field>
+        <field name="category_id" ref="base.module_category_human_resources"/>
+    </record>
+
+    <!-- Chief People Officer: approves policy versions; also the Legal &amp; Compliance group of
+         bxi_antitrust_compliance. Includes HR Officer rights. -->
+    <record id="group_policy_cpo" model="res.groups">
+        <field name="name">Compliance / CPO</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="res_groups_privilege_compliance"/>
+        <!-- The Chief People Officer works on employee records (cases, acknowledgements). -->
+        <field name="implied_ids" eval="[(4, ref('hr.group_hr_user'))]"/>
+        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+    </record>
+
+    <!-- Policies: own company or shared by all companies -->
+    <record id="hr_company_policy_comp_rule" model="ir.rule">
+        <field name="name">Company Policy: multi-company</field>
+        <field name="model_id" ref="model_hr_company_policy"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- Versions: employees only see published ones -->
+    <record id="hr_company_policy_version_rule_user" model="ir.rule">
+        <field name="name">Policy Version: published</field>
+        <field name="model_id" ref="model_hr_company_policy_version"/>
+        <field name="domain_force">[('state', 'in', ('published', 'superseded'))]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="hr_company_policy_version_rule_manager" model="ir.rule">
+        <field name="name">Policy Version: all</field>
+        <field name="model_id" ref="model_hr_company_policy_version"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('hr.group_hr_manager')), (4, ref('group_policy_cpo'))]"/>
+    </record>
+
+    <!-- Acknowledgements: own and team; HR and CPO see all -->
+    <record id="hr_policy_acknowledgement_rule_user" model="ir.rule">
+        <field name="name">Policy Acknowledgement: own and team</field>
+        <field name="model_id" ref="model_hr_policy_acknowledgement"/>
+        <field name="domain_force">['|', ('user_id', '=', user.id), ('manager_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="hr_policy_acknowledgement_rule_portal" model="ir.rule">
+        <field name="name">Policy Acknowledgement: own (portal)</field>
+        <field name="model_id" ref="model_hr_policy_acknowledgement"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+    </record>
+
+    <record id="hr_policy_acknowledgement_rule_hr" model="ir.rule">
+        <field name="name">Policy Acknowledgement: all</field>
+        <field name="model_id" ref="model_hr_policy_acknowledgement"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('hr.group_hr_user')), (4, ref('group_policy_cpo'))]"/>
+    </record>
+
+</odoo>

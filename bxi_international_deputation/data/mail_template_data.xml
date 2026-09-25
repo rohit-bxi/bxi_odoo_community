@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="mail_template_deputation_commencement" model="mail.template">
+        <field name="name">Deputation: Commencement Letter</field>
+        <field name="model_id" ref="model_bxi_deputation"/>
+        <field name="subject">Your deputation to {{ object.host_country_id.name }} starts on {{ object.host_start_date }} ({{ object.name }})</field>
+        <field name="email_from">{{ (object.transferred_by_id.email_formatted or user.email_formatted) }}</field>
+        <field name="email_to">{{ object.employee_id.work_email or object.employee_id.user_id.email }}</field>
+        <field name="email_cc">{{ object.manager_id.work_email or '' }}</field>
+        <field name="report_template_ids" eval="[(4, ref('bxi_international_deputation.action_report_deputation_letter'))]"/>
+        <field name="body_html" type="html">
+<div style="margin: 0; padding: 0; font-size: 14px;">
+    <p>Dear <t t-out="object.employee_id.name or ''"/>,</p>
+    <p>Welcome to <t t-out="object.host_country_id.name or ''"/>. As per the International Deputation - Salary Processing Policy,
+        your payroll moves to the host country as follows:</p>
+    <ul>
+        <li>Salary approach of <t t-out="object.host_country_id.name or ''"/>: <strong><t t-out="dict(object._fields['salary_approach'].selection).get(object.salary_approach)"/></strong></li>
+        <li>Arrival date: <t t-out="object.arrival_date"/></li>
+        <li>Last day on the home payroll: <strong><t t-out="object.home_last_date"/></strong></li>
+        <li>Deputation commencement (first day on the host payroll): <strong><t t-out="object.host_start_date"/></strong></li>
+        <t t-if="object.outbound_gap_days">
+            <li>Gap day(s): <t t-out="object.outbound_gap_dates"/>, paid as a one-time ex-gratia of
+                <t t-out="object.outbound_gap_amount" t-options="{'widget': 'monetary', 'display_currency': object.host_currency_id}"/>
+                with your first host country payroll.</li>
+        </t>
+    </ul>
+    <p>Your Deputation Commencement Letter is attached.</p>
+    <p>Regards,<br/>HR - Employee Services</p>
+</div>
+        </field>
+        <field name="auto_delete" eval="False"/>
+    </record>
+
+    <record id="mail_template_deputation_return" model="mail.template">
+        <field name="name">Deputation: Return to Home Payroll</field>
+        <field name="model_id" ref="model_bxi_deputation"/>
+        <field name="subject">Welcome back: home payroll restarts on {{ object.home_restart_date }} ({{ object.name }})</field>
+        <field name="email_from">{{ user.email_formatted }}</field>
+        <field name="email_to">{{ object.employee_id.work_email or object.employee_id.user_id.email }}</field>
+        <field name="email_cc">{{ object.manager_id.work_email or '' }}</field>
+        <field name="body_html" type="html">
+<div style="margin: 0; padding: 0; font-size: 14px;">
+    <p>Dear <t t-out="object.employee_id.name or ''"/>,</p>
+    <p>Welcome back. Your deputation to <t t-out="object.host_country_id.name or ''"/> is closed:</p>
+    <ul>
+        <li>Last day on the host payroll (final settlement): <strong><t t-out="object.host_last_date"/></strong></li>
+        <li>Home payroll restarts on: <strong><t t-out="object.home_restart_date"/></strong></li>
+        <t t-if="object.return_gap_days">
+            <li>Gap day(s): <t t-out="object.return_gap_dates"/>, paid as a one-time ex-gratia of
+                <t t-out="object.return_gap_amount" t-options="{'widget': 'monetary', 'display_currency': object.host_currency_id}"/>
+                in your host country final settlement.</li>
+        </t>
+    </ul>
+    <p>Regards,<br/>HR - Employee Services</p>
+</div>
+        </field>
+        <field name="auto_delete" eval="False"/>
+    </record>
+
+</odoo>

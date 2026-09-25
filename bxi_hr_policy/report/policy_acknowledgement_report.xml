@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_report_policy_acknowledgement" model="ir.actions.report">
+        <field name="name">Acknowledgement Certificate</field>
+        <field name="model">hr.policy.acknowledgement</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_hr_policy.report_policy_acknowledgement</field>
+        <field name="report_file">bxi_hr_policy.report_policy_acknowledgement</field>
+        <field name="print_report_name">'Acknowledgement - %s' % (object.employee_id.name)</field>
+        <field name="binding_model_id" ref="model_hr_policy_acknowledgement"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_policy_acknowledgement">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h3 class="text-center mb-4">Policy Acknowledgement Certificate</h3>
+                        <table class="table table-sm table-bordered">
+                            <tr><th style="width: 35%;">Employee</th><td t-esc="doc.employee_id.name"/></tr>
+                            <tr><th>Company</th><td t-esc="doc.company_id.name"/></tr>
+                            <tr><th>Department</th><td t-esc="doc.department_id.name or ''"/></tr>
+                            <tr><th>Policy</th><td t-esc="doc.policy_id.name"/></tr>
+                            <tr><th>Version</th><td>v<t t-esc="doc.version_no"/> (valid from <span t-field="doc.version_id.valid_from"/>)</td></tr>
+                            <tr><th>Status</th><td t-esc="dict(doc._fields['state']._description_selection(doc.env)).get(doc.state)"/></tr>
+                            <tr><th>Acknowledged on</th><td><span t-field="doc.acknowledged_date"/></td></tr>
+                            <tr><th>Channel</th><td t-esc="dict(doc._fields['channel']._description_selection(doc.env)).get(doc.channel) or ''"/></tr>
+                            <tr><th>IP address</th><td t-esc="doc.ip_address or ''"/></tr>
+                        </table>
+                        <p class="mt-4"><b>Statement agreed to:</b></p>
+                        <p t-esc="doc.statement"/>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_policy_register" model="ir.actions.report">
+        <field name="name">Acknowledgement Register</field>
+        <field name="model">hr.company.policy.version</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_hr_policy.report_policy_register</field>
+        <field name="report_file">bxi_hr_policy.report_policy_register</field>
+        <field name="print_report_name">'Register - %s' % (object.display_name)</field>
+        <field name="binding_model_id" ref="model_hr_company_policy_version"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_policy_register">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h3>Acknowledgement Register: <t t-esc="doc.display_name"/></h3>
+                        <p>
+                            Valid from <span t-field="doc.valid_from"/><t t-if="doc.valid_to"> to <span t-field="doc.valid_to"/></t>.
+                            Approved by <t t-esc="doc.approved_by_id.name or '-'"/>.
+                        </p>
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr><th>Employee</th><th>Company</th><th>Department</th><th>Status</th><th>Acknowledged on</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.acknowledgement_ids.sorted(lambda a: a.employee_id.name or '')" t-as="ack">
+                                    <td t-esc="ack.employee_id.name"/>
+                                    <td t-esc="ack.company_id.name"/>
+                                    <td t-esc="ack.department_id.name or ''"/>
+                                    <td t-esc="dict(ack._fields['state']._description_selection(ack.env)).get(ack.state)"/>
+                                    <td><span t-field="ack.acknowledged_date"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_bxi_deputation_list" model="ir.ui.view">
+        <field name="name">bxi.deputation.list</field>
+        <field name="model">bxi.deputation</field>
+        <field name="arch" type="xml">
+            <list string="International Deputations" decoration-info="state == 'draft'"
+                  decoration-success="state == 'transferred'" decoration-muted="state in ('returned', 'cancelled')">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="department_id" optional="hide"/>
+                <field name="host_country_id"/>
+                <field name="salary_approach"/>
+                <field name="planned_start_date" optional="hide"/>
+                <field name="arrival_date"/>
+                <field name="home_last_date" optional="show"/>
+                <field name="host_start_date"/>
+                <field name="outbound_gap_days" optional="show"/>
+                <field name="host_currency_id" column_invisible="True"/>
+                <field name="outbound_gap_amount" optional="show" sum="Total"/>
+                <field name="host_last_date" optional="hide"/>
+                <field name="home_restart_date" optional="hide"/>
+                <field name="return_gap_amount" optional="hide" sum="Total"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'"
+                       decoration-warning="state == 'approved'" decoration-success="state == 'transferred'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_deputation_form" model="ir.ui.view">
+        <field name="name">bxi.deputation.form</field>
+        <field name="model">bxi.deputation</field>
+        <field name="arch" type="xml">
+            <form string="International Deputation">
+                <header>
+                    <button name="action_approve" string="Approve" type="object" class="btn-primary"
+                            invisible="state != 'draft'" groups="bxi_international_deputation.group_deputation_officer"/>
+                    <button name="action_confirm_arrival" string="Confirm Arrival &amp; Transfer" type="object" class="btn-primary"
+                            invisible="state != 'approved'" groups="bxi_international_deputation.group_deputation_officer"
+                            confirm="Move the employee to the host payroll and email the commencement letter?"/>
+                    <button name="action_confirm_return" string="Confirm Return" type="object" class="btn-primary"
+                            invisible="state != 'transferred'" groups="bxi_international_deputation.group_deputation_officer"
+                            confirm="Move the employee back to the home payroll?"/>
+                    <button name="action_print_commencement_letter" string="Print Letter" type="object"
+                            invisible="state not in ('transferred', 'returned')"/>
+                    <button name="action_send_commencement_letter" string="Resend Letter" type="object"
+                            invisible="state not in ('transferred', 'returned')" groups="bxi_international_deputation.group_deputation_officer"/>
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object"
+                            invisible="state not in ('approved', 'cancelled')" groups="bxi_international_deputation.group_deputation_officer"/>
+                    <button name="action_cancel" string="Cancel" type="object"
+                            invisible="state not in ('draft', 'approved')" groups="bxi_international_deputation.group_deputation_officer"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,approved,transferred,returned"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Employee">
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                            <field name="department_id"/>
+                            <field name="manager_id"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="state != 'draft'"/>
+                            <field name="travel_request_id" readonly="state not in ('draft', 'approved')"/>
+                        </group>
+                        <group string="Host Country">
+                            <field name="host_country_id" readonly="state not in ('draft', 'approved')"/>
+                            <field name="host_city" readonly="state in ('returned', 'cancelled')"/>
+                            <field name="host_company_id" readonly="state in ('returned', 'cancelled')"/>
+                            <field name="client_name" readonly="state in ('returned', 'cancelled')"/>
+                            <field name="planned_start_date" readonly="state not in ('draft', 'approved')"/>
+                            <field name="planned_end_date" readonly="state in ('returned', 'cancelled')"/>
+                        </group>
+                    </group>
+                    <group string="Salary Processing">
+                        <group>
+                            <field name="rule_id" readonly="state not in ('draft', 'approved')"
+                                   options="{'no_create': True}" groups="bxi_international_deputation.group_deputation_manager"/>
+                            <field name="salary_approach" readonly="state not in ('draft', 'approved')" required="1"/>
+                            <field name="host_calendar_id" invisible="salary_approach != 'working'"
+                                   readonly="state not in ('draft', 'approved')"/>
+                        </group>
+                        <group>
+                            <field name="host_currency_id" readonly="state not in ('draft', 'approved')"
+                                   groups="base.group_multi_currency"/>
+                            <field name="host_annual_gross" readonly="state not in ('draft', 'approved')"/>
+                            <field name="annual_divisor" readonly="state not in ('draft', 'approved')"/>
+                            <field name="gap_day_rate"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Transfer to Host Payroll" name="outbound">
+                            <group>
+                                <group>
+                                    <field name="arrival_date" readonly="state not in ('draft', 'approved')"
+                                           required="state == 'approved'"/>
+                                    <field name="home_last_date"/>
+                                    <field name="host_start_date"/>
+                                </group>
+                                <group>
+                                    <field name="outbound_gap_days"/>
+                                    <field name="outbound_gap_dates" invisible="not outbound_gap_days"/>
+                                    <field name="outbound_gap_amount" invisible="not outbound_gap_days"/>
+                                    <field name="letter_sent" invisible="state not in ('transferred', 'returned')"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Return to Home Payroll" name="return" invisible="state in ('draft', 'approved', 'cancelled')">
+                            <group>
+                                <group>
+                                    <field name="return_landing_date" readonly="state != 'transferred'"/>
+                                    <field name="host_last_date"/>
+                                    <field name="home_restart_date"/>
+                                </group>
+                                <group>
+                                    <field name="return_gap_days"/>
+                                    <field name="return_gap_dates" invisible="not return_gap_days"/>
+                                    <field name="return_gap_amount" invisible="not return_gap_days"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="note"/>
+                        </page>
+                        <page string="Approval" name="approval">
+                            <group>
+                                <field name="approved_by_id"/>
+                                <field name="approved_on"/>
+                                <field name="transferred_by_id"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_deputation_search" model="ir.ui.view">
+        <field name="name">bxi.deputation.search</field>
+        <field name="model">bxi.deputation</field>
+        <field name="arch" type="xml">
+            <search string="International Deputations">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="host_country_id"/>
+                <field name="department_id"/>
+                <filter name="filter_my" string="My Deputations" domain="[('employee_id.user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="filter_draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_approved" string="Awaiting Arrival" domain="[('state', '=', 'approved')]"/>
+                <filter name="filter_transferred" string="On Host Payroll" domain="[('state', '=', 'transferred')]"/>
+                <filter name="filter_returned" string="Returned" domain="[('state', '=', 'returned')]"/>
+                <separator/>
+                <filter name="filter_gap" string="With Gap Days" domain="['|', ('outbound_gap_days', '>', 0), ('return_gap_days', '>', 0)]"/>
+                <filter name="filter_host_start" string="Commencement Date" date="host_start_date"/>
+                <group>
+                    <filter name="group_country" string="Host Country" context="{'group_by': 'host_country_id'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_approach" string="Salary Approach" context="{'group_by': 'salary_approach'}"/>
+                    <filter name="group_start_month" string="Commencement Month" context="{'group_by': 'host_start_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_bxi_deputation_pivot" model="ir.ui.view">
+        <field name="name">bxi.deputation.pivot</field>
+        <field name="model">bxi.deputation</field>
+        <field name="arch" type="xml">
+            <pivot string="Deputation Register">
+                <field name="host_country_id" type="row"/>
+                <field name="host_start_date" interval="month" type="col"/>
+                <field name="outbound_gap_days" type="measure"/>
+                <field name="return_gap_days" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_bxi_deputation" model="ir.actions.act_window">
+        <field name="name">International Deputations</field>
+        <field name="res_model">bxi.deputation</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="search_view_id" ref="view_bxi_deputation_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create an international deputation</p>
+            <p>Record a long-term deputation with payroll transfer to the host country. On arrival, the host payroll
+                start date, the gap days and the one-time ex-gratia are computed from the country salary rule.</p>
+        </field>
+    </record>
+
+    <record id="action_bxi_deputation_my" model="ir.actions.act_window">
+        <field name="name">My Deputations</field>
+        <field name="res_model">bxi.deputation</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_bxi_deputation_search"/>
+        <field name="context">{'search_default_filter_my': 1}</field>
+    </record>
+
+    <record id="action_bxi_deputation_register" model="ir.actions.act_window">
+        <field name="name">Deputation Register</field>
+        <field name="res_model">bxi.deputation</field>
+        <field name="view_mode">pivot,list,form</field>
+        <field name="search_view_id" ref="view_bxi_deputation_search"/>
+        <field name="domain">[('state', 'in', ('transferred', 'returned'))]</field>
+    </record>
+
+</odoo>
