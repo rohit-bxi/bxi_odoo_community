@@ -99,11 +99,7 @@ class EmployeePortalExpense(http.Controller):
                 continue
 
             product_id = int(product) if product else False
-<<<<<<< HEAD
             if not product_id:
-=======
-            if product_id not in allowed_product_ids:
->>>>>>> production
                 continue
 
             try:
