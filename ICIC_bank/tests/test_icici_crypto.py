@@ -196,6 +196,23 @@ class TestICICIApiCall(ICICICommon):
         self.assertIn("Bank is down", str(capture.exception))
 
     @patch('odoo.addons.ICIC_bank.model.custom_payslip.requests.post')
+    def test_call_icici_api_non_json_error_shows_first_line_only(
+        self, mock_post,
+    ):
+        response = MagicMock(status_code=404)
+        response.json.side_effect = ValueError("not json")
+        response.text = "No responder matched.\napikey: SECRET\n"
+        response.headers = {}
+        mock_post.return_value = response
+
+        with self.assertRaises(ValidationError) as capture:
+            self.env['hr.payslip'].call_icici_api(
+                "https://example.invalid/api", {"UNIQUEID": "1"},
+            )
+        self.assertIn("No responder matched.", str(capture.exception))
+        self.assertNotIn("SECRET", str(capture.exception))
+
+    @patch('odoo.addons.ICIC_bank.model.custom_payslip.requests.post')
     def test_call_icici_api_invalid_json_raises(self, mock_post):
         response = MagicMock(status_code=200)
         response.json.side_effect = ValueError("bad json")
