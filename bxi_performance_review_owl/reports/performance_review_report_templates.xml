@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="performance_review_report_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2 style="text-align:center">Performance Review</h2>
+                        <table class="table table-sm">
+                            <tr><td><strong>Employee</strong></td><td><span t-field="o.employee_id"/></td><td><strong>Period</strong></td><td><span t-field="o.period_id"/></td></tr>
+                            <tr><td><strong>Manager</strong></td><td><span t-field="o.manager_id"/></td><td><strong>Status</strong></td><td><span t-field="o.state"/></td></tr>
+                            <tr><td><strong>Final Score</strong></td><td><span t-field="o.final_score"/></td><td><strong>Quarter</strong></td><td><span t-field="o.quarter"/></td></tr>
+                        </table>
+                        <table class="table table-bordered">
+                            <thead><tr><th>Category</th><th>Weightage</th><th>Target</th><th>Self Achievement</th><th>Manager Review</th><th>Manager Score</th></tr></thead>
+                            <tbody><tr t-foreach="o.line_ids" t-as="l"><td><span t-field="l.category"/></td><td><span t-field="l.weightage"/></td><td><span t-field="l.target"/></td><td><span t-field="l.self_achievement"/></td><td><span t-field="l.manager_review"/></td><td><span t-field="l.manager_score"/></td></tr></tbody>
+                        </table>
+                        <h4>Remarks</h4>
+                        <p><strong>Employee:</strong> <span t-field="o.appraisee_remarks"/></p>
+                        <p><strong>Manager:</strong> <span t-field="o.manager_remarks"/></p>
+                        <p><strong>Reviewer:</strong> <span t-field="o.reviewer_remarks"/></p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
