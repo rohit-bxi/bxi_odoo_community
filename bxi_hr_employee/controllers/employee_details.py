@@ -717,20 +717,9 @@ class EmployeeAPIController(http.Controller):
                 "manager": employee.parent_id.name or False,
                 "is_fnf_done" : employee.is_fnf_done or False,
                 "re_hire" : employee.re_hire or False,
-                "rehire_not_description": employee.rehire_not_description or False,
-                "date_of_joining": (
-                    employee.emp_date_of_joining.strftime("%Y-%m-%d")
-                    if employee.emp_date_of_joining
-                    else False
-                ),
-                "hr_responsible": (
-                    employee.hr_responsible_id.name
-                    if employee.hr_responsible_id
-                    else False
-                ),
-                "department": (
-                    employee.department_id.name
-                    if employee.department_id
+                "rehire_not_description": (
+                    employee.rehire_not_description
+                    if employee.rehire_not_description
                     else False
                 ),
                 "date_of_joining": (
@@ -752,6 +741,46 @@ class EmployeeAPIController(http.Controller):
                     employee.departure_description
                     if employee.departure_description
                     else False
+                ),
+                "hr_responsible": (
+                    employee.hr_responsible_id.name
+                    if employee.hr_responsible_id
+                    else False
+                ),
+
+                "department": (
+                    employee.department_id.name
+                    if employee.department_id
+                    else False
+                ),
+                "fnf_status": employee.fnf_status or False,
+                "hr_clearance": employee.hr_clearance or False,
+                "hr_clearance_reason": (
+                    employee.hr_clearance_reason or False
+                ),
+                "hr_clearance_status": (
+                    employee.hr_clearance_status or False
+                ),
+                "rm_clearance": employee.rm_clearance or False,
+                "rm_clearance_reason": (
+                    employee.rm_clearance_reason or False
+                ),
+                "rm_clearance_status": (
+                    employee.rm_clearance_status or False
+                ),
+                "it_clearance": employee.it_clearance or False,
+                "it_clearance_reason": (
+                    employee.it_clearance_reason or False
+                ),
+                "it_clearance_status": (
+                    employee.it_clearance_status or False
+                ),
+                "finance_clearance": employee.finance_clearance or False,
+                "finance_clearance_reason": (
+                    employee.finance_clearance_reason or False
+                ),
+                "finance_clearance_status": (
+                    employee.finance_clearance_status or False
                 ),
             })
         return {
