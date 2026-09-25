@@ -69,7 +69,10 @@ class EmployeePortalExpense(http.Controller):
             products = request.env['product.product'].sudo().search(product_domain)
             return request.render(
                 'portal_employee_expense.portal_submit_expense_template',
-                {'products': products}
+                {
+                    'products': products,
+                    'no_employee': not bool(employee),
+                }
             )
 
         # Handle form submission (POST)
@@ -83,28 +86,51 @@ class EmployeePortalExpense(http.Controller):
         receipts = files.getlist('receipt[]') or files.getlist('receipt') or []
         allowed_product_ids = set(request.env['product.product'].sudo().search(product_domain).ids)
 
+        company = (
+            (employee.company_id if employee and employee.company_id else False)
+            or user.company_id
+            or request.env.company
+        )
+
         for index, (name, product, date, amount) in enumerate(
             zip(names, product_ids, dates, amounts)
         ):
-            if not name:
+            if not name or not name.strip():
                 continue
 
             product_id = int(product) if product else False
+<<<<<<< HEAD
+            if not product_id:
+=======
             if product_id not in allowed_product_ids:
+>>>>>>> production
                 continue
 
+            try:
+                amt = float(amount or 0)
+            except (ValueError, TypeError):
+                amt = 0.0
+
+            if amt <= 0:
+                continue
+
+            # 1. Create expense in draft first with both amount fields populated
             expense = request.env['hr.expense'].sudo().create({
-                'name': name,
-                'date': date,
+                'name': name.strip(),
+                'date': date or http.request.env['hr.expense'].default_get(['date']).get('date'),
                 'product_id': product_id,
-                'total_amount': float(amount or 0),
+                'total_amount': amt,
+                'total_amount_currency': amt,
                 'employee_id': employee.id if employee else False,
-                'state': 'finance_approval',
+                'company_id': company.id,
+                'currency_id': company.currency_id.id,
             })
 
+            # 2. Attach receipt file if uploaded
             if receipts and index < len(receipts):
                 rec_file = receipts[index]
-                if rec_file and getattr(rec_file, 'filename', None):
+                if rec_file and getattr(rec_file, 'filename', None) and rec_file.filename.strip():
+                    rec_file.seek(0)
                     file_content = rec_file.read()
                     if file_content:
                         attachment = request.env['ir.attachment'].sudo().create({
@@ -113,7 +139,11 @@ class EmployeePortalExpense(http.Controller):
                             'datas': base64.b64encode(file_content),
                             'res_model': 'hr.expense',
                             'res_id': expense.id,
+                            'mimetype': getattr(rec_file, 'content_type', False) or 'application/octet-stream',
                         })
                         expense.sudo().write({'message_main_attachment_id': attachment.id})
 
-        return request.redirect('/my/employee-expenses')
+            # 3. Transition directly to finance_approval with all data and attachments in place
+            expense.sudo().write({'state': 'finance_approval'})
+
+        return request.redirect('/my/employee-expenses')
