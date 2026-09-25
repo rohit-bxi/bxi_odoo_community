@@ -86,6 +86,21 @@ class TestActionReleaseSalary(ICICICommon):
         self.assertEqual(payload["AGGRID"], "CIBBULK001")
         self.assertEqual(payload["URN"], "CIBTESTING")
 
+    def test_otp_pending_can_request_new_otp(self):
+        self.slip.write({
+            'icici_payment_status': 'otp_pending',
+            'icici_reference': 'OLDREFERENCE0001',
+        })
+        with patch.object(
+            type(self.slip), 'call_icici_api',
+            return_value=_api_result({"RESPONSE": "SUCCESS", "OTP": "123456"}),
+        ):
+            self.slip.action_release_salary()
+
+        self.assertEqual(self.slip.icici_payment_status, 'otp_pending')
+        self.assertNotEqual(self.slip.icici_reference, 'OLDREFERENCE0001')
+        self.assertEqual(self.slip.icici_generated_otp, '123456')
+
     def test_create_api_failure_raises(self):
         with patch.object(
             type(self.slip), 'call_icici_api',
@@ -234,6 +249,17 @@ class TestProcessBulkPayment(ICICICommon):
         self.assertEqual(self.slip.icici_file_seq_num, '7958579')
         self.assertEqual(self.slip.icici_utr, 'UTR0001')
         self.assertFalse(self.slip.icici_generated_otp)
+
+    def test_file_name_has_no_underscore(self):
+        """ICICI answers 8017 "Invalid Request" for names containing "_"."""
+        with patch.object(
+            type(self.slip), 'call_icici_api',
+            return_value=_api_result({"RESPONSE": "SUCCESS"}),
+        ) as mock_call:
+            self.slip.process_bulk_payment('123456', '2026-01-01')
+
+        file_name = mock_call.call_args.args[1]["FILE_NAME"]
+        self.assertRegex(file_name, r"^[A-Za-z0-9]+\.txt$")
 
     def test_file_sequence_parsed_from_message_when_missing(self):
         with patch.object(
