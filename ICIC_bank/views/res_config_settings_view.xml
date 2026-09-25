@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_icici" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.icici</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="ICICI Bank" string="ICICI Bank" name="ICIC_bank">
+                    <block title="ICICI Bank Integration" name="icici_setting_container">
+                        <setting id="icici_base_url_setting" title="ICICI Base URL" help="Production or UAT host provided by ICICI.">
+                            <field name="icici_base_url" placeholder="https://apibankingone.icici.bank.in"/>
+                        </setting>
+                        <setting id="icici_api_key_setting" title="ICICI API Key">
+                            <field name="icici_api_key" password="True"/>
+                        </setting>
+                        <setting id="icici_corp_id_setting" title="ICICI Corporate ID">
+                            <field name="icici_corp_id"/>
+                        </setting>
+                        <setting id="icici_user_id_setting" title="ICICI User ID">
+                            <field name="icici_user_id"/>
+                        </setting>
+                        <setting id="icici_urn_setting" title="ICICI URN">
+                            <field name="icici_urn"/>
+                        </setting>
+                        <setting id="icici_aggr_id_setting" title="ICICI Aggregator ID">
+                            <field name="icici_aggr_id"/>
+                        </setting>
+                        <setting id="icici_aggr_name_setting" title="ICICI Aggregator Name">
+                            <field name="icici_aggr_name"/>
+                        </setting>
+                        <setting id="icici_debit_account_setting" title="ICICI Debit Account Number">
+                            <field name="icici_debit_account"/>
+                        </setting>
+                        <setting id="icici_debit_branch_setting" title="ICICI Debit Branch Code">
+                            <field name="icici_debit_branch"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>
