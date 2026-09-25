@@ -145,15 +145,16 @@
                             <field name="form_16"
                                 filename="form_16_filename"
                                 string="Form 16"/>
-                    <field name="fnf_status"/>
                     </group>
+                    <field name="fnf_status"/>
+
                     
                     <group
                         string="CLEARANCE STATUS"
                         invisible="fnf_status != 'pending_clearance'"
                         col="2"
                     >
-
+                    <field name="expected_clearance"/>
                         <group string="HR Clearance">
                             <field name="hr_clearance"/>
 
