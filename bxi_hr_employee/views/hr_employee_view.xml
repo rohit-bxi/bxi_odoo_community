@@ -145,7 +145,72 @@
                             <field name="form_16"
                                 filename="form_16_filename"
                                 string="Form 16"/>
+                    <field name="fnf_status"/>
                     </group>
+                    
+                    <group
+                        string="CLEARANCE STATUS"
+                        invisible="fnf_status != 'pending_clearance'"
+                        col="2"
+                    >
+
+                        <group string="HR Clearance">
+                            <field name="hr_clearance"/>
+
+                            <field
+                                name="hr_clearance_reason"
+                                invisible="hr_clearance != 'no'"
+                            />
+
+                            <field
+                                name="hr_clearance_status"
+                                readonly="1"
+                            />
+                        </group>
+
+                        <group string="RM Clearance">
+                            <field name="rm_clearance"/>
+
+                            <field
+                                name="rm_clearance_reason"
+                                invisible="rm_clearance != 'no'"
+                            />
+
+                            <field
+                                name="rm_clearance_status"
+                                readonly="1"
+                            />
+                        </group>
+
+                        <group string="Internal IT Clearance">
+                            <field name="it_clearance"/>
+
+                            <field
+                                name="it_clearance_reason"
+                                invisible="it_clearance != 'no'"
+                            />
+
+                            <field
+                                name="it_clearance_status"
+                                readonly="1"
+                            />
+                        </group>
+
+                        <group string="Finance Clearance">
+                            <field name="finance_clearance"/>
+
+                            <field
+                                name="finance_clearance_reason"
+                                invisible="finance_clearance != 'no'"
+                            />
+
+                            <field
+                                name="finance_clearance_status"
+                                readonly="1"
+                            />
+                        </group>
+
+                    </group>                  
                 </page>
             </xpath>
         </field>

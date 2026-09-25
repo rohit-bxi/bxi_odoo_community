@@ -791,6 +791,149 @@ class HrEmployee(models.Model):
         )
         return True
 
+    fnf_status = fields.Selection(
+        [
+            ("pending_clearance", "Pending Clearance"),
+            ("completed", "Completed"),
+        ],
+        string="F&F Status",
+    )
+    hr_clearance = fields.Selection(
+        [
+            ("yes", "Yes"),
+            ("no", "No"),
+        ],
+        string="HR Clearance",
+    )
+
+    hr_clearance_reason = fields.Selection(
+        [
+            ("notice_period_served", "Notice Period Served"),
+            ("notice_period_not_served", "Notice Period Not Served"),
+            ("hr_formalities", "HR Formalities Pending"),
+            ("exit_interview", "Exit Interview Pending"),
+            ("document_pending", "Document Submission Pending"),
+            ("other", "Other"),
+        ],
+        string="HR Clearance Details",
+    )
+
+    rm_clearance = fields.Selection(
+        [
+            ("yes", "Yes"),
+            ("no", "No"),
+        ],
+        string="RM Clearance",
+    )
+
+    rm_clearance_reason = fields.Selection(
+        [
+            ("task_handover_pending", "Task Handover Pending"),
+            ("knowledge_transfer_pending", "Knowledge Transfer Pending"),
+            ("project_handover_pending", "Project Handover Pending"),
+            ("rm_approval_pending", "RM Approval Pending"),
+            ("other", "Other"),
+        ],
+        string="RM Clearance Details",
+    )
+
+    it_clearance = fields.Selection(
+        [
+            ("yes", "Yes"),
+            ("no", "No"),
+        ],
+        string="Internal IT Clearance",
+    )
+
+    it_clearance_reason = fields.Selection(
+        [
+            ("assets_collected", "Company Assets Collected"),
+            ("assets_pending", "Company Assets Pending"),
+            ("laptop_pending", "Laptop / System Pending"),
+            ("access_revocation_pending", "Access Revocation Pending"),
+            ("other", "Other"),
+        ],
+        string="IT Clearance Details",
+    )
+
+    finance_clearance = fields.Selection(
+        [
+            ("yes", "Yes"),
+            ("no", "No"),
+        ],
+        string="Finance Clearance",
+    )
+
+    finance_clearance_reason = fields.Selection(
+        [
+            ("verification_pending", "Verification Pending"),
+            ("outstanding_dues", "Outstanding Dues Pending"),
+            ("advance_settlement", "Advance Settlement Pending"),
+            ("expense_pending", "Expense / Reimbursement Pending"),
+            ("other", "Other"),
+        ],
+        string="Finance Clearance Details",
+    )
+
+    hr_clearance_status = fields.Char(
+        string="HR Status",
+        compute="_compute_clearance_status",
+    )
+
+    rm_clearance_status = fields.Char(
+        string="RM Status",
+        compute="_compute_clearance_status",
+    )
+
+    it_clearance_status = fields.Char(
+        string="IT Status",
+        compute="_compute_clearance_status",
+    )
+
+    finance_clearance_status = fields.Char(
+        string="Finance Status",
+        compute="_compute_clearance_status",
+    )
+
+    @api.depends(
+        "hr_clearance",
+        "rm_clearance",
+        "it_clearance",
+        "finance_clearance",
+    )
+    def _compute_clearance_status(self):
+        for employee in self:
+            employee.hr_clearance_status = (
+                "Completed"
+                if employee.hr_clearance == "yes"
+                else "Action Required"
+                if employee.hr_clearance == "no"
+                else ""
+            )
+
+            employee.rm_clearance_status = (
+                "Completed"
+                if employee.rm_clearance == "yes"
+                else "Action Required"
+                if employee.rm_clearance == "no"
+                else ""
+            )
+
+            employee.it_clearance_status = (
+                "Completed"
+                if employee.it_clearance == "yes"
+                else "Action Required"
+                if employee.it_clearance == "no"
+                else ""
+            )
+
+            employee.finance_clearance_status = (
+                "Completed"
+                if employee.finance_clearance == "yes"
+                else "Pending"
+                if employee.finance_clearance == "no"
+                else ""
+            )
 
 class HrApplicantExperience(models.Model):
     _name = 'hr.experience.employee'
