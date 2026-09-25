@@ -1381,11 +1381,10 @@ class FbookReportWizard(models.TransientModel):
                 'y2_total': target_currency.round(y2_total),
             })
 
-        # Sort vendors by highest spend in the respective year (y2_total descending, then y1_total descending)
+        # Sort vendors alphabetically by vendor name
         vendor_rows = sorted(
             vendor_rows,
-            key=lambda r: (r['y2_total'], r['y1_total']),
-            reverse=True
+            key=lambda r: (r['vendor'] or '').strip().lower()
         )
 
         vendor_totals = {

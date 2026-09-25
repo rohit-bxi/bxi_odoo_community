@@ -25,9 +25,12 @@ publicWidget.registry.PortalExpense = publicWidget.Widget.extend({
         const firstRow = container.querySelector('.expense_line');
         const newRow = firstRow.cloneNode(true);
 
-        // Clear inputs
+        // Clear inputs and reset selects
         newRow.querySelectorAll('input').forEach(input => {
             input.value = '';
+        });
+        newRow.querySelectorAll('select').forEach(select => {
+            select.selectedIndex = 0;
         });
 
         // Show remove button

@@ -58,11 +58,27 @@ class HrExpense(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        records = super().create(vals_list)
-        for rec, vals in zip(records, vals_list):
-            if vals.get('state') == 'finance_approval':
-                rec.state = 'finance_approval'
-                rec._send_state_email()
+        clean_vals_list = []
+        target_states = []
+        for vals in vals_list:
+            v = dict(vals)
+            amt = v.get('total_amount_currency') or v.get('total_amount') or 0.0
+            if amt:
+                v['total_amount_currency'] = amt
+                v['total_amount'] = amt
+                if not v.get('price_unit'):
+                    qty = v.get('quantity') or 1.0
+                    v['price_unit'] = amt / qty
+
+            target_state = v.pop('state', None)
+            target_states.append(target_state)
+            clean_vals_list.append(v)
+
+        records = super().create(clean_vals_list)
+
+        for rec, target_state in zip(records, target_states):
+            if target_state and target_state != 'draft':
+                rec.write({'state': target_state})
 
         return records
 
@@ -110,5 +126,17 @@ class HrExpense(models.Model):
                 template = self.env.ref('portal_employee_expense.email_template_expense_refused', raise_if_not_found=False)
 
             if template:
-                template.send_mail(rec.id, force_send=True)
+                email_values = {}
+                attachments = self.env['ir.attachment'].sudo().search([
+                    ('res_model', '=', 'hr.expense'),
+                    ('res_id', '=', rec.id)
+                ])
+                if attachments:
+                    email_values['attachment_ids'] = [(6, 0, attachments.ids)]
+                try:
+                    template.send_mail(rec.id, force_send=False, email_values=email_values if email_values else None)
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).warning("Failed to send expense email for %s: %s", rec.id, e)
+
 
