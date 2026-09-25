@@ -108,6 +108,7 @@ class TestICICICrypto(ICICICommon):
         encrypted = self.env['hr.payslip'].encrypt_payload(payload)
 
         self.assertEqual(encrypted["service"], "CIB")
+        self.assertEqual(encrypted["requestId"], "")
         self.assertIn("encryptedKey", encrypted)
         self.assertIn("encryptedData", encrypted)
 

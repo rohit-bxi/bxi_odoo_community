@@ -280,7 +280,9 @@ class HrPayslip(models.Model):
             )
 
             return {
-                "requestId": uuid.uuid4().hex,
+                # Keep empty, as in the bank-tested integration; a random
+                # requestId coincided with ICICI error 8010.
+                "requestId": "",
                 "service": "CIB",
                 "encryptedKey": encrypted_key,
                 "oaepHashingAlgorithm": "NONE",
