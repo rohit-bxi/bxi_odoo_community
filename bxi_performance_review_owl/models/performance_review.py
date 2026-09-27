@@ -33,8 +33,8 @@ class PerformanceReview(models.Model):
     line_ids = fields.One2many("performance.review.line", "review_id", copy=True)
     successor_1 = fields.Char()
     successor_2 = fields.Char()
-    appraisee_remarks = fields.Text()
-    manager_remarks = fields.Text()
+    appraisee_remarks = fields.Text(string="Appraisee Remarks(self)")
+    manager_remarks = fields.Text(string="Appraise Remarks(RM)")
     calibration = fields.Selection(
         [
             ('5', 'Outstanding'),
@@ -45,7 +45,7 @@ class PerformanceReview(models.Model):
         ],
         string='Calibration',
     )    
-    reviewer_remarks = fields.Text()
+    reviewer_remarks = fields.Text(String="Reviewer Remarks")
 
     final_score = fields.Float(compute="_compute_final_score", store=True, digits=(16, 2))
 
