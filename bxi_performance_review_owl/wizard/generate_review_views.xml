@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Generate Performance Review Wizard Form -->
+    <record id="view_generate_performance_review_wizard" model="ir.ui.view">
+        <field name="name">generate.performance.review.wizard.form</field>
+        <field name="model">generate.performance.review.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Generate Performance Reviews">
+
+                <group>
+                    <field name="period_id"/>
+                    <field name="template_id"/>
+                    <field name="employee_ids" widget="many2many_tags"/>
+                </group>
+
+                <footer>
+                    <button
+                        name="action_generate"
+                        type="object"
+                        string="Generate Reviews"
+                        class="btn-primary"
+                    />
+                    <button
+                        string="Cancel"
+                        special="cancel"
+                    />
+                </footer>
+
+            </form>
+        </field>
+    </record>
+
+    <!-- Generate Performance Reviews Wizard Action -->
+    <record id="action_generate_performance_review_wizard"
+            model="ir.actions.act_window">
+        <field name="name">Generate Performance Reviews</field>
+        <field name="res_model">generate.performance.review.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>
