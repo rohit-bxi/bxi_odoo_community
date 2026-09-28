@@ -22,6 +22,13 @@ class HrEmployee(models.Model):
              "elements without requiring direct access to the group-"
              "restricted 'employee_type' field.",
     )
+    bxi_offer_letter = fields.Many2many(
+        'ir.attachment',
+        'hr_employee_bxi_offer_letter_rel',
+        'employee_id',
+        'attachment_id',
+        string='BXI Offer Letter',
+    )
     employee_code = fields.Char(string="Employee Code")
     pa_name = fields.Char(string="PA Name")  
     psa = fields.Char(string="PSA")

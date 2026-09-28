@@ -224,6 +224,11 @@
         <field name="arch" type="xml">
             <xpath expr="//page[@name='hr_settings']" position="after">
                 <page string="Employee Documents">
+                     <group name="employee_documents" string="BXI Offer Letter">
+                        <field name="bxi_offer_letter"
+                            widget="many2many_binary"
+                            options="{'accepted_file_extensions': '.jpg,.jpeg,.png,.pdf'}"/>
+                    </group>
                     <group name="name" string="Data Privacy Document">
                         <field name="data_privacy_doc" widget="many2many_binary" />
                         <field name="data_security_doc" widget="many2many_binary"/>
