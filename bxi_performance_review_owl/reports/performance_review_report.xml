@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_performance_review" model="ir.actions.report">
+        <field name="name">Performance Review</field><field name="model">performance.review</field><field name="report_type">qweb-pdf</field><field name="report_name">bxi_performance_review_owl.performance_review_report_template</field><field name="report_file">bxi_performance_review_owl.performance_review_report_template</field><field name="print_report_name">'Performance Review - %s' % (object.employee_id.name)</field>
+    </record>
+</odoo>

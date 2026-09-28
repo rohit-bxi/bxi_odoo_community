@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_performance_review_employee" model="res.groups">
+        <field name="name">Performance Review / Employee</field>
+    </record>
+    <record id="group_performance_review_manager" model="res.groups">
+        <field name="name">Performance Review / Manager</field>
+        <field name="implied_ids" eval="[(4, ref('bxi_performance_review_owl.group_performance_review_employee'))]"/>
+    </record>
+    <record id="group_performance_review_hr" model="res.groups">
+        <field name="name">Performance Review / HR</field>
+        <field name="implied_ids" eval="[(4, ref('bxi_performance_review_owl.group_performance_review_manager'))]"/>
+    </record>
+
+    <record id="rule_performance_review_employee" model="ir.rule">
+        <field name="name">Performance Review - Employee Own</field>
+        <field name="model_id" ref="model_performance_review"/>
+        <field name="groups" eval="[(4, ref('bxi_performance_review_owl.group_performance_review_employee'))]"/>
+        <field name="domain_force">[('employee_user_id', '=', user.id)]</field>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+    <record id="rule_performance_review_manager" model="ir.rule">
+        <field name="name">Performance Review - Manager Assigned</field>
+        <field name="model_id" ref="model_performance_review"/>
+        <field name="groups" eval="[(4, ref('bxi_performance_review_owl.group_performance_review_manager'))]"/>
+        <field name="domain_force">['|', ('manager_user_id', '=', user.id), ('second_manager_user_id', '=', user.id)]</field>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+    <record id="rule_performance_review_hr" model="ir.rule">
+        <field name="name">Performance Review - HR All</field>
+        <field name="model_id" ref="model_performance_review"/>
+        <field name="groups" eval="[(4, ref('bxi_performance_review_owl.group_performance_review_hr'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="1"/>
+        <field name="perm_create" eval="1"/>
+        <field name="perm_unlink" eval="1"/>
+    </record>
+
+    <record id="rule_performance_review_line_employee" model="ir.rule">
+        <field name="name">Performance Review Line - Employee</field>
+        <field name="model_id" ref="model_performance_review_line"/>
+        <field name="groups" eval="[(4, ref('bxi_performance_review_owl.group_performance_review_employee'))]"/>
+        <field name="domain_force">[('review_id.employee_user_id', '=', user.id)]</field>
+    </record>
+    <record id="rule_performance_review_line_manager" model="ir.rule">
+        <field name="name">Performance Review Line - Manager</field>
+        <field name="model_id" ref="model_performance_review_line"/>
+        <field name="groups" eval="[(4, ref('bxi_performance_review_owl.group_performance_review_manager'))]"/>
+        <field name="domain_force">['|', ('review_id.manager_user_id', '=', user.id), ('review_id.second_manager_user_id', '=', user.id)]</field>
+    </record>
+    <record id="rule_performance_review_line_hr" model="ir.rule">
+        <field name="name">Performance Review Line - HR</field>
+        <field name="model_id" ref="model_performance_review_line"/>
+        <field name="groups" eval="[(4, ref('bxi_performance_review_owl.group_performance_review_hr'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+</odoo>

@@ -1,0 +1,453 @@
+.bxi-pr-screen {
+    min-height: 100%;
+    background: #f5f6f8;
+    color: #17202a;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.bxi-pr-toolbar {
+    min-height: 54px;
+    padding: 10px 16px;
+    background: #ffffff;
+    border-bottom: 1px solid #d9dee5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.bxi-pr-breadcrumb {
+    font-size: 20px;
+    color: #263746;
+}
+
+.bxi-pr-breadcrumb-link {
+    color: #0875d1;
+}
+
+.bxi-pr-breadcrumb-separator {
+    padding: 0 9px;
+    color: #8c98a5;
+}
+
+.bxi-pr-toolbar-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.bxi-pr-selector-wrap {
+    padding: 12px 16px;
+    background: #ffffff;
+    border-bottom: 1px solid #d9dee5;
+}
+
+.bxi-pr-selector {
+    max-width: 100%;
+    border-radius: 5px;
+}
+
+.bxi-pr-page {
+    padding: 0 0 28px;
+}
+
+.bxi-pr-stage-row {
+    padding: 8px 16px;
+    background: #ffffff;
+    border-bottom: 1px solid #d8dde4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.bxi-pr-stage-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+}
+
+.bxi-pr-stage {
+    padding: 7px 14px;
+    background: #f1f3f5;
+    border: 1px solid #cdd4dc;
+    color: #4d5965;
+    font-size: 13px;
+    margin-right: -1px;
+}
+
+.bxi-pr-stage:first-child {
+    border-radius: 5px 0 0 5px;
+}
+
+.bxi-pr-stage:last-child {
+    border-radius: 0 5px 5px 0;
+}
+
+.bxi-pr-stage.active {
+    background: #e7f0ff;
+    border-color: #6b9ee8;
+    color: #1257a5;
+    font-weight: 600;
+    z-index: 1;
+}
+
+.bxi-pr-submit-top {
+    min-width: 88px;
+}
+
+.bxi-pr-review-card {
+    margin: 10px 16px 0;
+    background: #ffffff;
+    border: 1px solid #bfc8d2;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.bxi-pr-title-bar {
+    min-height: 58px;
+    background: #294b88;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.bxi-pr-company-logo-wrap {
+    width: 125px;
+    height: 58px;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid #cfd6df;
+    flex: 0 0 125px;
+}
+
+.bxi-pr-company-logo {
+    max-width: 105px;
+    max-height: 48px;
+    object-fit: contain;
+}
+
+.bxi-pr-company-logo-placeholder {
+    color: #294b88;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.bxi-pr-title {
+    flex: 1;
+    text-align: center;
+    font-size: 28px;
+    font-weight: 400;
+    padding-right: 125px;
+}
+
+.bxi-pr-title-period {
+    margin-left: 22px;
+}
+
+.bxi-pr-employee-row {
+    display: grid;
+    grid-template-columns: 1.1fr 1.5fr 1.35fr 70px;
+    gap: 12px;
+    padding: 7px 10px 10px;
+    background: #ffffff;
+    border-bottom: 1px solid #294b88;
+}
+
+.bxi-pr-detail {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+}
+
+.bxi-pr-detail label {
+    font-weight: 700;
+    white-space: nowrap;
+    font-size: 14px;
+}
+
+.bxi-pr-value-box {
+    height: 34px;
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #294b88;
+    padding: 7px 8px;
+    background: #ffffff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bxi-pr-submit-cell {
+    justify-content: center;
+}
+
+.bxi-pr-reset-btn {
+    border: 0;
+    background: transparent;
+    color: #193f78;
+    font-size: 35px;
+    line-height: 1;
+    cursor: pointer;
+    transform: rotate(-25deg);
+}
+
+.bxi-pr-performance-table {
+    width: 100%;
+}
+
+.bxi-pr-table-header,
+.bxi-pr-line {
+    display: grid;
+    grid-template-columns: 10% 10% 37% 25% 18%;
+}
+
+.bxi-pr-table-header {
+    background: #dce3e9;
+    border-bottom: 1px solid #294b88;
+    font-size: 16px;
+    text-align: center;
+}
+
+.bxi-pr-table-header > div {
+    padding: 6px 5px;
+    border-right: 1px solid #294b88;
+}
+
+.bxi-pr-table-header > div:last-child {
+    border-right: 0;
+}
+
+.bxi-pr-category-header {
+    background: #294b88;
+    color: #ffffff;
+    padding: 5px 8px;
+    font-size: 19px;
+    line-height: 1.2;
+    border-bottom: 1px solid #ffffff;
+}
+
+.bxi-pr-line {
+    min-height: 55px;
+    border-bottom: 1px solid #294b88;
+}
+
+.bxi-pr-line > div {
+    padding: 5px 6px;
+    border-right: 1px solid #294b88;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.bxi-pr-line > div:last-child {
+    border-right: 0;
+}
+
+.bxi-pr-weightage,
+.bxi-pr-target,
+.bxi-pr-score-cell {
+    justify-content: center;
+    text-align: center;
+}
+
+.bxi-pr-input-cell {
+    padding: 4px !important;
+}
+
+.bxi-pr-textarea {
+    min-height: 40px;
+    height: 40px;
+    resize: vertical;
+    font-size: 13px;
+    border: 1px solid #b9c0c8;
+}
+
+.bxi-pr-score {
+    text-align: center;
+    min-width: 70px;
+}
+
+.bxi-pr-category-behavioural {
+    --bxi-category-bg: #e3edf9;
+}
+
+.bxi-pr-category-revenue {
+    --bxi-category-bg: #e6f3dc;
+}
+
+.bxi-pr-category-solution {
+    --bxi-category-bg: #fff0c9;
+}
+
+.bxi-pr-category-capability {
+    --bxi-category-bg: #f8dfe1;
+}
+
+.bxi-pr-line.bxi-pr-category-behavioural > div,
+.bxi-pr-line.bxi-pr-category-revenue > div,
+.bxi-pr-line.bxi-pr-category-solution > div,
+.bxi-pr-line.bxi-pr-category-capability > div {
+    background: var(--bxi-category-bg);
+}
+
+.bxi-pr-section-title {
+    background: #294b88;
+    color: #ffffff;
+    padding: 5px 8px;
+    font-size: 19px;
+    line-height: 1.2;
+    border-bottom: 1px solid #ffffff;
+}
+
+.bxi-pr-successor-header,
+.bxi-pr-successor-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.bxi-pr-successor-header {
+    background: #dce3e9;
+    text-align: center;
+    font-weight: 600;
+    border-bottom: 1px solid #294b88;
+}
+
+.bxi-pr-successor-header > div {
+    padding: 6px;
+    border-right: 1px solid #294b88;
+}
+
+.bxi-pr-successor-header > div:last-child {
+    border-right: 0;
+}
+
+.bxi-pr-successor-row {
+    border-bottom: 1px solid #294b88;
+}
+
+.bxi-pr-successor-row > input {
+    border-radius: 0;
+    border: 0;
+    border-right: 1px solid #294b88;
+    min-height: 39px;
+}
+
+.bxi-pr-successor-row > input:last-child {
+    border-right: 0;
+}
+
+.bxi-pr-overall-grid {
+    display: grid;
+    grid-template-columns: 38% 62%;
+    border-bottom: 1px solid #294b88;
+}
+
+.bxi-pr-overall-label {
+    background: #dce3e9;
+    border-right: 1px solid #294b88;
+    border-bottom: 1px solid #294b88;
+    padding: 7px 10px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+}
+
+.bxi-pr-overall-field {
+    border-radius: 0;
+    border: 0;
+    border-bottom: 1px solid #294b88;
+    min-height: 40px;
+}
+
+.bxi-pr-overall-field:focus {
+    box-shadow: inset 0 0 0 1px #4b7fc1;
+}
+
+.bxi-pr-final-score-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 9px 12px;
+    background: #ffffff;
+}
+
+.bxi-pr-final-score {
+    width: 290px;
+    background: #f2f3f4;
+    border: 1px solid #d5d9dd;
+    padding: 7px 10px;
+    border-radius: 3px;
+}
+
+.bxi-pr-bottom-actions {
+    padding: 8px 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.bxi-pr-saving {
+    color: #66717c;
+    font-size: 13px;
+}
+
+@media (max-width: 1100px) {
+    .bxi-pr-title {
+        font-size: 22px;
+        padding-right: 20px;
+    }
+
+    .bxi-pr-employee-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .bxi-pr-submit-cell {
+        display: none;
+    }
+
+    .bxi-pr-table-header,
+    .bxi-pr-line {
+        grid-template-columns: 12% 12% 34% 24% 18%;
+    }
+}
+
+@media (max-width: 800px) {
+    .bxi-pr-toolbar,
+    .bxi-pr-stage-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .bxi-pr-employee-row,
+    .bxi-pr-successor-header,
+    .bxi-pr-successor-row,
+    .bxi-pr-overall-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .bxi-pr-table-header,
+    .bxi-pr-line {
+        min-width: 950px;
+    }
+
+    .bxi-pr-performance-table {
+        overflow-x: auto;
+    }
+
+    .bxi-pr-title-bar {
+        min-height: 52px;
+    }
+
+    .bxi-pr-company-logo-wrap {
+        width: 90px;
+        flex-basis: 90px;
+    }
+
+    .bxi-pr-title {
+        font-size: 18px;
+    }
+}

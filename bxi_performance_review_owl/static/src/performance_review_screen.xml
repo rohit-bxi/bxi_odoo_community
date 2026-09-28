@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="bxi_performance_review_owl.PerformanceReviewScreen">
+        <div class="bxi-pr-screen">
+
+            <!-- Top controls -->
+            <div class="bxi-pr-toolbar">
+                <div class="bxi-pr-breadcrumb">
+                    <span class="bxi-pr-breadcrumb-link">Performance Reviews</span>
+                    <span class="bxi-pr-breadcrumb-separator">/</span>
+                    <span t-if="state.review">
+                        <t t-esc="state.review.name"/> - <t t-esc="getQuarter()"/> - <t t-esc="state.review.year"/>
+                    </span>
+                    <span t-else="">Performance Review</span>
+                </div>
+
+                <div class="bxi-pr-toolbar-actions">
+                    <button
+                        class="btn btn-outline-secondary btn-sm"
+                        t-att-class="{'active': state.filter === 'my'}"
+                        t-on-click="() => this.onFilterChange('my')">
+                        My Reviews
+                    </button>
+                    <button
+                        class="btn btn-outline-secondary btn-sm"
+                        t-att-class="{'active': state.filter === 'approve'}"
+                        t-on-click="() => this.onFilterChange('approve')">
+                        Reviews to Approve
+                    </button>
+                </div>
+            </div>
+
+            <div t-if="state.loading" class="alert alert-info m-3">
+                Loading Performance Review...
+            </div>
+
+            <div t-elif="state.error" class="alert alert-danger m-3">
+                <t t-esc="state.error"/>
+            </div>
+
+            <div t-elif="!state.reviews.length" class="alert alert-info m-3">
+                No Performance Reviews found.
+            </div>
+
+            <t t-else="">
+
+                <!-- Review selector -->
+                <div class="bxi-pr-selector-wrap">
+                    <select class="form-select bxi-pr-selector" t-on-change="onReviewChange">
+                        <t t-foreach="state.reviews" t-as="review" t-key="review.id">
+                            <option
+                                t-att-value="review.id"
+                                t-att-selected="state.review and state.review.id === review.id">
+                                <t t-esc="review.name"/> - <t t-esc="review.employee_id and review.employee_id[1]"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+
+                <div t-if="state.review" class="bxi-pr-page">
+
+                    <!-- Status / submit row -->
+                    <div class="bxi-pr-stage-row">
+                        <div class="bxi-pr-stage-pills">
+                            <span t-att-class="'bxi-pr-stage ' + (state.review.state === 'draft' ? 'active' : '')">Employee Review</span>
+                            <span t-att-class="'bxi-pr-stage ' + (state.review.state === 'manager_review' ? 'active' : '')">Manager Review</span>
+                            <span t-att-class="'bxi-pr-stage ' + (state.review.state === 'second_manager_review' ? 'active' : '')">Second Manager Review</span>
+                            <span t-att-class="'bxi-pr-stage ' + (state.review.state === 'completed' ? 'active' : '')">Completed</span>
+                        </div>
+
+                        <button
+                            t-if="state.review.state === 'draft' and this.isSelfEditable()"
+                            class="btn btn-primary bxi-pr-submit-top"
+                            t-on-click="submitEmployee"
+                            t-att-disabled="state.saving">
+                            Submit
+                        </button>
+                        <button
+                            t-elif="state.review.state === 'manager_review' and this.isManagerEditable()"
+                            class="btn btn-primary bxi-pr-submit-top"
+                            t-on-click="submitManager"
+                            t-att-disabled="state.saving">
+                            Submit Manager Review
+                        </button>
+                        <button
+                            t-elif="state.review.state === 'second_manager_review' and this.isSecondEditable()"
+                            class="btn btn-primary bxi-pr-submit-top"
+                            t-on-click="submitSecondManager"
+                            t-att-disabled="state.saving">
+                            Submit Final Review
+                        </button>
+                    </div>
+
+                    <!-- Main review card -->
+                    <div class="bxi-pr-review-card">
+
+                        <!-- Company branding / title -->
+                        <div class="bxi-pr-title-bar">
+                            <div class="bxi-pr-company-logo-wrap">
+                                <img
+                                    t-if="state.review.company_logo"
+                                    class="bxi-pr-company-logo"
+                                    t-att-src="getCompanyLogoSrc()"
+                                    alt="Company Logo"/>
+                                <div t-else="" class="bxi-pr-company-logo-placeholder">LOGO</div>
+                            </div>
+                            <div class="bxi-pr-title">
+                                <span>Performance Review</span>
+                                <span class="bxi-pr-title-period">
+                                    <t t-esc="getQuarter()"/> - <t t-esc="state.review.year"/>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Employee details -->
+                        <div class="bxi-pr-employee-row">
+                            <div class="bxi-pr-detail">
+                                <label>Employee Name</label>
+                                <div class="bxi-pr-value-box">
+                                    <t t-esc="state.review.employee_id and state.review.employee_id[1]"/>
+                                </div>
+                            </div>
+                            <div class="bxi-pr-detail">
+                                <label>Email Address</label>
+                                <div class="bxi-pr-value-box">
+                                    <t t-esc="state.review.employee_email || ''"/>
+                                </div>
+                            </div>
+                            <div class="bxi-pr-detail">
+                                <label>Manager Mail</label>
+                                <div class="bxi-pr-value-box">
+                                    <t t-esc="state.review.manager_email || ''"/>
+                                </div>
+                            </div>
+                            <div class="bxi-pr-detail bxi-pr-submit-cell">
+                                <button
+                                    class="bxi-pr-reset-btn"
+                                    t-if="state.review.state === 'draft' and this.isSelfEditable()"
+                                    t-on-click="save"
+                                    title="Save">
+                                    ↶
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Performance table -->
+                        <div class="bxi-pr-performance-table">
+                            <div class="bxi-pr-table-header">
+                                <div>Weightage</div>
+                                <div>Target</div>
+                                <div>Appraisee Actual Achievement (Self)</div>
+                                <div>Appraise Review (RM)</div>
+                                <div>Appraise Score (RM)</div>
+                            </div>
+
+                            <t t-foreach="getGroupedLines()" t-as="group" t-key="group.key">
+                                <div t-att-class="'bxi-pr-category-header ' + group.cssClass">
+                                    <t t-esc="group.title"/>
+                                </div>
+
+                                <t t-foreach="group.lines" t-as="line" t-key="line.id">
+                                    <div t-att-class="'bxi-pr-line ' + group.cssClass">
+                                        <div class="bxi-pr-weightage">
+                                            <t t-esc="line.weightage"/>%
+                                        </div>
+                                        <div class="bxi-pr-target">
+                                            <t t-esc="getLineTarget(line)"/>
+                                        </div>
+                                        <div class="bxi-pr-input-cell">
+                                            <textarea
+                                                class="form-control bxi-pr-textarea"
+                                                t-model="line.self_achievement"
+                                                t-att-disabled="!this.isSelfEditable()"
+                                                t-att-placeholder="line.description || 'Please enter your achievement here'"/>
+                                        </div>
+                                        <div class="bxi-pr-input-cell">
+                                            <textarea
+                                                class="form-control bxi-pr-textarea"
+                                                t-model="line.manager_review"
+                                                t-att-disabled="!this.isManagerEditable()"
+                                                placeholder="Please enter manager review here"/>
+                                        </div>
+                                        <div class="bxi-pr-score-cell">
+                                            <select
+                                                class="form-control bxi-pr-score"
+                                                t-model="line.manager_score"
+                                                t-att-disabled="!this.isManagerEditable()">
+
+                                                <option value="">Select Score</option>
+
+                                                <t t-foreach="getScoreOptions(line)" t-as="option" t-key="option.value">
+                                                    <option t-att-value="option.value">
+                                                        <t t-esc="option.label"/>
+                                                    </option>
+                                                </t>
+
+                                            </select>
+                                        </div>
+                                    </div>
+                                </t>
+                            </t>
+                        </div>
+
+                        <!-- Successor identification -->
+                        <div class="bxi-pr-section-title">Successor Identification</div>
+                        <div class="bxi-pr-successor-header">
+                            <div>Successor (1) (Self)</div>
+                            <div>Successor (2) (Self)</div>
+                        </div>
+                        <div class="bxi-pr-successor-row">
+                            <input
+                                class="form-control"
+                                t-model="state.review.successor_1"
+                                t-att-disabled="!this.isSelfEditable()"
+                                placeholder="Please enter successor(1) after you here"/>
+                            <input
+                                class="form-control"
+                                t-model="state.review.successor_2"
+                                t-att-disabled="!this.isSelfEditable()"
+                                placeholder="Please enter successor(2) after you here"/>
+                        </div>
+
+                        <!-- Overall -->
+                        <div class="bxi-pr-section-title">Overall</div>
+                        <div class="bxi-pr-overall-grid">
+                            <div class="bxi-pr-overall-label">Appraisee Remarks(Self)</div>
+                            <textarea
+                                class="form-control bxi-pr-overall-field"
+                                t-model="state.review.appraisee_remarks"
+                                t-att-disabled="!this.isSelfEditable()"
+                                placeholder="Please enter your appraisee remarks here"/>
+
+                            <div class="bxi-pr-overall-label">Appraise Remarks(RM)</div>
+                            <textarea
+                                class="form-control bxi-pr-overall-field"
+                                t-model="state.review.manager_remarks"
+                                t-att-disabled="!this.isManagerEditable()"
+                                placeholder="Please enter manager remarks here"/>
+
+                            <div class="bxi-pr-overall-label">Calibration</div>
+                            <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                class="form-control bxi-pr-overall-field"
+                                t-model="state.review.calibration"
+                                t-att-disabled="!this.isSecondEditable()"/>
+
+                            <div class="bxi-pr-overall-label">Reviewer Remarks</div>
+                            <textarea
+                                class="form-control bxi-pr-overall-field"
+                                t-model="state.review.reviewer_remarks"
+                                t-att-disabled="!this.isSecondEditable()"
+                                placeholder="Please enter reviewer remarks here"/>
+                        </div>
+
+                        <!-- Final score -->
+                        <div class="bxi-pr-final-score-row">
+                            <strong>Final Score</strong>
+                            <div class="bxi-pr-final-score">
+                                <t t-esc="getFinalScore()"/>
+                            </div>
+                        </div>
+
+                        <!-- Bottom actions -->
+                        <div class="bxi-pr-bottom-actions">
+                            <button
+                                class="btn btn-secondary"
+                                t-on-click="save"
+                                t-att-disabled="state.saving">
+                                Save
+                            </button>
+                            <span t-if="state.saving" class="bxi-pr-saving">Saving...</span>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+</templates>

@@ -1,0 +1,31 @@
+{
+    "name": "BXI Performance Review",
+    "version": "19.0.1.0.0",
+    "category": "Human Resources",
+    "summary": "Employee, manager and HR performance review workflow",
+    "author": "BXI Technology",
+    "license": "LGPL-3",
+    "depends": ["base", "hr", "mail", "web"],
+    "data": [
+        "security/security.xml",
+        "security/ir.model.access.csv",
+        "data/sequence.xml",
+        "views/performance_review_period_views.xml",
+        "views/performance_review_template_views.xml",
+        "views/performance_review_views.xml",
+        "views/performance_review_client_action.xml",
+        "wizard/generate_review_views.xml",
+        "views/performance_review_menu.xml",
+        "reports/performance_review_report.xml",
+        "reports/performance_review_report_templates.xml",
+    ],
+    "assets": {
+        "web.assets_backend": [
+            "bxi_performance_review_owl/static/src/performance_review_screen.js",
+            "bxi_performance_review_owl/static/src/performance_review_screen.xml",
+            "bxi_performance_review_owl/static/src/css/performance_review.css",
+        ],
+    },
+    "installable": True,
+    "application": True,
+}

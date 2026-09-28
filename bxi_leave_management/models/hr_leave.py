@@ -715,6 +715,10 @@ class HrEmployeeLeave(models.Model):
                             "supporting documentation.\n\n"
                             "Please attach the required document before "
                             "submitting the request."
+                            "For sick leave of more than one day, all the following documents are mandatory:\n"
+                            "1) Medical Certificate issued by a Registered Medical Practitioner\n"
+                            "2) Pharmacy Invoice / Medicine Purchase Bill.\n"
+                            "3) Bank Transaction Proof / UPI (GPay) Payment Receipt for the medicine purchase"
                         )
                     )
 

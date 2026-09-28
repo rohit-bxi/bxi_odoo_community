@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="rating_1" model="performance.review.rating">
+        <field name="name">Needs Improvement</field>
+        <field name="score">40</field>
+        <field name="description">Performance is below expectations.</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="rating_2" model="performance.review.rating">
+        <field name="name">Partially Meets Expectations</field>
+        <field name="score">60</field>
+        <field name="description">Performance partially meets expectations.</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="rating_3" model="performance.review.rating">
+        <field name="name">Meets Expectations</field>
+        <field name="score">80</field>
+        <field name="description">Performance meets expectations.</field>
+        <field name="sequence">30</field>
+    </record>
+    <record id="rating_4" model="performance.review.rating">
+        <field name="name">Exceeds Expectations</field>
+        <field name="score">90</field>
+        <field name="description">Performance exceeds expectations.</field>
+        <field name="sequence">40</field>
+    </record>
+    <record id="rating_5" model="performance.review.rating">
+        <field name="name">Outstanding</field>
+        <field name="score">100</field>
+        <field name="description">Exceptional performance.</field>
+        <field name="sequence">50</field>
+    </record>
+</odoo>

@@ -51,24 +51,64 @@ class TestICICICrypto(ICICICommon):
         self.assertGreater(len(values), 1)
 
     def test_get_icici_public_key_missing_file_raises(self):
-        self.mock_get_icici_public_key.stop()
-        with patch('os.path.isfile', return_value=False):
-            with self.assertRaises(ValidationError):
-                self.env['hr.payslip'].get_icici_public_key()
-        self.mock_get_icici_public_key.start()
+        self.patcher_icici_public_key.stop()
+        try:
+            with patch('os.path.isfile', return_value=False):
+                with self.assertRaises(ValidationError):
+                    self.env['hr.payslip'].get_icici_public_key()
+        finally:
+            self.patcher_icici_public_key.start()
+
+    def test_environment_follows_base_url(self):
+        payslip = self.env['hr.payslip']
+        company = self.env.company
+
+        company.icici_base_url = "https://apibankingone.icici.bank.in"
+        self.assertEqual(
+            payslip._get_icici_environment()["public_key"],
+            "icici_public.pem",
+        )
+
+        company.icici_base_url = "https://apibankingonesandbox.icici.bank.in"
+        self.assertEqual(
+            payslip._get_icici_environment()["public_key"],
+            "icici_public_sandbox.pem",
+        )
+
+    def test_get_icici_public_key_loads_key_of_environment(self):
+        """Sandbox requests must not be encrypted with the production key."""
+        payslip = self.env['hr.payslip']
+        company = self.env.company
+
+        self.patcher_icici_public_key.stop()
+        try:
+            company.icici_base_url = "https://apibankingone.icici.bank.in"
+            production_key = payslip.get_icici_public_key()
+            company.icici_base_url = (
+                "https://apibankingonesandbox.icici.bank.in")
+            sandbox_key = payslip.get_icici_public_key()
+        finally:
+            self.patcher_icici_public_key.start()
+
+        self.assertFalse(production_key.has_private())
+        self.assertFalse(sandbox_key.has_private())
+        self.assertNotEqual(production_key.n, sandbox_key.n)
 
     def test_get_private_key_missing_file_raises(self):
-        self.mock_get_private_key.stop()
-        with patch('os.path.isfile', return_value=False):
-            with self.assertRaises(ValidationError):
-                self.env['hr.payslip'].get_private_key()
-        self.mock_get_private_key.start()
+        self.patcher_private_key.stop()
+        try:
+            with patch('os.path.isfile', return_value=False):
+                with self.assertRaises(ValidationError):
+                    self.env['hr.payslip'].get_private_key()
+        finally:
+            self.patcher_private_key.start()
 
     def test_encrypt_payload_roundtrip(self):
         payload = {"AGGRID": "BULK0173", "UNIQUEID": "ABC123"}
         encrypted = self.env['hr.payslip'].encrypt_payload(payload)
 
         self.assertEqual(encrypted["service"], "CIB")
+        self.assertEqual(encrypted["requestId"], "")
         self.assertIn("encryptedKey", encrypted)
         self.assertIn("encryptedData", encrypted)
 
@@ -114,6 +154,10 @@ class TestICICICrypto(ICICICommon):
 class TestICICIApiCall(ICICICommon):
     """Tests for ``call_icici_api``'s HTTP/retry/error handling."""
 
+    def setUp(self):
+        super().setUp()
+        self.env.company.icici_api_key = "TEST-API-KEY"
+
     def _success_response(self, payload):
         envelope = _encrypt_for(
             self.client_keypair.publickey(), json.dumps(payload),
@@ -150,6 +194,23 @@ class TestICICIApiCall(ICICICommon):
                 "https://example.invalid/api", {"UNIQUEID": "1"},
             )
         self.assertIn("Bank is down", str(capture.exception))
+
+    @patch('odoo.addons.ICIC_bank.model.custom_payslip.requests.post')
+    def test_call_icici_api_non_json_error_shows_first_line_only(
+        self, mock_post,
+    ):
+        response = MagicMock(status_code=404)
+        response.json.side_effect = ValueError("not json")
+        response.text = "No responder matched.\napikey: SECRET\n"
+        response.headers = {}
+        mock_post.return_value = response
+
+        with self.assertRaises(ValidationError) as capture:
+            self.env['hr.payslip'].call_icici_api(
+                "https://example.invalid/api", {"UNIQUEID": "1"},
+            )
+        self.assertIn("No responder matched.", str(capture.exception))
+        self.assertNotIn("SECRET", str(capture.exception))
 
     @patch('odoo.addons.ICIC_bank.model.custom_payslip.requests.post')
     def test_call_icici_api_invalid_json_raises(self, mock_post):

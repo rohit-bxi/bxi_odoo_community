@@ -63,6 +63,44 @@ class TestActionReleaseSalary(ICICICommon):
         called_url = mock_call.call_args.args[0]
         self.assertIn('/Create', called_url)
 
+    def test_sandbox_base_url_uses_sandbox_endpoint_and_ids(self):
+        self.slip.company_id.icici_base_url = (
+            "https://apibankingonesandbox.icici.bank.in")
+        self.slip.company_id.write({
+            'icici_aggr_id': False,
+            'icici_aggr_name': False,
+            'icici_urn': False,
+        })
+        with patch.object(
+            type(self.slip), 'call_icici_api',
+            return_value=_api_result({"RESPONSE": "SUCCESS"}),
+        ) as mock_call:
+            self.slip.action_release_salary()
+
+        called_url, payload = mock_call.call_args.args
+        self.assertEqual(
+            called_url,
+            "https://apibankingonesandbox.icici.bank.in"
+            "/api/Corporate/CIB_SV/v1/Create",
+        )
+        self.assertEqual(payload["AGGRID"], "CIBBULK001")
+        self.assertEqual(payload["URN"], "CIBTESTING")
+
+    def test_otp_pending_can_request_new_otp(self):
+        self.slip.write({
+            'icici_payment_status': 'otp_pending',
+            'icici_reference': 'OLDREFERENCE0001',
+        })
+        with patch.object(
+            type(self.slip), 'call_icici_api',
+            return_value=_api_result({"RESPONSE": "SUCCESS", "OTP": "123456"}),
+        ):
+            self.slip.action_release_salary()
+
+        self.assertEqual(self.slip.icici_payment_status, 'otp_pending')
+        self.assertNotEqual(self.slip.icici_reference, 'OLDREFERENCE0001')
+        self.assertEqual(self.slip.icici_generated_otp, '123456')
+
     def test_create_api_failure_raises(self):
         with patch.object(
             type(self.slip), 'call_icici_api',
@@ -124,16 +162,17 @@ class TestGenerateSalaryFile(ICICICommon):
         )
         slip = self._create_payslip(employee, net_wage=45000.5)
 
-        salary_file = slip.generate_salary_file('01/15/2026')
+        salary_file = slip.generate_salary_file('2026-01-15')
         lines = salary_file.split('\r\n')
 
-        self.assertTrue(lines[0].startswith('FHR|1|'))
+        self.assertTrue(lines[0].startswith('FHR|2|'))
         self.assertTrue(lines[1].startswith('MDR|'))
         detail = lines[2]
-        self.assertTrue(detail.startswith('MCW|123456789012|6939|'))
+        self.assertTrue(detail.startswith('MCW|123456789012|0011|'))
         self.assertIn('45000.50', detail)
         self.assertIn('WIB', detail)
-        self.assertTrue(detail.endswith('^'))
+        self.assertTrue(detail.endswith('|ICIC0000011^'))
+        self.assertIn('|ICIC0000011|WIB^', lines[1])
 
     def test_non_icici_account_uses_mco_nft(self):
         employee = self._create_employee_with_bank(
@@ -141,7 +180,7 @@ class TestGenerateSalaryFile(ICICICommon):
         )
         slip = self._create_payslip(employee, net_wage=30000.0)
 
-        salary_file = slip.generate_salary_file('01/15/2026')
+        salary_file = slip.generate_salary_file('2026-01-15')
         detail = salary_file.split('\r\n')[2]
 
         self.assertTrue(detail.startswith('MCO|987654321098|0011|'))
@@ -155,10 +194,10 @@ class TestGenerateSalaryFile(ICICICommon):
         slip1 = self._create_payslip(employee1, net_wage=10000.0)
         slip2 = self._create_payslip(employee2, net_wage=20000.0)
 
-        salary_file = (slip1 + slip2).generate_salary_file('01/15/2026')
+        salary_file = (slip1 + slip2).generate_salary_file('2026-01-15')
         header = salary_file.split('\r\n')[0]
 
-        self.assertTrue(header.startswith('FHR|2|'))
+        self.assertTrue(header.startswith('FHR|3|'))
         self.assertIn('30000.00', header)
 
 
@@ -210,6 +249,17 @@ class TestProcessBulkPayment(ICICICommon):
         self.assertEqual(self.slip.icici_file_seq_num, '7958579')
         self.assertEqual(self.slip.icici_utr, 'UTR0001')
         self.assertFalse(self.slip.icici_generated_otp)
+
+    def test_file_name_has_no_underscore(self):
+        """ICICI answers 8017 "Invalid Request" for names containing "_"."""
+        with patch.object(
+            type(self.slip), 'call_icici_api',
+            return_value=_api_result({"RESPONSE": "SUCCESS"}),
+        ) as mock_call:
+            self.slip.process_bulk_payment('123456', '2026-01-01')
+
+        file_name = mock_call.call_args.args[1]["FILE_NAME"]
+        self.assertRegex(file_name, r"^[A-Za-z0-9]+\.txt$")
 
     def test_file_sequence_parsed_from_message_when_missing(self):
         with patch.object(
@@ -276,6 +326,20 @@ class TestActionReversePayment(ICICICommon):
         self.assertEqual(self.slip.icici_payment_status, 'reversed')
         self.assertFalse(self.slip.icici_file_seq_num)
         self.assertFalse(self.slip.icici_utr)
+
+    def test_user_id_is_qualified_with_corp_id(self):
+        self.slip.company_id.write({
+            'icici_corp_id': 'TXBCORP2',
+            'icici_user_id': 'USER2',
+        })
+        with patch.object(
+            type(self.slip), 'call_icici_api',
+            return_value=_api_result({"RESPONSE": "SUCCESS"}),
+        ) as mock_call:
+            self.slip.action_reverse_payment('7958579')
+
+        payload = mock_call.call_args.args[1]
+        self.assertEqual(payload["USERID"], "TXBCORP2.USER2")
 
     def test_xml_wrapped_response_is_unwrapped(self):
         with patch.object(

@@ -51,6 +51,10 @@ class ICICICommon(TransactionCase):
             'get_private_key',
             return_value=self.client_keypair,
         )
+        # Keep the patchers so a test can stop them to exercise the real
+        # key-loading methods (stopping the returned mock is a no-op).
+        self.patcher_icici_public_key = patcher_public
+        self.patcher_private_key = patcher_private
         self.mock_get_icici_public_key = patcher_public.start()
         self.mock_get_private_key = patcher_private.start()
         self.addCleanup(patcher_public.stop)

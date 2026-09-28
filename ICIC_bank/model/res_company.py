@@ -13,7 +13,7 @@ class ResCompany(models.Model):
         string="ICICI Base URL",
         company_dependent=True,
         help="e.g. https://apibankingone.icici.bank.in for Production "
-        "or the UAT host provided by ICICI.",
+        "or https://apibankingonesandbox.icici.bank.in for Sandbox.",
     )
 
     icici_corp_id = fields.Char(
