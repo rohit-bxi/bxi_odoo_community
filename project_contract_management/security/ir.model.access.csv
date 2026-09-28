@@ -1,4 +1,7 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_contract,contract,model_project_contract_management,,1,1,1,1
-access_contract_stage,contract.stage,model_project_contract_stage,,1,1,1,1
-access_contract_service_line,contract.service.line,model_project_contract_service_line,,1,1,1,1
+access_contract_user,contract.user,model_project_contract_management,group_contract_user,1,0,0,0
+access_contract,contract.manager,model_project_contract_management,group_contract_manager,1,1,1,1
+access_contract_stage_user,contract.stage.user,model_project_contract_stage,group_contract_user,1,0,0,0
+access_contract_stage,contract.stage.manager,model_project_contract_stage,group_contract_manager,1,1,1,1
+access_contract_service_line_user,contract.service.line.user,model_project_contract_service_line,group_contract_user,1,0,0,0
+access_contract_service_line,contract.service.line.manager,model_project_contract_service_line,group_contract_manager,1,1,1,1
