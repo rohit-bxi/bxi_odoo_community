@@ -3,6 +3,7 @@
               name="Contract Management"
               sequence="10"
               web_icon="project_contract_management,static/description/icon.png"
+              groups="project_contract_management.group_contract_user"
               />
 
 
@@ -15,6 +16,7 @@
     <menuitem id="menu_contract_config"
               name="Configuration"
               parent="menu_contract_root"
+              groups="project_contract_management.group_contract_manager"
               sequence="50"/>
 
     <!-- STAGE MENU -->

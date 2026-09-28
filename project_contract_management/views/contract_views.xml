@@ -137,6 +137,7 @@
                             string="Create Project"
                             class="btn-primary"
                             icon="fa-plus"
+                            groups="project_contract_management.group_contract_manager"
                             invisible="project_count &gt; 0"/>
 
                 </header>
