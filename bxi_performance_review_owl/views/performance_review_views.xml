@@ -178,6 +178,32 @@
                         </page>
 
                         <!-- ================================================= -->
+                        <!-- Appraisee Questions -->
+                        <!-- ================================================= -->
+                        <page string="Appraisee Questions">
+                            <field name="appraisee_question_ids">
+                                <list>
+                                    <field name="sequence"/>
+                                    <field name="question" readonly="1"/>
+                                    <field name="answer"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- ================================================= -->
+                        <!-- Manager Questions -->
+                        <!-- ================================================= -->
+                        <page string="Manager Questions">
+                            <field name="manager_question_ids">
+                                <list>
+                                    <field name="sequence"/>
+                                    <field name="question" readonly="1"/>
+                                    <field name="answer"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- ================================================= -->
                         <!-- Successor -->
                         <!-- ================================================= -->
                         <page string="Successor">
