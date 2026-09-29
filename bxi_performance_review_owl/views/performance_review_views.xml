@@ -180,7 +180,7 @@
                         <!-- ================================================= -->
                         <!-- Appraisee Questions -->
                         <!-- ================================================= -->
-                        <page string="Appraisee Questions">
+                        <page string="Appraisee Questions(Self)">
                             <field name="appraisee_question_ids">
                                 <list>
                                     <field name="sequence"/>
@@ -196,7 +196,7 @@
                         <!-- ================================================= -->
                         <!-- Manager Questions -->
                         <!-- ================================================= -->
-                        <page string="Manager Questions">
+                        <page string="Manager Questions(RM)">
                             <field name="manager_question_ids">
                                 <list>
                                     <field name="sequence"/>
