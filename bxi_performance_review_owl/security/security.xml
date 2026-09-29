@@ -61,4 +61,43 @@
         <field name="groups" eval="[(4, ref('bxi_performance_review_owl.group_performance_review_hr'))]"/>
         <field name="domain_force">[(1, '=', 1)]</field>
     </record>
+
+    <record id="rule_performance_review_question_employee" model="ir.rule">
+        <field name="name">Performance Review Question - Employee</field>
+        <field name="model_id" ref="model_performance_review_question"/>
+        <field name="groups" eval="[(4, ref('bxi_performance_review_owl.group_performance_review_employee'))]"/>
+        <field name="domain_force">[('review_id.employee_user_id', '=', user.id)]</field>
+    </record>
+    <record id="rule_performance_review_question_manager" model="ir.rule">
+        <field name="name">Performance Review Question - Manager</field>
+        <field name="model_id" ref="model_performance_review_question"/>
+        <field name="groups" eval="[(4, ref('bxi_performance_review_owl.group_performance_review_manager'))]"/>
+        <field name="domain_force">['|', ('review_id.manager_user_id', '=', user.id), ('review_id.second_manager_user_id', '=', user.id)]</field>
+    </record>
+    <record id="rule_performance_review_question_hr" model="ir.rule">
+        <field name="name">Performance Review Question - HR</field>
+        <field name="model_id" ref="model_performance_review_question"/>
+        <field name="groups" eval="[(4, ref('bxi_performance_review_owl.group_performance_review_hr'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="rule_performance_review_template_question_employee" model="ir.rule">
+        <field name="name">Template Question - Employee Appraisee Only</field>
+        <field name="model_id" ref="model_performance_review_template_question"/>
+        <field name="groups" eval="[(4, ref('bxi_performance_review_owl.group_performance_review_employee'))]"/>
+        <field name="domain_force">[('question_type', '=', 'appraisee')]</field>
+    </record>
+    <record id="rule_performance_review_template_question_manager" model="ir.rule">
+        <field name="name">Template Question - Manager</field>
+        <field name="model_id" ref="model_performance_review_template_question"/>
+        <field name="groups" eval="[(4, ref('bxi_performance_review_owl.group_performance_review_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+    <record id="rule_performance_review_template_question_hr" model="ir.rule">
+        <field name="name">Template Question - HR</field>
+        <field name="model_id" ref="model_performance_review_template_question"/>
+        <field name="groups" eval="[(4, ref('bxi_performance_review_owl.group_performance_review_hr'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
 </odoo>

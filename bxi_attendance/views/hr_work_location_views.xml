@@ -9,6 +9,7 @@
                 <group string="Location Type">
                     <field name="office"/>
                     <field name="home"/>
+                    <field name="address"/>
                 </group>
                  <group
                     string="GPS / Geofence Configuration"

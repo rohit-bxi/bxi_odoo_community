@@ -15,6 +15,24 @@ class PerformanceReviewTemplate(models.Model):
     line_ids = fields.One2many(
         "performance.review.template.line", "template_id", string="Performance Parameters"
     )
+    question_ids = fields.One2many(
+        "performance.review.template.question", "template_id", string="Questions"
+    )
+    appraisee_question_ids = fields.One2many(
+        "performance.review.template.question",
+        "template_id",
+        string="Appraisee Questions",
+        domain=[("question_type", "=", "appraisee")],
+        context={"default_question_type": "appraisee"},
+    )
+
+    manager_question_ids = fields.One2many(
+        "performance.review.template.question",
+        "template_id",
+        string="Manager Questions",
+        domain=[("question_type", "=", "manager")],
+        context={"default_question_type": "manager"},
+    )
 
     @api.constrains("line_ids")
     def _check_weightage(self):
@@ -44,3 +62,39 @@ class PerformanceReviewTemplateLine(models.Model):
         for rec in self:
             if rec.weightage < 0 or rec.weightage > 100:
                 raise ValidationError(_("Weightage must be between 0 and 100."))
+
+
+class PerformanceReviewTemplateQuestion(models.Model):
+    _name = "performance.review.template.question"
+    _description = "Performance Review Template Question"
+    _order = "question_type, sequence, id"
+
+    template_id = fields.Many2one(
+        "performance.review.template", required=True, ondelete="cascade"
+    )
+    sequence = fields.Integer(default=10)
+    question_type = fields.Selection(
+        [
+            ("appraisee", "Appraisee Question"),
+            ("manager", "Manager Question"),
+        ],
+        required=True,
+        default="appraisee",
+    )
+    question = fields.Text(required=True)
+    active = fields.Boolean(default=True)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Respect the question tab used in the template.
+
+        The two One2many fields use default_question_type in their context.
+        Explicitly apply that context here so a question added from the
+        Manager Questions tab can never silently fall back to Appraisee.
+        """
+        default_type = self.env.context.get("default_question_type")
+        if default_type in ("appraisee", "manager"):
+            for vals in vals_list:
+                if not vals.get("question_type"):
+                    vals["question_type"] = default_type
+        return super().create(vals_list)
