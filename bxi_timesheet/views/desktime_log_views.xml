@@ -38,6 +38,9 @@
                         <group string="Arrived &amp; Left times">
                             <field name="arrived"/>
                             <field name="left"/>
+                            <field name="shift_arrived"/>
+                            <field name="shift_left"/>
+                            <field name="shift_productive_hours" widget="float_time"/>
                             <field name="is_late"/>
                         </group>
                         <group string="Linked Timesheet">
@@ -84,6 +87,9 @@
                 <field name="department_id"/>
                 <field name="arrived"/>
                 <field name="left"/>
+                <field name="shift_arrived"/>
+                <field name="shift_left"/>
+                <field name="shift_productive_hours" widget="float_time" sum="Total Shift Hours"/>
                 <field name="at_work_hours" sum="Total Hours"/>
                 <field name="productive_hours" sum="Total Productive Hours"/>
                 <field name="productivity" avg="Avg Productivity"/>
@@ -97,6 +103,17 @@
                 <field name="timesheet_id" optional="hide"/>
             </list>
         </field>
+    </record>
+
+    <!-- Actions menu: recalculate shift times with the current working schedules -->
+    <record id="action_server_bxi_desktime_log_recompute_shift" model="ir.actions.server">
+        <field name="name">Recalculate Shift Times</field>
+        <field name="model_id" ref="model_bxi_desktime_log"/>
+        <field name="binding_model_id" ref="model_bxi_desktime_log"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="group_ids" eval="[(4, ref('hr_timesheet.group_timesheet_manager')), (4, ref('hr.group_hr_user'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = records.action_recompute_shift_times()</field>
     </record>
 
     <!-- ============================================================
