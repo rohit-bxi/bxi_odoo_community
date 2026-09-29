@@ -196,10 +196,11 @@
                         <!-- ================================================= -->
                         <!-- Manager Questions -->
                         <!-- ================================================= -->
-                        <page string="Manager Questions(RM)">
-                            <field name="manager_question_ids">
+                       <page string="Manager Questions(RM)">
+                            <field name="manager_question_ids"
+                                readonly="not can_edit_manager">
                                 <list>
-                                    <field name="sequence"/>
+                                    <field name="sequence" readonly="1"/>
                                     <field name="question" readonly="1"/>
                                     <field name="answer"/>
                                 </list>
@@ -222,9 +223,9 @@
                         <page string="Overall Remarks">
                             <group>
                                 <field name="appraisee_remarks"/>
-                                <field name="manager_remarks"/>
-                                <field name="calibration"/>
-                                <field name="reviewer_remarks"/>
+                                <field name="manager_remarks" readonly="not can_edit_manager"/>
+                                <field name="calibration" readonly="not can_edit_manager"/>
+                                <field name="reviewer_remarks" readonly="not can_edit_manager"/>
                             </group>
                         </page>
 

@@ -54,7 +54,24 @@ class PerformanceReview(models.Model):
             ('1', 'Unsatisfactory'),
         ],
         string='Calibration',
-    )    
+    ) 
+    can_edit_manager = fields.Boolean(
+        compute="_compute_can_edit_manager"
+    )
+    @api.depends(
+        "manager_user_id",
+        "second_manager_user_id",
+    )
+    def _compute_can_edit_manager(self):
+        current_user = self.env.user
+        for review in self:
+            review.can_edit_manager = (
+                review.manager_user_id == current_user
+                or review.second_manager_user_id == current_user
+                or current_user.has_group(
+                    "bxi_performance_review_owl.group_performance_review_hr"
+                )
+            )   
     reviewer_remarks = fields.Text()
 
     final_score = fields.Float(compute="_compute_final_score", store=True, digits=(16, 2))
