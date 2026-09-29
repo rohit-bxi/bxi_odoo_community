@@ -18,3 +18,6 @@ access_asset_stock_movement_report_admin,asset.stock.movement.report.admin,model
 access_asset_label_layout,asset.label.layout,model_asset_label_layout,assets_user_group,1,1,1,1
 access_asset_disposal_wizard,asset.disposal.wizard,model_asset_disposal_wizard,assets_admin_group,1,1,1,1
 access_asset_disposal_wizard_system,asset.disposal.wizard.system,model_asset_disposal_wizard,base.group_system,1,1,1,1
+access_asset_stage_user,asset.stage.user,model_asset_stage,assets_user_group,1,0,0,0
+access_asset_stage_admin,asset.stage.admin,model_asset_stage,assets_admin_group,1,1,1,1
+access_asset_stage_system,asset.stage.system,model_asset_stage,base.group_system,1,1,1,1

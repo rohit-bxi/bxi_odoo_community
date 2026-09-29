@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tree / List View for Asset Stage -->
+    <record id="view_asset_stage_tree" model="ir.ui.view">
+        <field name="name">asset.stage.tree</field>
+        <field name="model">asset.stage</field>
+        <field name="arch" type="xml">
+            <list string="Asset Stages">
+                <field name="sequence" widget="handle"/>
+                <field name="sequence" string="Sequence"/>
+                <field name="name"/>
+                <field name="fold"/>
+                <field name="active" widget="boolean_toggle"/>
+                <field name="description" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View for Asset Stage -->
+    <record id="view_asset_stage_form" model="ir.ui.view">
+        <field name="name">asset.stage.form</field>
+        <field name="model">asset.stage</field>
+        <field name="arch" type="xml">
+            <form string="Asset Stage">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Stage Name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Draft, In Warehouse, Assigned, In Maintenance..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Ordering &amp; Display">
+                            <field name="sequence"
+                                   help="Determines the order of this stage in the form view status bar and Kanban columns. Lower sequence values appear first."/>
+                            <field name="fold"
+                                   help="If enabled, this stage will be folded by default in the Kanban view."/>
+                        </group>
+                        <group string="Status">
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group string="Description">
+                        <field name="description" placeholder="Add guidance or notes for this stage..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View for Asset Stage -->
+    <record id="view_asset_stage_search" model="ir.ui.view">
+        <field name="name">asset.stage.search</field>
+        <field name="model">asset.stage</field>
+        <field name="arch" type="xml">
+            <search string="Search Asset Stages">
+                <field name="name"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action for Asset Stage -->
+    <record id="action_asset_stage" model="ir.actions.act_window">
+        <field name="name">Stages</field>
+        <field name="res_model">asset.stage</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_asset_stage_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Asset Stage
+            </p>
+            <p>
+                Stages configured here will appear in the Asset form status bar and as Kanban columns strictly ordered by their <b>Sequence</b>.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Item under Configuration -->
+    <menuitem id="menu_asset_stage"
+              name="Stages"
+              parent="asset_configuration"
+              action="action_asset_stage"
+              groups="assets_admin_group,base.group_system"
+              sequence="25"/>
+</odoo>

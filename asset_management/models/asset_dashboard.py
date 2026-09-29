@@ -248,7 +248,7 @@ class AssetDashboard(models.AbstractModel):
 
         # ─── 6. VENDOR ANALYSIS TAB DATA ──────────────────────────────────────
         vendor_rows = []
-        all_vendors = self.env['asset.vendor'].search([])
+        all_vendors = all_matched_assets.mapped('vendor_id')
         for v in all_vendors:
             v_assets = all_matched_assets.filtered(lambda a: a.vendor_id.id == v.id)
             if v_assets:
@@ -261,7 +261,7 @@ class AssetDashboard(models.AbstractModel):
 
                 vendor_rows.append({
                     'id': v.id,
-                    'name': v.name,
+                    'name': v.display_name or v.name,
                     'count': len(v_assets),
                     'cost': round(v_cost, 2),
                     'nbv': round(v_nbv, 2),
