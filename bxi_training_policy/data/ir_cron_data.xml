@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="ir_cron_training_request_daily" model="ir.cron">
+        <field name="name">Specialized Training: reminders, start and completion</field>
+        <field name="model_id" ref="model_bxi_training_request"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_daily()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+    </record>
+
+    <record id="ir_cron_training_agreement_daily" model="ir.cron">
+        <field name="name">Specialized Training: service agreements</field>
+        <field name="model_id" ref="model_bxi_training_agreement"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_daily()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+    </record>
+
+</odoo>

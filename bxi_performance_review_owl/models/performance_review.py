@@ -31,10 +31,19 @@ class PerformanceReview(models.Model):
     )
 
     line_ids = fields.One2many("performance.review.line", "review_id", copy=True)
+    question_ids = fields.One2many("performance.review.question", "review_id", copy=True)
+    appraisee_question_ids = fields.One2many(
+        "performance.review.question", "review_id",
+        string="Appraisee Questions", domain=[("question_type", "=", "appraisee")],
+    )
+    manager_question_ids = fields.One2many(
+        "performance.review.question", "review_id",
+        string="Manager Questions", domain=[("question_type", "=", "manager")],
+    )
     successor_1 = fields.Char()
     successor_2 = fields.Char()
-    appraisee_remarks = fields.Text(string="Appraisee Remarks(self)")
-    manager_remarks = fields.Text(string="Appraise Remarks(RM)")
+    appraisee_remarks = fields.Text()
+    manager_remarks = fields.Text()
     calibration = fields.Selection(
         [
             ('5', 'Outstanding'),
@@ -45,7 +54,7 @@ class PerformanceReview(models.Model):
         ],
         string='Calibration',
     )    
-    reviewer_remarks = fields.Text(String="Reviewer Remarks")
+    reviewer_remarks = fields.Text()
 
     final_score = fields.Float(compute="_compute_final_score", store=True, digits=(16, 2))
 
@@ -164,6 +173,7 @@ class PerformanceReview(models.Model):
             )
         records = super().create(vals_list)
         records._create_lines_from_template()
+        records._create_questions_from_template()
         return records
 
     def _create_lines_from_template(self):
@@ -183,6 +193,30 @@ class PerformanceReview(models.Model):
                 self.env["performance.review.line"].with_user(SUPERUSER_ID).create([
                     dict(command[2], review_id=review.id) for command in commands
                 ])
+
+    def _create_questions_from_template(self):
+        Question = self.env["performance.review.question"].with_user(SUPERUSER_ID)
+        for review in self:
+            existing_template_question_ids = set(
+                review.question_ids.mapped("template_question_id").ids
+            )
+            vals_list = []
+            for question in review.template_id.question_ids.filtered("active"):
+                if question.id in existing_template_question_ids:
+                    continue
+                vals_list.append({
+                    "review_id": review.id,
+                    "template_question_id": question.id,
+                    "sequence": question.sequence,
+                    "question_type": question.question_type,
+                    "question": question.question,
+                })
+            if vals_list:
+                Question.create(vals_list)
+
+    def sync_template_questions(self):
+        self._create_questions_from_template()
+        return True
 
     def _check_employee(self):
         for rec in self:
@@ -292,6 +326,7 @@ class PerformanceReviewLine(models.Model):
     manager_review = fields.Text(string="Appraise Review (RM)")
     manager_score = fields.Selection(
         selection=[
+            ("0", "0"),
             ("1", "1"),
             ("2", "2"),
             ("3", "3"),
@@ -309,13 +344,11 @@ class PerformanceReviewLine(models.Model):
             score = float(record.manager_score)
             category = (record.category or "").lower().strip()
 
-            # Revenue / Revenue Enablement → only 1 or 2
+            # Revenue / Revenue Enablement → only 0 or 1
             if "revenue" in category:
-                if score not in (1.0, 2.0):
+                if score not in (0.0, 1.0):
                     raise ValidationError(
-                        _(
-                            "Revenue / Revenue Enablement score must be either 1 or 2."
-                        )
+                        _("Revenue / Revenue Enablement score must be either 0 or 1.")
                     )
 
             # All other categories → 1 to 5
@@ -350,4 +383,41 @@ class PerformanceReviewLine(models.Model):
                 allowed_fields = set()
             if not allowed or any(k not in allowed_fields for k in vals):
                 raise AccessError(_("You cannot modify this Performance Review line at this stage."))
+        return super().write(vals)
+
+
+class PerformanceReviewQuestion(models.Model):
+    _name = "performance.review.question"
+    _description = "Performance Review Question"
+    _order = "question_type, sequence, id"
+
+    review_id = fields.Many2one("performance.review", required=True, ondelete="cascade")
+    template_question_id = fields.Many2one(
+        "performance.review.template.question", ondelete="set null", index=True
+    )
+    sequence = fields.Integer(default=10)
+    question_type = fields.Selection(
+        [("appraisee", "Appraisee Question"), ("manager", "Manager Question")],
+        required=True,
+    )
+    question = fields.Text(required=True, readonly=True)
+    answer = fields.Text()
+
+    def write(self, vals):
+        is_hr = self.env.user.has_group("bxi_performance_review_owl.group_performance_review_hr")
+        if is_hr:
+            return super().write(vals)
+        if set(vals) - {"answer"}:
+            raise AccessError(_("Question text and question type cannot be modified from a Performance Review."))
+        for rec in self:
+            review = rec.review_id
+            if rec.question_type == "appraisee":
+                allowed = review.state == "draft" and review.employee_user_id == self.env.user
+            else:
+                allowed = review.state in ("manager_review", "second_manager_review") and (
+                    review.manager_user_id == self.env.user
+                    or review.second_manager_user_id == self.env.user
+                )
+            if not allowed:
+                raise AccessError(_("You cannot modify this question answer at this stage."))
         return super().write(vals)

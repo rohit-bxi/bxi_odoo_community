@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- The "Specialized Training" claim categories (Training Policy, process step 4). -->
+    <record id="product_training_fee" model="product.product">
+        <field name="name">Specialized Training - Training Fee</field>
+        <field name="description">Fee of the specialized training program.</field>
+        <field name="standard_price">0.0</field>
+        <field name="type">service</field>
+        <field name="default_code">TRN-FEE</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="is_training_expense" eval="True"/>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
+    </record>
+
+    <record id="product_training_lodging" model="product.product">
+        <field name="name">Specialized Training - Boarding &amp; Lodging</field>
+        <field name="description">Boarding and lodging during the training.</field>
+        <field name="standard_price">0.0</field>
+        <field name="type">service</field>
+        <field name="default_code">TRN-LODGING</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="is_training_expense" eval="True"/>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
+    </record>
+
+    <record id="product_training_material" model="product.product">
+        <field name="name">Specialized Training - Training Material</field>
+        <field name="description">Training material and other miscellaneous training costs.</field>
+        <field name="standard_price">0.0</field>
+        <field name="type">service</field>
+        <field name="default_code">TRN-MATERIAL</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="is_training_expense" eval="True"/>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
+    </record>
+
+    <record id="product_training_travel" model="product.product">
+        <field name="name">Specialized Training - Travel</field>
+        <field name="description">Travel to and from the training location.</field>
+        <field name="standard_price">0.0</field>
+        <field name="type">service</field>
+        <field name="default_code">TRN-TRAVEL</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="is_training_expense" eval="True"/>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
+    </record>
+
+</odoo>

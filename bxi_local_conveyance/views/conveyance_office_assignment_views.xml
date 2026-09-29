@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_bxi_conveyance_office_assignment_list" model="ir.ui.view">
+        <field name="name">bxi.conveyance.office.assignment.list</field>
+        <field name="model">bxi.conveyance.office.assignment</field>
+        <field name="arch" type="xml">
+            <list string="Other Office Assignments">
+                <field name="employee_id" widget="many2one_avatar_employee"/>
+                <field name="work_location_id"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="coverage_end_date"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_conveyance_office_assignment_form" model="ir.ui.view">
+        <field name="name">bxi.conveyance.office.assignment.form</field>
+        <field name="model">bxi.conveyance.office.assignment</field>
+        <field name="arch" type="xml">
+            <form string="Other Office Assignment">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="work_location_id"/>
+                        </group>
+                        <group>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="coverage_end_date"/>
+                        </group>
+                    </group>
+                    <field name="note" placeholder="Notes..."/>
+                    <field name="active" invisible="1"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_conveyance_office_assignment_search" model="ir.ui.view">
+        <field name="name">bxi.conveyance.office.assignment.search</field>
+        <field name="model">bxi.conveyance.office.assignment</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="work_location_id"/>
+                <filter name="running" string="Running" domain="[('date_to', '=', False)]"/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bxi_conveyance_office_assignment" model="ir.actions.act_window">
+        <field name="name">Other Office Assignments</field>
+        <field name="res_model">bxi.conveyance.office.assignment</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_running': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Record employees working from a local office other than their
+               regular one.</p>
+            <p>Local conveyance is covered for the first two months there only.</p>
+        </field>
+    </record>
+
+</odoo>

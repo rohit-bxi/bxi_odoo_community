@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="portal_my_home_conveyance" inherit_id="portal.portal_my_home" name="Portal Home - Local Conveyance">
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
+            <t t-if="not request.env.user.sudo().vender_custmer_access">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon" t-value="'/bxi_local_conveyance/static/src/img/conveyance-icon.svg'"/>
+                    <t t-set="title">Local Conveyance</t>
+                    <t t-set="text">Claim local travel, parking and toll, and food (Sales Team)</t>
+                    <t t-set="url" t-value="'/my/conveyance'"/>
+                    <t t-set="config_card" t-value="True"/>
+                </t>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="portal_conveyance_policy_note" name="Local Conveyance Policy Summary">
+        <div class="alert alert-light border small">
+            <b>Local Conveyance Policy.</b> Official travel within your place of posting (client locations and other
+            official destinations) is reimbursed. Personal vehicles are paid per km: two-wheeler Rs. 2.50, four-wheeler
+            Rs. 5.00, whatever your travel plan. Otherwise your travel plan sets the mode:
+            TP1 (E6 and above) and TP2 (E3 to E5) by taxi, TP3 (up to E2) by auto, by taxi only where no auto is
+            available. An auto can be claimed in an emergency, when no inter-office cab is available and you have no
+            personal transport. Auto claims above Rs. 1,000 are approved by your Reporting Manager and HR.
+            Attach the bills. Claim within <t t-esc="claim_days"/> days of the travel.
+            Not covered: commuting between residence and workplace, intercity travel (raise a travel request),
+            travel for training programs, travel between company facilities (use the inter-office cabs) and travel on
+            weekends or holidays. Residence to airport is paid one way per leg at the per-km rates.
+            <br/>
+            <t t-if="travel_plan">Your travel plan: <b t-esc="travel_plan.name"/> - <t t-esc="travel_plan.description"/></t>
+            <span t-else="" class="text-danger">No travel plan matches your band: taxi and auto claims need HR to
+                set your Band Level.</span>
+        </div>
+    </template>
+
+    <template id="portal_conveyance_state_badge" name="Conveyance State Badge">
+        <t t-set="badge_class" t-value="{
+            'draft': 'text-bg-light', 'conveyance_approval': 'text-bg-info', 'finance_approval': 'text-bg-info',
+            'approved': 'text-bg-primary', 'posted': 'text-bg-primary', 'in_payment': 'text-bg-warning',
+            'paid': 'text-bg-success', 'refused': 'text-bg-danger',
+        }.get(record.state, 'text-bg-secondary')"/>
+        <span t-attf-class="badge #{badge_class}" t-esc="dict(record._fields['state']._description_selection(record.env)).get(record.state)"/>
+    </template>
+
+    <template id="portal_my_conveyance" name="My Local Conveyance">
+        <t t-call="portal.portal_layout">
+            <div class="d-flex flex-wrap align-items-center gap-2 my-3">
+                <h3 class="mb-0 me-auto">Local Conveyance</h3>
+                <a t-if="employee" href="/my/conveyance/new" class="btn btn-primary">+ New Claim</a>
+            </div>
+            <div t-if="not employee" class="alert alert-warning">No employee record is linked to your user.</div>
+            <div t-if="submitted" class="alert alert-success">Your claim has been submitted for approval.</div>
+            <t t-call="bxi_local_conveyance.portal_conveyance_policy_note"/>
+
+            <p t-if="not claims" class="text-muted">You have no conveyance claim yet.</p>
+            <div t-if="claims" class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Route</th>
+                            <th class="text-end">Km</th>
+                            <th class="text-end">Amount</th>
+                            <th>Status</th>
+                            <th>Waiting For</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="claims" t-as="record">
+                            <td><span t-field="record.date"/></td>
+                            <td><span t-field="record.conveyance_kind"/></td>
+                            <td>
+                                <t t-esc="record.name"/>
+                                <div t-if="record.conveyance_policy_note" class="small text-warning" t-esc="record.conveyance_policy_note"/>
+                                <div t-if="record.conveyance_refuse_reason" class="small text-danger">
+                                    Refused: <t t-esc="record.conveyance_refuse_reason"/>
+                                </div>
+                            </td>
+                            <td>
+                                <t t-if="record.conveyance_from"><t t-esc="record.conveyance_from"/> &#8594; <t t-esc="record.conveyance_to"/></t>
+                            </td>
+                            <td class="text-end"><t t-if="record.conveyance_distance" t-esc="record.conveyance_distance"/></td>
+                            <td class="text-end"><span t-field="record.total_amount"/></td>
+                            <td><t t-call="bxi_local_conveyance.portal_conveyance_state_badge"/></td>
+                            <td>
+                                <t t-if="record.state == 'conveyance_approval'">
+                                    <t t-set="line" t-value="record._get_current_conveyance_line()"/>
+                                    <t t-if="line" t-esc="line.approver_user_id.name or dict(line._fields['role']._description_selection(line.env)).get(line.role)"/>
+                                </t>
+                                <t t-elif="record.state == 'finance_approval'">Finance</t>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_conveyance_form" name="New Conveyance Claim">
+        <t t-call="portal.portal_layout">
+            <div class="my-3">
+                <a href="/my/conveyance">&#8592; Local Conveyance</a>
+                <h3 class="mt-2">New Conveyance Claim</h3>
+            </div>
+            <div t-if="not employee" class="alert alert-warning">No employee record is linked to your user.</div>
+            <div t-if="error" class="alert alert-danger" t-esc="error"/>
+            <t t-call="bxi_local_conveyance.portal_conveyance_policy_note"/>
+
+            <form t-if="employee" id="conveyance_form" method="post" action="/my/conveyance/new"
+                  enctype="multipart/form-data" class="row g-3">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="col-md-6">
+                    <label class="form-label" for="lc_product">Type</label>
+                    <select id="lc_product" name="product_id" class="form-select" required="required">
+                        <option value="">Select...</option>
+                        <t t-foreach="products" t-as="product">
+                            <option t-att-value="product.id" t-att-data-kind="product.conveyance_kind"
+                                    t-att-selected="str(product.id) == post.get('product_id')" t-esc="product.name"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="lc_date">Date</label>
+                    <input id="lc_date" type="date" name="date" class="form-control" required="required"
+                           t-att-max="today" t-att-value="post.get('date')"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="lc_name">Description</label>
+                    <input id="lc_name" type="text" name="name" class="form-control" t-att-value="post.get('name')"/>
+                </div>
+
+                <!-- Trips -->
+                <div class="col-md-6 lc_trip">
+                    <label class="form-label" for="lc_purpose">Purpose</label>
+                    <select id="lc_purpose" name="purpose" class="form-select">
+                        <option value="">Select...</option>
+                        <t t-foreach="purposes" t-as="purpose">
+                            <option t-att-value="purpose[0]" t-att-selected="purpose[0] == post.get('purpose')" t-esc="purpose[1]"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-6 lc_airport">
+                    <label class="form-label" for="lc_airport_leg">Airport Leg (one way)</label>
+                    <select id="lc_airport_leg" name="airport_leg" class="form-select">
+                        <t t-foreach="airport_legs" t-as="leg">
+                            <option t-att-value="leg[0]" t-att-selected="leg[0] == post.get('airport_leg')" t-esc="leg[1]"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-4 lc_trip">
+                    <label class="form-label" for="lc_from">From</label>
+                    <input id="lc_from" type="text" name="from" class="form-control" t-att-value="post.get('from')"/>
+                </div>
+                <div class="col-md-4 lc_trip">
+                    <label class="form-label" for="lc_to">To</label>
+                    <input id="lc_to" type="text" name="to" class="form-control" t-att-value="post.get('to')"/>
+                </div>
+                <div class="col-md-4 lc_trip">
+                    <label class="form-label" for="lc_distance">Distance (km)</label>
+                    <input id="lc_distance" type="number" step="0.1" min="0" name="distance" class="form-control"
+                           t-att-value="post.get('distance')"/>
+                </div>
+                <div class="col-12 lc_emergency">
+                    <div class="form-check">
+                        <input id="lc_is_emergency" type="checkbox" name="is_emergency" class="form-check-input"
+                               t-att-checked="post.get('is_emergency') and 'checked'"/>
+                        <label class="form-check-label" for="lc_is_emergency">Emergency: no inter-office cab was
+                            available and I had no personal transport</label>
+                    </div>
+                </div>
+                <div class="col-12 lc_reason">
+                    <label class="form-label" for="lc_reason">Justification
+                        <small class="text-muted">(the emergency, or why no auto-rickshaw was available for a taxi)</small>
+                    </label>
+                    <textarea id="lc_reason" name="reason" class="form-control" rows="2" t-esc="post.get('reason')"/>
+                </div>
+                <div class="col-12 lc_trip">
+                    <div class="form-check">
+                        <input id="lc_within_city" type="checkbox" name="within_city" class="form-check-input"
+                               t-att-checked="post.get('within_city') and 'checked'"/>
+                        <label class="form-check-label" for="lc_within_city">I travelled within the city of my place of
+                            posting, for official work (not between my residence and workplace)</label>
+                    </div>
+                </div>
+
+                <!-- Parking and toll -->
+                <div class="col-md-6 lc_parking">
+                    <label class="form-label" for="lc_parent">Conveyance Claim of the Trip</label>
+                    <select id="lc_parent" name="parent_id" class="form-select">
+                        <option value="">Select...</option>
+                        <t t-foreach="trip_claims" t-as="trip">
+                            <option t-att-value="trip.id" t-att-selected="str(trip.id) == post.get('parent_id')">
+                                <t t-esc="trip.date"/> - <t t-esc="trip.name"/>
+                            </option>
+                        </t>
+                    </select>
+                    <small class="text-muted">Parking and toll are claimed with the trip of the same day.</small>
+                </div>
+
+                <!-- Bills -->
+                <div class="col-md-3 lc_bill">
+                    <label class="form-label" for="lc_amount">Amount (<t t-esc="currency.symbol"/>)</label>
+                    <input id="lc_amount" type="number" step="0.01" min="0" name="amount" class="form-control"
+                           t-att-value="post.get('amount')"/>
+                    <small class="text-muted lc_food">Food: up to Rs. 1,000 per day; the excess is yours.</small>
+                </div>
+                <div class="col-md-3 lc_bill">
+                    <label class="form-label" for="lc_bill_number">Bill / Receipt No.</label>
+                    <input id="lc_bill_number" type="text" name="bill_number" class="form-control"
+                           t-att-value="post.get('bill_number')"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="lc_receipt">Bills / Receipts</label>
+                    <input id="lc_receipt" type="file" name="receipt" class="form-control" multiple="multiple"/>
+                    <small class="text-muted lc_bill">Required for auto, taxi, parking, toll and food.</small>
+                </div>
+
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <a href="/my/conveyance" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </t>
+    </template>
+
+</odoo>

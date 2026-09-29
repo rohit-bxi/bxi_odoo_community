@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="seq_bxi_training_request" model="ir.sequence">
+        <field name="name">Specialized Training</field>
+        <field name="code">bxi.training.request</field>
+        <field name="prefix">TRN/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_bxi_training_agreement" model="ir.sequence">
+        <field name="name">Training Service Agreement</field>
+        <field name="code">bxi.training.agreement</field>
+        <field name="prefix">SA-TRN/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_bxi_training_recovery" model="ir.sequence">
+        <field name="name">Training Cost Recovery</field>
+        <field name="code">bxi.training.recovery</field>
+        <field name="prefix">TRN-REC/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+</odoo>

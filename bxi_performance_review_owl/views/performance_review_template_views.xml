@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
-    <!-- ===================================================== -->
-    <!-- Performance Review Template List -->
-    <!-- ===================================================== -->
     <record id="view_performance_review_template_list" model="ir.ui.view">
         <field name="name">performance.review.template.list</field>
         <field name="model">performance.review.template</field>
@@ -16,22 +12,17 @@
         </field>
     </record>
 
-    <!-- ===================================================== -->
-    <!-- Performance Review Template Form -->
-    <!-- ===================================================== -->
     <record id="view_performance_review_template_form" model="ir.ui.view">
         <field name="name">performance.review.template.form</field>
         <field name="model">performance.review.template</field>
         <field name="arch" type="xml">
             <form>
                 <sheet>
-
                     <group>
                         <field name="name"/>
                         <field name="company_id"/>
                         <field name="active"/>
                     </group>
-
                     <notebook>
                         <page string="Performance Parameters">
                             <field name="line_ids">
@@ -45,20 +36,33 @@
                                 </list>
                             </field>
                         </page>
+                        <page string="Appraisee Questions">
+                            <field name="appraisee_question_ids" context="{'default_question_type': 'appraisee'}" domain="[('question_type', '=', 'appraisee')]">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="question"/>
+                                    <field name="active"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Manager Questions">
+                            <field name="manager_question_ids" context="{'default_question_type': 'manager'}" domain="[('question_type', '=', 'manager')]">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="question"/>
+                                    <field name="active"/>
+                                </list>
+                            </field>
+                        </page>
                     </notebook>
-
                 </sheet>
             </form>
         </field>
     </record>
 
-    <!-- ===================================================== -->
-    <!-- Performance Review Template Action -->
-    <!-- ===================================================== -->
     <record id="action_performance_review_template" model="ir.actions.act_window">
         <field name="name">Review Templates</field>
         <field name="res_model">performance.review.template</field>
         <field name="view_mode">list,form</field>
     </record>
-
 </odoo>

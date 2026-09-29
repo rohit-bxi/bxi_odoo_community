@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_conveyance" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.conveyance</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Local Conveyance" string="Local Conveyance" name="bxi_local_conveyance"
+                     groups="bxi_local_conveyance.group_conveyance_admin">
+                    <block title="Policy Rules" name="lc_rules">
+                        <setting id="lc_claim_days" string="Claim Window"
+                                 help="Days after the transaction date within which conveyance is claimed.">
+                            <field name="lc_claim_days"/>
+                        </setting>
+                        <setting id="lc_reminder_days" string="Claim Reminder"
+                                 help="Remind the employee of a draft claim this many days before the deadline.">
+                            <field name="lc_reminder_days"/>
+                        </setting>
+                        <setting id="lc_office_coverage_months" string="Other Office Coverage"
+                                 help="Months conveyance is covered while working from another local office.">
+                            <field name="lc_office_coverage_months"/>
+                            <div class="mt8">
+                                <button name="%(bxi_local_conveyance.action_bxi_conveyance_office_assignment)d"
+                                        type="action" string="Other Office Assignments" icon="oi-arrow-right"
+                                        class="btn-link"/>
+                            </div>
+                        </setting>
+                        <setting id="lc_non_working_day_mode" string="Weekends and Holidays"
+                                 help="Transportation is not provided on weekends and holidays of the employee's working schedule.">
+                            <field name="lc_non_working_day_mode" widget="radio"/>
+                        </setting>
+                        <setting id="lc_food_daily_limit" string="Food Limit per Day"
+                                 help="Food Policy (Sales Team): the excess is borne by the employee.">
+                            <field name="lc_food_daily_limit"/>
+                        </setting>
+                        <setting id="lc_travel_plans" string="Travel Plans"
+                                 help="Mode of travel by band. Per-km rates are the cost of the vehicle categories.">
+                            <div class="mt8">
+                                <button name="%(bxi_local_conveyance.action_bxi_conveyance_travel_plan)d"
+                                        type="action" string="Travel Plans" icon="oi-arrow-right" class="btn-link"/>
+                            </div>
+                        </setting>
+                    </block>
+                    <block title="Approvals" name="lc_approvals">
+                        <setting id="lc_auto_hr_threshold" string="Auto-Rickshaw HR Approval"
+                                 help="Auto-rickshaw claims above this amount are approved by the Reporting Manager and HR.">
+                            <field name="lc_auto_hr_threshold"/>
+                        </setting>
+                        <setting id="conveyance_hr_user_id" string="HR Responsible"
+                                 help="Approves conveyance claims as HR. Empty: every Local Conveyance HR Officer.">
+                            <field name="conveyance_hr_user_id" options="{'no_create': True}"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_bxi_conveyance_settings" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'bxi_local_conveyance', 'bin_size': False}</field>
+    </record>
+</odoo>

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_bxi_training_recovery_list" model="ir.ui.view">
+        <field name="name">bxi.training.recovery.list</field>
+        <field name="model">bxi.training.recovery</field>
+        <field name="arch" type="xml">
+            <list string="Training Recoveries" create="false" decoration-muted="state in ('recovered', 'waived')"
+                  decoration-danger="state == 'legal'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="reason"/>
+                <field name="request_id" optional="show"/>
+                <field name="agreement_id" optional="show"/>
+                <field name="amount_due" sum="Total"/>
+                <field name="amount_recovered" sum="Total"/>
+                <field name="balance" sum="Total"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="payroll_month" widget="date" options="{'format': 'MMMM yyyy'}" optional="show"/>
+                <field name="company_id" optional="hide" groups="base.group_multi_company"/>
+                <field name="state" widget="badge" decoration-info="state == 'payroll'"
+                       decoration-warning="state == 'pending'" decoration-danger="state == 'legal'"
+                       decoration-success="state == 'recovered'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_recovery_form" model="ir.ui.view">
+        <field name="name">bxi.training.recovery.form</field>
+        <field name="model">bxi.training.recovery</field>
+        <field name="arch" type="xml">
+            <form string="Training Recovery" create="false">
+                <header>
+                    <button name="action_send_to_payroll" type="object" string="Recover Through Payroll"
+                            invisible="state not in ('pending', 'legal')"
+                            groups="bxi_training_policy.group_training_hr,bxi_training_policy.group_training_finance"/>
+                    <button name="action_open_payment_wizard" type="object" string="Record Repayment" class="oe_highlight"
+                            invisible="state not in ('pending', 'payroll', 'legal')"
+                            groups="bxi_training_policy.group_training_hr,bxi_training_policy.group_training_finance"/>
+                    <button name="action_mark_legal" type="object" string="Legal Follow-up"
+                            invisible="state not in ('pending', 'payroll')"
+                            groups="bxi_training_policy.group_training_hr,bxi_training_policy.group_training_finance"/>
+                    <button name="action_print_demand_notice" type="object" string="Demand Notice"
+                            invisible="state not in ('pending', 'payroll', 'legal')"
+                            groups="bxi_training_policy.group_training_hr,bxi_training_policy.group_training_finance"/>
+                    <button name="action_open_waive_wizard" type="object" string="Waive"
+                            invisible="state not in ('pending', 'payroll', 'legal')"
+                            groups="bxi_training_policy.group_training_admin"/>
+                    <field name="state" widget="statusbar" statusbar_visible="payroll,legal,recovered"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="reason"/>
+                            <field name="request_id"/>
+                            <field name="agreement_id" invisible="not agreement_id"/>
+                            <field name="resignation_id" invisible="not resignation_id"/>
+                            <field name="payroll_month" widget="date" options="{'format': 'MMMM yyyy'}"
+                                   readonly="state not in ('pending', 'payroll')"/>
+                        </group>
+                        <group>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="amount_due"/>
+                            <field name="amount_recovered"/>
+                            <field name="balance"/>
+                            <field name="notice_date"/>
+                            <field name="legal_case_ref" invisible="state != 'legal' and not legal_case_ref"/>
+                            <field name="waive_reason" invisible="state != 'waived'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Recovered" name="lines">
+                            <field name="line_ids" readonly="1">
+                                <list>
+                                    <field name="date"/>
+                                    <field name="source"/>
+                                    <field name="reference"/>
+                                    <field name="payslip_id"/>
+                                    <field name="move_id" groups="account.group_account_invoice"/>
+                                    <field name="amount" sum="Total"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_recovery_search" model="ir.ui.view">
+        <field name="name">bxi.training.recovery.search</field>
+        <field name="model">bxi.training.recovery</field>
+        <field name="arch" type="xml">
+            <search string="Training Recoveries">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="agreement_id"/>
+                <filter name="open" string="Open" domain="[('state', 'in', ('pending', 'payroll', 'legal'))]"/>
+                <filter name="payroll" string="In Payroll" domain="[('state', '=', 'payroll')]"/>
+                <filter name="legal" string="Legal Follow-up" domain="[('state', '=', 'legal')]"/>
+                <filter name="closed" string="Closed" domain="[('state', 'in', ('recovered', 'waived'))]"/>
+                <separator/>
+                <filter name="breach" string="Agreement Not Served" domain="[('reason', '=', 'breach')]"/>
+                <group>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_reason" string="Reason" context="{'group_by': 'reason'}"/>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bxi_training_recovery" model="ir.actions.act_window">
+        <field name="name">Recoveries</field>
+        <field name="res_model">bxi.training.recovery</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_open': 1}</field>
+    </record>
+
+</odoo>

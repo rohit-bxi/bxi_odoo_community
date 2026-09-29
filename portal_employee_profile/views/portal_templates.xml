@@ -298,6 +298,57 @@
                                 <h5 class="section-title mt-4">Employee Documents</h5>
 
                                 <div class="row g-3">
+                                        <div class="col-md-6">
+
+                                            <label>BXI Offer Letter</label>
+
+                                            <div class="employee-file-wrapper">
+
+                                                <input type="text"
+                                                    id="display_bxi_offer_letter"
+                                                    class="form-control employee-file-name"
+                                                    readonly="1"
+                                                    t-att-value="
+                                                        document_data.get('bxi_offer_letter')[0].get('name')
+                                                        if document_data.get('bxi_offer_letter')
+                                                        else 'No file selected.'
+                                                    " />
+
+                                                <label for="bxi_offer_letter"
+                                                    class="employee-file-browse">
+                                                    Browse...
+                                                </label>
+
+                                                <input type="file"
+                                                    id="bxi_offer_letter"
+                                                    name="bxi_offer_letter"
+                                                    class="employee-file-input"
+                                                    accept=".jpg,.jpeg,.png,.pdf" />
+
+                                            </div>
+
+                                            <t t-if="document_data.get('bxi_offer_letter')">
+                                                <div class="mt-1">
+
+                                                    <a t-att-href="
+                                                            document_data.get('bxi_offer_letter')[0].get('url')
+                                                        "
+                                                    target="_blank"
+                                                    class="small text-primary">
+                                                        <i class="fa fa-eye me-1"></i>
+                                                        View Document
+                                                    </a>
+
+                                                    <a href="/my/employee-profile/document/remove?field=bxi_offer_letter"
+                                                    class="small text-danger ms-3">
+                                                        <i class="fa fa-trash me-1"></i>
+                                                        Remove
+                                                    </a>
+
+                                                </div>
+                                            </t>
+
+                                    </div>
 
                                     <!-- AADHAR FRONT -->
                                     <div class="col-md-6">

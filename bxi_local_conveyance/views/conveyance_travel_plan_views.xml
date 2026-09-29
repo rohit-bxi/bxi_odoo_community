@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_bxi_conveyance_travel_plan_list" model="ir.ui.view">
+        <field name="name">bxi.conveyance.travel.plan.list</field>
+        <field name="model">bxi.conveyance.travel.plan</field>
+        <field name="arch" type="xml">
+            <list string="Travel Plans" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="band_min"/>
+                <field name="band_max"/>
+                <field name="allow_taxi"/>
+                <field name="allow_auto"/>
+                <field name="taxi_needs_reason"/>
+                <field name="description"/>
+                <field name="active" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_bxi_conveyance_travel_plan" model="ir.actions.act_window">
+        <field name="name">Travel Plans</field>
+        <field name="res_model">bxi.conveyance.travel.plan</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Define the mode of local travel of each band.</p>
+            <p>The band is the Band Level (E-grade) of the employee. A To Band of 0 means no upper limit.
+               Personal vehicle rates are the cost of the per-km conveyance categories.</p>
+        </field>
+    </record>
+
+</odoo>

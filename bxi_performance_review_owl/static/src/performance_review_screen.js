@@ -9,14 +9,15 @@ export class PerformanceReviewScreen extends Component {
 
     setup() {
         this.orm = useService("orm");
-        this.notification = useService("notification");
         this.state = useState({
             loading: true,
-            saving: false,
             filter: "my",
             reviews: [],
             review: null,
             lines: [],
+            appraiseeQuestions: [],
+            managerQuestions: [],
+            currentUserId: null,
             error: null,
         });
         onWillStart(() => this.loadReviews());
@@ -27,6 +28,7 @@ export class PerformanceReviewScreen extends Component {
         this.state.error = null;
         try {
             const uid = await this.orm.call("performance.review", "get_current_user_id", []);
+            this.state.currentUserId = uid;
             const domain = this.state.filter === "approve"
                 ? ["|", ["manager_user_id", "=", uid], ["second_manager_user_id", "=", uid]]
                 : [["employee_user_id", "=", uid]];
@@ -34,10 +36,7 @@ export class PerformanceReviewScreen extends Component {
             this.state.reviews = await this.orm.searchRead(
                 "performance.review",
                 domain,
-                [
-                    "id", "name", "employee_id", "period_id", "state",
-                    "year", "quarter", "final_score",
-                ],
+                ["id", "name", "employee_id", "period_id", "state", "year", "quarter", "final_score"],
                 { order: "id desc", limit: 100 }
             );
 
@@ -47,16 +46,21 @@ export class PerformanceReviewScreen extends Component {
                 ) ? this.state.review.id : this.state.reviews[0].id;
                 await this.loadReview(currentId);
             } else {
-                this.state.review = null;
-                this.state.lines = [];
+                this.clearReview();
             }
         } catch (error) {
             this.state.error = error?.message || "Unable to load Performance Reviews.";
-            this.state.review = null;
-            this.state.lines = [];
+            this.clearReview();
         } finally {
             this.state.loading = false;
         }
+    }
+
+    clearReview() {
+        this.state.review = null;
+        this.state.lines = [];
+        this.state.appraiseeQuestions = [];
+        this.state.managerQuestions = [];
     }
 
     async loadReview(id) {
@@ -72,28 +76,40 @@ export class PerformanceReviewScreen extends Component {
                 "reviewer_remarks", "employee_submitted_date",
                 "manager_submitted_date", "second_manager_submitted_date",
                 "completed_date", "can_edit_self", "can_edit_manager",
-                "can_edit_second", "can_edit_hr", "line_ids",
+                "can_edit_second", "can_edit_hr",
             ]
         );
 
         if (!result.length) {
-            this.state.review = null;
-            this.state.lines = [];
+            this.clearReview();
             return;
         }
 
         this.state.review = result[0];
-        this.state.lines = this.state.review.line_ids?.length
-            ? await this.orm.read(
-                "performance.review.line",
-                this.state.review.line_ids,
-                [
-                    "id", "sequence", "category", "weightage", "target",
-                    "description", "self_achievement", "manager_review",
-                    "manager_score",
-                ]
-            )
-            : [];
+
+        this.state.lines = await this.orm.searchRead(
+            "performance.review.line",
+            [["review_id", "=", id]],
+            [
+                "id", "sequence", "category", "weightage", "target",
+                "description", "self_achievement", "manager_review", "manager_score",
+            ],
+            { order: "sequence asc, id asc" }
+        );
+
+        const questions = await this.orm.searchRead(
+            "performance.review.question",
+            [["review_id", "=", id]],
+            ["id", "sequence", "question_type", "question", "answer"],
+            { order: "question_type, sequence, id" }
+        );
+
+        this.state.appraiseeQuestions = questions.filter(
+            (q) => q.question_type === "appraisee"
+        );
+        this.state.managerQuestions = questions.filter(
+            (q) => q.question_type === "manager"
+        );
     }
 
     onFilterChange(filter) {
@@ -108,131 +124,21 @@ export class PerformanceReviewScreen extends Component {
         }
     }
 
-    isSelfEditable() {
-        return false;
-    }
+    canSeeManagerQuestions() {
+        const review = this.state.review;
+        const uid = this.state.currentUserId;
 
-    isManagerEditable() {
-        return false;
-    }
-
-    isSecondEditable() {
-        return false;
-    }
-
-    async save() {
-        if (!this.state.review || this.state.saving) {
-            return;
+        if (!review || !uid) {
+            return false;
         }
 
-        this.state.saving = true;
-        try {
-            const review = this.state.review;
-            const values = {};
-
-            if (this.isSelfEditable()) {
-                values.successor_1 = review.successor_1 || false;
-                values.successor_2 = review.successor_2 || false;
-                values.appraisee_remarks = review.appraisee_remarks || false;
-            }
-
-            if (this.isManagerEditable()) {
-                values.manager_remarks = review.manager_remarks || false;
-            }
-
-            if (this.isSecondEditable()) {
-                values.calibration = review.calibration === ""
-                    ? false
-                    : Number(review.calibration || 0);
-                values.reviewer_remarks = review.reviewer_remarks || false;
-            }
-
-            if (Object.keys(values).length) {
-                await this.orm.write("performance.review", [review.id], values);
-            }
-
-            for (const line of this.state.lines) {
-                const lineValues = {};
-
-                if (this.isSelfEditable()) {
-                    lineValues.self_achievement = line.self_achievement || false;
-                }
-
-                if (this.isManagerEditable()) {
-                    lineValues.manager_review = line.manager_review || false;
-                    lineValues.manager_score = (
-                        line.manager_score === "" || line.manager_score == null
-                    ) ? false : line.manager_score;
-                }
-
-                if (Object.keys(lineValues).length) {
-                    await this.orm.write("performance.review.line", [line.id], lineValues);
-                }
-            }
-
-            await this.loadReview(review.id);
-            this.notification.add("Performance Review saved successfully.", {
-                type: "success",
-            });
-        } catch (error) {
-            this.notification.add(
-                error?.message || "Unable to save the Performance Review.",
-                { type: "danger" }
-            );
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    async saveWithoutLock() {
-        const oldSaving = this.state.saving;
-        this.state.saving = false;
-        try {
-            await this.save();
-        } finally {
-            this.state.saving = oldSaving;
-        }
-    }
-
-    async submit(method, message) {
-        if (!this.state.review || this.state.saving) {
-            return;
-        }
-
-        this.state.saving = true;
-        try {
-            await this.saveWithoutLock();
-            await this.orm.call("performance.review", method, [[this.state.review.id]]);
-            this.notification.add(message, { type: "success" });
-            await this.loadReviews();
-        } catch (error) {
-            this.notification.add(
-                error?.message || "Unable to submit the Performance Review.",
-                { type: "danger" }
-            );
-        } finally {
-            this.state.saving = false;
-        }
-    }
-
-    submitEmployee() {
-        return this.submit(
-            "action_submit_employee",
-            "Performance Review submitted successfully."
-        );
-    }
-
-    submitManager() {
-        return this.submit(
-            "action_submit_manager",
-            "Manager Review submitted successfully."
-        );
-    }
-
-    submitSecondManager() {
-        return this.submit(
-            "action_submit_second_manager",
-            "Final Performance Review submitted successfully."
+        // The dashboard is readonly, so visibility must not depend on
+        // can_edit_* flags. A manager must still be able to see the
+        // questions after the review is completed.
+        return Boolean(
+            review.can_edit_hr ||
+            (review.manager_id && review.manager_id[0] === uid) ||
+            (review.second_manager_id && review.second_manager_id[0] === uid)
         );
     }
 
@@ -240,7 +146,7 @@ export class PerformanceReviewScreen extends Component {
         return {
             draft: "Employee Review",
             manager_review: "Manager Review",
-            second_manager_review: "Second Manager Review",
+            second_manager_review: "Second Level Review",
             completed: "Completed",
             cancelled: "Cancelled",
         }[this.state.review?.state] || "";
@@ -254,18 +160,10 @@ export class PerformanceReviewScreen extends Component {
 
     getCategoryKey(category) {
         const value = (category || "").toLowerCase().trim();
-        if (value.includes("behaviour") || value.includes("behavior")) {
-            return "behavioural";
-        }
-        if (value.includes("revenue")) {
-            return "revenue";
-        }
-        if (value.includes("solution")) {
-            return "solution";
-        }
-        if (value.includes("capability")) {
-            return "capability";
-        }
+        if (value.includes("behaviour") || value.includes("behavior")) return "behavioural";
+        if (value.includes("revenue")) return "revenue";
+        if (value.includes("solution")) return "solution";
+        if (value.includes("capability")) return "capability";
         return "other";
     }
 
@@ -287,7 +185,6 @@ export class PerformanceReviewScreen extends Component {
     getGroupedLines() {
         const groups = [];
         const byKey = new Map();
-
         for (const line of [...this.state.lines].sort(
             (a, b) => (a.sequence || 0) - (b.sequence || 0) || a.id - b.id
         )) {
@@ -310,44 +207,31 @@ export class PerformanceReviewScreen extends Component {
     getLineTarget(line) {
         return line.target || line.description || "";
     }
-    getScoreOptions(line) {
-        const category = (line.category || "").toLowerCase().trim();
 
-        // Revenue / Revenue Enablement
-        if (category.includes("revenue")) {
-            return [
-                { value: "1", label: "1" },
-                { value: "2", label: "2" },
-            ];
-        }
-
-        // All other categories
-        return [
-            { value: "1", label: "1" },
-            { value: "2", label: "2" },
-            { value: "3", label: "3" },
-            { value: "4", label: "4" },
-            { value: "5", label: "5" },
-        ];
+    getScoreDisplay(line) {
+        return line.manager_score || "-";
     }
 
-    getScore(line) {
-            const score = Number(line.manager_score || 0);
-            return score.toFixed(2);
-        }
-
-        getFinalScore() {
-            const score = Number(this.state.review?.final_score || 0);
-            return score.toFixed(2);
-        }
-
-        getCompanyLogoSrc() {
-            if (!this.state.review?.company_logo) {
-                return "";
-            }
-            return `data:image/png;base64,${this.state.review.company_logo}`;
-        }
+    getCalibrationLabel(value) {
+        return {
+            "5": "Outstanding",
+            "4": "Exceeds Expectations",
+            "3": "Meets Expectations",
+            "2": "Needs Improvement",
+            "1": "Unsatisfactory",
+        }[String(value || "")] || "-";
     }
+
+    getFinalScore() {
+        const score = Number(this.state.review?.final_score || 0);
+        return score.toFixed(2);
+    }
+
+    getCompanyLogoSrc() {
+        if (!this.state.review?.company_logo) return "";
+        return `data:image/png;base64,${this.state.review.company_logo}`;
+    }
+}
 
 registry.category("actions").add(
     "bxi_performance_review_screen",
