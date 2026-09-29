@@ -19,19 +19,12 @@ class PerformanceReviewTemplate(models.Model):
         "performance.review.template.question", "template_id", string="Questions"
     )
     appraisee_question_ids = fields.One2many(
-        "performance.review.template.question",
-        "template_id",
-        string="Appraisee Questions",
-        domain=[("question_type", "=", "appraisee")],
-        context={"default_question_type": "appraisee"},
+        "performance.review.template.question", "template_id",
+        string="Appraisee Questions", domain=[("question_type", "=", "appraisee")],
     )
-
     manager_question_ids = fields.One2many(
-        "performance.review.template.question",
-        "template_id",
-        string="Manager Questions",
-        domain=[("question_type", "=", "manager")],
-        context={"default_question_type": "manager"},
+        "performance.review.template.question", "template_id",
+        string="Manager Questions", domain=[("question_type", "=", "manager")],
     )
 
     @api.constrains("line_ids")
@@ -82,7 +75,28 @@ class PerformanceReviewTemplateQuestion(models.Model):
         default="appraisee",
     )
     question = fields.Text(required=True)
+    response_type = fields.Selection(
+        [
+            ("answer", "Answer Only"),
+            ("rating", "Rating Only"),
+            ("both", "Answer + Rating"),
+        ],
+        string="Response Type",
+        required=True,
+        default="answer",
+    )
+    rating_scale = fields.Selection(
+        [(str(i), f"{i} Star{'s' if i != 1 else ''}") for i in range(1, 6)],
+        string="Rating Scale",
+        default="5",
+    )
     active = fields.Boolean(default=True)
+
+    @api.constrains("response_type", "rating_scale")
+    def _check_rating_configuration(self):
+        for rec in self:
+            if rec.response_type in ("rating", "both") and not rec.rating_scale:
+                raise ValidationError(_("Rating Scale is required when the question uses rating."))
 
     @api.model_create_multi
     def create(self, vals_list):
