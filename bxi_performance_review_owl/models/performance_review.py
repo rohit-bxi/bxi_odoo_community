@@ -40,10 +40,11 @@ class PerformanceReview(models.Model):
         "performance.review.question", "review_id",
         string="Manager Questions", domain=[("question_type", "=", "manager")],
     )
+    note = fields.Text()
     successor_1 = fields.Char()
     successor_2 = fields.Char()
-    appraisee_remarks = fields.Text()
-    manager_remarks = fields.Text()
+    appraisee_remarks = fields.Text("Appraisee Remarks(Self)")
+    manager_remarks = fields.Text("Appraise Remarks(RM)")
     calibration = fields.Selection(
         [
             ('5', 'Outstanding'),

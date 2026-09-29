@@ -186,7 +186,7 @@
                                     <field name="sequence"/>
                                     <field name="question" readonly="1"/>
                                     <field name="response_type" readonly="1"/>
-                                    <field name="rating_scale" readonly="1" invisible="response_type == 'answer'"/>
+                                    <field name="rating_scale" readonly="1"/>
                                     <field name="answer" invisible="response_type == 'rating'"/>
                                     <field name="appraisee_rating" widget="priority" invisible="response_type == 'answer'"/>
                                 </list>
@@ -251,11 +251,11 @@
                             readonly="1"
                         />
                     </group>
-
+                    <group string="Important Note">
+                        <field name="note"/>
+                    </group>
                     <chatter/>
-
                 </sheet>
-
             </form>
         </field>
     </record>
