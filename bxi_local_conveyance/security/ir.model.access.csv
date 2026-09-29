@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_conveyance_travel_plan_user,bxi.conveyance.travel.plan.user,model_bxi_conveyance_travel_plan,base.group_user,1,0,0,0
+access_bxi_conveyance_travel_plan_portal,bxi.conveyance.travel.plan.portal,model_bxi_conveyance_travel_plan,base.group_portal,1,0,0,0
+access_bxi_conveyance_travel_plan_admin,bxi.conveyance.travel.plan.admin,model_bxi_conveyance_travel_plan,group_conveyance_admin,1,1,1,1
+access_bxi_conveyance_office_assignment_hr,bxi.conveyance.office.assignment.hr,model_bxi_conveyance_office_assignment,group_conveyance_hr,1,1,1,1
+access_bxi_conveyance_approval_line_user,bxi.conveyance.approval.line.user,model_bxi_conveyance_approval_line,base.group_user,1,0,0,0
+access_bxi_conveyance_approval_line_hr,bxi.conveyance.approval.line.hr,model_bxi_conveyance_approval_line,group_conveyance_hr,1,1,1,1
+access_bxi_conveyance_refuse_wizard_user,bxi.conveyance.refuse.wizard.user,model_bxi_conveyance_refuse_wizard,base.group_user,1,1,1,0

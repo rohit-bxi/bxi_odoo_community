@@ -20,8 +20,9 @@
     <menuitem id="menu_salary_advance_all" name="All Advances" parent="menu_salary_advance_processing"
               action="action_bxi_salary_advance" sequence="50"/>
 
-    <menuitem id="menu_salary_advance_config" name="Configuration" parent="menu_salary_advance_root" sequence="90"
-              groups="group_salary_advance_admin"/>
+    <!-- Employees > Configuration > Salary Advance, after International Deputation -->
+    <menuitem id="menu_salary_advance_config" name="Salary Advance" parent="hr.menu_human_resources_configuration"
+              sequence="34" groups="group_salary_advance_admin"/>
     <menuitem id="menu_salary_advance_settings" name="Settings" parent="menu_salary_advance_config"
               action="action_bxi_salary_advance_settings" sequence="10"/>
     <menuitem id="menu_salary_advance_lob" name="Lines of Business" parent="menu_salary_advance_config"

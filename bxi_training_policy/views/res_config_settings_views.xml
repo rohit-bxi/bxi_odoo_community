@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_training" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.training</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Specialized Training" string="Specialized Training" name="bxi_training_policy"
+                     groups="bxi_training_policy.group_training_admin">
+                    <block title="Policy Rules" name="trn_rules">
+                        <setting id="trn_lead_days" string="Notice to HR"
+                                 help="Days before the training the Department Head informs HR. Shorter notice needs a reason.">
+                            <field name="trn_lead_days"/>
+                        </setting>
+                        <setting id="trn_form_days" string="Training Agreement Form"
+                                 help="Days before the training the employee signs the form (before the start on short notice).">
+                            <field name="trn_form_days"/>
+                        </setting>
+                        <setting id="trn_agreement_threshold" string="Service Agreement Threshold"
+                                 help="Consolidated cost from which a service agreement is required. Service periods are set in the tiers.">
+                            <field name="trn_agreement_threshold"/>
+                            <div class="mt8">
+                                <button name="%(bxi_training_policy.action_bxi_training_agreement_tier)d" type="action"
+                                        string="Service Agreement Tiers" icon="oi-arrow-right" class="btn-link"/>
+                            </div>
+                        </setting>
+                        <setting id="trn_stamp_paper_value" string="Stamp Paper"
+                                 help="Minimum value of the stamp paper the first page of the agreement is printed on.">
+                            <field name="trn_stamp_paper_value"/>
+                        </setting>
+                        <setting id="trn_claim_days" string="Claim Deadline"
+                                 help="Days after the training within which the employee claims the cost.">
+                            <field name="trn_claim_days"/>
+                        </setting>
+                        <setting id="trn_claim_reminder_days" string="Claim Reminder"
+                                 help="Remind the employee this many days before the claim deadline.">
+                            <field name="trn_claim_reminder_days"/>
+                        </setting>
+                        <setting id="trn_agreement_reminder_days" string="Agreement Reminders"
+                                 help="Remind the employee every this many days until the agreement is executed.">
+                            <field name="trn_agreement_reminder_days"/>
+                        </setting>
+                        <setting id="trn_expiry_notice_days" string="Agreement Ending Notice"
+                                 help="Notify HR this many days before a service period ends.">
+                            <field name="trn_expiry_notice_days"/>
+                        </setting>
+                        <setting id="trn_policy_id" string="Policy Document"
+                                 help="When it requires acknowledgement, the employee acknowledges it before the training starts.">
+                            <field name="trn_policy_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting id="trn_signatory_name" string="Authorised Signatory"
+                                 help="Printed on the service agreement and the demand notice for the company.">
+                            <field name="trn_signatory_name"/>
+                        </setting>
+                    </block>
+                    <block title="Approvals" name="trn_approvals">
+                        <setting id="trn_hr_user_id" string="HR Responsible"
+                                 help="Receives nominations and approves claims as HR. Empty: every Training HR Officer.">
+                            <field name="trn_hr_user_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting id="trn_es_user_id" string="Employee Services (ES)"
+                                 help="Final approver of the claims. Empty: any Employee Services user.">
+                            <field name="trn_es_user_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting id="trn_finance_user_id" string="Finance Responsible"
+                                 help="Receives approved claims to pay. Empty: every Training Finance user.">
+                            <field name="trn_finance_user_id" options="{'no_create': True}"/>
+                        </setting>
+                    </block>
+                    <block title="Accounting" name="trn_accounting">
+                        <setting id="trn_accounting_mode" string="Training Cost"
+                                 help="Bonded: the cost stays on an asset account until the service period is served, then is expensed.">
+                            <field name="trn_accounting_mode"/>
+                        </setting>
+                        <setting id="trn_advance_account_id" string="Training Advance Account"
+                                 help="Debited when the advance is paid; credited when it is settled against the claim.">
+                            <field name="trn_advance_account_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting id="trn_bonded_account_id" string="Bonded Training Cost Account"
+                                 help="Claimed cost under a service agreement is booked here (bonded mode).">
+                            <field name="trn_bonded_account_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting id="trn_expense_account_id" string="Training Expense Account">
+                            <field name="trn_expense_account_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting id="trn_recovery_account_id" string="Payroll Recovery Debit Account"
+                                 help="Debited when a recovery is deducted from a payslip, usually Salary Payable.">
+                            <field name="trn_recovery_account_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting id="trn_journal_id" string="Advance Payment Journal">
+                            <field name="trn_journal_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting id="trn_misc_journal_id" string="Miscellaneous Journal"
+                                 help="Settlement, settle-off and recovery entries.">
+                            <field name="trn_misc_journal_id" options="{'no_create': True}"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_bxi_training_settings" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'bxi_training_policy', 'bin_size': False}</field>
+    </record>
+</odoo>

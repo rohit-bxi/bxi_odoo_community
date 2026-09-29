@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- The policy requires an agreement from Rs. 30,000 but its table starts at Rs. 50,000:
+         the service period of this first tier must be confirmed by HR. -->
+    <record id="agreement_tier_30k" model="bxi.training.agreement.tier">
+        <field name="min_amount">30000</field>
+        <field name="max_amount">49999.99</field>
+        <field name="months">12</field>
+        <field name="note">Not in the policy table - to be confirmed by HR</field>
+    </record>
+
+    <record id="agreement_tier_50k" model="bxi.training.agreement.tier">
+        <field name="min_amount">50000</field>
+        <field name="max_amount">99999.99</field>
+        <field name="months">12</field>
+        <field name="note">Rs 50,000 - Rs 99,999: 1 year</field>
+    </record>
+
+    <record id="agreement_tier_1l" model="bxi.training.agreement.tier">
+        <field name="min_amount">100000</field>
+        <field name="max_amount">0</field>
+        <field name="months">24</field>
+        <field name="note">Rs 1,00,000 and above: 2 years</field>
+    </record>
+
+</odoo>

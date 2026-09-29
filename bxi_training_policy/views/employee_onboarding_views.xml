@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_employee_onboarding_offboarding_form_training" model="ir.ui.view">
+        <field name="name">employee.onboarding.offboarding.form.training</field>
+        <field name="model">employee.onboarding.offboarding</field>
+        <field name="inherit_id" ref="employee_onboarding.view_employee_onboarding_offboarding_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Training Dues" name="training_dues" invisible="not offboarding_employee_id"
+                      groups="bxi_training_policy.group_training_hr,bxi_training_policy.group_training_finance">
+                    <group>
+                        <field name="training_due_amount"/>
+                        <field name="training_currency_id" invisible="1"/>
+                    </group>
+                    <separator string="Service agreements not served (full cost repayable, no pro-rata)"/>
+                    <field name="training_agreement_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="training_name"/>
+                            <field name="amount"/>
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                    <separator string="Recoveries in progress"/>
+                    <field name="training_recovery_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="reason"/>
+                            <field name="amount_due"/>
+                            <field name="balance"/>
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

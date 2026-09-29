@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_bxi_training_agreement_list" model="ir.ui.view">
+        <field name="name">bxi.training.agreement.list</field>
+        <field name="model">bxi.training.agreement</field>
+        <field name="arch" type="xml">
+            <list string="Training Service Agreements" create="false"
+                  decoration-muted="state in ('completed', 'cancelled', 'superseded', 'waived', 'recovered')"
+                  decoration-danger="state == 'breached'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="department_id" optional="hide"/>
+                <field name="training_name"/>
+                <field name="is_addendum" optional="hide"/>
+                <field name="amount" sum="Total"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="period_months"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="days_remaining" optional="show"/>
+                <field name="execution_mode" optional="hide"/>
+                <field name="company_id" optional="hide" groups="base.group_multi_company"/>
+                <field name="state" widget="badge"
+                       decoration-info="state in ('issued', 'submitted')"
+                       decoration-warning="state in ('executed', 'in_service')"
+                       decoration-success="state == 'completed'"
+                       decoration-danger="state == 'breached'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_agreement_form" model="ir.ui.view">
+        <field name="name">bxi.training.agreement.form</field>
+        <field name="model">bxi.training.agreement</field>
+        <field name="arch" type="xml">
+            <form string="Training Service Agreement" create="false">
+                <header>
+                    <button name="action_issue" type="object" string="Issue" class="oe_highlight"
+                            invisible="state != 'draft'" groups="bxi_training_policy.group_training_hr"/>
+                    <button name="action_submit_execution" type="object" string="Submit Executed Agreement"
+                            class="oe_highlight" invisible="state != 'issued' or execution_mode != 'stamp_paper'"/>
+                    <button name="action_open_verify_wizard" type="object" string="Verify" class="oe_highlight"
+                            invisible="state != 'submitted'" groups="bxi_training_policy.group_training_hr"/>
+                    <button name="action_send_for_signature" type="object" string="Send for Signature"
+                            invisible="state != 'issued' or execution_mode != 'esign'"
+                            groups="bxi_training_policy.group_training_hr"/>
+                    <button name="action_regenerate" type="object" string="Regenerate Template"
+                            invisible="state != 'issued' or execution_mode != 'stamp_paper'"
+                            groups="bxi_training_policy.group_training_hr"/>
+                    <button name="action_print" type="object" string="Print"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state not in ('draft', 'issued', 'submitted', 'executed')"
+                            groups="bxi_training_policy.group_training_hr"
+                            confirm="Cancel this service agreement?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="issued,submitted,executed,in_service,completed"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_request" type="object" class="oe_stat_button" icon="fa-graduation-cap">
+                            <div class="o_stat_info"><span class="o_stat_text">Training</span></div>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Breached" bg_color="text-bg-danger" invisible="state != 'breached'"/>
+                    <widget name="web_ribbon" title="Completed" bg_color="text-bg-success" invisible="state != 'completed'"/>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                        <h3><field name="training_name"/></h3>
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="not sent_back_reason or state != 'issued'">
+                        <b>Sent back:</b> <field name="sent_back_reason" class="d-inline"/>
+                    </div>
+                    <group>
+                        <group string="Terms">
+                            <field name="employee_id"/>
+                            <field name="request_id"/>
+                            <field name="parent_agreement_id" invisible="not parent_agreement_id"/>
+                            <field name="is_addendum" invisible="1"/>
+                            <field name="signed_amount"/>
+                            <field name="amount" readonly="1"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="tier_id"/>
+                            <field name="period_months" readonly="state not in ('draft', 'issued')"/>
+                            <field name="start_date" readonly="1"/>
+                            <field name="end_date"/>
+                            <field name="days_remaining" invisible="state not in ('executed', 'in_service')"/>
+                        </group>
+                        <group string="Execution">
+                            <field name="execution_mode" readonly="state != 'draft'"/>
+                            <field name="template_attachment_id" invisible="not template_attachment_id"/>
+                            <field name="issued_date"/>
+                            <field name="stamp_paper_no" readonly="state != 'issued'" invisible="execution_mode != 'stamp_paper'"/>
+                            <field name="stamp_paper_value" readonly="state != 'issued'" invisible="execution_mode != 'stamp_paper'"/>
+                            <field name="stamp_paper_date" readonly="state != 'issued'" invisible="execution_mode != 'stamp_paper'"/>
+                            <field name="witness1_name" readonly="state != 'issued'" invisible="execution_mode != 'stamp_paper'"/>
+                            <field name="witness2_name" readonly="state != 'issued'" invisible="execution_mode != 'stamp_paper'"/>
+                            <field name="notary_name" readonly="state != 'issued'" invisible="execution_mode != 'stamp_paper'"/>
+                            <field name="notary_reg_no" readonly="state != 'issued'" invisible="execution_mode != 'stamp_paper'"/>
+                            <field name="notarised_date" readonly="state != 'issued'" invisible="execution_mode != 'stamp_paper'"/>
+                            <field name="executed_scan_ids" widget="many2many_binary" readonly="state != 'issued'"
+                                   invisible="execution_mode != 'stamp_paper'"/>
+                            <field name="sign_request_id" invisible="execution_mode != 'esign'"/>
+                            <field name="submitted_date"/>
+                            <field name="verified_by_id"/>
+                            <field name="verified_date"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Closure" name="closure" invisible="state not in ('completed', 'breached', 'recovered', 'waived')">
+                            <group>
+                                <field name="completed_date" invisible="not completed_date"/>
+                                <field name="writeoff_move_id" invisible="not writeoff_move_id" groups="account.group_account_invoice"/>
+                                <field name="breach_date" invisible="not breach_date"/>
+                            </group>
+                            <field name="recovery_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="amount_due"/>
+                                    <field name="amount_recovered"/>
+                                    <field name="balance"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Addenda" name="addenda" invisible="not addendum_ids">
+                            <field name="addendum_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="amount"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="period_months"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_agreement_search" model="ir.ui.view">
+        <field name="name">bxi.training.agreement.search</field>
+        <field name="model">bxi.training.agreement</field>
+        <field name="arch" type="xml">
+            <search string="Training Service Agreements">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="request_id"/>
+                <field name="department_id"/>
+                <filter name="my_agreements" string="My Agreements" domain="[('employee_id.user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="to_execute" string="To Execute" domain="[('state', '=', 'issued')]"/>
+                <filter name="to_verify" string="To Verify" domain="[('state', '=', 'submitted')]"/>
+                <filter name="binding" string="Binding" domain="[('state', 'in', ('executed', 'in_service'))]"/>
+                <filter name="breached" string="Breached" domain="[('state', '=', 'breached')]"/>
+                <filter name="completed" string="Completed" domain="[('state', '=', 'completed')]"/>
+                <separator/>
+                <filter name="ending_30" string="Ending in 30 Days"
+                        domain="[('state', '=', 'in_service'), ('end_date', '&lt;=', (context_today() + relativedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                <filter name="ending_90" string="Ending in 90 Days"
+                        domain="[('state', '=', 'in_service'), ('end_date', '&lt;=', (context_today() + relativedelta(days=90)).strftime('%Y-%m-%d'))]"/>
+                <group>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_end" string="End Month" context="{'group_by': 'end_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_agreement_pivot" model="ir.ui.view">
+        <field name="name">bxi.training.agreement.pivot</field>
+        <field name="model">bxi.training.agreement</field>
+        <field name="arch" type="xml">
+            <pivot string="Training Cost Under Agreement">
+                <field name="department_id" type="row"/>
+                <field name="state" type="col"/>
+                <field name="amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_bxi_training_agreement" model="ir.actions.act_window">
+        <field name="name">Service Agreements</field>
+        <field name="res_model">bxi.training.agreement</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="context">{'search_default_binding': 1}</field>
+    </record>
+
+    <record id="action_bxi_training_agreement_to_verify" model="ir.actions.act_window">
+        <field name="name">Agreements to Execute / Verify</field>
+        <field name="res_model">bxi.training.agreement</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ('issued', 'submitted'))]</field>
+    </record>
+
+    <record id="action_bxi_training_agreement_exposure" model="ir.actions.act_window">
+        <field name="name">Cost Under Agreement</field>
+        <field name="res_model">bxi.training.agreement</field>
+        <field name="view_mode">pivot,list,form</field>
+        <field name="domain">[('state', 'in', ('executed', 'in_service'))]</field>
+    </record>
+
+    <record id="action_bxi_training_agreement_my" model="ir.actions.act_window">
+        <field name="name">My Service Agreements</field>
+        <field name="res_model">bxi.training.agreement</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('employee_id.user_id', '=', uid)]</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Travel plans of the Local Conveyance Policy. The band is the Band Level (E-grade) of the employee. -->
+    <record id="travel_plan_tp1" model="bxi.conveyance.travel.plan">
+        <field name="name">TP1</field>
+        <field name="sequence">1</field>
+        <field name="band_min">6</field>
+        <field name="band_max">0</field>
+        <field name="allow_taxi" eval="True"/>
+        <field name="allow_auto" eval="False"/>
+        <field name="description">E8 and above - Taxi and E6 to E7 - Taxi</field>
+    </record>
+
+    <record id="travel_plan_tp2" model="bxi.conveyance.travel.plan">
+        <field name="name">TP2</field>
+        <field name="sequence">2</field>
+        <field name="band_min">3</field>
+        <field name="band_max">5</field>
+        <field name="allow_taxi" eval="True"/>
+        <field name="allow_auto" eval="False"/>
+        <field name="description">E3 to E5 - Taxi</field>
+    </record>
+
+    <record id="travel_plan_tp3" model="bxi.conveyance.travel.plan">
+        <field name="name">TP3</field>
+        <field name="sequence">3</field>
+        <field name="band_min">0</field>
+        <field name="band_max">2</field>
+        <field name="allow_taxi" eval="True"/>
+        <field name="allow_auto" eval="True"/>
+        <field name="taxi_needs_reason" eval="True"/>
+        <field name="description">Up to E2 - Auto/Taxi (where Auto is available)</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_employee_form_inherit_conveyance" model="ir.ui.view">
+        <field name="name">hr.employee.form.inherit.conveyance</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="bxi_certification_reimbursement.view_employee_form_inherit_certification"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='band_level']" position="after">
+                <field name="conveyance_travel_plan_id" groups="hr.group_hr_user"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

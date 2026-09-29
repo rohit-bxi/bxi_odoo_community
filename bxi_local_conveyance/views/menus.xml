@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <menuitem id="menu_conveyance_root" name="Local Conveyance" parent="hr_expense.menu_hr_expense_root"
+              sequence="3" groups="base.group_user"/>
+    <menuitem id="menu_conveyance_to_approve" name="To Approve" parent="menu_conveyance_root"
+              action="action_conveyance_to_approve" sequence="10"/>
+    <menuitem id="menu_conveyance_all" name="All Claims" parent="menu_conveyance_root"
+              action="action_conveyance_all" sequence="20" groups="group_conveyance_hr"/>
+    <menuitem id="menu_conveyance_office_assignment" name="Other Office Assignments" parent="menu_conveyance_root"
+              action="action_bxi_conveyance_office_assignment" sequence="30" groups="group_conveyance_hr"/>
+
+    <menuitem id="menu_conveyance_analysis" name="Local Conveyance" parent="hr_expense.menu_hr_expense_reports"
+              action="action_conveyance_analysis" sequence="30" groups="group_conveyance_hr"/>
+
+    <menuitem id="menu_conveyance_config" name="Local Conveyance" parent="hr_expense.menu_hr_expense_configuration"
+              sequence="30" groups="group_conveyance_admin"/>
+    <menuitem id="menu_conveyance_settings" name="Settings" parent="menu_conveyance_config"
+              action="action_bxi_conveyance_settings" sequence="10"/>
+    <menuitem id="menu_conveyance_travel_plans" name="Travel Plans" parent="menu_conveyance_config"
+              action="action_bxi_conveyance_travel_plan" sequence="20"/>
+</odoo>

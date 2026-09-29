@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Clause 8: conveyance is claimed within 45 days of the transaction date. -->
+    <record id="param_claim_days" model="ir.config_parameter">
+        <field name="key">bxi_local_conveyance.claim_days</field>
+        <field name="value">45</field>
+    </record>
+
+    <record id="param_reminder_days" model="ir.config_parameter">
+        <field name="key">bxi_local_conveyance.reminder_days</field>
+        <field name="value">7</field>
+    </record>
+
+    <!-- Clause 8: coverage at a local office other than the regular one ceases after two months. -->
+    <record id="param_office_coverage_months" model="ir.config_parameter">
+        <field name="key">bxi_local_conveyance.office_coverage_months</field>
+        <field name="value">2</field>
+    </record>
+
+    <!-- Auto-rickshaw claims above Rs. 1,000 require RM and HR approval, under it RM approval only. -->
+    <record id="param_auto_hr_threshold" model="ir.config_parameter">
+        <field name="key">bxi_local_conveyance.auto_hr_threshold</field>
+        <field name="value">1000</field>
+    </record>
+
+    <!-- Food Policy: Rs. 1,000 per day per employee. -->
+    <record id="param_food_daily_limit" model="ir.config_parameter">
+        <field name="key">bxi_local_conveyance.food_daily_limit</field>
+        <field name="value">1000</field>
+    </record>
+
+    <!-- Clause 5: transportation is not provided on weekends and holidays (block), or HR reviews (flag). -->
+    <record id="param_non_working_day_mode" model="ir.config_parameter">
+        <field name="key">bxi_local_conveyance.non_working_day_mode</field>
+        <field name="value">block</field>
+    </record>
+
+</odoo>
