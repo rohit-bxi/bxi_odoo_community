@@ -23,6 +23,7 @@ class PerformanceReview(models.Model):
     second_manager_user_id = fields.Many2one(related="second_manager_id.user_id", store=True, index=True)
     second_manager_email = fields.Char(related="second_manager_id.work_email", store=True)
     company_logo = fields.Binary(related="company_id.logo", string="Company Logo", readonly=True)
+    note = fields.Text()
 
     year = fields.Integer(compute="_compute_period_info", store=True)
     quarter = fields.Selection(

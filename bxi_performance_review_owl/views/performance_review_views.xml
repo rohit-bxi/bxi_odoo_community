@@ -251,11 +251,11 @@
                             readonly="1"
                         />
                     </group>
-
+                    <group string="Important Note">
+                        <field name="note"/>
+                    </group>
                     <chatter/>
-
                 </sheet>
-
             </form>
         </field>
     </record>
