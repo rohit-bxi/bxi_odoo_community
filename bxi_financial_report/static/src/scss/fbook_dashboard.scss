@@ -1,0 +1,560 @@
+/* ==========================================================================
+   BXI Financial Book Dashboard - Responsive Stylesheet
+   Designed for all screen sizes: Mobile, Tablet, Laptop, Monitor / Ultra-Wide
+   ========================================================================== */
+
+.fbook-dashboard-container {
+    height: 100%;
+    min-height: calc(100vh - 48px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #f8fafc;
+    padding: 24px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    box-sizing: border-box;
+}
+
+.fbook-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+    padding: 28px 32px;
+    border: 1px solid #e2e8f0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Header & Actions */
+.fbook-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 18px;
+}
+
+.fbook-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.fbook-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+    border-left: 4px solid #3b82f6;
+    padding-left: 14px;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+}
+
+.fbook-subtitle {
+    font-size: 12px;
+    color: #64748b;
+    padding-left: 14px;
+    font-weight: 500;
+}
+
+.fbook-header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.fbook-meta {
+    font-size: 13px;
+    color: #475569;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+    display: inline-flex;
+    align-items: center;
+}
+
+.fbook-export-btn {
+    background: linear-gradient(135deg, #107c41 0%, #16a34a 100%);
+    color: #ffffff !important;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px -1px rgba(16, 124, 65, 0.2);
+    text-decoration: none;
+}
+
+.fbook-export-btn:hover {
+    background: linear-gradient(135deg, #0b592e 0%, #15803d 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px -1px rgba(16, 124, 65, 0.3);
+}
+
+.fbook-export-btn:active {
+    transform: translateY(1px);
+}
+
+/* Exchange Rates Banner */
+.fbook-rates-bar {
+    margin-top: 8px;
+    margin-bottom: 24px;
+    padding: 10px 16px;
+    border-left: 4px solid #3b82f6;
+    background-color: #eff6ff;
+    color: #1e3a8a;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+}
+
+.fbook-rates-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    color: #1e40af;
+}
+
+.fbook-rate-items {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+}
+
+.fbook-rate-pill {
+    background: #ffffff;
+    border: 1px solid #bfdbfe;
+    padding: 4px 12px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.fbook-rate-curr {
+    font-weight: 700;
+    color: #1e3a8a;
+}
+
+.fbook-rate-divider {
+    color: #93c5fd;
+    margin: 0 4px;
+}
+
+/* Section Header & Title */
+.fbook-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 36px;
+    margin-bottom: 14px;
+}
+
+.fbook-scroll-hint {
+    display: none;
+    font-size: 11px;
+    color: #64748b;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+    background: #f1f5f9;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+}
+
+.fbook-scroll-hint-light {
+    background: rgba(255, 255, 255, 0.15);
+    color: #e2e8f0;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Three-Year Performance Card */
+.fbook-perf-card {
+    margin-top: 10px;
+    margin-bottom: 24px;
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.fbook-perf-header {
+    background: linear-gradient(90deg, #1e293b 0%, #334155 100%);
+    color: #ffffff;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.fbook-perf-title {
+    font-weight: 800;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: -0.01em;
+}
+
+.fbook-currency-badge {
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 4px 12px;
+    border-radius: 14px;
+    font-weight: 600;
+}
+
+/* Table Wrapper for Horizontal Scroll */
+.fbook-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.fbook-table-wrapper::-webkit-scrollbar {
+    height: 7px;
+    width: 7px;
+}
+
+.fbook-table-wrapper::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 4px;
+}
+
+.fbook-table-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.fbook-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Base Table */
+.fbook-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    text-align: right;
+    font-size: 13px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin-bottom: 0;
+}
+
+.fbook-table th, .fbook-table td {
+    padding: 10px 14px;
+    border-right: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.fbook-table th:first-child, .fbook-table td:first-child {
+    border-left: 1px solid #e2e8f0;
+}
+
+.fbook-table tr:first-child th {
+    border-top: 1px solid #e2e8f0;
+}
+
+.fbook-table th {
+    font-weight: 600;
+    color: #475569;
+    background: #f8fafc;
+}
+
+.fbook-table th.main-header {
+    text-align: center;
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 14px;
+    font-weight: 700;
+    border-color: #1e293b;
+}
+
+.fbook-table th.fbook-header-cy {
+    text-align: center;
+    background: #16a34a;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    border-color: #15803d;
+}
+
+.fbook-table th.fbook-header-fy {
+    text-align: center;
+    background: #ea580c;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    border-color: #c2410c;
+}
+
+.fbook-table th.sub-main-header {
+    text-align: center;
+    background: #e2e8f0;
+    color: #0f172a;
+    font-weight: 700;
+    border-color: #cbd5e1;
+}
+
+.fbook-table td.row-label {
+    text-align: left;
+    font-weight: 600;
+    color: #1e293b;
+    background: #f8fafc;
+    min-width: 150px;
+    border-right: 2px solid #cbd5e1;
+}
+
+/* Sticky First Column for Smooth Horizontal Scrolling */
+.fbook-table .fbook-sticky-col,
+.fbook-table td.row-label {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background-color: #f8fafc;
+    box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+}
+
+.fbook-table thead .fbook-sticky-col,
+.fbook-table thead th.main-header.fbook-sticky-col,
+.fbook-table thead th.sub-main-header.fbook-sticky-col {
+    z-index: 4;
+}
+
+.fbook-table thead th.main-header.fbook-sticky-col {
+    background-color: #0f172a;
+}
+
+.fbook-table thead th.sub-main-header.fbook-sticky-col {
+    background-color: #e2e8f0;
+}
+
+.fbook-table tr.metric-row:hover td.row-label,
+.fbook-table tr.metric-row:hover .fbook-sticky-col {
+    background-color: #f1f5f9;
+}
+
+.fbook-table tr.fbook-total-row .fbook-sticky-col,
+.fbook-table tr[style*="font-weight: bold"] .fbook-sticky-col {
+    background-color: #e2e8f0;
+}
+
+/* Rows & Hover */
+.fbook-table tr.metric-row:nth-child(even) {
+    background: #fafafa;
+}
+
+.fbook-table tr.metric-row:hover {
+    background: #f1f5f9;
+    transition: background 0.15s ease-in-out;
+}
+
+.fbook-table tr.spacer-row {
+    height: 16px;
+    background: #f8fafc;
+}
+
+.fbook-table tr.spacer-row td {
+    padding: 0;
+    border: none;
+}
+
+.fbook-table td.total-cell {
+    font-weight: bold;
+    background: #f1f5f9;
+    color: #0f172a;
+    border-left: 2px solid #cbd5e1;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+
+/* Laptops & Desktops (992px to 1199.98px) */
+@media (max-width: 1199.98px) {
+    .fbook-card {
+        padding: 22px 24px;
+        border-radius: 12px;
+    }
+    .fbook-title {
+        font-size: 20px;
+    }
+    .fbook-table th, .fbook-table td {
+        padding: 9px 12px;
+        font-size: 12.5px;
+    }
+    .fbook-scroll-hint {
+        display: inline-flex;
+    }
+}
+
+/* Tablets (768px to 991.98px) */
+@media (max-width: 991.98px) {
+    .fbook-dashboard-container {
+        padding: 16px 12px;
+    }
+    .fbook-card {
+        padding: 18px 16px;
+        border-radius: 12px;
+    }
+    .fbook-header {
+        margin-bottom: 18px;
+        padding-bottom: 14px;
+    }
+    .fbook-table th, .fbook-table td {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+    .fbook-section-header {
+        margin-top: 28px;
+        margin-bottom: 12px;
+    }
+}
+
+/* Mobile Screens (< 768px) */
+@media (max-width: 767.98px) {
+    .fbook-dashboard-container {
+        padding: 8px 6px;
+        height: auto;
+        min-height: 100vh;
+    }
+    .fbook-card {
+        padding: 14px 10px;
+        border-radius: 10px;
+    }
+    .fbook-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        margin-bottom: 14px;
+        padding-bottom: 12px;
+    }
+    .fbook-title {
+        font-size: 18px;
+        padding-left: 10px;
+    }
+    .fbook-subtitle {
+        font-size: 11px;
+        padding-left: 10px;
+    }
+    .fbook-header-actions {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 8px;
+    }
+    .fbook-export-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 9px 14px;
+        font-size: 12.5px;
+    }
+    .fbook-meta {
+        width: 100%;
+        justify-content: center;
+        padding: 7px 12px;
+        font-size: 12px;
+        box-sizing: border-box;
+    }
+    .fbook-rates-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px 12px;
+        gap: 8px;
+        margin-bottom: 18px;
+    }
+    .fbook-rate-items {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+    .fbook-rate-pill {
+        justify-content: space-between;
+        padding: 6px 10px;
+    }
+    .fbook-section-header {
+        margin-top: 22px;
+        margin-bottom: 10px;
+    }
+    .fbook-title {
+        font-size: 16px;
+    }
+    .fbook-perf-header {
+        padding: 10px 14px;
+    }
+    .fbook-perf-title {
+        font-size: 13.5px;
+    }
+    .fbook-table th, .fbook-table td {
+        padding: 7px 8px;
+        font-size: 11.5px;
+    }
+    .fbook-table td.row-label,
+    .fbook-table .fbook-sticky-col {
+        min-width: 110px;
+        max-width: 140px;
+        white-space: normal;
+        word-break: break-word;
+        font-size: 11px;
+        padding: 6px 8px;
+    }
+}
+
+/* Extra Small Mobile (< 480px) */
+@media (max-width: 480px) {
+    .fbook-dashboard-container {
+        padding: 6px 4px;
+    }
+    .fbook-card {
+        padding: 10px 6px;
+        border-radius: 8px;
+    }
+    .fbook-table th, .fbook-table td {
+        padding: 6px 7px;
+        font-size: 11px;
+    }
+    .fbook-table td.row-label,
+    .fbook-table .fbook-sticky-col {
+        min-width: 100px;
+        max-width: 120px;
+        font-size: 10.5px;
+        padding: 5px 6px;
+    }
+}

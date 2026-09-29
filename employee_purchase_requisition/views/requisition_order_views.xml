@@ -14,6 +14,8 @@
                 <field name="quantity"/>
                 <field name="uom"/>
                 <field name="partner_id"
+                       domain="[('customer_type', 'in', ('vendor', 'customer_and_vendor'))]"
+                       context="{'default_customer_type': 'vendor', 'default_supplier_rank': 1, 'default_is_company': True}"
                        invisible="requisition_type == 'internal_transfer'"/>
             </list>
         </field>

@@ -12,7 +12,7 @@
     'company': 'Cybrosys Techno Solutions',
     'maintainer': 'Cybrosys Techno Solutions',
     'website': 'https://www.cybrosys.com',
-    'depends': ['base', 'hr', 'stock', 'purchase'],
+    'depends': ['base', 'portal', 'hr', 'stock', 'purchase', 'bxi_crm'],
     'data': [
         'security/employee_purchase_requisition_security.xml',
         'security/ir.model.access.csv',
