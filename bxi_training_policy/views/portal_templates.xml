@@ -197,14 +197,14 @@
                 <div class="col-12">
                     <label class="form-label" for="purpose">Purpose it supports</label>
                     <textarea name="purpose" id="purpose" class="form-control" rows="2" required="required"
-                              t-esc="post.get('purpose')"/>
+                              t-out="post.get('purpose') or ''"/>
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="short_notice_reason">
                         Reason for short notice (when HR is informed less than <t t-esc="lead_days"/> days before)
                     </label>
                     <textarea name="short_notice_reason" id="short_notice_reason" class="form-control" rows="2"
-                              t-esc="post.get('short_notice_reason')"/>
+                              t-out="post.get('short_notice_reason') or ''"/>
                 </div>
                 <div class="col-12 table-responsive">
                     <label class="form-label">Estimated cost</label>
