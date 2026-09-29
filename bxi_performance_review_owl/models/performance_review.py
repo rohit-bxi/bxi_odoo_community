@@ -23,7 +23,6 @@ class PerformanceReview(models.Model):
     second_manager_user_id = fields.Many2one(related="second_manager_id.user_id", store=True, index=True)
     second_manager_email = fields.Char(related="second_manager_id.work_email", store=True)
     company_logo = fields.Binary(related="company_id.logo", string="Company Logo", readonly=True)
-    note = fields.Text()
 
     year = fields.Integer(compute="_compute_period_info", store=True)
     quarter = fields.Selection(
@@ -41,6 +40,7 @@ class PerformanceReview(models.Model):
         "performance.review.question", "review_id",
         string="Manager Questions", domain=[("question_type", "=", "manager")],
     )
+    note = fields.Text()
     successor_1 = fields.Char()
     successor_2 = fields.Char()
     appraisee_remarks = fields.Text("Appraisee Remarks(Self)")
@@ -425,20 +425,72 @@ class PerformanceReviewQuestion(models.Model):
         string="Appraisee Rating",
     )
 
+    @api.constrains("response_type", "rating_scale", "appraisee_rating")
+    def _check_response_configuration(self):
+        for rec in self:
+            if rec.response_type == "answer" and rec.appraisee_rating:
+                raise ValidationError(
+                    _("An Answer Only question cannot have a rating.")
+                )
+            if rec.response_type == "rating" and rec.answer:
+                raise ValidationError(
+                    _("A Rating Only question cannot have an answer.")
+                )
+            if rec.question_type == "manager" and rec.appraisee_rating:
+                raise ValidationError(
+                    _("Manager questions cannot have an appraisee rating.")
+                )
+            if rec.appraisee_rating and rec.rating_scale:
+                if int(rec.appraisee_rating) > int(rec.rating_scale):
+                    raise ValidationError(
+                        _(
+                            "The appraisee rating cannot be greater than the configured "
+                            "rating scale (%s stars)."
+                        ) % rec.rating_scale
+                    )
+
+    def _validate_response_values(self, vals):
+        """Enforce the configured response type and rating scale server-side."""
+        for rec in self:
+            response_type = rec.response_type
+
+            if "answer" in vals and response_type not in ("answer", "both"):
+                raise AccessError(
+                    _("This question is configured for rating only, so an answer is not allowed.")
+                )
+
+            if "appraisee_rating" in vals:
+                if rec.question_type != "appraisee":
+                    raise AccessError(
+                        _("Manager questions do not support an appraisee rating.")
+                    )
+                if response_type not in ("rating", "both"):
+                    raise AccessError(
+                        _("This question is configured for answer only, so a rating is not allowed.")
+                    )
+                if vals.get("appraisee_rating") and rec.rating_scale:
+                    if int(vals["appraisee_rating"]) > int(rec.rating_scale):
+                        raise ValidationError(
+                            _(
+                                "The selected rating cannot be greater than the configured "
+                                "rating scale (%s stars)."
+                            ) % rec.rating_scale
+                        )
+
     def write(self, vals):
         is_hr = self.env.user.has_group("bxi_performance_review_owl.group_performance_review_hr")
-        if is_hr:
-            return super().write(vals)
         if set(vals) - {"answer", "appraisee_rating"}:
             raise AccessError(_("Question configuration cannot be modified from a Performance Review."))
+
+        self._validate_response_values(vals)
+
+        if is_hr:
+            return super().write(vals)
+
         for rec in self:
             review = rec.review_id
             if rec.question_type == "appraisee":
                 allowed = review.state == "draft" and review.employee_user_id == self.env.user
-                if allowed and "appraisee_rating" in vals and rec.response_type not in ("rating", "both"):
-                    raise AccessError(_("This question is configured for an answer, not a rating."))
-                if allowed and "answer" in vals and rec.response_type not in ("answer", "both"):
-                    raise AccessError(_("This question is configured for a rating, not an answer."))
             else:
                 allowed = review.state in ("manager_review", "second_manager_review") and (
                     review.manager_user_id == self.env.user
@@ -446,4 +498,5 @@ class PerformanceReviewQuestion(models.Model):
                 )
             if not allowed:
                 raise AccessError(_("You cannot modify this question answer at this stage."))
+
         return super().write(vals)
