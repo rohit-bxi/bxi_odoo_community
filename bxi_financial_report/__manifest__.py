@@ -23,6 +23,7 @@
     ],
     'assets': {
         'web.assets_backend': [
+            'bxi_financial_report/static/src/scss/fbook_dashboard.scss',
             'bxi_financial_report/static/src/js/fbook_dashboard.js',
             'bxi_financial_report/static/src/xml/fbook_dashboard.xml',
             'bxi_financial_report/static/src/js/company_service_patch.js',

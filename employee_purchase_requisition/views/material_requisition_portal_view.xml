@@ -1,5 +1,16 @@
 <odoo>
 
+    <!-- ================= PORTAL HOME ENTRY ================= -->
+    <template id="portal_my_material_requisition_entry" name="Portal My Home: Material Requisition" inherit_id="portal.portal_my_home" priority="40">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="title">Material Requisitions</t>
+                <t t-set="url" t-value="'/my/material-requisition'"/>
+                <t t-set="placeholder_count" t-value="'material_requisition_count'"/>
+            </t>
+        </xpath>
+    </template>
+
     <!-- ================= LIST VIEW ================= -->
     <template id="bxi_purchase_requisition_template" name="My Requisitions">
         <t t-call="portal.portal_layout">
@@ -31,6 +42,7 @@
                                         <th>Reference</th>
                                         <th>Requested By</th>
                                         <th>Department</th>
+                                        <th>Company</th>
                                         <th>Date</th>
                                         <th>Status</th>
                                     </tr>
@@ -40,8 +52,10 @@
                                     <t t-foreach="requests" t-as="req">
                                         <tr>
 
-                                            <td class="fw-bold text-primary">
-                                                <t t-esc="req.name"/>
+                                            <td class="fw-bold">
+                                                <a t-attf-href="/my/material-requisition/#{req.id}" class="text-decoration-none text-primary">
+                                                    <t t-esc="req.name"/>
+                                                </a>
                                             </td>
 
                                             <td>
@@ -49,14 +63,20 @@
                                             </td>
 
                                             <td>
-                                                <t t-esc="req.dept_id.name"/>
+                                                <t t-esc="req.dept_id.name or '-'"/>
+                                            </td>
+
+                                            <td>
+                                                <span class="badge bg-light text-dark border">
+                                                    <t t-esc="req.company_id.name"/>
+                                                </span>
                                             </td>
 
                                             <td>
                                                 <t t-esc="req.requisition_date"/>
                                             </td>
 
-                                            <!-- ✅ FIXED STATUS -->
+                                            <!-- STATUS BADGE -->
                                             <td>
                                                 <span t-if="req.state == 'new'" class="badge bg-secondary px-3 py-2">New</span>
                                                 <span t-elif="req.state == 'waiting_department_approval'" class="badge bg-info px-3 py-2">Dept Approval</span>
@@ -85,16 +105,124 @@
     </template>
 
 
-    <!-- ================= FORM ================= -->
+    <!-- ================= DETAIL VIEW ================= -->
+    <template id="requisition_detail_template" name="Material Requisition Details">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-4 mb-5">
+
+                <div class="mb-3">
+                    <a href="/my/material-requisition" class="btn btn-outline-secondary btn-sm">
+                        <i class="fa fa-arrow-left"/> Back to Requisitions
+                    </a>
+                </div>
+
+                <div class="card shadow-lg border-0 rounded-4">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center rounded-top-4 py-3">
+                        <h4 class="mb-0">
+                            Requisition: <span t-esc="requisition.name"/>
+                        </h4>
+                        <div>
+                            <span t-if="requisition.state == 'new'" class="badge bg-secondary px-3 py-2">New</span>
+                            <span t-elif="requisition.state == 'waiting_department_approval'" class="badge bg-info px-3 py-2">Dept Approval</span>
+                            <span t-elif="requisition.state == 'waiting_head_approval'" class="badge bg-warning text-dark px-3 py-2">Head Approval</span>
+                            <span t-elif="requisition.state == 'approved'" class="badge bg-primary px-3 py-2">Approved</span>
+                            <span t-elif="requisition.state == 'purchase_order_created'" class="badge bg-success px-3 py-2">PO Created</span>
+                            <span t-elif="requisition.state == 'received'" class="badge bg-success px-3 py-2">Received</span>
+                            <span t-elif="requisition.state == 'cancelled'" class="badge bg-danger px-3 py-2">Cancelled</span>
+                            <span t-else="" class="badge bg-dark px-3 py-2">
+                                <t t-esc="dict(requisition._fields['state'].selection).get(requisition.state)"/>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-4">
+                        <h5 class="text-primary mb-3">Requisition Information</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <span class="text-muted d-block">Company</span>
+                                <strong class="fs-6"><t t-esc="requisition.company_id.name"/></strong>
+                            </div>
+                            <div class="col-md-4">
+                                <span class="text-muted d-block">Requested By</span>
+                                <strong><t t-esc="requisition.employee_id.name"/></strong>
+                            </div>
+                            <div class="col-md-4">
+                                <span class="text-muted d-block">Department</span>
+                                <strong><t t-esc="requisition.dept_id.name or '-'"/></strong>
+                            </div>
+                            <div class="col-md-4">
+                                <span class="text-muted d-block">Requisition Date</span>
+                                <strong><t t-esc="requisition.requisition_date"/></strong>
+                            </div>
+                            <div class="col-md-4">
+                                <span class="text-muted d-block">Deadline</span>
+                                <strong><t t-esc="requisition.requisition_deadline or '-'"/></strong>
+                            </div>
+                            <div class="col-md-4">
+                                <span class="text-muted d-block">Request Type</span>
+                                <strong class="text-capitalize"><t t-esc="requisition.req_type"/></strong>
+                            </div>
+                            <t t-if="requisition.req_type == 'customer' and requisition.customer_id">
+                                <div class="col-md-4">
+                                    <span class="text-muted d-block">Customer</span>
+                                    <strong><t t-esc="requisition.customer_id.name"/></strong>
+                                </div>
+                            </t>
+                            <t t-if="requisition.requisition_description">
+                                <div class="col-12">
+                                    <span class="text-muted d-block">Reason / Description</span>
+                                    <div class="p-3 bg-light rounded mt-1 border">
+                                        <t t-esc="requisition.requisition_description"/>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+
+                        <h5 class="text-primary mb-3">Product Lines</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 50px;">#</th>
+                                        <th>Product</th>
+                                        <th>Description</th>
+                                        <th class="text-end" style="width: 140px;">Quantity</th>
+                                        <th style="width: 150px;">Unit of Measure</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="line_idx" t-value="1"/>
+                                    <t t-foreach="requisition.requisition_order_ids" t-as="line">
+                                        <tr>
+                                            <td><t t-esc="line_idx"/></td>
+                                            <td class="fw-bold"><t t-esc="line.product_id.display_name"/></td>
+                                            <td><t t-esc="line.description or '-'"/></td>
+                                            <td class="text-end fw-bold"><t t-esc="line.quantity"/></td>
+                                            <td><t t-esc="line.uom or '-'"/></td>
+                                        </tr>
+                                        <t t-set="line_idx" t-value="line_idx + 1"/>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </t>
+    </template>
+
+
+    <!-- ================= SUBMIT FORM ================= -->
     <template id="material_requisition_form" name="Submit Material Requisition">
         <t t-call="portal.portal_layout">
 
-            <div class="container mt-5">
+            <div class="container mt-5 mb-5">
 
                 <div class="card shadow-lg border-0 rounded-4">
 
                     <!-- Header -->
-                    <div class="card-header bg-gradient bg-primary text-white rounded-top-4">
+                    <div class="card-header bg-gradient bg-primary text-white rounded-top-4 py-3">
                         <h4 class="mb-0">Submit Material Requisition</h4>
                     </div>
 
@@ -108,14 +236,17 @@
 
                             <div class="row g-3">
 
+                                <!-- Company Field -->
                                 <div class="col-md-6">
-                                    <label class="form-label">Requisition Date *</label>
-                                    <input type="date" name="requisition_date" class="form-control" required="required"/>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label">Deadline *</label>
-                                    <input type="date" name="requisition_deadline" class="form-control" required="required"/>
+                                    <label class="form-label fw-bold">Company *</label>
+                                    <select name="company_id" id="company_id" class="form-select" required="required">
+                                        <option value="">Select Company</option>
+                                        <t t-foreach="companies" t-as="comp">
+                                            <option t-att-value="comp.id" t-att-selected="comp.id == default_company_id">
+                                                <t t-esc="comp.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
                                 </div>
 
                                 <div class="col-md-6">
@@ -127,7 +258,17 @@
                                     </select>
                                 </div>
 
-                                <div class="col-md-6" id="customer_div" style="display:none;">
+                                <div class="col-md-6">
+                                    <label class="form-label">Requisition Date *</label>
+                                    <input type="date" name="requisition_date" class="form-control" required="required"/>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Deadline *</label>
+                                    <input type="date" name="requisition_deadline" class="form-control" required="required"/>
+                                </div>
+
+                                <div class="col-md-12" id="customer_div" style="display:none;">
                                     <label class="form-label">Customer *</label>
                                     <select name="customer_id" id="customer_id" class="form-select">
                                         <option value="">Select Customer</option>
@@ -141,7 +282,7 @@
 
                                 <div class="col-12">
                                     <label class="form-label">Reason *</label>
-                                    <textarea name="requisition_description" class="form-control" rows="3" required="required"></textarea>
+                                    <textarea name="requisition_description" class="form-control" rows="3" required="required" placeholder="Provide the reason for this requisition..."></textarea>
                                 </div>
 
                             </div>
@@ -169,7 +310,7 @@
                                                     <option value="">Select Product</option>
                                                     <t t-foreach="products" t-as="p">
                                                         <option t-att-value="p.id">
-                                                            <t t-esc="p.name"/>
+                                                            <t t-esc="p.display_name"/>
                                                         </option>
                                                     </t>
                                                 </select>
@@ -177,7 +318,7 @@
 
                                             <td>
                                                 <input type="number" name="quantity[]" class="form-control"
-                                                       min="1" required="required"/>
+                                                       min="1" required="required" value="1"/>
                                             </td>
 
                                             <td class="text-center">
@@ -218,23 +359,28 @@
                 let customerDiv = document.getElementById("customer_div");
                 let customerField = document.getElementById("customer_id");
 
-                reqType.addEventListener("change", function () {
-                    if (this.value === "customer") {
-                        customerDiv.style.display = "block";
-                        customerField.setAttribute("required", "required");
-                    } else {
-                        customerDiv.style.display = "none";
-                        customerField.removeAttribute("required");
-                        customerField.value = "";
-                    }
-                });
+                if (reqType) {
+                    reqType.addEventListener("change", function () {
+                        if (this.value === "customer") {
+                            customerDiv.style.display = "block";
+                            customerField.setAttribute("required", "required");
+                        } else {
+                            customerDiv.style.display = "none";
+                            customerField.removeAttribute("required");
+                            customerField.value = "";
+                        }
+                    });
+                }
 
-                document.getElementById("add_row").addEventListener("click", function () {
-                    let row = document.querySelector("#product_body tr").cloneNode(true);
-                    row.querySelectorAll("input").forEach(i => i.value = "");
-                    row.querySelectorAll("select").forEach(s => s.selectedIndex = 0);
-                    document.getElementById("product_body").appendChild(row);
-                });
+                let addRowBtn = document.getElementById("add_row");
+                if (addRowBtn) {
+                    addRowBtn.addEventListener("click", function () {
+                        let row = document.querySelector("#product_body tr").cloneNode(true);
+                        row.querySelectorAll("input").forEach(i => i.value = "1");
+                        row.querySelectorAll("select").forEach(s => s.selectedIndex = 0);
+                        document.getElementById("product_body").appendChild(row);
+                    });
+                }
 
                 document.addEventListener("click", function (e) {
                     if (e.target.classList.contains("remove_row")) {

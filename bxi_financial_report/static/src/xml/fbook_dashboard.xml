@@ -1,28 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 <t t-name="bxi_financial_report.FbookTemplate" owl="1">
-    <div class="fbook-dashboard-container" style="
-        height: 93vh;
-        overflow: auto;
-        background: #f8fafc;
-        padding: 24px;
-        font-family: 'Inter', sans-serif;
-    ">
+    <div class="fbook-dashboard-container">
         <style>
+            /* Base Container and Card */
+            .fbook-dashboard-container {
+                height: 100%;
+                min-height: calc(100vh - 48px);
+                overflow-y: auto;
+                overflow-x: hidden;
+                background: #f8fafc;
+                padding: 24px;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                box-sizing: border-box;
+            }
             .fbook-card {
-                background: white;
+                background: #ffffff;
                 border-radius: 16px;
                 box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-                padding: 32px;
+                padding: 28px 32px;
                 border: 1px solid #e2e8f0;
+                max-width: 100%;
+                box-sizing: border-box;
             }
+
+            /* Header and Actions */
             .fbook-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 28px;
+                flex-wrap: wrap;
+                gap: 16px;
+                margin-bottom: 24px;
                 border-bottom: 1px solid #f1f5f9;
-                padding-bottom: 20px;
+                padding-bottom: 18px;
+            }
+            .fbook-title-group {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
             }
             .fbook-title {
                 font-size: 22px;
@@ -33,6 +49,18 @@
                 line-height: 1.2;
                 letter-spacing: -0.025em;
             }
+            .fbook-subtitle {
+                font-size: 12px;
+                color: #64748b;
+                padding-left: 14px;
+                font-weight: 500;
+            }
+            .fbook-header-actions {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+                flex-wrap: wrap;
+            }
             .fbook-meta {
                 font-size: 13px;
                 color: #475569;
@@ -42,95 +70,14 @@
                 border-radius: 8px;
                 font-weight: 500;
                 box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
-            }
-            .fbook-table {
-                width: 100%;
-                border-collapse: collapse;
-                text-align: right;
-                font-size: 13px;
-                font-family: 'Inter', -apple-system, sans-serif;
-            }
-            .fbook-table th, .fbook-table td {
-                padding: 12px 16px;
-                border: 1px solid #e2e8f0;
-            }
-            .fbook-table th {
-                font-weight: 600;
-                color: #475569;
-                background: #f8fafc;
-            }
-            .fbook-table th.main-header {
-                text-align: center;
-                background: #0f172a;
-                color: #f8fafc;
-                font-size: 14px;
-                font-weight: 700;
-                border: 1px solid #1e293b;
-            }
-            .fbook-table th.fbook-header-cy {
-                text-align: center;
-                background: #16a34a;
-                color: #ffffff;
-                font-size: 14px;
-                font-weight: 700;
-                border: 1px solid #15803d;
-            }
-            .fbook-table th.fbook-header-fy {
-                text-align: center;
-                background: #ea580c;
-                color: #ffffff;
-                font-size: 14px;
-                font-weight: 700;
-                border: 1px solid #c2410c;
-            }
-            .fbook-table th.sub-main-header {
-                text-align: center;
-                background: #e2e8f0;
-                color: #0f172a;
-                font-weight: 700;
-                border: 1px solid #cbd5e1;
-            }
-            .fbook-table td.row-label {
-                text-align: left;
-                font-weight: 600;
-                color: #1e293b;
-                background: #f8fafc;
-                min-width: 150px;
-                border-right: 2px solid #e2e8f0;
-            }
-            .fbook-table tr.metric-row:nth-child(even) {
-                background: #fafafa;
-            }
-            .fbook-table tr.metric-row:hover {
-                background: #f1f5f9;
-                transition: background 0.15s ease-in-out;
-            }
-            .fbook-table tr.spacer-row {
-                height: 20px;
-                background: #f8fafc;
-            }
-            .fbook-table tr.spacer-row td {
-                padding: 0;
-                border-left: none;
-                border-right: none;
-                border-top: none;
-                border-bottom: none;
-                border-top: none;
-            }
-            .fbook-table td.total-cell {
-                font-weight: bold;
-                background: #f1f5f9;
-                color: #0f172a;
-                border-left: 2px solid #cbd5e1;
-            }
-            .text-center {
-                text-align: center;
+                display: inline-flex;
+                align-items: center;
             }
             .fbook-export-btn {
                 background: linear-gradient(135deg, #107c41 0%, #16a34a 100%);
-                color: white !important;
+                color: #ffffff !important;
                 border: none;
-                padding: 8px 16px;
+                padding: 8px 18px;
                 border-radius: 8px;
                 font-weight: 600;
                 font-size: 13px;
@@ -150,502 +97,959 @@
             .fbook-export-btn:active {
                 transform: translateY(1px);
             }
+
+            /* Exchange Rates Banner */
+            .fbook-rates-bar {
+                margin-top: 8px;
+                margin-bottom: 24px;
+                padding: 10px 16px;
+                border-left: 4px solid #3b82f6;
+                background-color: #eff6ff;
+                color: #1e3a8a;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 500;
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 10px 16px;
+            }
+            .fbook-rates-label {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 700;
+                color: #1e40af;
+            }
+            .fbook-rate-items {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px 12px;
+            }
+            .fbook-rate-pill {
+                background: #ffffff;
+                border: 1px solid #bfdbfe;
+                padding: 4px 12px;
+                border-radius: 6px;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 12px;
+            }
+            .fbook-rate-curr {
+                font-weight: 700;
+                color: #1e3a8a;
+            }
+            .fbook-rate-divider {
+                color: #93c5fd;
+                margin: 0 4px;
+            }
+
+            /* Section Header and Title */
+            .fbook-section-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-top: 36px;
+                margin-bottom: 14px;
+            }
+            .fbook-scroll-hint {
+                display: none;
+                font-size: 11px;
+                color: #64748b;
+                align-items: center;
+                gap: 6px;
+                font-weight: 500;
+                background: #f1f5f9;
+                padding: 4px 10px;
+                border-radius: 20px;
+                border: 1px solid #e2e8f0;
+            }
+            .fbook-scroll-hint-light {
+                background: rgba(255, 255, 255, 0.15);
+                color: #e2e8f0;
+                border-color: rgba(255, 255, 255, 0.2);
+            }
+
+            /* Three-Year Performance Card */
+            .fbook-perf-card {
+                margin-top: 10px;
+                margin-bottom: 24px;
+                background: #ffffff;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                overflow: hidden;
+                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+            }
+            .fbook-perf-header {
+                background: linear-gradient(90deg, #1e293b 0%, #334155 100%);
+                color: #ffffff;
+                padding: 12px 20px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            .fbook-perf-title {
+                font-weight: 800;
+                font-size: 15px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                letter-spacing: -0.01em;
+            }
+            .fbook-currency-badge {
+                font-size: 12px;
+                background: rgba(255, 255, 255, 0.15);
+                padding: 4px 12px;
+                border-radius: 14px;
+                font-weight: 600;
+            }
+
+            /* Table Wrapper for Horizontal Scroll */
+            .fbook-table-wrapper {
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                background: #ffffff;
+                box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+                margin-bottom: 24px;
+                position: relative;
+            }
+            .fbook-table-wrapper::-webkit-scrollbar {
+                height: 7px;
+                width: 7px;
+            }
+            .fbook-table-wrapper::-webkit-scrollbar-track {
+                background: #f8fafc;
+                border-radius: 4px;
+            }
+            .fbook-table-wrapper::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 4px;
+            }
+            .fbook-table-wrapper::-webkit-scrollbar-thumb:hover {
+                background: #94a3b8;
+            }
+
+            /* Base Table */
+            .fbook-table {
+                width: 100%;
+                border-collapse: separate;
+                border-spacing: 0;
+                text-align: right;
+                font-size: 13px;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                margin-bottom: 0;
+            }
+            .fbook-table th, .fbook-table td {
+                padding: 10px 14px;
+                border-right: 1px solid #e2e8f0;
+                border-bottom: 1px solid #e2e8f0;
+                white-space: nowrap;
+                box-sizing: border-box;
+            }
+            .fbook-table th:first-child, .fbook-table td:first-child {
+                border-left: 1px solid #e2e8f0;
+            }
+            .fbook-table tr:first-child th {
+                border-top: 1px solid #e2e8f0;
+            }
+            .fbook-table th {
+                font-weight: 600;
+                color: #475569;
+                background: #f8fafc;
+            }
+            .fbook-table th.main-header {
+                text-align: center;
+                background: #0f172a;
+                color: #f8fafc;
+                font-size: 14px;
+                font-weight: 700;
+                border-color: #1e293b;
+            }
+            .fbook-table th.fbook-header-cy {
+                text-align: center;
+                background: #16a34a;
+                color: #ffffff;
+                font-size: 14px;
+                font-weight: 700;
+                border-color: #15803d;
+            }
+            .fbook-table th.fbook-header-fy {
+                text-align: center;
+                background: #ea580c;
+                color: #ffffff;
+                font-size: 14px;
+                font-weight: 700;
+                border-color: #c2410c;
+            }
+            .fbook-table th.sub-main-header {
+                text-align: center;
+                background: #e2e8f0;
+                color: #0f172a;
+                font-weight: 700;
+                border-color: #cbd5e1;
+            }
+            .fbook-table td.row-label {
+                text-align: left;
+                font-weight: 600;
+                color: #1e293b;
+                background: #f8fafc;
+                min-width: 150px;
+                border-right: 2px solid #cbd5e1;
+            }
+
+            /* Sticky First Column for Smooth Horizontal Scrolling */
+            .fbook-table .fbook-sticky-col,
+            .fbook-table td.row-label {
+                position: sticky;
+                left: 0;
+                z-index: 2;
+                background-color: #f8fafc;
+                box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+            }
+            .fbook-table thead .fbook-sticky-col,
+            .fbook-table thead th.main-header.fbook-sticky-col,
+            .fbook-table thead th.sub-main-header.fbook-sticky-col {
+                z-index: 4;
+            }
+            .fbook-table thead th.main-header.fbook-sticky-col {
+                background-color: #0f172a;
+            }
+            .fbook-table thead th.sub-main-header.fbook-sticky-col {
+                background-color: #e2e8f0;
+            }
+            .fbook-table tr.metric-row:hover td.row-label,
+            .fbook-table tr.metric-row:hover .fbook-sticky-col {
+                background-color: #f1f5f9;
+            }
+            .fbook-table tr.fbook-total-row .fbook-sticky-col,
+            .fbook-table tr[style*="font-weight: bold"] .fbook-sticky-col {
+                background-color: #e2e8f0;
+            }
+
+            /* Rows and Hover */
+            .fbook-table tr.metric-row:nth-child(even) {
+                background: #fafafa;
+            }
+            .fbook-table tr.metric-row:hover {
+                background: #f1f5f9;
+                transition: background 0.15s ease-in-out;
+            }
+            .fbook-table tr.spacer-row {
+                height: 16px;
+                background: #f8fafc;
+            }
+            .fbook-table tr.spacer-row td {
+                padding: 0;
+                border: none;
+            }
+            .fbook-table td.total-cell {
+                font-weight: bold;
+                background: #f1f5f9;
+                color: #0f172a;
+                border-left: 2px solid #cbd5e1;
+            }
+            .text-center {
+                text-align: center;
+            }
+
+            /* Media Queries for Responsive Views */
+            @media (max-width: 1199.98px) {
+                .fbook-card {
+                    padding: 22px 24px;
+                    border-radius: 12px;
+                }
+                .fbook-title {
+                    font-size: 20px;
+                }
+                .fbook-table th, .fbook-table td {
+                    padding: 9px 12px;
+                    font-size: 12.5px;
+                }
+                .fbook-scroll-hint {
+                    display: inline-flex;
+                }
+            }
+
+            @media (max-width: 991.98px) {
+                .fbook-dashboard-container {
+                    padding: 16px 12px;
+                }
+                .fbook-card {
+                    padding: 18px 16px;
+                    border-radius: 12px;
+                }
+                .fbook-header {
+                    margin-bottom: 18px;
+                    padding-bottom: 14px;
+                }
+                .fbook-table th, .fbook-table td {
+                    padding: 8px 10px;
+                    font-size: 12px;
+                }
+                .fbook-section-header {
+                    margin-top: 28px;
+                    margin-bottom: 12px;
+                }
+            }
+
+            @media (max-width: 767.98px) {
+                .fbook-dashboard-container {
+                    padding: 8px 6px;
+                    height: auto;
+                    min-height: 100vh;
+                }
+                .fbook-card {
+                    padding: 14px 10px;
+                    border-radius: 10px;
+                }
+                .fbook-header {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 12px;
+                    margin-bottom: 14px;
+                    padding-bottom: 12px;
+                }
+                .fbook-title {
+                    font-size: 18px;
+                    padding-left: 10px;
+                }
+                .fbook-subtitle {
+                    font-size: 11px;
+                    padding-left: 10px;
+                }
+                .fbook-header-actions {
+                    flex-direction: column;
+                    align-items: stretch;
+                    width: 100%;
+                    gap: 8px;
+                }
+                .fbook-export-btn {
+                    width: 100%;
+                    justify-content: center;
+                    padding: 9px 14px;
+                    font-size: 12.5px;
+                }
+                .fbook-meta {
+                    width: 100%;
+                    justify-content: center;
+                    padding: 7px 12px;
+                    font-size: 12px;
+                    box-sizing: border-box;
+                }
+                .fbook-rates-bar {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    padding: 10px 12px;
+                    gap: 8px;
+                    margin-bottom: 18px;
+                }
+                .fbook-rate-items {
+                    width: 100%;
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 6px;
+                }
+                .fbook-rate-pill {
+                    justify-content: space-between;
+                    padding: 6px 10px;
+                }
+                .fbook-section-header {
+                    margin-top: 22px;
+                    margin-bottom: 10px;
+                }
+                .fbook-title {
+                    font-size: 16px;
+                }
+                .fbook-perf-header {
+                    padding: 10px 14px;
+                }
+                .fbook-perf-title {
+                    font-size: 13.5px;
+                }
+                .fbook-table th, .fbook-table td {
+                    padding: 7px 8px;
+                    font-size: 11.5px;
+                }
+                .fbook-table td.row-label,
+                .fbook-table .fbook-sticky-col {
+                    min-width: 110px;
+                    max-width: 140px;
+                    white-space: normal;
+                    word-break: break-word;
+                    font-size: 11px;
+                    padding: 6px 8px;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .fbook-dashboard-container {
+                    padding: 6px 4px;
+                }
+                .fbook-card {
+                    padding: 10px 6px;
+                    border-radius: 8px;
+                }
+                .fbook-table th, .fbook-table td {
+                    padding: 6px 7px;
+                    font-size: 11px;
+                }
+                .fbook-table td.row-label,
+                .fbook-table .fbook-sticky-col {
+                    min-width: 100px;
+                    max-width: 120px;
+                    font-size: 10.5px;
+                    padding: 5px 6px;
+                }
+            }
         </style>
 
-
         <div class="fbook-card">
+            <!-- HEADER -->
             <div class="fbook-header">
-                <div class="fbook-title">Financial Book</div>
-                <div style="display: flex; gap: 12px; align-items: center;">
+                <div class="fbook-title-group">
+                    <div class="fbook-title">Financial Book</div>
+                    <div class="fbook-subtitle">Comparative Financial Performance Report</div>
+                </div>
+                <div class="fbook-header-actions">
                     <button class="fbook-export-btn" t-on-click="exportToExcel">
-                        <i class="fa fa-file-excel-o"/> Export to Excel
+                        <i class="fa fa-file-excel-o"/> <span>Export to Excel</span>
                     </button>
                     <div class="fbook-meta">
-                        Company: <span t-esc="state.report_data.company_name"/>
+                        <i class="fa fa-building-o" style="margin-right: 6px; color: #64748b;"/>
+                        Company: <strong style="color: #0f172a; margin-left: 4px;"><t t-esc="state.report_data.company_name"/></strong>
                     </div>
                 </div>
             </div>
 
-            <!-- EXCHANGE RATES ONE-LINER -->
-            <div class="alert alert-info" style="margin-top: 10px; margin-bottom: 15px; padding: 8px 12px; border-left: 4px solid #3b82f6; background-color: #eff6ff; color: #1e3a8a; border-radius: 4px; font-size: 13px; font-weight: 500; display: inline-block;">
-                <i class="fa fa-info-circle" style="margin-right: 6px;"></i>
-                <strong>Exchange Rates Used:</strong>
-                <span style="margin-left: 12px;">
-                    AED - INR (
-                    <span t-att-style="state.report_data.y1_prefix == 'CY' ? 'color: #16a34a; font-weight: 600;' : 'color: #ea580c; font-weight: 600;'"><t t-esc="state.report_data.y1_short_label"/>: 24.5</span>
-                    <span style="margin-left: 4px; margin-right: 4px; color: #93c5fd;">|</span>
-                    <span t-att-style="state.report_data.y2_prefix == 'CY' ? 'color: #16a34a; font-weight: 600;' : 'color: #ea580c; font-weight: 600;'"><t t-esc="state.report_data.y2_short_label"/>: 25.6</span>
-                    )
-                </span>
-                <span style="margin-left: 16px; margin-right: 16px; color: #93c5fd;">|</span>
-                <span>
-                    USD - INR (
-                    <span t-att-style="state.report_data.y1_prefix == 'CY' ? 'color: #16a34a; font-weight: 600;' : 'color: #ea580c; font-weight: 600;'"><t t-esc="state.report_data.y1_short_label"/>: 90</span>
-                    <span style="margin-left: 4px; margin-right: 4px; color: #93c5fd;">|</span>
-                    <span t-att-style="state.report_data.y2_prefix == 'CY' ? 'color: #16a34a; font-weight: 600;' : 'color: #ea580c; font-weight: 600;'"><t t-esc="state.report_data.y2_short_label"/>: 93</span>
-                    )
-                </span>
+            <!-- EXCHANGE RATES RESPONSIVE BANNER -->
+            <div class="fbook-rates-bar">
+                <div class="fbook-rates-label">
+                    <i class="fa fa-exchange"/>
+                    <span>Exchange Rates Used:</span>
+                </div>
+                <div class="fbook-rate-items">
+                    <div class="fbook-rate-pill">
+                        <span class="fbook-rate-curr">AED - INR</span>
+                        <span class="fbook-rate-val">
+                            <span t-att-style="state.report_data.y1_prefix == 'CY' ? 'color: #16a34a; font-weight: 700;' : 'color: #ea580c; font-weight: 700;'"><t t-esc="state.report_data.y1_short_label"/>: 24.5</span>
+                            <span class="fbook-rate-divider">|</span>
+                            <span t-att-style="state.report_data.y2_prefix == 'CY' ? 'color: #16a34a; font-weight: 700;' : 'color: #ea580c; font-weight: 700;'"><t t-esc="state.report_data.y2_short_label"/>: 25.6</span>
+                        </span>
+                    </div>
+                    <div class="fbook-rate-pill">
+                        <span class="fbook-rate-curr">USD - INR</span>
+                        <span class="fbook-rate-val">
+                            <span t-att-style="state.report_data.y1_prefix == 'CY' ? 'color: #16a34a; font-weight: 700;' : 'color: #ea580c; font-weight: 700;'"><t t-esc="state.report_data.y1_short_label"/>: 90</span>
+                            <span class="fbook-rate-divider">|</span>
+                            <span t-att-style="state.report_data.y2_prefix == 'CY' ? 'color: #16a34a; font-weight: 700;' : 'color: #ea580c; font-weight: 700;'"><t t-esc="state.report_data.y2_short_label"/>: 93</span>
+                        </span>
+                    </div>
+                </div>
             </div>
 
             <!-- ═══════════════════════════════════════════════════════════
-                 LAST THREE FINANCIAL YEARS PERFORMANCE TABLE
+                 1. LAST THREE FINANCIAL YEARS PERFORMANCE TABLE
                  ═══════════════════════════════════════════════════════════ -->
             <t t-if="state.report_data.three_year_summary">
-                <div style="margin-top: 10px; margin-bottom: 24px; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);">
-                    <div style="background: linear-gradient(90deg, #1e293b 0%, #334155 100%); color: #ffffff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
-                        <div style="font-weight: 800; font-size: 15px; display: flex; align-items: center; gap: 10px; letter-spacing: -0.01em;">
-                            <i class="fa fa-line-chart" style="color: #60a5fa !important; font-size: 16px;"></i>
+                <div class="fbook-perf-card">
+                    <div class="fbook-perf-header">
+                        <div class="fbook-perf-title">
+                            <i class="fa fa-line-chart" style="color: #60a5fa !important; font-size: 16px;"/>
                             <span>Last Three Financial Years Performance</span>
                         </div>
-                        <span style="font-size: 12px; background: rgba(255, 255, 255, 0.15); padding: 4px 12px; border-radius: 14px; font-weight: 600;">
-                            <t t-esc="state.report_data.currency_symbol"/>
-                        </span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fbook-scroll-hint fbook-scroll-hint-light"><i class="fa fa-arrows-h"/> Scroll</span>
+                            <span class="fbook-currency-badge">
+                                <t t-esc="state.report_data.currency_symbol"/>
+                            </span>
+                        </div>
                     </div>
 
-                    <table class="fbook-table" style="margin-bottom: 0;">
-                        <thead>
-                            <tr>
-                                <th style="text-align: left; background: #f8fafc; font-weight: 700; width: 220px; color: #334155;">Financial Metric</th>
-                                <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
-                                    <th style="text-align: right; background: #f1f5f9; font-weight: 700;">
-                                        <span t-att-style="yr.prefix == 'CY' ? 'color: #16a34a; font-weight: 700;' : 'color: #ea580c; font-weight: 700;'">
-                                            <t t-esc="yr.label"/>
-                                        </span>
-                                    </th>
-                                </t>
-                                <th style="text-align: right; background: #e0f2fe; color: #0369a1; font-weight: 800; width: 180px;">Total (3 Years)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Row 1: Revenue -->
-                            <tr class="metric-row">
-                                <td class="row-label" style="font-weight: 700; color: #0f172a;">
-                                    <i class="fa fa-arrow-circle-o-up text-success" style="margin-right: 6px;"></i> Revenue
-                                </td>
-                                <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
-                                    <td style="font-weight: 600; color: #0f172a;"><t t-out="formatAmt(yr.revenue)"/></td>
-                                </t>
-                                <td class="total-cell" style="font-weight: 800; background: #f0fdf4; color: #166534;"><t t-out="formatAmt(state.report_data.three_year_summary.total_revenue)"/></td>
-                            </tr>
-
-                            <!-- Row 2: Expenses -->
-                            <tr class="metric-row">
-                                <td class="row-label" style="font-weight: 700; color: #0f172a;">
-                                    <i class="fa fa-arrow-circle-o-down text-danger" style="margin-right: 6px;"></i> Expenses
-                                </td>
-                                <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
-                                    <td style="font-weight: 600; color: #dc2626;"><t t-out="formatAmt(yr.expenses)"/></td>
-                                </t>
-                                <td class="total-cell" style="font-weight: 800; background: #fef2f2; color: #991b1b;"><t t-out="formatAmt(state.report_data.three_year_summary.total_expenses)"/></td>
-                            </tr>
-
-                            <!-- Row 3: Margin -->
-                            <tr class="metric-row" style="background: #f8fafc; font-weight: 700;">
-                                <td class="row-label" style="font-weight: 700; color: #0f172a;">
-                                    <i class="fa fa-percent text-primary" style="margin-right: 6px;"></i> % Margin
-                                </td>
-                                <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
-                                    <td t-att-style="yr.margin >= 0 ? 'font-weight: 700; color: #15803d;' : 'font-weight: 700; color: #b91c1c;'">
-                                        <t t-esc="yr.margin"/>%
+                    <div class="fbook-table-wrapper" style="border: none; border-radius: 0; box-shadow: none; margin-bottom: 0;">
+                        <table class="fbook-table" style="min-width: 620px; margin-bottom: 0;">
+                            <thead>
+                                <tr>
+                                    <th class="fbook-sticky-col" style="text-align: left; background: #f8fafc; font-weight: 700; width: 220px; color: #334155;">Financial Metric</th>
+                                    <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
+                                        <th style="text-align: right; background: #f1f5f9; font-weight: 700;">
+                                            <span t-att-style="yr.prefix == 'CY' ? 'color: #16a34a; font-weight: 700;' : 'color: #ea580c; font-weight: 700;'">
+                                                <t t-esc="yr.label"/>
+                                            </span>
+                                        </th>
+                                    </t>
+                                    <th style="text-align: right; background: #e0f2fe; color: #0369a1; font-weight: 800; width: 180px;">Total (3 Years)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Row 1: Revenue -->
+                                <tr class="metric-row">
+                                    <td class="row-label" style="font-weight: 700; color: #0f172a;">
+                                        <i class="fa fa-arrow-circle-o-up text-success" style="margin-right: 6px;"></i> Revenue
                                     </td>
-                                </t>
-                                <td class="total-cell" t-att-style="state.report_data.three_year_summary.total_margin >= 0 ? 'font-weight: 800; background: #ecfdf5; color: #047857;' : 'font-weight: 800; background: #fef2f2; color: #b91c1c;'">
-                                    <t t-esc="state.report_data.three_year_summary.total_margin"/>%
-                                </td>
-                            </tr>
+                                    <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
+                                        <td style="font-weight: 600; color: #0f172a;"><t t-out="formatAmt(yr.revenue)"/></td>
+                                    </t>
+                                    <td class="total-cell" style="font-weight: 800; background: #f0fdf4; color: #166534;"><t t-out="formatAmt(state.report_data.three_year_summary.total_revenue)"/></td>
+                                </tr>
 
-                            <!-- Row 4: Investors -->
-                            <tr class="metric-row">
-                                <td class="row-label" style="font-weight: 700; color: #0f172a;">
-                                    <i class="fa fa-users" style="color: #0284c7; margin-right: 6px;"></i> Investors
-                                </td>
-                                <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
-                                    <td style="font-weight: 600; color: #0284c7;"><t t-out="formatAmt(yr.investors)"/></td>
-                                </t>
-                                <td class="total-cell" style="font-weight: 800; background: #f0f9ff; color: #0369a1;"><t t-out="formatAmt(state.report_data.three_year_summary.total_investors)"/></td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                <!-- Row 2: Expenses -->
+                                <tr class="metric-row">
+                                    <td class="row-label" style="font-weight: 700; color: #0f172a;">
+                                        <i class="fa fa-arrow-circle-o-down text-danger" style="margin-right: 6px;"></i> Expenses
+                                    </td>
+                                    <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
+                                        <td style="font-weight: 600; color: #dc2626;"><t t-out="formatAmt(yr.expenses)"/></td>
+                                    </t>
+                                    <td class="total-cell" style="font-weight: 800; background: #fef2f2; color: #991b1b;"><t t-out="formatAmt(state.report_data.three_year_summary.total_expenses)"/></td>
+                                </tr>
+
+                                <!-- Row 3: Margin -->
+                                <tr class="metric-row" style="background: #f8fafc; font-weight: 700;">
+                                    <td class="row-label" style="font-weight: 700; color: #0f172a;">
+                                        <i class="fa fa-percent text-primary" style="margin-right: 6px;"></i> % Margin
+                                    </td>
+                                    <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
+                                        <td t-att-style="yr.margin >= 0 ? 'font-weight: 700; color: #15803d;' : 'font-weight: 700; color: #b91c1c;'">
+                                            <t t-esc="yr.margin"/>%
+                                        </td>
+                                    </t>
+                                    <td class="total-cell" t-att-style="state.report_data.three_year_summary.total_margin >= 0 ? 'font-weight: 800; background: #ecfdf5; color: #047857;' : 'font-weight: 800; background: #fef2f2; color: #b91c1c;'">
+                                        <t t-esc="state.report_data.three_year_summary.total_margin"/>%
+                                    </td>
+                                </tr>
+
+                                <!-- Row 4: Investors -->
+                                <tr class="metric-row">
+                                    <td class="row-label" style="font-weight: 700; color: #0f172a;">
+                                        <i class="fa fa-users" style="color: #0284c7; margin-right: 6px;"></i> Investors
+                                    </td>
+                                    <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
+                                        <td style="font-weight: 600; color: #0284c7;"><t t-out="formatAmt(yr.investors)"/></td>
+                                    </t>
+                                    <td class="total-cell" style="font-weight: 800; background: #f0f9ff; color: #0369a1;"><t t-out="formatAmt(state.report_data.three_year_summary.total_investors)"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </t>
 
-            <table class="fbook-table">
-                <thead>
-                    <!-- Row 1: Currency & Years -->
-                    <tr>
-                        <th class="main-header" style="text-align: left;">
-                            <t t-esc="state.report_data.currency_symbol"/>
-                        </th>
-                        <th colspan="5" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'">
-                            <t t-esc="state.report_data.year1_label"/>
-                        </th>
-                        <th colspan="5" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'">
-                            <t t-esc="state.report_data.year2_label"/>
-                        </th>
-                    </tr>
-                    <!-- Row 2: Company & Quarters -->
-                    <tr>
-                        <th class="sub-main-header" style="text-align: left; padding-top: 6px; padding-bottom: 6px;">
-                            <div style="font-weight: 700; font-size: 13px;"><t t-esc="state.report_data.company_name_only or state.report_data.company_name"/></div>
-                            <t t-if="state.report_data.country_code">
-                                <div style="font-weight: 600; font-size: 11px; color: #475569; margin-top: 2px;">(<t t-esc="state.report_data.country_code"/>)</div>
-                            </t>
-                        </th>
-                        <!-- Year 1 Quarters -->
-                        <th class="text-center">Q1</th>
-                        <th class="text-center">Q2</th>
-                        <th class="text-center">Q3</th>
-                        <th class="text-center">Q4</th>
-                        <th class="text-center" style="background: #bae6fd;">Total</th>
-                        <!-- Year 2 Quarters -->
-                        <th class="text-center">Q1</th>
-                        <th class="text-center">Q2</th>
-                        <th class="text-center">Q3</th>
-                        <th class="text-center">Q4</th>
-                        <th class="text-center" style="background: #bae6fd;">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Booking -->
-                    <tr class="metric-row">
-                        <td class="row-label">Booking</td>
-                        <!-- Y1 -->
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q1.booking)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q2.booking)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q3.booking)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q4.booking)"/></td>
-                        <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.booking)"/></td>
-                        <!-- Y2 -->
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q1.booking)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q2.booking)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q3.booking)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q4.booking)"/></td>
-                        <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.booking)"/></td>
-                    </tr>
-
-                    <!-- Billed -->
-                    <tr class="metric-row">
-                        <td class="row-label">Billed</td>
-                        <!-- Y1 -->
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q1.billed)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q2.billed)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q3.billed)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q4.billed)"/></td>
-                        <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.billed)"/></td>
-                        <!-- Y2 -->
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q1.billed)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q2.billed)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q3.billed)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q4.billed)"/></td>
-                        <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.billed)"/></td>
-                    </tr>
-
-                    <!-- Actual -->
-                    <tr class="metric-row">
-                        <td class="row-label">Actual</td>
-                        <!-- Y1 -->
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q1.actual)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q2.actual)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q3.actual)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q4.actual)"/></td>
-                        <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.actual)"/></td>
-                        <!-- Y2 -->
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q1.actual)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q2.actual)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q3.actual)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q4.actual)"/></td>
-                        <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.actual)"/></td>
-                    </tr>
-
-                    <!-- DSO -->
-                     <tr class="metric-row">
-                         <td class="row-label">DSO (Amount)</td>
-                         <!-- Y1 -->
-                         <td><t t-out="formatAmt(state.report_data.data.y1.q1.dso_amount)"/></td>
-                         <td><t t-out="formatAmt(state.report_data.data.y1.q2.dso_amount)"/></td>
-                         <td><t t-out="formatAmt(state.report_data.data.y1.q3.dso_amount)"/></td>
-                         <td><t t-out="formatAmt(state.report_data.data.y1.q4.dso_amount)"/></td>
-                         <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.dso_amount)"/></td>
-                         <!-- Y2 -->
-                         <td><t t-out="formatAmt(state.report_data.data.y2.q1.dso_amount)"/></td>
-                         <td><t t-out="formatAmt(state.report_data.data.y2.q2.dso_amount)"/></td>
-                         <td><t t-out="formatAmt(state.report_data.data.y2.q3.dso_amount)"/></td>
-                         <td><t t-out="formatAmt(state.report_data.data.y2.q4.dso_amount)"/></td>
-                         <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.dso_amount)"/></td>
-                     </tr>
-                     <tr class="metric-row">
-                         <td class="row-label">DSO (Days)</td>
-                         <!-- Y1 -->
-                         <td><t t-out="formatAmt(state.report_data.data.y1.q1.dso_days)"/></td>
-                         <td><t t-out="formatAmt(state.report_data.data.y1.q2.dso_days)"/></td>
-                         <td><t t-out="formatAmt(state.report_data.data.y1.q3.dso_days)"/></td>
-                         <td><t t-out="formatAmt(state.report_data.data.y1.q4.dso_days)"/></td>
-                         <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.dso_days)"/></td>
-                         <!-- Y2 -->
-                         <td><t t-out="formatAmt(state.report_data.data.y2.q1.dso_days)"/></td>
-                         <td><t t-out="formatAmt(state.report_data.data.y2.q2.dso_days)"/></td>
-                         <td><t t-out="formatAmt(state.report_data.data.y2.q3.dso_days)"/></td>
-                         <td><t t-out="formatAmt(state.report_data.data.y2.q4.dso_days)"/></td>
-                         <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.dso_days)"/></td>
-                     </tr>
-
-                    <!-- Spacer -->
-                    <tr class="spacer-row">
-                        <td colspan="11"></td>
-                    </tr>
-
-                    <!-- Expenses -->
-                    <tr class="metric-row">
-                        <td class="row-label">Expenses</td>
-                        <!-- Y1 -->
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q1.expenses)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q2.expenses)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q3.expenses)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q4.expenses)"/></td>
-                        <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.expenses)"/></td>
-                        <!-- Y2 -->
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q1.expenses)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q2.expenses)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q3.expenses)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q4.expenses)"/></td>
-                        <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.expenses)"/></td>
-                    </tr>
-
-                    <!-- Profit -->
-                    <tr class="metric-row">
-                        <td class="row-label">Profit</td>
-                        <!-- Y1 -->
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q1.profit)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q2.profit)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q3.profit)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q4.profit)"/></td>
-                        <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.profit)"/></td>
-                        <!-- Y2 -->
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q1.profit)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q2.profit)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q3.profit)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q4.profit)"/></td>
-                        <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.profit)"/></td>
-                    </tr>
-
-                    <!-- Margin% -->
-                    <tr class="metric-row">
-                        <td class="row-label">Margin %</td>
-                        <!-- Y1 -->
-                        <td><t t-out="formatPct(state.report_data.data.y1.q1.margin)"/></td>
-                        <td><t t-out="formatPct(state.report_data.data.y1.q2.margin)"/></td>
-                        <td><t t-out="formatPct(state.report_data.data.y1.q3.margin)"/></td>
-                        <td><t t-out="formatPct(state.report_data.data.y1.q4.margin)"/></td>
-                        <td class="total-cell"><t t-out="formatPct(state.report_data.data.y1.total.margin)"/></td>
-                        <!-- Y2 -->
-                        <td><t t-out="formatPct(state.report_data.data.y2.q1.margin)"/></td>
-                        <td><t t-out="formatPct(state.report_data.data.y2.q2.margin)"/></td>
-                        <td><t t-out="formatPct(state.report_data.data.y2.q3.margin)"/></td>
-                        <td><t t-out="formatPct(state.report_data.data.y2.q4.margin)"/></td>
-                        <td class="total-cell"><t t-out="formatPct(state.report_data.data.y2.total.margin)"/></td>
-                    </tr>
-
-                    <!-- Cash Flow -->
-                    <tr class="metric-row">
-                        <td class="row-label">Cash Flow</td>
-                        <!-- Y1 -->
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q1.cash_flow)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q2.cash_flow)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q3.cash_flow)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q4.cash_flow)"/></td>
-                        <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.cash_flow)"/></td>
-                        <!-- Y2 -->
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q1.cash_flow)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q2.cash_flow)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q3.cash_flow)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q4.cash_flow)"/></td>
-                        <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.cash_flow)"/></td>
-                    </tr>
-
-                    <!-- Investors -->
-                    <tr class="metric-row">
-                        <td class="row-label">Investors</td>
-                        <!-- Y1 -->
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q1.calibration)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q2.calibration)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q3.calibration)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y1.q4.calibration)"/></td>
-                        <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.calibration)"/></td>
-                        <!-- Y2 -->
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q1.calibration)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q2.calibration)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q3.calibration)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.data.y2.q4.calibration)"/></td>
-                        <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.calibration)"/></td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <!-- SECOND TABLE: REVENUE REPORT -->
-
-
-
-
-            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Revenue</div>
-            <table class="fbook-table">
-                <thead>
-                    <!-- Row 1: FY Labels -->
-                    <tr>
-                        <th colspan="5" class="main-header" style="text-align: left;"><t t-esc="state.report_data.currency_symbol"/></th>
-                        <th colspan="4" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year1_label"/></th>
-                        <th colspan="4" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year2_label"/></th>
-                    </tr>
-                    <!-- Row 3: Column names -->
-                    <tr>
-                        <th style="text-align: left;">Customers</th>
-                        <th style="text-align: left;">Industry</th>
-                        <th style="text-align: left;">Business</th>
-                        <th style="text-align: left;">Engagement</th>
-                        <th style="text-align: right; width: 110px;">Contract Value</th>
-                        <th style="text-align: right; width: 90px;">Booking</th>
-                        <th style="text-align: right; width: 90px;">Billed</th>
-                        <th style="text-align: right; width: 90px;">Expenses</th>
-                        <th style="text-align: right; width: 100px;">GM(%)</th>
-                        <th style="text-align: right; width: 90px;">Booking</th>
-                        <th style="text-align: right; width: 90px;">Billed</th>
-                        <th style="text-align: right; width: 90px;">Expenses</th>
-                        <th style="text-align: right; width: 100px;">GM(%)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <t t-foreach="state.report_data.contracts_data" t-as="c" t-key="c.customers">
+            <!-- ═══════════════════════════════════════════════════════════
+                 2. MAIN QUARTERLY PERFORMANCE TABLE
+                 ═══════════════════════════════════════════════════════════ -->
+            <div class="fbook-section-header" style="margin-top: 14px;">
+                <div class="fbook-title">Quarterly Financial Breakdown</div>
+                <div class="fbook-scroll-hint"><i class="fa fa-arrows-h"/> Scroll horizontally</div>
+            </div>
+            <div class="fbook-table-wrapper">
+                <table class="fbook-table" style="min-width: 1050px;">
+                    <thead>
+                        <!-- Row 1: Currency and Years -->
+                        <tr>
+                            <th class="main-header fbook-sticky-col" style="text-align: left;">
+                                <t t-esc="state.report_data.currency_symbol"/>
+                            </th>
+                            <th colspan="5" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'">
+                                <t t-esc="state.report_data.year1_label"/>
+                            </th>
+                            <th colspan="5" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'">
+                                <t t-esc="state.report_data.year2_label"/>
+                            </th>
+                        </tr>
+                        <!-- Row 2: Company and Quarters -->
+                        <tr>
+                            <th class="sub-main-header fbook-sticky-col" style="text-align: left; padding-top: 6px; padding-bottom: 6px;">
+                                <div style="font-weight: 700; font-size: 13px;"><t t-esc="state.report_data.company_name_only or state.report_data.company_name"/></div>
+                                <t t-if="state.report_data.country_code">
+                                    <div style="font-weight: 600; font-size: 11px; color: #475569; margin-top: 2px;">(<t t-esc="state.report_data.country_code"/>)</div>
+                                </t>
+                            </th>
+                            <!-- Year 1 Quarters -->
+                            <th class="text-center">Q1</th>
+                            <th class="text-center">Q2</th>
+                            <th class="text-center">Q3</th>
+                            <th class="text-center">Q4</th>
+                            <th class="text-center" style="background: #bae6fd;">Total</th>
+                            <!-- Year 2 Quarters -->
+                            <th class="text-center">Q1</th>
+                            <th class="text-center">Q2</th>
+                            <th class="text-center">Q3</th>
+                            <th class="text-center">Q4</th>
+                            <th class="text-center" style="background: #bae6fd;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Booking -->
                         <tr class="metric-row">
-                            <td style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-weight: 700; color: #475569; font-style: italic;' : ''"><t t-esc="c.customers"/></td>
-                            <td style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-style: italic; color: #64748b;' : ''"><t t-esc="c.industry"/></td>
-                            <td style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-style: italic; color: #64748b;' : ''"><t t-esc="c.business"/></td>
-                            <td style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-style: italic; color: #64748b;' : ''"><t t-esc="c.engagement"/></td>
-                            <td><t t-out="formatAmt(c.contract_value)"/></td>
+                            <td class="row-label">Booking</td>
+                            <!-- Y1 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q1.booking)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q2.booking)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q3.booking)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q4.booking)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.booking)"/></td>
+                            <!-- Y2 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q1.booking)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q2.booking)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q3.booking)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q4.booking)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.booking)"/></td>
+                        </tr>
+
+                        <!-- Billed -->
+                        <tr class="metric-row">
+                            <td class="row-label">Billed</td>
+                            <!-- Y1 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q1.billed)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q2.billed)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q3.billed)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q4.billed)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.billed)"/></td>
+                            <!-- Y2 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q1.billed)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q2.billed)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q3.billed)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q4.billed)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.billed)"/></td>
+                        </tr>
+
+                        <!-- Actual -->
+                        <tr class="metric-row">
+                            <td class="row-label">Actual</td>
+                            <!-- Y1 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q1.actual)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q2.actual)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q3.actual)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q4.actual)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.actual)"/></td>
+                            <!-- Y2 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q1.actual)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q2.actual)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q3.actual)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q4.actual)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.actual)"/></td>
+                        </tr>
+
+                        <!-- DSO -->
+                        <tr class="metric-row">
+                            <td class="row-label">DSO (Amount)</td>
+                            <!-- Y1 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q1.dso_amount)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q2.dso_amount)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q3.dso_amount)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q4.dso_amount)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.dso_amount)"/></td>
+                            <!-- Y2 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q1.dso_amount)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q2.dso_amount)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q3.dso_amount)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q4.dso_amount)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.dso_amount)"/></td>
+                        </tr>
+                        <tr class="metric-row">
+                            <td class="row-label">DSO (Days)</td>
+                            <!-- Y1 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q1.dso_days)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q2.dso_days)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q3.dso_days)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q4.dso_days)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.dso_days)"/></td>
+                            <!-- Y2 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q1.dso_days)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q2.dso_days)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q3.dso_days)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q4.dso_days)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.dso_days)"/></td>
+                        </tr>
+
+                        <!-- Spacer -->
+                        <tr class="spacer-row">
+                            <td colspan="11"></td>
+                        </tr>
+
+                        <!-- Expenses -->
+                        <tr class="metric-row">
+                            <td class="row-label">Expenses</td>
+                            <!-- Y1 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q1.expenses)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q2.expenses)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q3.expenses)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q4.expenses)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.expenses)"/></td>
+                            <!-- Y2 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q1.expenses)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q2.expenses)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q3.expenses)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q4.expenses)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.expenses)"/></td>
+                        </tr>
+
+                        <!-- Profit -->
+                        <tr class="metric-row">
+                            <td class="row-label">Profit</td>
+                            <!-- Y1 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q1.profit)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q2.profit)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q3.profit)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q4.profit)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.profit)"/></td>
+                            <!-- Y2 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q1.profit)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q2.profit)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q3.profit)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q4.profit)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.profit)"/></td>
+                        </tr>
+
+                        <!-- Margin% -->
+                        <tr class="metric-row">
+                            <td class="row-label">Margin %</td>
+                            <!-- Y1 -->
+                            <td><t t-out="formatPct(state.report_data.data.y1.q1.margin)"/></td>
+                            <td><t t-out="formatPct(state.report_data.data.y1.q2.margin)"/></td>
+                            <td><t t-out="formatPct(state.report_data.data.y1.q3.margin)"/></td>
+                            <td><t t-out="formatPct(state.report_data.data.y1.q4.margin)"/></td>
+                            <td class="total-cell"><t t-out="formatPct(state.report_data.data.y1.total.margin)"/></td>
+                            <!-- Y2 -->
+                            <td><t t-out="formatPct(state.report_data.data.y2.q1.margin)"/></td>
+                            <td><t t-out="formatPct(state.report_data.data.y2.q2.margin)"/></td>
+                            <td><t t-out="formatPct(state.report_data.data.y2.q3.margin)"/></td>
+                            <td><t t-out="formatPct(state.report_data.data.y2.q4.margin)"/></td>
+                            <td class="total-cell"><t t-out="formatPct(state.report_data.data.y2.total.margin)"/></td>
+                        </tr>
+
+                        <!-- Cash Flow -->
+                        <tr class="metric-row">
+                            <td class="row-label">Cash Flow</td>
+                            <!-- Y1 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q1.cash_flow)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q2.cash_flow)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q3.cash_flow)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q4.cash_flow)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.cash_flow)"/></td>
+                            <!-- Y2 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q1.cash_flow)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q2.cash_flow)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q3.cash_flow)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q4.cash_flow)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.cash_flow)"/></td>
+                        </tr>
+
+                        <!-- Investors -->
+                        <tr class="metric-row">
+                            <td class="row-label">Investors</td>
+                            <!-- Y1 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q1.calibration)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q2.calibration)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q3.calibration)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q4.calibration)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.calibration)"/></td>
+                            <!-- Y2 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q1.calibration)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q2.calibration)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q3.calibration)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q4.calibration)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.calibration)"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════
+                 3. REVENUE REPORT
+                 ═══════════════════════════════════════════════════════════ -->
+            <div class="fbook-section-header">
+                <div class="fbook-title">Revenue</div>
+                <div class="fbook-scroll-hint"><i class="fa fa-arrows-h"/> Scroll horizontally</div>
+            </div>
+            <div class="fbook-table-wrapper">
+                <table class="fbook-table" style="min-width: 1280px;">
+                    <thead>
+                        <!-- Row 1: FY Labels -->
+                        <tr>
+                            <th colspan="5" class="main-header" style="text-align: left;"><t t-esc="state.report_data.currency_symbol"/></th>
+                            <th colspan="4" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year1_label"/></th>
+                            <th colspan="4" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year2_label"/></th>
+                        </tr>
+                        <!-- Row 2: Column names -->
+                        <tr>
+                            <th class="fbook-sticky-col" style="text-align: left;">Customers</th>
+                            <th style="text-align: left;">Industry</th>
+                            <th style="text-align: left;">Business</th>
+                            <th style="text-align: left;">Engagement</th>
+                            <th style="text-align: right; width: 110px;">Contract Value</th>
+                            <th style="text-align: right; width: 90px;">Booking</th>
+                            <th style="text-align: right; width: 90px;">Billed</th>
+                            <th style="text-align: right; width: 90px;">Expenses</th>
+                            <th style="text-align: right; width: 100px;">GM(%)</th>
+                            <th style="text-align: right; width: 90px;">Booking</th>
+                            <th style="text-align: right; width: 90px;">Billed</th>
+                            <th style="text-align: right; width: 90px;">Expenses</th>
+                            <th style="text-align: right; width: 100px;">GM(%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="state.report_data.contracts_data" t-as="c" t-key="c.customers">
+                            <tr class="metric-row">
+                                <td class="fbook-sticky-col" style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-weight: 700; color: #475569; font-style: italic;' : ''"><t t-esc="c.customers"/></td>
+                                <td style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-style: italic; color: #64748b;' : ''"><t t-esc="c.industry"/></td>
+                                <td style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-style: italic; color: #64748b;' : ''"><t t-esc="c.business"/></td>
+                                <td style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-style: italic; color: #64748b;' : ''"><t t-esc="c.engagement"/></td>
+                                <td><t t-out="formatAmt(c.contract_value)"/></td>
+                                <!-- Year 1 -->
+                                <td><t t-out="formatAmt(c.y1_booking)"/></td>
+                                <td><t t-out="formatAmt(c.y1_billed)"/></td>
+                                <td><t t-out="formatAmt(c.y1_expenses)"/></td>
+                                <td><t t-out="formatPct(c.y1_margin)"/></td>
+                                <!-- Year 2 -->
+                                <td><t t-out="formatAmt(c.y2_booking)"/></td>
+                                <td><t t-out="formatAmt(c.y2_billed)"/></td>
+                                <td><t t-out="formatAmt(c.y2_expenses)"/></td>
+                                <td><t t-out="formatPct(c.y2_margin)"/></td>
+                            </tr>
+                        </t>
+                        <!-- Totals row -->
+                        <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
+                            <td class="fbook-sticky-col" colspan="4" style="text-align: left;">Total</td>
+                            <td><t t-out="formatAmt(state.report_data.total_contract_value)"/></td>
                             <!-- Year 1 -->
-                            <td><t t-out="formatAmt(c.y1_booking)"/></td>
-                            <td><t t-out="formatAmt(c.y1_billed)"/></td>
-                            <td><t t-out="formatAmt(c.y1_expenses)"/></td>
-                            <td><t t-out="formatPct(c.y1_margin)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.total_y1_booking)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.total_y1_billed)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.total_y1_expenses)"/></td>
+                            <td><t t-out="formatPct(state.report_data.total_y1_margin)"/></td>
                             <!-- Year 2 -->
-                            <td><t t-out="formatAmt(c.y2_booking)"/></td>
-                            <td><t t-out="formatAmt(c.y2_billed)"/></td>
-                            <td><t t-out="formatAmt(c.y2_expenses)"/></td>
-                            <td><t t-out="formatPct(c.y2_margin)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.total_y2_booking)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.total_y2_billed)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.total_y2_expenses)"/></td>
+                            <td><t t-out="formatPct(state.report_data.total_y2_margin)"/></td>
                         </tr>
-                    </t>
-                    <!-- Totals row -->
-                    <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
-                        <td colspan="4" style="text-align: left;">Total</td>
-                        <td><t t-out="formatAmt(state.report_data.total_contract_value)"/></td>
-                        <!-- Year 1 -->
-                        <td><t t-out="formatAmt(state.report_data.total_y1_booking)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.total_y1_billed)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.total_y1_expenses)"/></td>
-                        <td><t t-out="formatPct(state.report_data.total_y1_margin)"/></td>
-                        <!-- Year 2 -->
-                        <td><t t-out="formatAmt(state.report_data.total_y2_booking)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.total_y2_billed)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.total_y2_expenses)"/></td>
-                        <td><t t-out="formatPct(state.report_data.total_y2_margin)"/></td>
-                    </tr>
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
 
-
-            <!-- THIRD TABLE: EXPENSE REPORT -->
-            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Expense</div>
-            <table class="fbook-table">
-                <thead>
-                    <!-- Row 1: FY Labels -->
-                    <tr>
-                        <th colspan="2" class="main-header" style="text-align: left;"><t t-esc="state.report_data.currency_symbol"/></th>
-                        <th colspan="2" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year1_label"/></th>
-                        <th colspan="2" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year2_label"/></th>
-                    </tr>
-                    <!-- Row 3: Column names -->
-                    <tr>
-                        <th style="text-align: left;">Category</th>
-                        <th style="text-align: left;">Sub Category</th>
-                        <th style="text-align: right; width: 120px;">Plan</th>
-                        <th style="text-align: right; width: 120px;">Actual</th>
-                        <th style="text-align: right; width: 120px;">Plan</th>
-                        <th style="text-align: right; width: 120px;">Actual</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <t t-foreach="state.report_data.expenses_data" t-as="e" t-key="e.category">
-                        <tr class="metric-row">
-                            <td style="text-align: left;"><t t-esc="e.category"/></td>
-                            <td style="text-align: left; color: #475569;"><t t-esc="e.sub_category"/></td>
-                            <td><t t-out="formatAmt(e.y1_booked)"/></td>
-                            <td><t t-out="formatAmt(e.y1_billed)"/></td>
-                            <td><t t-out="formatAmt(e.y2_booked)"/></td>
-                            <td><t t-out="formatAmt(e.y2_billed)"/></td>
+            <!-- ═══════════════════════════════════════════════════════════
+                 4. EXPENSE REPORT
+                 ═══════════════════════════════════════════════════════════ -->
+            <div class="fbook-section-header">
+                <div class="fbook-title">Expense</div>
+                <div class="fbook-scroll-hint"><i class="fa fa-arrows-h"/> Scroll horizontally</div>
+            </div>
+            <div class="fbook-table-wrapper">
+                <table class="fbook-table" style="min-width: 750px;">
+                    <thead>
+                        <!-- Row 1: FY Labels -->
+                        <tr>
+                            <th colspan="2" class="main-header" style="text-align: left;"><t t-esc="state.report_data.currency_symbol"/></th>
+                            <th colspan="2" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year1_label"/></th>
+                            <th colspan="2" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year2_label"/></th>
                         </tr>
-                    </t>
-                    <!-- Totals row -->
-                    <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
-                        <td colspan="2" style="text-align: left;">Total</td>
-                        <td><t t-out="formatAmt(state.report_data.total_exp_y1_booked)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.total_exp_y1_billed)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.total_exp_y2_booked)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.total_exp_y2_billed)"/></td>
-                    </tr>
-                </tbody>
-            </table>
+                        <!-- Row 2: Column names -->
+                        <tr>
+                            <th class="fbook-sticky-col" style="text-align: left;">Category</th>
+                            <th style="text-align: left;">Sub Category</th>
+                            <th style="text-align: right; width: 120px;">Plan</th>
+                            <th style="text-align: right; width: 120px;">Actual</th>
+                            <th style="text-align: right; width: 120px;">Plan</th>
+                            <th style="text-align: right; width: 120px;">Actual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="state.report_data.expenses_data" t-as="e" t-key="e.category">
+                            <tr class="metric-row">
+                                <td class="fbook-sticky-col" style="text-align: left;"><t t-esc="e.category"/></td>
+                                <td style="text-align: left; color: #475569;"><t t-esc="e.sub_category"/></td>
+                                <td><t t-out="formatAmt(e.y1_booked)"/></td>
+                                <td><t t-out="formatAmt(e.y1_billed)"/></td>
+                                <td><t t-out="formatAmt(e.y2_booked)"/></td>
+                                <td><t t-out="formatAmt(e.y2_billed)"/></td>
+                            </tr>
+                        </t>
+                        <!-- Totals row -->
+                        <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
+                            <td class="fbook-sticky-col" colspan="2" style="text-align: left;">Total</td>
+                            <td><t t-out="formatAmt(state.report_data.total_exp_y1_booked)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.total_exp_y1_billed)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.total_exp_y2_booked)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.total_exp_y2_billed)"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
-            <!-- FOURTH TABLE: CASH FLOW REPORT -->
-            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Cash Flow</div>
-            <table class="fbook-table">
-                <thead>
-                    <!-- Row 1: FY Labels -->
-                    <tr>
-                        <th colspan="1" class="main-header" style="text-align: left;"><t t-esc="state.report_data.currency_symbol"/></th>
-                        <th colspan="3" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year1_label"/></th>
-                        <th colspan="3" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year2_label"/></th>
-                    </tr>
-                    <!-- Row 2: Column names -->
-                    <tr>
-                        <th style="text-align: left;">Month</th>
-                        <th style="text-align: right; width: 120px;">In</th>
-                        <th style="text-align: right; width: 120px;">Out</th>
-                        <th style="text-align: right; width: 130px;">Remaining</th>
-                        <th style="text-align: right; width: 120px;">In</th>
-                        <th style="text-align: right; width: 120px;">Out</th>
-                        <th style="text-align: right; width: 130px;">Remaining</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <t t-foreach="state.report_data.monthly_cashflow" t-as="m" t-key="m.month">
-                        <tr class="metric-row">
-                            <td style="text-align: left;"><t t-esc="m.month"/></td>
+            <!-- ═══════════════════════════════════════════════════════════
+                 5. CASH FLOW REPORT
+                 ═══════════════════════════════════════════════════════════ -->
+            <div class="fbook-section-header">
+                <div class="fbook-title">Cash Flow</div>
+                <div class="fbook-scroll-hint"><i class="fa fa-arrows-h"/> Scroll horizontally</div>
+            </div>
+            <div class="fbook-table-wrapper">
+                <table class="fbook-table" style="min-width: 800px;">
+                    <thead>
+                        <!-- Row 1: FY Labels -->
+                        <tr>
+                            <th colspan="1" class="main-header" style="text-align: left;"><t t-esc="state.report_data.currency_symbol"/></th>
+                            <th colspan="3" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year1_label"/></th>
+                            <th colspan="3" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year2_label"/></th>
+                        </tr>
+                        <!-- Row 2: Column names -->
+                        <tr>
+                            <th class="fbook-sticky-col" style="text-align: left;">Month</th>
+                            <th style="text-align: right; width: 120px;">In</th>
+                            <th style="text-align: right; width: 120px;">Out</th>
+                            <th style="text-align: right; width: 130px;">Remaining</th>
+                            <th style="text-align: right; width: 120px;">In</th>
+                            <th style="text-align: right; width: 120px;">Out</th>
+                            <th style="text-align: right; width: 130px;">Remaining</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="state.report_data.monthly_cashflow" t-as="m" t-key="m.month">
+                            <tr class="metric-row">
+                                <td class="fbook-sticky-col" style="text-align: left;"><t t-esc="m.month"/></td>
+                                <!-- Year 1 -->
+                                <td><t t-out="formatAmt(m.y1_in)"/></td>
+                                <td><t t-out="formatAmt(m.y1_out)"/></td>
+                                <td style="font-weight: 600;"><t t-out="formatAmt(m.y1_remaining)"/></td>
+                                <!-- Year 2 -->
+                                <td><t t-out="formatAmt(m.y2_in)"/></td>
+                                <td><t t-out="formatAmt(m.y2_out)"/></td>
+                                <td style="font-weight: 600;"><t t-out="formatAmt(m.y2_remaining)"/></td>
+                            </tr>
+                        </t>
+                        <!-- Totals row -->
+                        <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
+                            <td class="fbook-sticky-col" style="text-align: left;">Total</td>
                             <!-- Year 1 -->
-                            <td><t t-out="formatAmt(m.y1_in)"/></td>
-                            <td><t t-out="formatAmt(m.y1_out)"/></td>
-                            <td style="font-weight: 600;"><t t-out="formatAmt(m.y1_remaining)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.total_cf_y1_in)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.total_cf_y1_out)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.total_cf_y1_remaining)"/></td>
                             <!-- Year 2 -->
-                            <td><t t-out="formatAmt(m.y2_in)"/></td>
-                            <td><t t-out="formatAmt(m.y2_out)"/></td>
-                            <td style="font-weight: 600;"><t t-out="formatAmt(m.y2_remaining)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.total_cf_y2_in)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.total_cf_y2_out)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.total_cf_y2_remaining)"/></td>
                         </tr>
-                    </t>
-                    <!-- Totals row -->
-                    <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
-                        <td style="text-align: left;">Total</td>
-                        <!-- Year 1 -->
-                        <td><t t-out="formatAmt(state.report_data.total_cf_y1_in)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.total_cf_y1_out)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.total_cf_y1_remaining)"/></td>
-                        <!-- Year 2 -->
-                        <td><t t-out="formatAmt(state.report_data.total_cf_y2_in)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.total_cf_y2_out)"/></td>
-                        <td><t t-out="formatAmt(state.report_data.total_cf_y2_remaining)"/></td>
-                    </tr>
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
 
-            <!-- FIFTH TABLE: INVESTORS REPORT -->
-            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Investors</div>
-            <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <!-- ═══════════════════════════════════════════════════════════
+                 6. INVESTORS REPORT
+                 ═══════════════════════════════════════════════════════════ -->
+            <div class="fbook-section-header">
+                <div class="fbook-title">Investors</div>
+                <div class="fbook-scroll-hint"><i class="fa fa-arrows-h"/> Scroll horizontally</div>
+            </div>
+            <div class="fbook-table-wrapper">
                 <table class="fbook-table" style="min-width: 950px;">
                     <thead>
                         <!-- Row 1: Main Headers -->
@@ -657,7 +1061,7 @@
                         </tr>
                         <!-- Row 2: Sub Headers (Received / Repaid / Net Invested) -->
                         <tr>
-                            <th style="text-align: left; min-width: 240px; background: #f8fafc; font-weight: 700;">Partner / Investor</th>
+                            <th class="fbook-sticky-col" style="text-align: left; min-width: 240px; background: #f8fafc; font-weight: 700;">Partner / Investor</th>
                             <!-- Year 1 -->
                             <th style="text-align: right; width: 110px; background: #f0fdf4; font-weight: 700; color: #166534;">Received</th>
                             <th style="text-align: right; width: 110px; background: #fef2f2; font-weight: 700; color: #991b1b;">Repaid</th>
@@ -672,7 +1076,7 @@
                         <t t-if="state.report_data.investor_rows and state.report_data.investor_rows.length">
                             <t t-foreach="state.report_data.investor_rows" t-as="inv" t-key="inv.investor">
                                 <tr class="metric-row">
-                                    <td style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="inv.investor"/></td>
+                                    <td class="fbook-sticky-col" style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="inv.investor"/></td>
                                     <!-- Year 1 -->
                                     <td><t t-out="formatAmt(inv.y1_received)"/></td>
                                     <td><t t-out="formatAmt(inv.y1_repaid)"/></td>
@@ -687,7 +1091,7 @@
                             </t>
                             <!-- Totals row -->
                             <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
-                                <td style="text-align: left;">Total</td>
+                                <td class="fbook-sticky-col" style="text-align: left;">Total</td>
                                 <!-- Year 1 Totals -->
                                 <td><t t-out="formatAmt(state.report_data.investor_totals.y1_received)"/></td>
                                 <td><t t-out="formatAmt(state.report_data.investor_totals.y1_repaid)"/></td>
@@ -711,9 +1115,14 @@
                 </table>
             </div>
 
-            <!-- SIXTH TABLE: COMPANY EXPENSES -->
-            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Company Expenses</div>
-            <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <!-- ═══════════════════════════════════════════════════════════
+                 7. COMPANY EXPENSES
+                 ═══════════════════════════════════════════════════════════ -->
+            <div class="fbook-section-header">
+                <div class="fbook-title">Company Expenses</div>
+                <div class="fbook-scroll-hint"><i class="fa fa-arrows-h"/> Scroll horizontally</div>
+            </div>
+            <div class="fbook-table-wrapper">
                 <table class="fbook-table" style="min-width: 1200px;">
                     <thead>
                         <!-- Row 1: Main Headers -->
@@ -730,7 +1139,7 @@
                         </tr>
                         <!-- Row 2: Quarter Headers -->
                         <tr>
-                            <th style="text-align: left; min-width: 220px; background: #f8fafc; font-weight: 700;">Vendor</th>
+                            <th class="fbook-sticky-col" style="text-align: left; min-width: 220px; background: #f8fafc; font-weight: 700;">Vendor</th>
                             <th style="text-align: left; min-width: 180px; background: #f8fafc; font-weight: 700;">Description</th>
                             <!-- Year 1 Quarters -->
                             <th class="text-center" style="width: 85px;">Q1</th>
@@ -750,7 +1159,7 @@
                         <t t-if="state.report_data.vendor_rows and state.report_data.vendor_rows.length">
                             <t t-foreach="state.report_data.vendor_rows" t-as="v" t-key="v.vendor">
                                 <tr class="metric-row">
-                                    <td style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="v.vendor"/></td>
+                                    <td class="fbook-sticky-col" style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="v.vendor"/></td>
                                     <td style="text-align: left; color: #475569;"><t t-esc="v.description"/></td>
                                     <!-- Year 1 -->
                                     <td><t t-out="formatAmt(v.y1_q1)"/></td>
@@ -768,7 +1177,7 @@
                             </t>
                             <!-- Totals row -->
                             <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
-                                <td colspan="2" style="text-align: left;">Total</td>
+                                <td class="fbook-sticky-col" colspan="2" style="text-align: left;">Total</td>
                                 <!-- Year 1 Totals -->
                                 <td><t t-out="formatAmt(state.report_data.vendor_totals.y1_q1)"/></td>
                                 <td><t t-out="formatAmt(state.report_data.vendor_totals.y1_q2)"/></td>
@@ -794,10 +1203,15 @@
                 </table>
             </div>
 
-            <!-- SEVENTH TABLE: ASSETS -->
-            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">Assets</div>
-            <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-                <table class="fbook-table" style="min-width: 1200px;">
+            <!-- ═══════════════════════════════════════════════════════════
+                 8. ASSETS
+                 ═══════════════════════════════════════════════════════════ -->
+            <div class="fbook-section-header">
+                <div class="fbook-title">Assets</div>
+                <div class="fbook-scroll-hint"><i class="fa fa-arrows-h"/> Scroll horizontally</div>
+            </div>
+            <div class="fbook-table-wrapper">
+                <table class="fbook-table" style="min-width: 1150px;">
                     <thead>
                         <!-- Row 1: Header with Currency and Main Metric Groups -->
                         <tr>
@@ -813,7 +1227,7 @@
                         </tr>
                         <!-- Row 2: Sub-headers for each status bucket and metric -->
                         <tr>
-                            <th style="text-align: left; min-width: 140px; background: #f8fafc; font-weight: 700;">Category</th>
+                            <th class="fbook-sticky-col" style="text-align: left; min-width: 140px; background: #f8fafc; font-weight: 700;">Category</th>
                             <th style="text-align: left; min-width: 200px; background: #f8fafc; font-weight: 700;">Description</th>
                             <!-- Assets Count -->
                             <th class="text-center" style="width: 70px; background: #f1f5f9; font-weight: 700;">Total</th>
@@ -831,7 +1245,7 @@
                         <t t-if="state.report_data.asset_rows and state.report_data.asset_rows.length">
                             <t t-foreach="state.report_data.asset_rows" t-as="a" t-key="a.category">
                                 <tr class="metric-row">
-                                    <td style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="a.category"/></td>
+                                    <td class="fbook-sticky-col" style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="a.category"/></td>
                                     <td style="text-align: left; color: #475569; font-size: 12px;"><t t-esc="a.description"/></td>
                                     <!-- Assets Count -->
                                     <td class="text-center total-cell"><t t-esc="a.count_total"/></td>
@@ -847,7 +1261,7 @@
                             </t>
                             <!-- Totals row -->
                             <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
-                                <td style="text-align: left;">Total</td>
+                                <td class="fbook-sticky-col" style="text-align: left;">Total</td>
                                 <td></td>
                                 <!-- Assets Count Totals -->
                                 <td class="text-center total-cell"><t t-esc="state.report_data.asset_totals.count_total"/></td>
@@ -872,9 +1286,14 @@
                 </table>
             </div>
 
-            <!-- EIGHTH TABLE: CSR FUND -->
-            <div class="fbook-title" style="margin-top: 40px; margin-bottom: 16px;">CSR Fund</div>
-            <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <!-- ═══════════════════════════════════════════════════════════
+                 9. CSR FUND
+                 ═══════════════════════════════════════════════════════════ -->
+            <div class="fbook-section-header">
+                <div class="fbook-title">CSR Fund</div>
+                <div class="fbook-scroll-hint"><i class="fa fa-arrows-h"/> Scroll horizontally</div>
+            </div>
+            <div class="fbook-table-wrapper">
                 <table class="fbook-table" style="min-width: 1100px;">
                     <thead>
                         <!-- Row 1: Main Headers -->
@@ -891,7 +1310,7 @@
                         </tr>
                         <!-- Row 2: Quarter Headers -->
                         <tr>
-                            <th style="text-align: left; min-width: 260px; background: #f8fafc; font-weight: 700;">Particulars</th>
+                            <th class="fbook-sticky-col" style="text-align: left; min-width: 260px; background: #f8fafc; font-weight: 700;">Particulars</th>
                             <!-- Year 1 Quarters -->
                             <th class="text-center" style="width: 85px;">Q1</th>
                             <th class="text-center" style="width: 85px;">Q2</th>
@@ -910,7 +1329,7 @@
                         <t t-if="state.report_data.csr_rows and state.report_data.csr_rows.length">
                             <t t-foreach="state.report_data.csr_rows" t-as="csr" t-key="csr.particulars">
                                 <tr class="metric-row">
-                                    <td style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="csr.particulars"/></td>
+                                    <td class="fbook-sticky-col" style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="csr.particulars"/></td>
                                     <!-- Year 1 -->
                                     <td><t t-out="formatAmt(csr.y1_q1)"/></td>
                                     <td><t t-out="formatAmt(csr.y1_q2)"/></td>
@@ -927,7 +1346,7 @@
                             </t>
                             <!-- Totals row -->
                             <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
-                                <td style="text-align: left;">Total</td>
+                                <td class="fbook-sticky-col" style="text-align: left;">Total</td>
                                 <!-- Year 1 Totals -->
                                 <td><t t-out="formatAmt(state.report_data.csr_totals.y1_q1)"/></td>
                                 <td><t t-out="formatAmt(state.report_data.csr_totals.y1_q2)"/></td>
@@ -954,6 +1373,5 @@
             </div>
         </div>
     </div>
-
 </t>
 </templates>

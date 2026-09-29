@@ -13,9 +13,13 @@ class MaterialRequisitionPortal(CustomerPortal):
         values = super()._prepare_home_portal_values(counters)
 
         if 'material_requisition_count' in counters:
-            count = request.env['employee.purchase.requisition'].sudo().search_count([
-                ('employee_id.user_id', '=', request.env.user.id)
-            ])
+            user = request.env.user
+            emp_ids = request.env['hr.employee'].sudo().search([
+                '|', ('user_id', '=', user.id),
+                ('id', '=', user.employee_id.id)
+            ]).ids
+            domain = ['|', ('employee_id', 'in', emp_ids), ('create_uid', '=', user.id)] if emp_ids else [('create_uid', '=', user.id)]
+            count = request.env['employee.purchase.requisition'].sudo().search_count(domain)
             values['material_requisition_count'] = count
 
         return values
@@ -25,10 +29,16 @@ class MaterialRequisitionPortal(CustomerPortal):
     # ---------------------------------------------------------
     @http.route(['/my/material-requisition'], type='http', auth='user', website=True)
     def portal_material_requisition(self, **kwargs):
+        user = request.env.user
+        emp_ids = request.env['hr.employee'].sudo().search([
+            '|', ('user_id', '=', user.id),
+            ('id', '=', user.employee_id.id)
+        ]).ids
+        domain = ['|', ('employee_id', 'in', emp_ids), ('create_uid', '=', user.id)] if emp_ids else [('create_uid', '=', user.id)]
 
-        requisitions = request.env['employee.purchase.requisition'].sudo().search([
-            ('employee_id.user_id', '=', request.env.user.id)
-        ], order='id desc')
+        requisitions = request.env['employee.purchase.requisition'].sudo().search(
+            domain, order='id desc'
+        )
 
         return request.render(
             'employee_purchase_requisition.bxi_purchase_requisition_template',
@@ -43,11 +53,20 @@ class MaterialRequisitionPortal(CustomerPortal):
     # ---------------------------------------------------------
     @http.route(['/my/material-requisition/<int:requisition_id>'], type='http', auth='user', website=True)
     def portal_material_requisition_detail(self, requisition_id=None, **kwargs):
+        user = request.env.user
+        emp_ids = request.env['hr.employee'].sudo().search([
+            '|', ('user_id', '=', user.id),
+            ('id', '=', user.employee_id.id)
+        ]).ids
+        domain = [('id', '=', requisition_id)]
+        if emp_ids:
+            domain.append('|')
+            domain.append(('employee_id', 'in', emp_ids))
+            domain.append(('create_uid', '=', user.id))
+        else:
+            domain.append(('create_uid', '=', user.id))
 
-        requisition = request.env['employee.purchase.requisition'].sudo().search([
-            ('id', '=', requisition_id),
-            ('employee_id.user_id', '=', request.env.user.id)
-        ])
+        requisition = request.env['employee.purchase.requisition'].sudo().search(domain, limit=1)
 
         if not requisition:
             return request.redirect('/my/material-requisition')
@@ -65,45 +84,79 @@ class MaterialRequisitionPortal(CustomerPortal):
     # ---------------------------------------------------------
     @http.route('/my/submit-requisition', type='http', auth='user', website=True)
     def requisition_form(self, **kw):
+        user = request.env.user
+        employee = user.employee_id.sudo()
+        companies = request.env['res.company'].sudo().search([])
+        default_company = (
+            (employee.company_id if employee and employee.company_id else False)
+            or user.company_id
+            or request.env.company
+        )
+
+        partner_model = request.env['res.partner'].sudo()
+        if 'customer_type' in partner_model._fields:
+            customer_domain = [('customer_type', 'in', ['customer', 'customer_and_vendor'])]
+        else:
+            customer_domain = [('customer_rank', '>', 0)]
+        customers = partner_model.search(customer_domain, order='name asc')
 
         return request.render(
             'employee_purchase_requisition.material_requisition_form',
             {
+                'companies': companies,
+                'default_company_id': default_company.id if default_company else False,
                 'products': request.env['product.product'].sudo().search([]),
-                'customers': request.env['res.partner'].sudo().search([('customer_rank', '>', 0)]),
+                'customers': customers,
             }
         )
 
     # ---------------------------------------------------------
-    # Submit Form (FINAL FIXED)
+    # Submit Form
     # ---------------------------------------------------------
     @http.route('/my/material-requisition/submit', type='http', auth='user', website=True, methods=['POST'])
     def submit_requisition(self, **post):
-
         user = request.env.user
         employee = user.employee_id.sudo()
 
-        # ✅ Validation: employee
+        # Validation: employee
         if not employee:
-            return request.redirect('/my?error=no_employee')
+            employee = request.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
+            if not employee:
+                return request.redirect('/my?error=no_employee')
 
-        # ✅ Required fields
+        # Company selection & validation
+        company_id = int(post.get('company_id')) if post.get('company_id') else False
+        if not company_id:
+            company_id = (
+                (employee.company_id.id if employee and employee.company_id else False)
+                or user.company_id.id
+                or request.env.company.id
+            )
+
+        company = request.env['res.company'].sudo().browse(company_id)
+        if not company.exists():
+            return request.redirect('/my/submit-requisition?error=invalid_company')
+
+        # Required fields
         if not post.get('requisition_date') or not post.get('requisition_deadline'):
             return request.redirect('/my/submit-requisition?error=missing_fields')
 
-        # ✅ Validate req_type
+        # Validate req_type
         req_type = post.get('req_type')
         if req_type not in ['internal', 'customer']:
             return request.redirect('/my/submit-requisition?error=invalid_type')
 
-        # ✅ Customer validation
+        # Customer validation
         customer_id = False
         if req_type == 'customer':
             if not post.get('customer_id'):
                 return request.redirect('/my/submit-requisition?error=customer_required')
             customer_id = int(post.get('customer_id'))
+            customer = request.env['res.partner'].sudo().browse(customer_id)
+            if not customer.exists() or ('customer_type' in customer._fields and customer.customer_type not in ('customer', 'customer_and_vendor')):
+                return request.redirect('/my/submit-requisition?error=invalid_customer')
 
-        # ✅ Get products safely
+        # Get products safely
         products = request.httprequest.form.getlist('product_id[]') or []
         qtys = request.httprequest.form.getlist('quantity[]') or []
 
@@ -113,10 +166,10 @@ class MaterialRequisitionPortal(CustomerPortal):
             try:
                 product_id = int(products[i])
                 qty = int(qtys[i])
-            except:
+            except (ValueError, TypeError):
                 continue
 
-            # ✅ Safe validation
+            # Safe validation
             if product_id <= 0 or qty <= 0 or qty > 100000:
                 continue
 
@@ -125,22 +178,22 @@ class MaterialRequisitionPortal(CustomerPortal):
                 'quantity': qty,
             }))
 
-        # ❌ No valid product
+        # No valid product
         if not lines:
             return request.redirect('/my/submit-requisition?error=no_products')
 
-        # ✅ Create requisition
-        requisition = request.env['employee.purchase.requisition'].sudo().create({
+        # Create requisition with the selected company
+        requisition = request.env['employee.purchase.requisition'].sudo().with_company(company_id).create({
             'employee_id': employee.id,
+            'company_id': company_id,
             'requisition_date': post.get('requisition_date'),
             'requisition_deadline': post.get('requisition_deadline'),
             'req_type': req_type,
             'customer_id': customer_id,
             'requisition_description': post.get('requisition_description'),
-            'requisition_order_ids': lines
+            'requisition_order_ids': lines,
         })
 
-        # ✅ Optional: call only if method exists
         if hasattr(requisition, 'action_confirm_requisition'):
             requisition.action_confirm_requisition()
 

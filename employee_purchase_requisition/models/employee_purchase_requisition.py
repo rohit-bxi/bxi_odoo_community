@@ -27,6 +27,7 @@ class PurchaseRequisition(models.Model):
     requisition_deadline = fields.Date(string="Requisition Deadline",
                                        help="End date of purchase requisition")
     company_id = fields.Many2one(comodel_name='res.company', string='Company',
+                                 required=True,
                                  default=lambda self: self.env.company,
                                  help='Select a company')
     requisition_order_ids = fields.One2many(comodel_name='requisition.order',
@@ -55,17 +56,30 @@ class PurchaseRequisition(models.Model):
                                 help='Requisition approval date')
     reject_date = fields.Date(string='Rejection Date', readonly=True,
                               help='Requisition rejected date')
-    source_location_id = fields.Many2one(comodel_name='stock.location',
-                                         string='Source Location',
-                                         help='Source location of requisition.')
-    destination_location_id = fields.Many2one(comodel_name='stock.location',
-                                              string="Destination Location",
-                                              help='Destination location of requisition.')
-    delivery_type_id = fields.Many2one(comodel_name='stock.picking.type',
-                                       string='Delivery To',
-                                       help='Type of delivery.')
-    internal_picking_id = fields.Many2one(comodel_name='stock.picking.type',
-                                          string="Internal Picking")
+    source_location_id = fields.Many2one(
+        comodel_name='stock.location',
+        string='Source Location',
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]",
+        help='Source location of requisition.',
+    )
+    destination_location_id = fields.Many2one(
+        comodel_name='stock.location',
+        string="Destination Location",
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]",
+        help='Destination location of requisition.',
+    )
+    delivery_type_id = fields.Many2one(
+        comodel_name='stock.picking.type',
+        string='Delivery To',
+        domain="[('company_id', '=', company_id), ('code', '=', 'incoming')]",
+        help='Type of delivery.',
+    )
+    internal_picking_id = fields.Many2one(
+        comodel_name='stock.picking.type',
+        string="Internal Picking",
+        domain="[('company_id', '=', company_id), ('code', '=', 'internal')]",
+        help='Internal picking type.',
+    )
     requisition_description = fields.Text(string="Reason For Requisition")
     purchase_count = fields.Integer(string='Purchase Count',
                                     help='Purchase count',
@@ -86,18 +100,76 @@ class PurchaseRequisition(models.Model):
                              copy=False, tracking=True)
     customer_id = fields.Many2one(comodel_name='res.partner',
                                  string='Customer', readonly=True,
+                                 domain="[('customer_type', 'in', ('customer', 'customer_and_vendor'))]",
                                  help='Select a Customer')
 
-
     @api.model
-    def create(self, vals_list):
-        """Generate purchase requisition sequence"""
+    def _get_or_create_warehouse(self, company):
+        """Find or automatically create a warehouse for the given company to ensure picking types & stock locations exist."""
+        if not company:
+            return False
+        warehouse = self.env['stock.warehouse'].sudo().search([('company_id', '=', company.id)], limit=1)
+        if not warehouse:
+            clean_name = ''.join(c for c in company.name if c.isalnum()).upper()
+            code_base = clean_name[:4] if clean_name else 'WH'
+            code = code_base
+            idx = 1
+            while self.env['stock.warehouse'].sudo().search([('code', '=', code)], limit=1):
+                code = f"{code_base[:3]}{idx}"
+                idx += 1
+            warehouse = self.env['stock.warehouse'].sudo().with_company(company).create({
+                'name': company.name,
+                'code': code,
+                'company_id': company.id,
+                'partner_id': company.partner_id.id,
+            })
+        return warehouse
 
+    @api.onchange('company_id', 'employee_id')
+    def _onchange_company_id(self):
+        """Update picking details and locations to strictly match the selected company."""
+        for rec in self:
+            if not rec.company_id:
+                rec.source_location_id = False
+                rec.destination_location_id = False
+                rec.delivery_type_id = False
+                rec.internal_picking_id = False
+                continue
+            warehouse = rec._get_or_create_warehouse(rec.company_id)
+            dept_loc = rec.employee_id.sudo().department_id.department_location_id if rec.employee_id else False
+            rec.source_location_id = dept_loc.id if (dept_loc and (not dept_loc.company_id or dept_loc.company_id == rec.company_id)) else (
+                warehouse.lot_stock_id.id if warehouse else False
+            )
+            emp_loc = rec.employee_id.sudo().employee_location_id if rec.employee_id else False
+            rec.destination_location_id = emp_loc.id if (emp_loc and (not emp_loc.company_id or emp_loc.company_id == rec.company_id)) else (
+                warehouse.lot_stock_id.id if warehouse else False
+            )
+            rec.delivery_type_id = warehouse.in_type_id.id if (warehouse and warehouse.in_type_id) else False
+            rec.internal_picking_id = warehouse.int_type_id.id if (warehouse and warehouse.int_type_id) else False
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Generate purchase requisition sequence and set respective company picking details"""
         for vals in vals_list:
             if vals.get('name', 'New') == 'New':
-                vals['name'] = self.env['ir.sequence'].next_by_code(
+                comp_id = vals.get('company_id') or self.env.company.id
+                vals['name'] = self.env['ir.sequence'].with_company(comp_id).next_by_code(
                     'employee.purchase.requisition'
                 ) or 'New'
+
+            comp_id = vals.get('company_id') or self.env.company.id
+            if comp_id:
+                company = self.env['res.company'].sudo().browse(comp_id)
+                warehouse = self._get_or_create_warehouse(company)
+                if warehouse:
+                    if not vals.get('delivery_type_id') and warehouse.in_type_id:
+                        vals['delivery_type_id'] = warehouse.in_type_id.id
+                    if not vals.get('internal_picking_id') and warehouse.int_type_id:
+                        vals['internal_picking_id'] = warehouse.int_type_id.id
+                    if not vals.get('source_location_id') and warehouse.lot_stock_id:
+                        vals['source_location_id'] = warehouse.lot_stock_id.id
+                    if not vals.get('destination_location_id') and warehouse.lot_stock_id:
+                        vals['destination_location_id'] = warehouse.lot_stock_id.id
 
         records = super().create(vals_list)
 
@@ -113,22 +185,25 @@ class PurchaseRequisition(models.Model):
         return records
 
     def action_confirm_requisition(self):
-        """Function to confirm purchase requisition"""
-        self.source_location_id = (
-            self.employee_id.sudo().department_id.department_location_id.id) if (
-            self.employee_id.sudo().department_id.department_location_id) else (
-            self.env.ref('stock.stock_location_stock').id)
-        self.destination_location_id = (
-            self.employee_id.sudo().employee_location_id.id) if (
-            self.employee_id.sudo().employee_location_id) else (
-            self.env.ref('stock.stock_location_stock').id)
-        self.delivery_type_id = (
-            self.source_location_id.warehouse_id.in_type_id.id)
-        self.internal_picking_id = (
-            self.source_location_id.warehouse_id.int_type_id.id)
-        self.write({'state': 'waiting_head_approval'})
-        self.confirm_id = self.env.uid
-        self.confirmed_date = fields.Date.today()
+        """Function to confirm purchase requisition with respective company details"""
+        for rec in self:
+            warehouse = rec._get_or_create_warehouse(rec.company_id)
+
+            dept_loc = rec.employee_id.sudo().department_id.department_location_id
+            rec.source_location_id = dept_loc.id if (dept_loc and (not dept_loc.company_id or dept_loc.company_id == rec.company_id)) else (
+                warehouse.lot_stock_id.id if warehouse else False
+            )
+
+            emp_loc = rec.employee_id.sudo().employee_location_id
+            rec.destination_location_id = emp_loc.id if (emp_loc and (not emp_loc.company_id or emp_loc.company_id == rec.company_id)) else (
+                warehouse.lot_stock_id.id if warehouse else False
+            )
+
+            rec.delivery_type_id = warehouse.in_type_id.id if (warehouse and warehouse.in_type_id) else False
+            rec.internal_picking_id = warehouse.int_type_id.id if (warehouse and warehouse.int_type_id) else False
+            rec.write({'state': 'waiting_head_approval'})
+            rec.confirm_id = rec.env.uid
+            rec.confirmed_date = fields.Date.today()
 
     def action_department_approval(self):
         """Approval from department"""
@@ -163,47 +238,144 @@ class PurchaseRequisition(models.Model):
         self.reject_date = fields.Date.today()
 
     def action_create_purchase_order(self):
-        """Create purchase order and internal transfer"""
-        for rec in self.requisition_order_ids:
-            if rec.requisition_type == 'purchase_order' and not rec.partner_id:
-                raise ValidationError('Select a vendor')
-        for rec in self.requisition_order_ids:
-            if rec.requisition_type == 'internal_transfer':
-                self.env['stock.picking'].sudo().create({
-                    'location_id': self.source_location_id.id,
-                    'location_dest_id': self.destination_location_id.id,
-                    'picking_type_id': self.internal_picking_id.id,
-                    'requisition_order': self.name,
-                    'move_ids_without_package': [(0, 0, {
-                        'name': rec.product_id.name,
+        """Create purchase order and internal transfer with respective company details following standard purchasing flow."""
+        created_pos = self.env['purchase.order']
+        created_pickings = self.env['stock.picking']
+
+        for req in self:
+            warehouse = req._get_or_create_warehouse(req.company_id)
+
+            # Ensure picking details strictly match the requisition's company
+            vals_to_fix = {}
+            if not req.delivery_type_id or req.delivery_type_id.company_id != req.company_id:
+                vals_to_fix['delivery_type_id'] = warehouse.in_type_id.id if (warehouse and warehouse.in_type_id) else False
+            if not req.internal_picking_id or req.internal_picking_id.company_id != req.company_id:
+                vals_to_fix['internal_picking_id'] = warehouse.int_type_id.id if (warehouse and warehouse.int_type_id) else False
+            if not req.source_location_id or (req.source_location_id.company_id and req.source_location_id.company_id != req.company_id):
+                vals_to_fix['source_location_id'] = warehouse.lot_stock_id.id if (warehouse and warehouse.lot_stock_id) else False
+            if not req.destination_location_id or (req.destination_location_id.company_id and req.destination_location_id.company_id != req.company_id):
+                vals_to_fix['destination_location_id'] = warehouse.lot_stock_id.id if (warehouse and warehouse.lot_stock_id) else False
+            if vals_to_fix:
+                req.write(vals_to_fix)
+
+            po_lines = req.requisition_order_ids.filtered(lambda l: l.requisition_type == 'purchase_order')
+            it_lines = req.requisition_order_ids.filtered(lambda l: l.requisition_type == 'internal_transfer')
+
+            # Validate vendor for PO lines
+            for rec in po_lines:
+                if not rec.partner_id:
+                    raise ValidationError('Please select a vendor for all Purchase Order lines.')
+
+            # 1. Standard Flow: Group purchase order lines by vendor (1 PO per vendor)
+            if po_lines:
+                vendor_grouped = {}
+                for rec in po_lines:
+                    vendor_grouped.setdefault(rec.partner_id, []).append(rec)
+
+                picking_type = req.delivery_type_id or (warehouse.in_type_id if warehouse else False)
+
+                for vendor, lines in vendor_grouped.items():
+                    order_lines = []
+                    for line in lines:
+                        order_lines.append((0, 0, {
+                            'product_id': line.product_id.id,
+                            'name': line.description or line.product_id.display_name,
+                            'product_qty': line.quantity,
+                            'product_uom_id': line.product_id.uom_id.id,
+                            'company_id': req.company_id.id,
+                        }))
+
+                    po = req.env['purchase.order'].sudo().with_company(req.company_id).with_context(company_id=req.company_id.id).create({
+                        'partner_id': vendor.id,
+                        'company_id': req.company_id.id,
+                        'picking_type_id': picking_type.id if picking_type else False,
+                        'origin': req.name,
+                        'requisition_order': req.name,
+                        'order_line': order_lines,
+                    })
+                    created_pos |= po
+
+            # 2. Internal Transfers: Group all internal transfer lines into a single picking
+            if it_lines:
+                picking_type = req.internal_picking_id or (warehouse.int_type_id if warehouse else False)
+                src_loc = req.source_location_id or (warehouse.lot_stock_id if warehouse else False)
+                dest_loc = req.destination_location_id or (warehouse.lot_stock_id if warehouse else False)
+                move_lines = []
+                for rec in it_lines:
+                    move_lines.append((0, 0, {
+                        'name': rec.description or rec.product_id.display_name,
                         'product_id': rec.product_id.id,
                         'product_uom': rec.product_id.uom_id.id,
                         'product_uom_qty': rec.quantity,
-                        'location_id': self.source_location_id.id,
-                        'location_dest_id': self.destination_location_id.id,
-                    })]
+                        'location_id': src_loc.id if src_loc else False,
+                        'location_dest_id': dest_loc.id if dest_loc else False,
+                        'company_id': req.company_id.id,
+                    }))
+
+                picking = req.env['stock.picking'].sudo().with_company(req.company_id).create({
+                    'location_id': src_loc.id if src_loc else False,
+                    'location_dest_id': dest_loc.id if dest_loc else False,
+                    'picking_type_id': picking_type.id if picking_type else False,
+                    'company_id': req.company_id.id,
+                    'origin': req.name,
+                    'requisition_order': req.name,
+                    'move_ids_without_package': move_lines,
                 })
-            else:
-                self.env['purchase.order'].sudo().sudo().create({
-                    'partner_id': rec.partner_id.id,
-                    'requisition_order': self.name,
-                    "order_line": [(0, 0, {
-                        'product_id': rec.product_id.id,
-                        'product_qty': rec.quantity,
-                    })]})
-        self.write({'state': 'purchase_order_created'})
+                created_pickings |= picking
+
+            req.write({'state': 'purchase_order_created'})
+
+        # Return action to immediately open created Purchase Order(s)
+        if len(created_pos) == 1:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Purchase Order',
+                'view_mode': 'form',
+                'res_model': 'purchase.order',
+                'res_id': created_pos.id,
+                'target': 'current',
+            }
+        elif len(created_pos) > 1:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Purchase Orders',
+                'view_mode': 'list,form',
+                'res_model': 'purchase.order',
+                'domain': [('id', 'in', created_pos.ids)],
+                'target': 'current',
+            }
+        elif len(created_pickings) == 1:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Internal Transfer',
+                'view_mode': 'form',
+                'res_model': 'stock.picking',
+                'res_id': created_pickings.id,
+                'target': 'current',
+            }
+        elif len(created_pickings) > 1:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Internal Transfers',
+                'view_mode': 'list,form',
+                'res_model': 'stock.picking',
+                'domain': [('id', 'in', created_pickings.ids)],
+                'target': 'current',
+            }
 
     def _compute_internal_transfer_count(self):
         """Function to compute the transfer count"""
         for rec in self:
             rec.internal_transfer_count = rec.env['stock.picking'].sudo().search_count([
-                ('requisition_order', '=', rec.name)]) if rec.name else 0
+                '|', ('requisition_order', '=', rec.name), ('origin', '=', rec.name)
+            ]) if rec.name else 0
 
     def _compute_purchase_count(self):
         """Function to compute the purchase count"""
         for rec in self:
             rec.purchase_count = rec.env['purchase.order'].sudo().search_count([
-                ('requisition_order', '=', rec.name)]) if rec.name else 0
+                '|', ('requisition_order', '=', rec.name), ('origin', '=', rec.name)
+            ]) if rec.name else 0
 
     def action_receive(self):
         """Received purchase requisition"""
@@ -218,7 +390,7 @@ class PurchaseRequisition(models.Model):
             'name': 'Purchase Order',
             'view_mode': 'list,form',
             'res_model': 'purchase.order',
-            'domain': [('requisition_order', '=', self.name)],
+            'domain': ['|', ('requisition_order', '=', self.name), ('origin', '=', self.name)],
         }
 
     def get_internal_transfer(self):
