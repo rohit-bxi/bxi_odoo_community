@@ -12,6 +12,7 @@
         "data/sequence.xml",
         "views/performance_review_period_views.xml",
         "views/performance_review_template_views.xml",
+        "views/performance_review_rating_views.xml",
         "views/performance_review_views.xml",
         "views/performance_review_client_action.xml",
         "wizard/generate_review_views.xml",
