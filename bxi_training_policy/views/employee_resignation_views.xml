@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_employee_resignation_form_inherit_training" model="ir.ui.view">
+        <field name="name">employee.resignation.form.inherit.training</field>
+        <field name="model">employee.resignation</field>
+        <field name="inherit_id" ref="employee_onboarding.view_employee_resignation_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <field name="trn_currency_id" invisible="1"/>
+                <button name="action_open_training_recoveries" type="object" class="oe_stat_button" icon="fa-graduation-cap"
+                        invisible="not trn_due_amount" help="Training cost repayable under the service agreements"
+                        groups="bxi_training_policy.group_training_hr,bxi_training_policy.group_training_finance">
+                    <div class="o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="trn_due_amount" widget="monetary" options="{'currency_field': 'trn_currency_id'}"/>
+                        </span>
+                        <span class="o_stat_text">Training Dues</span>
+                    </div>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

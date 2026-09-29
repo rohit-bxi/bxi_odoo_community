@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ── Training Agreement Form ────────────────────────────────────── -->
+    <record id="action_report_training_agreement_form" model="ir.actions.report">
+        <field name="name">Training Agreement Form</field>
+        <field name="model">bxi.training.request</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_training_policy.report_training_agreement_form</field>
+        <field name="report_file">bxi_training_policy.report_training_agreement_form</field>
+        <field name="print_report_name">'Training Agreement Form - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_bxi_training_request"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_training_agreement_form_document">
+        <t t-call="web.external_layout">
+            <t t-set="employee" t-value="doc.employee_id.sudo()"/>
+            <div class="page" style="font-size: 13px;">
+                <h3 class="text-center mb-4">Training Agreement Form</h3>
+                <p>
+                    <strong>Reference:</strong> <span t-field="doc.name"/><br/>
+                    <strong>Date:</strong> <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                </p>
+                <table class="table table-sm table-bordered">
+                    <tr><th style="width: 35%;">Employee</th>
+                        <td><span t-esc="employee.name"/>
+                            <t t-if="employee.employee_code"> (<span t-esc="employee.employee_code"/>)</t></td></tr>
+                    <tr><th>Department</th><td><span t-esc="employee.department_id.name"/></td></tr>
+                    <tr><th>Nominated by</th><td><span t-esc="doc.nominated_by_id.sudo().name"/></td></tr>
+                    <tr><th>Training</th><td><span t-field="doc.training_name"/></td></tr>
+                    <tr><th>Provider</th><td><span t-esc="doc.provider_id.name"/></td></tr>
+                    <tr><th>Location</th><td><span t-field="doc.location"/> (<span t-field="doc.scope"/>)</td></tr>
+                    <tr><th>Duration</th>
+                        <td><span t-field="doc.start_date"/> to <span t-field="doc.end_date"/>
+                            (<span t-field="doc.duration_days"/> days)</td></tr>
+                    <tr><th>Project / purpose</th>
+                        <td><t t-if="doc.project_ref"><span t-field="doc.project_ref"/> - </t><span t-field="doc.purpose"/></td></tr>
+                </table>
+                <h5 class="mt-3">Estimated cost</h5>
+                <table class="table table-sm table-bordered">
+                    <thead><tr><th>Category</th><th>Description</th><th>Paid by</th><th class="text-end">Estimated</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="doc.cost_line_ids" t-as="line">
+                            <td><span t-field="line.category"/></td>
+                            <td><span t-field="line.description"/></td>
+                            <td><span t-field="line.paid_by"/></td>
+                            <td class="text-end"><span t-field="line.estimated_amount"/></td>
+                        </tr>
+                        <tr>
+                            <th colspan="3">Consolidated cost (estimated)</th>
+                            <th class="text-end"><span t-field="doc.estimated_cost"/></th>
+                        </tr>
+                    </tbody>
+                </table>
+                <h5 class="mt-3">Commitment</h5>
+                <ol>
+                    <li>I have read the BXI Tech Training Policy and agree to attend and complete the training above.</li>
+                    <li>The Company covers the training, boarding and lodging, training material and travel as
+                        applicable. Any amount paid to me before the training is an advance, to be accounted for by
+                        claiming the actual costs under "Specialized Training" after the training.</li>
+                    <li t-if="doc.agreement_required">As the consolidated cost reaches the service agreement threshold,
+                        I will execute a service agreement on stamp paper, witnessed and attested by a notary, before
+                        the training starts. If I leave the Company before completing the service period after the
+                        training, I will repay the full cost of the training program; there is no pro-rata or partial
+                        repayment.</li>
+                    <li>Each training program is covered by its own agreement and service period.</li>
+                </ol>
+                <p class="mt-4">I have read and understood the terms above and accept them.</p>
+                <div class="row" style="margin-top: 60px;">
+                    <div class="col-6"><p style="margin-top: 70px;">Employee signature<br/><span t-esc="employee.name"/></p></div>
+                    <div class="col-6"><p style="margin-top: 70px;">Date</p></div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_training_agreement_form">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="bxi_training_policy.report_training_agreement_form_document"/>
+            </t>
+        </t>
+    </template>
+
+    <!-- ── Service Agreement ──────────────────────────────────────────── -->
+    <record id="action_report_training_service_agreement" model="ir.actions.report">
+        <field name="name">Training Service Agreement</field>
+        <field name="model">bxi.training.agreement</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_training_policy.report_training_service_agreement</field>
+        <field name="report_file">bxi_training_policy.report_training_service_agreement</field>
+        <field name="print_report_name">'Service Agreement - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_bxi_training_agreement"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_training_service_agreement_document">
+        <t t-call="web.basic_layout">
+            <t t-set="employee" t-value="doc.employee_id.sudo()"/>
+            <t t-set="company" t-value="doc.company_id"/>
+            <t t-set="request" t-value="doc.request_id.sudo()"/>
+            <!-- Page 1 is printed on stamp paper: its upper part is left blank for the stamp. -->
+            <div class="page" style="font-size: 13px;">
+                <div style="height: 330px;"/>
+                <h4 class="text-center mb-3">
+                    <t t-if="doc.is_addendum">Addendum to </t>Service Agreement for Specialized Training
+                </h4>
+                <p class="text-center">Reference <span t-field="doc.name"/>
+                    <t t-if="doc.parent_agreement_id"> (amending <span t-esc="doc.parent_agreement_id.name"/>)</t></p>
+                <p>
+                    This Service Agreement is made on ____________________ between
+                    <strong t-esc="company.name"/>, having its registered office at
+                    <span t-esc="', '.join(filter(None, [company.street, company.street2, company.city, company.zip]))"/>
+                    (the "Company"), and <strong t-esc="employee.name"/>
+                    <t t-if="employee.employee_code">, Employee Code <span t-esc="employee.employee_code"/></t>,
+                    <t t-if="employee.private_street">residing at <span t-esc="', '.join(filter(None, [employee.private_street, employee.private_street2, employee.private_city, employee.private_zip]))"/></t>
+                    (the "Employee").
+                </p>
+                <p>
+                    WHEREAS the Company has selected the Employee for the specialized training described in the
+                    Schedule below under the Company's Training Policy, and has agreed to bear its entire cost,
+                    including the training itself, boarding and lodging, training material and travel as
+                    applicable, provided to the Employee upfront as an advance;
+                </p>
+                <p>
+                    AND WHEREAS the consolidated cost of the training requires the Employee to commit to serve the
+                    Company for the minimum service period stated below;
+                </p>
+                <p>NOW THEREFORE the parties agree as set out in the following pages.</p>
+            </div>
+            <div style="page-break-before: always;"/>
+            <div class="page" style="font-size: 13px;">
+                <h5>Schedule</h5>
+                <table class="table table-sm table-bordered">
+                    <tr><th style="width: 40%;">Training program</th><td><span t-esc="request.training_name"/></td></tr>
+                    <tr><th>Provider</th><td><span t-esc="request.provider_id.name"/></td></tr>
+                    <tr><th>Location</th><td><span t-esc="request.location"/></td></tr>
+                    <tr><th>Planned dates</th><td><span t-field="request.start_date"/> to <span t-field="request.end_date"/></td></tr>
+                    <tr><th>Project / purpose</th><td><span t-esc="request.purpose"/></td></tr>
+                    <tr><th>Consolidated cost of the training</th>
+                        <td><span t-field="doc.amount" t-options="{'widget': 'monetary', 'display_currency': doc.currency_id}"/></td></tr>
+                    <tr><th>Minimum service period</th><td><span t-field="doc.period_months"/> months</td></tr>
+                    <tr><th>Service period</th>
+                        <td><t t-if="doc.start_date"><span t-field="doc.start_date"/> to <span t-field="doc.end_date"/></t>
+                            <t t-else="">From the day the Employee completes the training</t></td></tr>
+                </table>
+                <table class="table table-sm table-bordered" t-if="request.cost_line_ids">
+                    <thead><tr><th>Cost component</th><th>Description</th><th class="text-end">Amount</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="request.cost_line_ids" t-as="line">
+                            <td><span t-field="line.category"/></td>
+                            <td><span t-field="line.description"/></td>
+                            <td class="text-end"><span t-esc="line.actual_amount or line.estimated_amount"
+                                t-options="{'widget': 'monetary', 'display_currency': doc.currency_id}"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <h5 class="mt-3">Terms</h5>
+                <ol>
+                    <li>The Company bears the entire cost of the training listed in the Schedule. The cost is
+                        provided to the Employee upfront as an advance.</li>
+                    <li>The Employee agrees to serve the Company for the minimum service period stated in the
+                        Schedule, counted from the day the Employee completes the training.</li>
+                    <li>Once the Employee has served the service period, the advance is settled off and need not be
+                        paid back to the Company.</li>
+                    <li>If the Employee leaves the Company, for any reason, before completing the service period after
+                        finishing the training, the Employee shall repay the full cost of the training program to the
+                        Company. There is no option for pro-rata or partial repayment.</li>
+                    <li>The repayable amount is the actual consolidated cost of the training as settled after the
+                        training. Where the actual cost requires a longer service period under the Training Policy,
+                        the Employee shall execute an addendum to this agreement.</li>
+                    <li>This agreement covers only the training program in the Schedule. Any other training program
+                        is covered by a separate service agreement with its own service period and repayment.</li>
+                    <li>The Company may recover the amount due from any amount payable to the Employee, including the
+                        Full and Final Settlement. If the amount is not paid back in full, the Company will pursue
+                        appropriate legal action.</li>
+                    <li>This agreement is governed by the laws of India.</li>
+                </ol>
+                <p class="mt-3">IN WITNESS WHEREOF the parties have signed this agreement on the date first written above.</p>
+                <table style="width: 100%; page-break-inside: avoid; margin-top: 10px;">
+                    <tr>
+                        <td style="width: 50%; height: 70px; vertical-align: bottom;">
+                            For <span t-esc="company.name"/><br/>
+                            <span t-esc="company.trn_signatory_name or 'Authorised Signatory'"/>
+                        </td>
+                        <td style="width: 50%; height: 70px; vertical-align: bottom;">
+                            Employee<br/><span t-esc="employee.name"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="height: 70px; vertical-align: bottom;">Witness 1: name, address and signature</td>
+                        <td style="height: 70px; vertical-align: bottom;">Witness 2: name, address and signature</td>
+                    </tr>
+                </table>
+                <div style="margin-top: 20px; border: 1px solid #999; padding: 10px; height: 120px; page-break-inside: avoid;">
+                    <strong>Notary attestation</strong>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_training_service_agreement">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="bxi_training_policy.report_training_service_agreement_document"/>
+            </t>
+        </t>
+    </template>
+
+    <!-- ── Demand notice ──────────────────────────────────────────────── -->
+    <record id="action_report_training_demand_notice" model="ir.actions.report">
+        <field name="name">Training Cost Demand Notice</field>
+        <field name="model">bxi.training.recovery</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_training_policy.report_training_demand_notice</field>
+        <field name="report_file">bxi_training_policy.report_training_demand_notice</field>
+        <field name="print_report_name">'Demand Notice - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_bxi_training_recovery"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_training_demand_notice_document">
+        <t t-call="web.external_layout">
+            <t t-set="employee" t-value="doc.employee_id.sudo()"/>
+            <div class="page" style="font-size: 13px;">
+                <p>
+                    <strong>Reference:</strong> <span t-field="doc.name"/><br/>
+                    <strong>Date:</strong> <span t-esc="(doc.notice_date or context_timestamp(datetime.datetime.now())).strftime('%d/%m/%Y')"/>
+                </p>
+                <p>To<br/><strong t-esc="employee.name"/>
+                    <t t-if="employee.employee_code"><br/>Employee Code <span t-esc="employee.employee_code"/></t>
+                    <t t-if="employee.private_street"><br/><span t-esc="', '.join(filter(None, [employee.private_street, employee.private_street2, employee.private_city, employee.private_zip]))"/></t>
+                </p>
+                <h4 class="text-center my-3">Demand for Repayment of Training Cost</h4>
+                <p>
+                    Under service agreement <strong t-esc="doc.agreement_id.name or doc.request_id.name"/> for the
+                    training <strong t-esc="doc.request_id.training_name"/>, you agreed to serve the Company for
+                    <t t-esc="doc.agreement_id.period_months"/> months after completing the training, failing which the
+                    full cost of the training is repayable, without pro-rata or partial repayment.
+                </p>
+                <table class="table table-sm table-bordered">
+                    <tr><th style="width: 45%;">Amount due</th>
+                        <td><span t-field="doc.amount_due" t-options="{'widget': 'monetary', 'display_currency': doc.currency_id}"/></td></tr>
+                    <tr><th>Recovered so far</th>
+                        <td><span t-field="doc.amount_recovered" t-options="{'widget': 'monetary', 'display_currency': doc.currency_id}"/></td></tr>
+                    <tr><th>Balance payable</th>
+                        <td><strong t-field="doc.balance" t-options="{'widget': 'monetary', 'display_currency': doc.currency_id}"/></td></tr>
+                </table>
+                <p>
+                    You are requested to pay the balance to the Company within 15 days of this notice. Failing payment,
+                    the Company will pursue appropriate legal action to recover the amount, without further notice.
+                </p>
+                <p style="margin-top: 60px;">For <span t-esc="doc.company_id.name"/><br/>
+                    <span t-esc="doc.company_id.trn_signatory_name or 'Authorised Signatory'"/></p>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_training_demand_notice">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="bxi_training_policy.report_training_demand_notice_document"/>
+            </t>
+        </t>
+    </template>
+
+</odoo>

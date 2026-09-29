@@ -1,0 +1,468 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="portal_my_home_trainings" inherit_id="portal.portal_my_home" name="Portal Home - Trainings">
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
+            <t t-if="not request.env.user.sudo().vender_custmer_access">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon" t-value="'/bxi_training_policy/static/src/img/training-icon.svg'"/>
+                    <t t-set="title">Specialized Training</t>
+                    <t t-set="text">Training agreements, service agreements and training claims</t>
+                    <t t-set="url" t-value="'/my/trainings'"/>
+                    <t t-set="config_card" t-value="True"/>
+                </t>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="portal_training_state_badge" name="Training State Badge">
+        <t t-set="badge_class" t-value="{
+            'settled': 'text-bg-success', 'completed': 'text-bg-warning', 'in_training': 'text-bg-warning',
+            'ready': 'text-bg-primary', 'refused': 'text-bg-danger', 'cancelled': 'text-bg-secondary',
+            'draft': 'text-bg-light', 'breached': 'text-bg-danger', 'in_service': 'text-bg-warning',
+            'recovered': 'text-bg-secondary', 'waived': 'text-bg-secondary', 'superseded': 'text-bg-secondary',
+        }.get(record.state, 'text-bg-info')"/>
+        <span t-attf-class="badge #{badge_class}" t-esc="dict(record._fields['state']._description_selection(record.env)).get(record.state)"/>
+    </template>
+
+    <template id="portal_training_policy_note" name="Training Policy Summary">
+        <div class="alert alert-light border small">
+            <b>Training Policy.</b> The Department Head informs HR at least 20 days before the training. You sign the
+            Training Agreement Form at least 7 days before it starts (before it starts on short notice). The Company
+            covers the training, boarding and lodging, material and travel, paid upfront as an advance.
+            From a consolidated cost of Rs. 30,000 a service agreement is executed on stamp paper, witnessed and
+            attested by a notary: 1 year of service from Rs. 50,000, 2 years from Rs. 1,00,000, counted from the end
+            of the training. Leaving earlier means repaying the full cost - there is no pro-rata. After the training,
+            claim the costs under "Specialized Training" (not "Miscellaneous"); the claim is approved by your Reporting
+            Manager, HR and Employee Services.
+            <t t-if="policy_status and policy_status['ack']">
+                <br/>
+                <a t-attf-href="/my/policies/#{policy_status['ack'].id}">
+                    <i class="fa fa-file-text-o me-1"/>Read the <t t-esc="policy_status['policy'].name"/>
+                </a>
+                <span t-if="policy_status['required']" class="text-danger ms-1">- acknowledge it before the training starts.</span>
+            </t>
+        </div>
+    </template>
+
+    <template id="portal_my_trainings" name="My Trainings">
+        <t t-call="portal.portal_layout">
+            <div class="d-flex flex-wrap align-items-center gap-2 my-3">
+                <h3 class="mb-0 me-auto">Specialized Training</h3>
+                <a href="/my/training-agreements" class="btn btn-secondary">My Service Agreements</a>
+                <a t-if="can_nominate" href="/my/trainings/nominate" class="btn btn-primary">+ Nominate an Employee</a>
+            </div>
+            <div t-if="not employee" class="alert alert-warning">No employee record is linked to your user.</div>
+            <t t-call="bxi_training_policy.portal_training_policy_note"/>
+
+            <h5 class="mt-4">My Trainings</h5>
+            <p t-if="not trainings" class="text-muted">You have not been nominated for a training yet.</p>
+            <t t-if="trainings" t-call="bxi_training_policy.portal_training_table">
+                <t t-set="records" t-value="trainings"/>
+            </t>
+
+            <t t-if="can_nominate">
+                <h5 class="mt-4">My Department's Trainings</h5>
+                <p t-if="not nominations" class="text-muted">No nominations yet.</p>
+                <t t-if="nominations" t-call="bxi_training_policy.portal_training_table">
+                    <t t-set="records" t-value="nominations"/>
+                    <t t-set="show_employee" t-value="True"/>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="portal_training_table" name="Training Table">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th t-if="show_employee">Employee</th>
+                        <th>Training</th>
+                        <th>Dates</th>
+                        <th class="text-end">Cost</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr t-foreach="records" t-as="record">
+                        <td><a t-attf-href="/my/trainings/#{record.id}" t-esc="record.name"/></td>
+                        <td t-if="show_employee" t-esc="record.employee_id.name"/>
+                        <td t-esc="record.training_name"/>
+                        <td><span t-field="record.start_date"/> - <span t-field="record.end_date"/></td>
+                        <td class="text-end"><span t-field="record.consolidated_cost"/></td>
+                        <td><t t-call="bxi_training_policy.portal_training_state_badge"/></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </template>
+
+    <template id="portal_my_training_agreements" name="My Service Agreements">
+        <t t-call="portal.portal_layout">
+            <div class="my-3">
+                <a href="/my/trainings">&#8592; Specialized Training</a>
+                <h3 class="mt-2">My Service Agreements</h3>
+            </div>
+            <p t-if="not agreements" class="text-muted">You have no service agreement.</p>
+            <div t-if="agreements" class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Training</th>
+                            <th class="text-end">Amount</th>
+                            <th>Service Period</th>
+                            <th>Ends On</th>
+                            <th class="text-end">Days Remaining</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="agreements" t-as="record">
+                            <td><a t-attf-href="/my/trainings/#{record.request_id.id}" t-esc="record.name"/></td>
+                            <td t-esc="record.training_name"/>
+                            <td class="text-end"><span t-field="record.amount"/></td>
+                            <td><t t-esc="record.period_months"/> months</td>
+                            <td><span t-if="record.end_date" t-field="record.end_date"/></td>
+                            <td class="text-end"><t t-if="record.days_remaining" t-esc="record.days_remaining"/></td>
+                            <td><t t-call="bxi_training_policy.portal_training_state_badge"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_training_nominate" name="Nominate for a Training">
+        <t t-call="portal.portal_layout">
+            <div class="my-3">
+                <a href="/my/trainings">&#8592; Specialized Training</a>
+                <h3 class="mt-2">Nominate an Employee for a Specialized Training</h3>
+                <p class="text-muted">
+                    Inform HR at least <t t-esc="lead_days"/> days before the training. From a consolidated cost of
+                    <t t-esc="currency.format(threshold)"/> the employee executes a service agreement before the training.
+                </p>
+            </div>
+            <div t-if="error" class="alert alert-danger" style="white-space: pre-line;" t-esc="error"/>
+            <form method="post" action="/my/trainings/nominate" class="row g-3">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="col-md-6">
+                    <label class="form-label" for="employee_id">Employee</label>
+                    <select name="employee_id" id="employee_id" class="form-select" required="required">
+                        <option value="">--</option>
+                        <t t-foreach="team" t-as="member">
+                            <option t-att-value="member.id" t-att-selected="str(member.id) == post.get('employee_id')"
+                                    t-esc="member.name"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="training_name">Training</label>
+                    <input type="text" name="training_name" id="training_name" class="form-control" required="required"
+                           t-att-value="post.get('training_name')"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="provider">Training provider</label>
+                    <input type="text" name="provider" id="provider" class="form-control" t-att-value="post.get('provider')"/>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="location">Location</label>
+                    <input type="text" name="location" id="location" class="form-control" required="required"
+                           t-att-value="post.get('location')"/>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="scope">Scope</label>
+                    <select name="scope" id="scope" class="form-select">
+                        <option value="domestic" t-att-selected="post.get('scope') != 'international'">Domestic</option>
+                        <option value="international" t-att-selected="post.get('scope') == 'international'">International</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="start_date">Start date</label>
+                    <input type="date" name="start_date" id="start_date" class="form-control" required="required"
+                           t-att-value="post.get('start_date')"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="end_date">End date</label>
+                    <input type="date" name="end_date" id="end_date" class="form-control" required="required"
+                           t-att-value="post.get('end_date')"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="project_ref">Project</label>
+                    <input type="text" name="project_ref" id="project_ref" class="form-control"
+                           t-att-value="post.get('project_ref')"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="purpose">Purpose it supports</label>
+                    <textarea name="purpose" id="purpose" class="form-control" rows="2" required="required"
+                              t-esc="post.get('purpose')"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="short_notice_reason">
+                        Reason for short notice (when HR is informed less than <t t-esc="lead_days"/> days before)
+                    </label>
+                    <textarea name="short_notice_reason" id="short_notice_reason" class="form-control" rows="2"
+                              t-esc="post.get('short_notice_reason')"/>
+                </div>
+                <div class="col-12 table-responsive">
+                    <label class="form-label">Estimated cost</label>
+                    <table class="table table-sm">
+                        <thead><tr><th>Category</th><th>Description</th><th>Paid by</th><th>Amount</th></tr></thead>
+                        <tbody>
+                            <tr t-foreach="categories" t-as="category">
+                                <td>
+                                    <input type="hidden" name="category[]" t-att-value="category[0]"/>
+                                    <span t-esc="category[1]"/>
+                                </td>
+                                <td><input type="text" name="description[]" class="form-control form-control-sm"/></td>
+                                <td>
+                                    <select name="paid_by[]" class="form-select form-select-sm">
+                                        <option value="employee">Employee (advance, claimed)</option>
+                                        <option value="company" t-att-selected="category[0] == 'fee'">Company (paid to vendor)</option>
+                                    </select>
+                                </td>
+                                <td><input type="number" step="0.01" min="0" name="amount[]" class="form-control form-control-sm"/></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" name="submit_now" value="1" class="btn btn-primary">Send to HR</button>
+                    <button type="submit" class="btn btn-secondary">Save as Draft</button>
+                </div>
+            </form>
+        </t>
+    </template>
+
+    <template id="portal_training" name="Specialized Training">
+        <t t-call="portal.portal_layout">
+            <t t-set="record" t-value="training"/>
+            <div class="my-3">
+                <a href="/my/trainings">&#8592; Specialized Training</a>
+                <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                    <h3 class="mb-0 me-auto"><t t-esc="training.name"/> - <t t-esc="training.training_name"/></h3>
+                    <t t-call="bxi_training_policy.portal_training_state_badge"/>
+                </div>
+            </div>
+            <div t-if="error" class="alert alert-danger" style="white-space: pre-line;" t-esc="error"/>
+            <div t-if="training.refuse_reason" class="alert alert-danger">
+                <b>Refused / referred back:</b> <t t-esc="training.refuse_reason"/>
+            </div>
+            <div t-if="training.state == 'cancelled'" class="alert alert-secondary">
+                <b>Cancelled:</b> <t t-esc="training.cancel_reason"/>
+            </div>
+            <t t-if="is_own" t-call="bxi_training_policy.portal_training_policy_note"/>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <table class="table table-sm">
+                        <tr><th>Employee</th><td t-esc="training.employee_id.name"/></tr>
+                        <tr><th>Nominated by</th><td t-esc="training.nominated_by_id.name"/></tr>
+                        <tr><th>Provider</th><td t-esc="training.provider_id.name"/></tr>
+                        <tr><th>Location</th><td><t t-esc="training.location"/> (<span t-field="training.scope"/>)</td></tr>
+                        <tr><th>Dates</th><td><span t-field="training.start_date"/> - <span t-field="training.end_date"/></td></tr>
+                        <tr><th>Purpose</th><td><t t-if="training.project_ref"><t t-esc="training.project_ref"/> - </t><t t-esc="training.purpose"/></td></tr>
+                        <tr t-if="training.is_short_notice"><th>Short notice</th><td t-esc="training.short_notice_reason"/></tr>
+                    </table>
+                </div>
+                <div class="col-lg-6">
+                    <table class="table table-sm">
+                        <tr><th>Estimated cost</th><td class="text-end"><span t-field="training.estimated_cost"/></td></tr>
+                        <tr t-if="training.actual_cost"><th>Actual cost</th><td class="text-end"><span t-field="training.actual_cost"/></td></tr>
+                        <tr t-if="training.advance_date"><th>Advance paid</th><td class="text-end"><span t-field="training.advance_amount"/> (<span t-field="training.advance_date"/>)</td></tr>
+                        <tr t-if="training.form_due_date and training.state == 'form_pending'"><th>Form due by</th><td class="text-end"><span t-field="training.form_due_date"/></td></tr>
+                        <tr t-if="training.form_signed_date"><th>Form signed on</th><td class="text-end"><span t-field="training.form_signed_date"/></td></tr>
+                        <tr t-if="training.actual_end_date"><th>Completed on</th><td class="text-end"><span t-field="training.actual_end_date"/></td></tr>
+                        <tr t-if="training.claim_due_date and training.state == 'completed'"><th>Claim due by</th><td class="text-end"><span t-field="training.claim_due_date"/></td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <h5>Cost</h5>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead><tr><th>Category</th><th>Description</th><th>Paid by</th><th class="text-end">Estimated</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="training.cost_line_ids" t-as="line">
+                            <td><span t-field="line.category"/></td>
+                            <td t-esc="line.description"/>
+                            <td><span t-field="line.paid_by"/></td>
+                            <td class="text-end"><span t-field="line.estimated_amount"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <form t-if="can_submit" method="post" t-attf-action="/my/trainings/#{training.id}/submit" class="mb-3">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <button type="submit" class="btn btn-primary">Send to HR</button>
+            </form>
+
+            <t t-if="is_own">
+                <!-- Training Agreement Form -->
+                <div t-if="training.state == 'form_pending'" class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Training Agreement Form</h5>
+                        <p>Sign the Training Agreement Form by <b t-field="training.form_due_date"/>.</p>
+                        <a t-if="sign_url" t-att-href="sign_url" class="btn btn-primary">Review and Sign</a>
+                        <p t-else="" class="text-muted mb-0">HR will send you the form to sign.</p>
+                    </div>
+                </div>
+
+                <!-- Service agreement -->
+                <div t-if="agreement and agreement.state in ('issued', 'submitted')" class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Service Agreement <t t-esc="agreement.name"/></h5>
+                        <p>
+                            Service period of <b t-esc="agreement.period_months"/> months from the end of the training;
+                            repayable amount <b t-field="agreement.amount"/> (no pro-rata).
+                        </p>
+                        <div t-if="agreement.sent_back_reason and agreement.state == 'issued'" class="alert alert-warning">
+                            <b>Sent back by HR:</b> <t t-esc="agreement.sent_back_reason"/>
+                        </div>
+                        <t t-if="agreement.state == 'submitted'">
+                            <p class="text-muted mb-0">Submitted on <span t-field="agreement.submitted_date"/>; HR is verifying it.</p>
+                        </t>
+                        <t t-elif="agreement.execution_mode == 'esign'">
+                            <a t-if="agreement_sign_url" t-att-href="agreement_sign_url" class="btn btn-primary">Review and Sign</a>
+                            <p t-else="" class="text-muted mb-0">HR will send you the agreement to sign.</p>
+                        </t>
+                        <t t-else="">
+                            <ol class="small">
+                                <li><a t-attf-href="/my/trainings/#{training.id}/agreement/#{agreement.id}/download">Download the agreement</a>.</li>
+                                <li>Print the first page on stamp paper worth <t t-esc="agreement.currency_id.format(agreement.stamp_paper_value)"/>, the other pages on plain A4.</li>
+                                <li>Sign every page, have two witnesses sign and have it attested by a notary.</li>
+                                <li>Upload the scan with the details below.</li>
+                            </ol>
+                            <form method="post" t-attf-action="/my/trainings/#{training.id}/agreement/#{agreement.id}"
+                                  enctype="multipart/form-data" class="row g-2">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="stamp_paper_no">Stamp paper number</label>
+                                    <input type="text" name="stamp_paper_no" id="stamp_paper_no" class="form-control" required="required"
+                                           t-att-value="agreement.stamp_paper_no"/>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="stamp_paper_value">Stamp paper value</label>
+                                    <input type="number" step="0.01" name="stamp_paper_value" id="stamp_paper_value" class="form-control"
+                                           required="required" t-att-value="agreement.stamp_paper_value"/>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="stamp_paper_date">Stamp paper date</label>
+                                    <input type="date" name="stamp_paper_date" id="stamp_paper_date" class="form-control"
+                                           required="required" t-att-max="today" t-att-value="agreement.stamp_paper_date"/>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="witness1_name">Witness 1</label>
+                                    <input type="text" name="witness1_name" id="witness1_name" class="form-control" required="required"
+                                           t-att-value="agreement.witness1_name"/>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="witness2_name">Witness 2</label>
+                                    <input type="text" name="witness2_name" id="witness2_name" class="form-control" required="required"
+                                           t-att-value="agreement.witness2_name"/>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="notary_name">Notary</label>
+                                    <input type="text" name="notary_name" id="notary_name" class="form-control" required="required"
+                                           t-att-value="agreement.notary_name"/>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="notary_reg_no">Notary registration no.</label>
+                                    <input type="text" name="notary_reg_no" id="notary_reg_no" class="form-control"
+                                           t-att-value="agreement.notary_reg_no"/>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="notarised_date">Notarised on</label>
+                                    <input type="date" name="notarised_date" id="notarised_date" class="form-control"
+                                           required="required" t-att-max="today" t-att-value="agreement.notarised_date"/>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="scan">Scan of the executed agreement (all pages)</label>
+                                    <input type="file" name="scan" id="scan" class="form-control" multiple="multiple"
+                                           t-att-required="not agreement.executed_scan_ids and 'required'"/>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary">Submit to HR</button>
+                                </div>
+                            </form>
+                        </t>
+                    </div>
+                </div>
+
+                <div t-if="training.agreement_id and training.agreement_id.state in ('executed', 'in_service')" class="alert alert-info">
+                    Service agreement <b t-esc="training.agreement_id.name"/>:
+                    <t t-if="training.agreement_id.end_date">
+                        serve until <b t-field="training.agreement_id.end_date"/>; leaving earlier means repaying
+                        <b t-field="training.agreement_id.amount"/>.
+                    </t>
+                    <t t-else="">executed; the service period of <t t-esc="training.agreement_id.period_months"/> months starts when you complete the training.</t>
+                </div>
+
+                <!-- Claim -->
+                <t t-if="training.state == 'completed'">
+                    <h5 class="mt-4">Claim the Training Cost</h5>
+                    <p class="text-muted small">
+                        Claim the costs you paid under the "Specialized Training" categories by
+                        <b t-field="training.claim_due_date"/>, with a receipt for each line. The advance paid to you is
+                        settled against the claim. Costs paid directly by the company are not claimed.
+                    </p>
+                    <form method="post" t-attf-action="/my/trainings/#{training.id}/claim" enctype="multipart/form-data" class="row g-3">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <div class="col-12 table-responsive">
+                            <table class="table table-sm">
+                                <thead><tr><th>Category</th><th>Description</th><th>Amount</th><th>Receipt</th></tr></thead>
+                                <tbody>
+                                    <tr t-foreach="products" t-as="product">
+                                        <td>
+                                            <input type="hidden" name="product_id[]" t-att-value="product.id"/>
+                                            <span t-esc="product.name"/>
+                                        </td>
+                                        <td><input type="text" name="description[]" class="form-control form-control-sm"/></td>
+                                        <td><input type="number" step="0.01" min="0" name="amount[]" class="form-control form-control-sm"/></td>
+                                        <td><input type="file" name="receipt[]" class="form-control form-control-sm"/></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">Submit Claim</button>
+                        </div>
+                    </form>
+                </t>
+            </t>
+
+            <t t-if="training.approval_line_ids">
+                <h5 class="mt-4">Claim Approval</h5>
+                <table class="table table-sm">
+                    <thead><tr><th>Step</th><th>Approver</th><th>Status</th><th>Date</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="training.approval_line_ids" t-as="line">
+                            <td><span t-field="line.role"/></td>
+                            <td t-esc="line.approver_user_id.name or line.done_by_user_id.name or ''"/>
+                            <td><span t-field="line.state"/></td>
+                            <td><span t-if="line.date" t-field="line.date" t-options="{'widget': 'date'}"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </t>
+            <t t-if="training.expense_ids">
+                <h5 class="mt-3">Claim Lines</h5>
+                <table class="table table-sm">
+                    <thead><tr><th>Category</th><th>Description</th><th class="text-end">Amount</th><th>Status</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="training.expense_ids" t-as="expense">
+                            <td t-esc="expense.product_id.name"/>
+                            <td t-esc="expense.name"/>
+                            <td class="text-end"><span t-field="expense.total_amount"/></td>
+                            <td><span t-field="expense.state"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </t>
+        </t>
+    </template>
+
+</odoo>

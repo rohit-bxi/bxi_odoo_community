@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_travel_request_form_inherit_training" model="ir.ui.view">
+        <field name="name">travel.request.form.inherit.training</field>
+        <field name="model">travel.request</field>
+        <field name="inherit_id" ref="bxi_travel_request.view_travel_request_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='department_id']" position="after">
+                <field name="training_request_id" options="{'no_create': True}" readonly="state != 'draft'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_request_form_inherit_travel" model="ir.ui.view">
+        <field name="name">bxi.training.request.form.inherit.travel</field>
+        <field name="model">bxi.training.request</field>
+        <field name="inherit_id" ref="bxi_training_policy.view_bxi_training_request_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_travel_requests" type="object" class="oe_stat_button" icon="fa-plane"
+                        invisible="not travel_request_ids">
+                    <field name="travel_request_ids" invisible="1"/>
+                    <div class="o_stat_info">
+                        <span class="o_stat_value"><field name="travel_cost" widget="monetary"/></span>
+                        <span class="o_stat_text">Travel</span>
+                    </div>
+                </button>
+            </xpath>
+            <xpath expr="//field[@name='company_paid_cost']" position="after">
+                <field name="travel_cost" invisible="not travel_cost"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

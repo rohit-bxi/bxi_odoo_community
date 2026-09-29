@@ -11,8 +11,9 @@
               action="action_bxi_deputation_register" sequence="30"
               groups="group_deputation_officer,om_hr_payroll.group_hr_payroll_user"/>
 
-    <menuitem id="menu_deputation_config" name="Configuration" parent="menu_deputation_root" sequence="90"
-              groups="group_deputation_manager"/>
+    <!-- Employees > Configuration > International Deputation, after Equitable Benefit -->
+    <menuitem id="menu_deputation_config" name="International Deputation" parent="hr.menu_human_resources_configuration"
+              sequence="33" groups="group_deputation_manager"/>
     <menuitem id="menu_deputation_country_rules" name="Country Salary Rules" parent="menu_deputation_config"
               action="action_bxi_deputation_country_rule" sequence="10"/>
     <menuitem id="menu_deputation_host_calendars" name="Host Working Calendars" parent="menu_deputation_config"

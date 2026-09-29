@@ -25,8 +25,9 @@
     <menuitem id="menu_eb_disciplinary" name="Disciplinary Actions" parent="menu_eb_eligibility"
               action="action_bxi_eb_disciplinary_action" sequence="20"/>
 
-    <menuitem id="menu_eb_config" name="Configuration" parent="menu_eb_root" sequence="90"
-              groups="group_eb_admin"/>
+    <!-- Employees > Configuration > Equitable Benefit, after Certification and Specialized Training -->
+    <menuitem id="menu_eb_config" name="Equitable Benefit" parent="hr.menu_human_resources_configuration"
+              sequence="32" groups="group_eb_admin"/>
     <menuitem id="menu_eb_rates" name="Rate Matrix" parent="menu_eb_config"
               action="action_bxi_eb_rate" sequence="10"/>
     <menuitem id="menu_eb_patterns" name="Work Patterns" parent="menu_eb_config"

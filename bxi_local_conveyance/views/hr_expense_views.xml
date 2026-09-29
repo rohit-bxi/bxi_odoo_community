@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_hr_expense_form_inherit_conveyance" model="ir.ui.view">
+        <field name="name">hr.expense.form.conveyance</field>
+        <field name="model">hr.expense</field>
+        <field name="inherit_id" ref="hr_expense.hr_expense_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/button[1]" position="before">
+                <field name="conveyance_kind" invisible="1"/>
+                <field name="conveyance_can_approve" invisible="1"/>
+                <button name="action_conveyance_approve" type="object" string="Approve" class="oe_highlight"
+                        invisible="not conveyance_can_approve" data-hotkey="q"/>
+                <button name="action_conveyance_refuse" type="object" string="Refuse" class="btn-danger"
+                        invisible="not conveyance_can_approve" data-hotkey="x"/>
+            </xpath>
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-warning mb-0" role="alert" invisible="not conveyance_policy_note">
+                    <field name="conveyance_policy_note"/>
+                </div>
+                <div class="alert alert-danger mb-0" role="alert" invisible="not conveyance_refuse_reason">
+                    <strong>Refused: </strong><field name="conveyance_refuse_reason"/>
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='description']/.." position="before">
+                <group string="Local Conveyance" name="conveyance" invisible="not conveyance_kind">
+                    <group>
+                        <field name="conveyance_purpose" readonly="state != 'draft'"
+                               invisible="conveyance_kind in ('parking_toll', 'food')"/>
+                        <field name="conveyance_from" readonly="state != 'draft'"
+                               invisible="conveyance_kind in ('parking_toll', 'food')"/>
+                        <field name="conveyance_to" readonly="state != 'draft'"
+                               invisible="conveyance_kind in ('parking_toll', 'food')"/>
+                        <field name="conveyance_distance" readonly="state != 'draft'"
+                               invisible="conveyance_kind in ('parking_toll', 'food')"/>
+                        <field name="conveyance_rate" invisible="conveyance_kind not in ('vehicle_2w', 'vehicle_4w')"/>
+                        <field name="conveyance_airport_leg" readonly="state != 'draft'"
+                               invisible="conveyance_purpose != 'airport'"/>
+                        <field name="conveyance_parent_id" readonly="state != 'draft'"
+                               invisible="conveyance_kind != 'parking_toll'" options="{'no_create': True}"/>
+                        <field name="conveyance_within_city" readonly="state != 'draft'"
+                               invisible="conveyance_kind in ('parking_toll', 'food')"/>
+                    </group>
+                    <group>
+                        <field name="conveyance_travel_plan_id" invisible="not conveyance_travel_plan_id"/>
+                        <field name="conveyance_is_emergency" readonly="state != 'draft'"
+                               invisible="conveyance_kind != 'auto'"/>
+                        <field name="conveyance_reason" readonly="state != 'draft'"
+                               invisible="conveyance_kind not in ('auto', 'taxi')"/>
+                        <field name="conveyance_bill_number" readonly="state != 'draft'"
+                               invisible="conveyance_kind in ('vehicle_2w', 'vehicle_4w')"/>
+                        <field name="conveyance_bill_amount" readonly="state != 'draft'"
+                               invisible="conveyance_kind != 'food'"/>
+                        <field name="conveyance_deadline" invisible="state != 'draft'"/>
+                        <field name="conveyance_submit_date" invisible="not conveyance_submit_date"/>
+                    </group>
+                    <field name="conveyance_approval_line_ids" colspan="2" nolabel="1" readonly="1"
+                           invisible="not conveyance_approval_line_ids">
+                        <list>
+                            <field name="sequence" column_invisible="1"/>
+                            <field name="role"/>
+                            <field name="approver_user_id" widget="many2one_avatar_user" placeholder="Any HR Officer"/>
+                            <field name="state" widget="badge" decoration-success="state == 'approved'"
+                                   decoration-danger="state == 'refused'" decoration-info="state == 'pending'"/>
+                            <field name="done_by_user_id"/>
+                            <field name="date"/>
+                            <field name="comment"/>
+                        </list>
+                    </field>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_hr_expense_list_conveyance" model="ir.ui.view">
+        <field name="name">hr.expense.list.conveyance</field>
+        <field name="model">hr.expense</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <list string="Conveyance Claims" create="0">
+                <field name="date"/>
+                <field name="employee_id" widget="many2one_avatar_employee"/>
+                <field name="name"/>
+                <field name="conveyance_kind"/>
+                <field name="conveyance_purpose" optional="show"/>
+                <field name="conveyance_distance" optional="show"/>
+                <field name="conveyance_travel_plan_id" optional="hide"/>
+                <field name="total_amount" sum="Total" widget="monetary" options="{'currency_field': 'company_currency_id'}"/>
+                <field name="company_currency_id" column_invisible="1"/>
+                <field name="conveyance_submit_date" optional="hide"/>
+                <field name="conveyance_policy_note" optional="hide"/>
+                <field name="state" widget="badge" decoration-info="state in ('conveyance_approval', 'finance_approval')"
+                       decoration-success="state in ('approved', 'posted', 'paid')" decoration-danger="state == 'refused'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_hr_expense_search_conveyance" model="ir.ui.view">
+        <field name="name">hr.expense.search.conveyance</field>
+        <field name="model">hr.expense</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <search string="Conveyance Claims">
+                <field name="employee_id"/>
+                <field name="name"/>
+                <field name="conveyance_from"/>
+                <field name="conveyance_to"/>
+                <filter name="to_approve" string="To Approve" domain="[('conveyance_can_approve', '=', True)]"/>
+                <filter name="in_approval" string="In Approval" domain="[('state', '=', 'conveyance_approval')]"/>
+                <filter name="finance" string="Finance Approval" domain="[('state', '=', 'finance_approval')]"/>
+                <filter name="refused" string="Refused" domain="[('state', '=', 'refused')]"/>
+                <filter name="flagged" string="Policy Notes" domain="[('conveyance_policy_note', '!=', False)]"/>
+                <separator/>
+                <filter name="filter_date" string="Date" date="date"/>
+                <group>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_kind" string="Conveyance Type" context="{'group_by': 'conveyance_kind'}"/>
+                    <filter name="group_purpose" string="Purpose" context="{'group_by': 'conveyance_purpose'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_month" string="Month" context="{'group_by': 'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_hr_expense_pivot_conveyance" model="ir.ui.view">
+        <field name="name">hr.expense.pivot.conveyance</field>
+        <field name="model">hr.expense</field>
+        <field name="priority">50</field>
+        <field name="arch" type="xml">
+            <pivot string="Conveyance Analysis" sample="1">
+                <field name="employee_id" type="row"/>
+                <field name="conveyance_kind" type="col"/>
+                <field name="total_amount" type="measure"/>
+                <field name="conveyance_distance" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_conveyance_to_approve" model="ir.actions.act_window">
+        <field name="name">Conveyance Claims to Approve</field>
+        <field name="res_model">hr.expense</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('conveyance_kind', '!=', False)]</field>
+        <field name="context">{'search_default_to_approve': 1, 'create': False}</field>
+        <field name="search_view_id" ref="view_hr_expense_search_conveyance"/>
+        <field name="view_ids" eval="[Command.clear(),
+            Command.create({'view_mode': 'list', 'view_id': ref('view_hr_expense_list_conveyance')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No conveyance claim is waiting for you.</p>
+        </field>
+    </record>
+
+    <record id="action_conveyance_all" model="ir.actions.act_window">
+        <field name="name">Conveyance Claims</field>
+        <field name="res_model">hr.expense</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="domain">[('conveyance_kind', '!=', False)]</field>
+        <field name="context">{'create': False}</field>
+        <field name="search_view_id" ref="view_hr_expense_search_conveyance"/>
+        <field name="view_ids" eval="[Command.clear(),
+            Command.create({'view_mode': 'list', 'view_id': ref('view_hr_expense_list_conveyance')}),
+            Command.create({'view_mode': 'pivot', 'view_id': ref('view_hr_expense_pivot_conveyance')})]"/>
+    </record>
+
+    <record id="action_conveyance_analysis" model="ir.actions.act_window">
+        <field name="name">Conveyance Analysis</field>
+        <field name="res_model">hr.expense</field>
+        <field name="view_mode">pivot,list,form</field>
+        <field name="domain">[('conveyance_kind', '!=', False), ('state', '!=', 'draft')]</field>
+        <field name="context">{'create': False, 'search_default_group_month': 1}</field>
+        <field name="search_view_id" ref="view_hr_expense_search_conveyance"/>
+        <field name="view_ids" eval="[Command.clear(),
+            Command.create({'view_mode': 'pivot', 'view_id': ref('view_hr_expense_pivot_conveyance')}),
+            Command.create({'view_mode': 'list', 'view_id': ref('view_hr_expense_list_conveyance')})]"/>
+    </record>
+
+    <record id="view_product_template_form_inherit_conveyance" model="ir.ui.view">
+        <field name="name">product.template.form.conveyance</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="hr_expense.view_product_hr_expense_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='can_be_expensed']/.." position="after">
+                <span class="d-inline-flex" invisible="not can_be_expensed">
+                    <label for="conveyance_kind" class="me-2"/>
+                    <field name="conveyance_kind"/>
+                </span>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

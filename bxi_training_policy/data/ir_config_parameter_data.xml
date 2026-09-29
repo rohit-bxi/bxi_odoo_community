@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- The Department Head informs HR at least this many days before the training. -->
+    <record id="param_lead_days" model="ir.config_parameter">
+        <field name="key">bxi_training_policy.lead_days</field>
+        <field name="value">20</field>
+    </record>
+
+    <!-- The Training Agreement Form is signed at least this many days before the training. -->
+    <record id="param_form_days" model="ir.config_parameter">
+        <field name="key">bxi_training_policy.form_days</field>
+        <field name="value">7</field>
+    </record>
+
+    <!-- A service agreement is required from this consolidated cost (company currency). -->
+    <record id="param_agreement_threshold" model="ir.config_parameter">
+        <field name="key">bxi_training_policy.agreement_threshold</field>
+        <field name="value">30000</field>
+    </record>
+
+    <!-- The claim is submitted within this many days of the end of the training
+         (the policy does not state a deadline: to be confirmed by HR). -->
+    <record id="param_claim_days" model="ir.config_parameter">
+        <field name="key">bxi_training_policy.claim_days</field>
+        <field name="value">30</field>
+    </record>
+
+    <record id="param_claim_reminder_days" model="ir.config_parameter">
+        <field name="key">bxi_training_policy.claim_reminder_days</field>
+        <field name="value">7</field>
+    </record>
+
+    <!-- Value of the stamp paper the first page of the service agreement is printed on. -->
+    <record id="param_stamp_paper_value" model="ir.config_parameter">
+        <field name="key">bxi_training_policy.stamp_paper_value</field>
+        <field name="value">100</field>
+    </record>
+
+    <record id="param_agreement_reminder_days" model="ir.config_parameter">
+        <field name="key">bxi_training_policy.agreement_reminder_days</field>
+        <field name="value">3</field>
+    </record>
+
+    <record id="param_expiry_notice_days" model="ir.config_parameter">
+        <field name="key">bxi_training_policy.expiry_notice_days</field>
+        <field name="value">30</field>
+    </record>
+
+</odoo>

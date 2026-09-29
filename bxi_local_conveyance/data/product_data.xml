@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Claim categories of the Local Conveyance Policy. Personal vehicles are reimbursed per km at
+         the cost of the category (Table A rates, the same for every travel plan). -->
+    <record id="product_conveyance_2w" model="product.product">
+        <field name="name">Local Conveyance - Personal Two-Wheeler (per km)</field>
+        <field name="description">Own two-wheeler used for official travel within the city, reimbursed per km (Table A).</field>
+        <field name="standard_price">2.50</field>
+        <field name="type">service</field>
+        <field name="default_code">LC-2W</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="conveyance_kind">vehicle_2w</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
+    </record>
+
+    <record id="product_conveyance_4w" model="product.product">
+        <field name="name">Local Conveyance - Personal Four-Wheeler (per km)</field>
+        <field name="description">Own four-wheeler used for official travel within the city, reimbursed per km (Table A).</field>
+        <field name="standard_price">5.00</field>
+        <field name="type">service</field>
+        <field name="default_code">LC-4W</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="conveyance_kind">vehicle_4w</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
+    </record>
+
+    <record id="product_conveyance_auto" model="product.product">
+        <field name="name">Local Conveyance - Auto-Rickshaw</field>
+        <field name="description">Auto-rickshaw at actuals against the bill.</field>
+        <field name="standard_price">0.0</field>
+        <field name="type">service</field>
+        <field name="default_code">LC-AUTO</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="conveyance_kind">auto</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
+    </record>
+
+    <record id="product_conveyance_taxi" model="product.product">
+        <field name="name">Local Conveyance - Taxi</field>
+        <field name="description">Taxi at actuals against the bill, as per the travel plan.</field>
+        <field name="standard_price">0.0</field>
+        <field name="type">service</field>
+        <field name="default_code">LC-TAXI</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="conveyance_kind">taxi</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
+    </record>
+
+    <record id="product_conveyance_parking" model="product.product">
+        <field name="name">Local Conveyance - Parking &amp; Toll</field>
+        <field name="description">Parking and toll charges at actuals against the receipts, along with the conveyance claim.</field>
+        <field name="standard_price">0.0</field>
+        <field name="type">service</field>
+        <field name="default_code">LC-PARK</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="conveyance_kind">parking_toll</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
+    </record>
+
+    <record id="product_food_sales" model="product.product">
+        <field name="name">Food - Sales Team</field>
+        <field name="description">Meals of the day for the Sales Team, up to the daily limit, against the bill.</field>
+        <field name="standard_price">0.0</field>
+        <field name="type">service</field>
+        <field name="default_code">FOOD-SALES</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="conveyance_kind">food</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
+    </record>
+
+</odoo>

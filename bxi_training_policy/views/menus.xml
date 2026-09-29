@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <menuitem id="menu_training_root" name="Specialized Training" parent="hr.menu_hr_root" sequence="94"/>
+
+    <menuitem id="menu_training_my" name="My Trainings" parent="menu_training_root"
+              action="action_bxi_training_request_my" sequence="10"/>
+    <menuitem id="menu_training_my_agreements" name="My Service Agreements" parent="menu_training_root"
+              action="action_bxi_training_agreement_my" sequence="15"/>
+    <menuitem id="menu_training_nominations" name="Nominations" parent="menu_training_root"
+              action="action_bxi_training_request_nominations" sequence="20"/>
+    <menuitem id="menu_training_to_approve" name="Claims to Approve" parent="menu_training_root"
+              action="action_bxi_training_request_to_approve" sequence="30"/>
+
+    <menuitem id="menu_training_processing" name="Processing" parent="menu_training_root" sequence="40"
+              groups="group_training_hr,group_training_finance"/>
+    <menuitem id="menu_training_in_progress" name="Trainings in Progress" parent="menu_training_processing"
+              action="action_bxi_training_request_hr" sequence="10"/>
+    <menuitem id="menu_training_agreements_to_verify" name="Agreements to Execute / Verify"
+              parent="menu_training_processing" action="action_bxi_training_agreement_to_verify" sequence="20"/>
+    <menuitem id="menu_training_agreements" name="Service Agreements" parent="menu_training_processing"
+              action="action_bxi_training_agreement" sequence="30"/>
+    <menuitem id="menu_training_recoveries" name="Recoveries" parent="menu_training_processing"
+              action="action_bxi_training_recovery" sequence="40"/>
+    <menuitem id="menu_training_all" name="All Trainings" parent="menu_training_processing"
+              action="action_bxi_training_request" sequence="50"/>
+
+    <menuitem id="menu_training_reporting" name="Reporting" parent="menu_training_root" sequence="80"
+              groups="group_training_hr,group_training_finance"/>
+    <menuitem id="menu_training_report_spend" name="Training Spend" parent="menu_training_reporting"
+              action="action_bxi_training_request" sequence="10"/>
+    <menuitem id="menu_training_report_exposure" name="Cost Under Agreement" parent="menu_training_reporting"
+              action="action_bxi_training_agreement_exposure" sequence="20"/>
+
+    <!-- Employees > Configuration > Specialized Training, right after Certification -->
+    <menuitem id="menu_training_config" name="Specialized Training" parent="hr.menu_human_resources_configuration"
+              sequence="31" groups="group_training_admin"/>
+    <menuitem id="menu_training_settings" name="Settings" parent="menu_training_config"
+              action="action_bxi_training_settings" sequence="10"/>
+    <menuitem id="menu_training_tiers" name="Service Agreement Tiers" parent="menu_training_config"
+              action="action_bxi_training_agreement_tier" sequence="20"/>
+</odoo>

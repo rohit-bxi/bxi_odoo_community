@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="mail_template_agreement_issued" model="mail.template">
+        <field name="name">Training: service agreement to execute</field>
+        <field name="model_id" ref="model_bxi_training_agreement"/>
+        <field name="subject">Service agreement {{ object.name }} to execute - {{ object.training_name }}</field>
+        <field name="email_from">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+        <field name="email_to">{{ object.employee_id.work_email }}</field>
+        <field name="auto_delete" eval="True"/>
+        <field name="body_html" type="html">
+<div>
+    <p>Dear <t t-out="object.employee_id.name"/>,</p>
+    <p>
+        As the consolidated cost of the training <b t-out="object.training_name"/> is
+        <b t-out="format_amount(object.amount, object.currency_id)"/>, the Training Policy requires a service
+        agreement of <b t-out="object.period_months"/> months from the day you complete the training.
+    </p>
+    <p>The agreement is attached. To execute it:</p>
+    <ol>
+        <li>Print the first page on stamp paper worth <t t-out="format_amount(object.stamp_paper_value, object.currency_id)"/>; the other pages on plain A4 sheets.</li>
+        <li>Review and sign the agreement.</li>
+        <li>Have it signed by two witnesses.</li>
+        <li>Have it attested by a notary.</li>
+        <li>Upload the scan with the stamp paper, witness and notary details from <i>My Trainings</i> on the portal.</li>
+    </ol>
+    <p>The training cannot start until HR has verified the executed agreement.</p>
+    <p>Regards,<br/>HR - Employee Services</p>
+</div>
+        </field>
+    </record>
+
+    <record id="mail_template_agreement_completed" model="mail.template">
+        <field name="name">Training: service agreement completed</field>
+        <field name="model_id" ref="model_bxi_training_agreement"/>
+        <field name="subject">Service agreement {{ object.name }} completed</field>
+        <field name="email_from">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+        <field name="email_to">{{ object.employee_id.work_email }}</field>
+        <field name="auto_delete" eval="True"/>
+        <field name="body_html" type="html">
+<div>
+    <p>Dear <t t-out="object.employee_id.name"/>,</p>
+    <p>
+        You have completed the service period of <t t-out="object.period_months"/> months of agreement
+        <b t-out="object.name"/> for the training <b t-out="object.training_name"/>. The training advance of
+        <b t-out="format_amount(object.amount, object.currency_id)"/> is settled off and need not be paid back.
+    </p>
+    <p>Regards,<br/>HR - Employee Services</p>
+</div>
+        </field>
+    </record>
+
+    <record id="mail_template_agreement_breached" model="mail.template">
+        <field name="name">Training: service agreement not served</field>
+        <field name="model_id" ref="model_bxi_training_agreement"/>
+        <field name="subject">Training cost to repay - {{ object.name }}</field>
+        <field name="email_from">{{ (object.company_id.email_formatted or user.email_formatted) }}</field>
+        <field name="email_to">{{ object.employee_id.work_email }}</field>
+        <field name="auto_delete" eval="True"/>
+        <field name="body_html" type="html">
+<div>
+    <p>Dear <t t-out="object.employee_id.name"/>,</p>
+    <p>
+        Your last working day (<t t-out="object.breach_date"/>) is before the end of the service period of agreement
+        <b t-out="object.name"/> (<t t-out="object.end_date or 'training not completed'"/>). Under the Training Policy
+        the full cost of the training, <b t-out="format_amount(object.amount, object.currency_id)"/>, is to be repaid;
+        there is no pro-rata or partial repayment.
+    </p>
+    <p>The amount will be recovered in your Full and Final Settlement. Any balance not recovered will be followed up
+        as provided in the agreement.</p>
+    <p>Regards,<br/>HR - Employee Services</p>
+</div>
+        </field>
+    </record>
+
+</odoo>

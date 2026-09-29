@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_bxi_training_refuse_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.training.refuse.wizard.form</field>
+        <field name="model">bxi.training.refuse.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Refuse">
+                <field name="request_id" invisible="1"/>
+                <field name="is_claim" invisible="1"/>
+                <div class="alert alert-info" role="alert" invisible="not is_claim">
+                    The claim goes back to the employee, who can correct it (for instance costs filed under
+                    "Miscellaneous" instead of "Specialized Training") and submit it again.
+                </div>
+                <group>
+                    <field name="reason" placeholder="Explain the reason"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Refer Back" class="btn-primary" invisible="not is_claim"/>
+                    <button name="action_confirm" type="object" string="Refuse" class="btn-primary" invisible="is_claim"/>
+                    <button string="Discard" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_cancel_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.training.cancel.wizard.form</field>
+        <field name="model">bxi.training.cancel.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cancel Training">
+                <field name="request_id" invisible="1"/>
+                <field name="currency_id" invisible="1"/>
+                <div class="alert alert-warning" role="alert" invisible="not advance_amount">
+                    An advance of <field name="advance_amount" class="d-inline"/> was paid: it will be recovered
+                    from the employee's next payroll.
+                </div>
+                <group>
+                    <field name="reason" placeholder="Why is the training cancelled?"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Cancel Training" class="btn-primary"/>
+                    <button string="Discard" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_advance_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.training.advance.wizard.form</field>
+        <field name="model">bxi.training.advance.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Pay Training Advance">
+                <field name="request_id" invisible="1"/>
+                <field name="company_id" invisible="1"/>
+                <field name="currency_id" invisible="1"/>
+                <group>
+                    <group>
+                        <field name="estimated_cost"/>
+                        <field name="amount"/>
+                        <field name="date"/>
+                        <field name="reference"/>
+                    </group>
+                    <group>
+                        <field name="create_entry"/>
+                        <field name="journal_id" invisible="not create_entry" required="create_entry"
+                               options="{'no_create': True}"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Pay Advance" class="btn-primary"/>
+                    <button string="Discard" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_completion_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.training.completion.wizard.form</field>
+        <field name="model">bxi.training.completion.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Training Completed">
+                <field name="request_id" invisible="1"/>
+                <p class="text-muted">
+                    The service period of the agreement starts on the day the training was completed.
+                </p>
+                <group>
+                    <field name="end_date"/>
+                    <field name="attachment_ids" widget="many2many_binary"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Confirm Completion" class="btn-primary"/>
+                    <button string="Discard" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_agreement_verify_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.training.agreement.verify.wizard.form</field>
+        <field name="model">bxi.training.agreement.verify.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Verify Service Agreement">
+                <field name="agreement_id" invisible="1"/>
+                <field name="currency_id" invisible="1"/>
+                <group>
+                    <group string="Submitted by the employee">
+                        <field name="stamp_paper_no"/>
+                        <field name="stamp_paper_value"/>
+                        <field name="witness1_name"/>
+                        <field name="witness2_name"/>
+                        <field name="notary_name"/>
+                        <field name="notarised_date"/>
+                        <field name="executed_scan_ids" widget="many2many_binary" readonly="1"/>
+                    </group>
+                    <group string="Checks">
+                        <field name="check_stamp_paper"/>
+                        <field name="check_employee_signature"/>
+                        <field name="check_witnesses"/>
+                        <field name="check_notary"/>
+                        <field name="check_terms"/>
+                    </group>
+                </group>
+                <group>
+                    <field name="send_back_reason" placeholder="Only when sending the agreement back"/>
+                </group>
+                <footer>
+                    <button name="action_verify" type="object" string="Verify" class="btn-primary"/>
+                    <button name="action_send_back" type="object" string="Send Back" class="btn-secondary"/>
+                    <button string="Discard" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_recovery_payment_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.training.recovery.payment.wizard.form</field>
+        <field name="model">bxi.training.recovery.payment.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Record Repayment">
+                <field name="recovery_id" invisible="1"/>
+                <field name="company_id" invisible="1"/>
+                <field name="currency_id" invisible="1"/>
+                <group>
+                    <field name="balance"/>
+                    <field name="amount"/>
+                    <field name="date"/>
+                    <field name="reference"/>
+                    <field name="journal_id" options="{'no_create': True}"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Record" class="btn-primary"/>
+                    <button string="Discard" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_recovery_waive_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.training.recovery.waive.wizard.form</field>
+        <field name="model">bxi.training.recovery.waive.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Waive Recovery">
+                <field name="recovery_id" invisible="1"/>
+                <group>
+                    <field name="reason" placeholder="Management decision and reference"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Waive" class="btn-primary"/>
+                    <button string="Discard" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

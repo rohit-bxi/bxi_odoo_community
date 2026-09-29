@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Deducted with the other deductions before NET. The amounts due are put on the TRAIN_REC
+         input when the payslip is computed. -->
+    <record id="hr_rule_training_recovery" model="hr.salary.rule">
+        <field name="name">Training Cost Recovery</field>
+        <field name="sequence" eval="108"/>
+        <field name="code">TRAIN_REC</field>
+        <field name="category_id" ref="om_hr_payroll.DED"/>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = bool(inputs.TRAIN_REC and inputs.TRAIN_REC.amount)</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = -abs(inputs.TRAIN_REC.amount)</field>
+    </record>
+    <record id="hr_rule_input_training_recovery" model="hr.rule.input">
+        <field name="name">Training Cost Recovery</field>
+        <field name="code">TRAIN_REC</field>
+        <field name="input_id" ref="hr_rule_training_recovery"/>
+    </record>
+</odoo>

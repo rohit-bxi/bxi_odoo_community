@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_bxi_training_request_list" model="ir.ui.view">
+        <field name="name">bxi.training.request.list</field>
+        <field name="model">bxi.training.request</field>
+        <field name="arch" type="xml">
+            <list string="Specialized Trainings" decoration-muted="state in ('cancelled', 'refused', 'settled')"
+                  decoration-warning="is_short_notice and state in ('draft', 'hr_review', 'form_pending')">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="department_id" optional="show"/>
+                <field name="training_name"/>
+                <field name="location" optional="hide"/>
+                <field name="scope" optional="hide"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="lead_days" optional="hide"/>
+                <field name="is_short_notice" optional="hide"/>
+                <field name="consolidated_cost" sum="Total"/>
+                <field name="advance_amount" optional="hide" sum="Total"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="agreement_state" optional="show"/>
+                <field name="company_id" optional="hide" groups="base.group_multi_company"/>
+                <field name="state" widget="badge"
+                       decoration-info="state in ('hr_review', 'form_pending', 'agreement_pending', 'claim_approval', 'finance_approval')"
+                       decoration-warning="state in ('ready', 'in_training', 'completed')"
+                       decoration-success="state == 'settled'"
+                       decoration-danger="state == 'refused'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_request_form" model="ir.ui.view">
+        <field name="name">bxi.training.request.form</field>
+        <field name="model">bxi.training.request</field>
+        <field name="arch" type="xml">
+            <form string="Specialized Training">
+                <header>
+                    <button name="action_submit" type="object" string="Send to HR" class="oe_highlight"
+                            invisible="state != 'draft' or not can_nominate"/>
+                    <button name="action_hr_confirm" type="object" string="Confirm Nomination" class="oe_highlight"
+                            invisible="state != 'hr_review' or not is_training_hr"/>
+                    <button name="action_send_form" type="object" string="Resend Form for Signature"
+                            invisible="state != 'form_pending' or not is_training_hr"/>
+                    <button name="action_mark_form_signed" type="object" string="Form Signed on Paper"
+                            invisible="state != 'form_pending' or not is_training_hr"/>
+                    <button name="action_open_advance_wizard" type="object" string="Pay Advance" class="oe_highlight"
+                            invisible="not can_pay_advance"/>
+                    <button name="action_start" type="object" string="Start Training"
+                            invisible="state != 'ready' or not is_training_hr"/>
+                    <button name="action_open_completion_wizard" type="object" string="Training Completed"
+                            class="oe_highlight" invisible="state != 'in_training' or not is_training_hr"/>
+                    <button name="action_submit_claim" type="object" string="Submit Claim" class="oe_highlight"
+                            invisible="state != 'completed' or not (is_own or is_training_hr)"/>
+                    <button name="action_settle_without_claim" type="object" string="Settle Without Claim"
+                            invisible="state != 'completed'"
+                            groups="bxi_training_policy.group_training_es,bxi_training_policy.group_training_finance"
+                            confirm="Close the training with the company-paid cost only? The employee will not be able to claim."/>
+                    <button name="action_approve_claim" type="object" string="Approve Claim" class="oe_highlight"
+                            invisible="not can_approve"/>
+                    <button name="action_open_refuse_wizard" type="object" string="Refer Back"
+                            invisible="not can_approve"/>
+                    <button name="action_open_refuse_wizard" type="object" string="Refer Back"
+                            invisible="state != 'finance_approval'"
+                            groups="bxi_training_policy.group_training_es,bxi_training_policy.group_training_finance"/>
+                    <button name="action_open_refuse_wizard" type="object" string="Refuse"
+                            invisible="state not in ('hr_review', 'form_pending', 'agreement_pending') or not is_training_hr"/>
+                    <button name="action_print_form" type="object" string="Print Form"
+                            invisible="state in ('draft', 'refused', 'cancelled')"/>
+                    <button name="action_open_cancel_wizard" type="object" string="Cancel"
+                            invisible="state not in ('draft', 'hr_review', 'form_pending', 'agreement_pending', 'ready', 'in_training') or not (is_training_hr or (state == 'draft' and can_nominate))"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft"
+                            invisible="state not in ('refused', 'cancelled') or not can_nominate"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,hr_review,form_pending,ready,in_training,completed,claim_approval,settled"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_agreement" type="object" class="oe_stat_button" icon="fa-file-text-o"
+                                invisible="not agreement_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="agreement_state"/></span>
+                                <span class="o_stat_text">Service Agreement</span>
+                            </div>
+                        </button>
+                        <button name="action_view_expenses" type="object" class="oe_stat_button" icon="fa-money"
+                                invisible="state not in ('completed', 'claim_approval', 'finance_approval', 'settled')">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value"><field name="claim_total" widget="monetary"/></span>
+                                <span class="o_stat_text">Claimed</span>
+                            </div>
+                        </button>
+                        <button name="action_view_recoveries" type="object" class="oe_stat_button" icon="fa-undo"
+                                invisible="not recovery_ids">
+                            <field name="recovery_ids" invisible="1"/>
+                            <div class="o_stat_info"><span class="o_stat_text">Recoveries</span></div>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Short Notice" bg_color="text-bg-warning"
+                            invisible="not is_short_notice or state not in ('draft', 'hr_review', 'form_pending', 'agreement_pending', 'ready')"/>
+                    <widget name="web_ribbon" title="Settled" bg_color="text-bg-success" invisible="state != 'settled'"/>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                        <h3><field name="training_name" placeholder="Training program" readonly="state != 'draft'"/></h3>
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="not refuse_reason">
+                        <b>Refused / referred back:</b> <field name="refuse_reason" class="d-inline"/>
+                    </div>
+                    <div class="alert alert-secondary" role="alert" invisible="state != 'cancelled'">
+                        <b>Cancelled:</b> <field name="cancel_reason" class="d-inline"/>
+                    </div>
+                    <div class="alert alert-info" role="alert" invisible="not agreement_required or state in ('refused', 'cancelled')">
+                        The consolidated cost reaches the service agreement threshold: the employee executes a
+                        service agreement on stamp paper, witnessed and notarised, before the training starts.
+                    </div>
+                    <div class="alert alert-warning" role="alert" invisible="not is_late_claim or state != 'completed'">
+                        The claim was due by <field name="claim_due_date" class="d-inline" readonly="1"/>.
+                    </div>
+                    <group>
+                        <group string="Nomination">
+                            <field name="employee_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="department_id"/>
+                            <field name="nominated_by_id" readonly="1"/>
+                            <field name="manager_id" invisible="not manager_id"/>
+                            <field name="purpose" readonly="state != 'draft'" placeholder="Project or purpose the training supports"/>
+                            <field name="project_ref" readonly="state != 'draft'"/>
+                        </group>
+                        <group string="Training">
+                            <field name="provider_id" readonly="state != 'draft'"/>
+                            <field name="location" readonly="state != 'draft'"/>
+                            <field name="scope" readonly="state != 'draft'"/>
+                            <label for="start_date" string="Dates"/>
+                            <div class="o_row">
+                                <field name="start_date" readonly="state != 'draft'"/> to
+                                <field name="end_date" readonly="state != 'draft'"/>
+                                (<field name="duration_days" class="oe_inline"/> days)
+                            </div>
+                            <field name="hr_notified_date" invisible="not hr_notified_date"/>
+                            <field name="lead_days"/>
+                            <field name="is_short_notice" invisible="1"/>
+                            <field name="short_notice_reason" invisible="not is_short_notice" readonly="state != 'draft'"
+                                   placeholder="Required when HR is informed less than 20 days before the training"/>
+                        </group>
+                    </group>
+                    <field name="company_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="agreement_id" invisible="1"/>
+                    <field name="agreement_required" invisible="1"/>
+                    <field name="can_nominate" invisible="1"/>
+                    <field name="can_approve" invisible="1"/>
+                    <field name="can_pay_advance" invisible="1"/>
+                    <field name="is_training_hr" invisible="1"/>
+                    <field name="is_own" invisible="1"/>
+                    <field name="is_late_claim" invisible="1"/>
+                    <notebook>
+                        <page string="Cost" name="cost">
+                            <field name="cost_line_ids"
+                                   readonly="state in ('settled', 'refused', 'cancelled') or (state != 'draft' and not is_training_hr)">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="category"/>
+                                    <field name="description"/>
+                                    <field name="paid_by"/>
+                                    <field name="estimated_amount" sum="Total"/>
+                                    <field name="actual_amount" sum="Total" readonly="paid_by != 'company'"/>
+                                    <field name="vendor_bill_id" optional="hide" invisible="paid_by != 'company'"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer">
+                                <field name="estimated_cost"/>
+                                <field name="company_paid_cost"/>
+                                <field name="claim_total"/>
+                                <field name="actual_cost"/>
+                                <field name="consolidated_cost" class="oe_subtotal_footer_separator"/>
+                            </group>
+                        </page>
+                        <page string="Documents" name="documents" invisible="state == 'draft'">
+                            <group>
+                                <group string="Training Agreement Form">
+                                    <field name="form_due_date"/>
+                                    <field name="form_sign_request_id" invisible="not form_sign_request_id"/>
+                                    <field name="form_signed_date"/>
+                                    <field name="form_attachment_ids" widget="many2many_binary"
+                                           readonly="state != 'form_pending' or not is_training_hr"/>
+                                </group>
+                                <group string="Advance and Completion">
+                                    <field name="advance_amount"/>
+                                    <field name="advance_date"/>
+                                    <field name="advance_reference"/>
+                                    <field name="advance_move_id" groups="account.group_account_invoice"/>
+                                    <field name="actual_end_date"/>
+                                    <field name="completion_attachment_ids" widget="many2many_binary"
+                                           readonly="not is_training_hr"/>
+                                    <field name="completed_by_id" invisible="not completed_by_id"/>
+                                </group>
+                            </group>
+                            <separator string="Service Agreements"/>
+                            <field name="agreement_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="is_addendum"/>
+                                    <field name="amount"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="period_months"/>
+                                    <field name="start_date"/>
+                                    <field name="end_date"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Claim" name="claim" invisible="state not in ('completed', 'claim_approval', 'finance_approval', 'settled')">
+                            <group>
+                                <group>
+                                    <field name="claim_due_date"/>
+                                    <field name="claim_submit_date"/>
+                                    <field name="current_approval_line_id" invisible="state != 'claim_approval'"/>
+                                </group>
+                                <group>
+                                    <field name="settlement_balance"/>
+                                    <field name="settlement_move_id" groups="account.group_account_invoice"/>
+                                    <field name="settled_date"/>
+                                </group>
+                            </group>
+                            <field name="expense_ids" readonly="state != 'completed'"
+                                   context="{'default_training_request_id': id, 'default_employee_id': employee_id}">
+                                <list editable="bottom">
+                                    <field name="date"/>
+                                    <field name="product_id" domain="[('is_training_expense', '=', True)]"
+                                           options="{'no_create': True}"/>
+                                    <field name="name"/>
+                                    <field name="total_amount_currency" string="Amount" sum="Total"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="employee_id" column_invisible="1"/>
+                                    <field name="nb_attachment" string="Receipts"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                            <separator string="Approvals"/>
+                            <field name="approval_line_ids" readonly="1">
+                                <list>
+                                    <field name="sequence"/>
+                                    <field name="role"/>
+                                    <field name="approver_user_id" placeholder="Any member of the group"/>
+                                    <field name="state" widget="badge" decoration-success="state == 'approved'"
+                                           decoration-danger="state == 'refused'"/>
+                                    <field name="done_by_user_id"/>
+                                    <field name="date"/>
+                                    <field name="comment"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_request_search" model="ir.ui.view">
+        <field name="name">bxi.training.request.search</field>
+        <field name="model">bxi.training.request</field>
+        <field name="arch" type="xml">
+            <search string="Specialized Trainings">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="training_name"/>
+                <field name="department_id"/>
+                <field name="provider_id"/>
+                <filter name="my_trainings" string="My Trainings" domain="[('employee_id.user_id', '=', uid)]"/>
+                <filter name="my_nominations" string="My Nominations" domain="[('nominated_by_user_id', '=', uid)]"/>
+                <filter name="to_approve" string="Claims to Approve"
+                        domain="[('state', '=', 'claim_approval'), ('approval_line_ids.approver_user_id', '=', uid), ('approval_line_ids.state', '=', 'pending')]"/>
+                <separator/>
+                <filter name="state_hr_review" string="HR Review" domain="[('state', '=', 'hr_review')]"/>
+                <filter name="state_documents" string="Awaiting Documents"
+                        domain="[('state', 'in', ('form_pending', 'agreement_pending'))]"/>
+                <filter name="state_ready" string="Ready" domain="[('state', '=', 'ready')]"/>
+                <filter name="state_in_training" string="In Training" domain="[('state', '=', 'in_training')]"/>
+                <filter name="state_completed" string="Awaiting Claim" domain="[('state', '=', 'completed')]"/>
+                <filter name="state_claim" string="Claim Approval" domain="[('state', 'in', ('claim_approval', 'finance_approval'))]"/>
+                <filter name="state_settled" string="Settled" domain="[('state', '=', 'settled')]"/>
+                <separator/>
+                <filter name="short_notice" string="Short Notice" domain="[('is_short_notice', '=', True)]"/>
+                <filter name="no_advance" string="Advance Not Paid"
+                        domain="[('state', 'in', ('ready', 'in_training')), ('advance_date', '=', False)]"/>
+                <filter name="international" string="International" domain="[('scope', '=', 'international')]"/>
+                <separator/>
+                <filter name="start_date" string="Start Date" date="start_date"/>
+                <group>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_scope" string="Scope" context="{'group_by': 'scope'}"/>
+                    <filter name="group_start" string="Start Month" context="{'group_by': 'start_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_request_kanban" model="ir.ui.view">
+        <field name="name">bxi.training.request.kanban</field>
+        <field name="model">bxi.training.request</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column" group_create="false" group_edit="false"
+                    group_delete="false" records_draggable="false">
+                <field name="currency_id"/>
+                <field name="is_short_notice"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between">
+                            <field name="name" class="fw-bold"/>
+                            <span t-if="record.is_short_notice.raw_value" class="badge text-bg-warning">Short notice</span>
+                        </div>
+                        <field name="training_name"/>
+                        <field name="employee_id"/>
+                        <div class="text-muted small">
+                            <field name="start_date"/> - <field name="end_date"/>
+                        </div>
+                        <footer>
+                            <field name="consolidated_cost" widget="monetary"/>
+                            <field name="activity_ids" widget="kanban_activity" class="ms-auto"/>
+                        </footer>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_request_calendar" model="ir.ui.view">
+        <field name="name">bxi.training.request.calendar</field>
+        <field name="model">bxi.training.request</field>
+        <field name="arch" type="xml">
+            <calendar string="Trainings" date_start="start_date" date_stop="end_date" color="department_id"
+                      mode="month" quick_create="0">
+                <field name="employee_id"/>
+                <field name="training_name"/>
+                <field name="location"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_request_pivot" model="ir.ui.view">
+        <field name="name">bxi.training.request.pivot</field>
+        <field name="model">bxi.training.request</field>
+        <field name="arch" type="xml">
+            <pivot string="Training Spend">
+                <field name="department_id" type="row"/>
+                <field name="scope" type="col"/>
+                <field name="consolidated_cost" type="measure"/>
+                <field name="estimated_cost" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_bxi_training_request_graph" model="ir.ui.view">
+        <field name="name">bxi.training.request.graph</field>
+        <field name="model">bxi.training.request</field>
+        <field name="arch" type="xml">
+            <graph string="Training Spend" type="bar">
+                <field name="start_date" interval="month"/>
+                <field name="consolidated_cost" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- ── Actions ───────────────────────────────────────────────────── -->
+    <record id="action_bxi_training_request" model="ir.actions.act_window">
+        <field name="name">Trainings</field>
+        <field name="res_model">bxi.training.request</field>
+        <field name="view_mode">list,kanban,form,calendar,pivot,graph</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nominate an employee for a specialized training</p>
+            <p>
+                The Department Head informs HR at least 20 days before the training. The employee signs the
+                Training Agreement Form at least 7 days before it and, from a consolidated cost of Rs. 30,000,
+                executes a service agreement on stamp paper.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_bxi_training_request_my" model="ir.actions.act_window">
+        <field name="name">My Trainings</field>
+        <field name="res_model">bxi.training.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('employee_id.user_id', '=', uid)]</field>
+        <field name="context">{'create': False}</field>
+    </record>
+
+    <record id="action_bxi_training_request_nominations" model="ir.actions.act_window">
+        <field name="name">Nominations</field>
+        <field name="res_model">bxi.training.request</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">['|', ('nominated_by_user_id', '=', uid), ('department_id.manager_id.user_id', '=', uid)]</field>
+    </record>
+
+    <record id="action_bxi_training_request_to_approve" model="ir.actions.act_window">
+        <field name="name">Claims to Approve</field>
+        <field name="res_model">bxi.training.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', '=', 'claim_approval')]</field>
+        <field name="context">{'create': False}</field>
+    </record>
+
+    <record id="action_bxi_training_request_hr" model="ir.actions.act_window">
+        <field name="name">In Progress</field>
+        <field name="res_model">bxi.training.request</field>
+        <field name="view_mode">kanban,list,form,calendar</field>
+        <field name="domain">[('state', 'not in', ('draft', 'settled', 'refused', 'cancelled'))]</field>
+    </record>
+
+</odoo>
