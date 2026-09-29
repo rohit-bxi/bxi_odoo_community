@@ -104,12 +104,10 @@
                             icon="fa-qrcode"
                             invisible="state == 'disposed'"
                             groups="asset_management.assets_user_group,asset_management.assets_admin_group,base.group_system"/>
-                    <!-- Status Bars -->
-                    <field name="state" widget="statusbar"
-                           statusbar_visible="draft,confirmed,disposed"/>
-                    <field name="status" widget="statusbar"
-                           options="{'clickable': '1'}"
-                           invisible="state == 'disposed'"/>
+                    <!-- Status Bar (Dynamic Stage Master) -->
+                    <field name="state" invisible="1"/>
+                    <field name="stage_id" widget="statusbar"
+                           options="{'clickable': '1', 'fold_field': 'fold'}"/>
                 </header>
                 <sheet>
 
@@ -304,7 +302,9 @@
                             <field name="maintenance_ids">
                                 <list editable="bottom">
                                     <field name="maintenance_type"/>
-                                    <field name="maintenance_vendor_id"/>
+                                    <field name="maintenance_vendor_id"
+                                           domain="[('customer_type', 'in', ('vendor', 'customer_and_vendor'))]"
+                                           context="{'default_customer_type': 'vendor', 'default_supplier_rank': 1, 'default_is_company': True}"/>
                                     <field name="assign_date"/>
                                     <field name="return_date"/>
                                     <field name="assign_by"/>
@@ -327,7 +327,9 @@
                                     <field name="expired_warranty_date"
                                            string="Warranty Expiry Date"/>
                                     <field name="remaining_warranty" readonly="1"/>
-                                    <field name="vendor_id"/>
+                                    <field name="vendor_id"
+                                           domain="[('customer_type', 'in', ('vendor', 'customer_and_vendor'))]"
+                                           context="{'default_customer_type': 'vendor', 'default_supplier_rank': 1, 'default_is_company': True}"/>
                                 </group>
                                 <group string="Insurance">
                                     <field name="insurance_policy_no"/>
@@ -411,6 +413,7 @@
                        decoration-warning="state == 'draft'"
                        decoration-danger="state == 'disposed'"/>
                 <field name="status" widget="badge" optional="show"/>
+                <field name="stage_id" widget="badge" optional="show"/>
                 <field name="currency_id" invisible="1"/>
             </list>
         </field>
@@ -434,6 +437,7 @@
                 <field name="department_id"/>
                 <field name="employee_id"/>
                 <field name="vendor_id"/>
+                <field name="stage_id"/>
 
                 <!-- Accounting State Filters -->
                 <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
@@ -474,6 +478,8 @@
 
                 <!-- Group By -->
                 <group>
+                    <filter string="Stage" name="group_by_stage"
+                            context="{'group_by': 'stage_id'}"/>
                     <filter string="Accounting State" name="group_by_state"
                             context="{'group_by': 'state'}"/>
                     <filter string="Operational Status" name="group_by_status"
@@ -505,11 +511,12 @@
         <field name="name">asset.management.kanban</field>
         <field name="model">asset.management</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="status" class="o_kanban_dashboard"
+            <kanban default_group_by="stage_id" class="o_kanban_dashboard"
                     multi_selection="1" create="1">
                 <field name="id"/>
                 <field name="name"/>
                 <field name="asset_name"/>
+                <field name="stage_id"/>
                 <field name="state"/>
                 <field name="status"/>
                 <field name="asset_type_id"/>
@@ -724,7 +731,9 @@
                   decoration-muted="maintenance_status == 'pending'">
                 <field name="asset_id"/>
                 <field name="maintenance_type"/>
-                <field name="maintenance_vendor_id"/>
+                <field name="maintenance_vendor_id"
+                       domain="[('customer_type', 'in', ('vendor', 'customer_and_vendor'))]"
+                       context="{'default_customer_type': 'vendor', 'default_supplier_rank': 1, 'default_is_company': True}"/>
                 <field name="maintenance_amount" widget="monetary"/>
                 <field name="assign_date"/>
                 <field name="assign_by"/>

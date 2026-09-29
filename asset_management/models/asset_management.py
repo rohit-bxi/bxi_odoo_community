@@ -157,6 +157,22 @@ class Asset(models.Model):
         ('destroyed', 'Destroyed'),
     ], string="Operational Status", default="in_warehouse", tracking=True)
 
+    stage_id = fields.Many2one(
+        'asset.stage',
+        string="Stage",
+        group_expand='_read_group_stage_ids',
+        default=lambda self: self._default_stage_id(),
+        tracking=True,
+        copy=False,
+    )
+
+    def _default_stage_id(self):
+        return self.env['asset.stage'].search([], order='sequence asc, id asc', limit=1)
+
+    @api.model
+    def _read_group_stage_ids(self, stages, domain, order=None):
+        return self.env['asset.stage'].search([], order=order or 'sequence asc, id asc')
+
     # ─── Financial Information ────────────────────────────────────────────────
     amount = fields.Float(string="Purchase Cost", help="Initial cost of acquiring the asset",
                           tracking=True)
@@ -235,7 +251,12 @@ class Asset(models.Model):
     expected_replacement_date = fields.Date(string="Expected Replacement Date")
 
     # ─── Vendor Info ──────────────────────────────────────────────────────────
-    vendor_id = fields.Many2one('asset.vendor', string="Associated Vendor")
+    vendor_id = fields.Many2one(
+        'res.partner',
+        string="Associated Vendor",
+        domain="[('customer_type', 'in', ('vendor', 'customer_and_vendor'))]",
+        help="Select a vendor from contacts (Vendor or Customer and Vendor)"
+    )
 
     # ─── Depreciation Settings ────────────────────────────────────────────────
     depreciation_apply = fields.Boolean(string="Enable Depreciation",
@@ -1020,7 +1041,12 @@ class AssetMaintenanceEntry(models.Model):
     _order = 'assign_date desc'
 
     asset_id = fields.Many2one('asset.management', string="Asset Reference", required=True)
-    maintenance_vendor_id = fields.Many2one('asset.vendor', string="Vendor")
+    maintenance_vendor_id = fields.Many2one(
+        'res.partner',
+        string="Vendor",
+        domain="[('customer_type', 'in', ('vendor', 'customer_and_vendor'))]",
+        help="Service provider / vendor for maintenance"
+    )
     assign_date = fields.Date(string="Service Start Date", default=fields.Date.today)
     assign_by = fields.Many2one('res.users', string="Requested By",
                                  default=lambda self: self.env.user)
