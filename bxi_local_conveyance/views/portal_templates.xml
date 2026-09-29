@@ -175,7 +175,7 @@
                     <label class="form-label" for="lc_reason">Justification
                         <small class="text-muted">(the emergency, or why no auto-rickshaw was available for a taxi)</small>
                     </label>
-                    <textarea id="lc_reason" name="reason" class="form-control" rows="2" t-esc="post.get('reason')"/>
+                    <textarea id="lc_reason" name="reason" class="form-control" rows="2" t-out="post.get('reason') or ''"/>
                 </div>
                 <div class="col-12 lc_trip">
                     <div class="form-check">
