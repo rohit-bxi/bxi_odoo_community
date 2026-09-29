@@ -10,6 +10,7 @@
         "security/security.xml",
         "security/ir.model.access.csv",
         "data/sequence.xml",
+        "data/rating_data.xml",
         "views/performance_review_period_views.xml",
         "views/performance_review_template_views.xml",
         "views/performance_review_rating_views.xml",
