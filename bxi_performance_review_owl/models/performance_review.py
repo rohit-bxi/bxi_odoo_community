@@ -210,6 +210,8 @@ class PerformanceReview(models.Model):
                     "sequence": question.sequence,
                     "question_type": question.question_type,
                     "question": question.question,
+                    "response_type": question.response_type,
+                    "rating_scale": question.rating_scale if question.response_type in ("rating", "both") else False,
                 })
             if vals_list:
                 Question.create(vals_list)
@@ -401,18 +403,41 @@ class PerformanceReviewQuestion(models.Model):
         required=True,
     )
     question = fields.Text(required=True, readonly=True)
+    response_type = fields.Selection(
+        [
+            ("answer", "Answer Only"),
+            ("rating", "Rating Only"),
+            ("both", "Answer + Rating"),
+        ],
+        required=True,
+        default="answer",
+        readonly=True,
+    )
+    rating_scale = fields.Selection(
+        [(str(i), f"{i} Star{'s' if i != 1 else ''}") for i in range(1, 6)],
+        string="Rating Scale",
+        readonly=True,
+    )
     answer = fields.Text()
+    appraisee_rating = fields.Selection(
+        [(str(i), str(i)) for i in range(1, 6)],
+        string="Appraisee Rating",
+    )
 
     def write(self, vals):
         is_hr = self.env.user.has_group("bxi_performance_review_owl.group_performance_review_hr")
         if is_hr:
             return super().write(vals)
-        if set(vals) - {"answer"}:
-            raise AccessError(_("Question text and question type cannot be modified from a Performance Review."))
+        if set(vals) - {"answer", "appraisee_rating"}:
+            raise AccessError(_("Question configuration cannot be modified from a Performance Review."))
         for rec in self:
             review = rec.review_id
             if rec.question_type == "appraisee":
                 allowed = review.state == "draft" and review.employee_user_id == self.env.user
+                if allowed and "appraisee_rating" in vals and rec.response_type not in ("rating", "both"):
+                    raise AccessError(_("This question is configured for an answer, not a rating."))
+                if allowed and "answer" in vals and rec.response_type not in ("answer", "both"):
+                    raise AccessError(_("This question is configured for a rating, not an answer."))
             else:
                 allowed = review.state in ("manager_review", "second_manager_review") and (
                     review.manager_user_id == self.env.user

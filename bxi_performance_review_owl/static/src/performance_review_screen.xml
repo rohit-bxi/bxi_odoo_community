@@ -104,7 +104,8 @@
                         <div class="bxi-pr-section-title">Appraisee Questions</div>
                         <div class="bxi-pr-question-header">
                             <div>Question</div>
-                            <div>Answer</div>
+                            <div>Appraisee Answer</div>
+                            <div>Rating</div>
                         </div>
                         <div class="bxi-pr-questions-list">
                             <t t-if="state.appraiseeQuestions.length">
@@ -113,18 +114,28 @@
                                         <div class="bxi-pr-question-number"><t t-esc="item.sequence"/></div>
                                         <div class="bxi-pr-question-content">
                                             <div class="bxi-pr-question-text"><t t-esc="item.question"/></div>
-                                            <div class="bxi-pr-question-answer"><t t-esc="item.answer || '-'"/></div>
+                                            <div class="bxi-pr-question-answer" t-if="item.response_type !== 'rating'"><t t-esc="item.answer || '-'"/></div>
+                                            <div class="bxi-pr-question-answer" t-else="">-</div>
                                         </div>
+                                        <div class="bxi-pr-question-rating" t-if="item.response_type !== 'answer'">
+                                            <div class="bxi-pr-stars">
+                                                <t t-esc="getStarDisplay(item)"/>
+                                            </div>
+                                            <div class="bxi-pr-rating-text">
+                                                <t t-esc="getRatingText(item)"/>
+                                            </div>
+                                        </div>
+                                        <div class="bxi-pr-question-rating" t-else="">-</div>
                                     </div>
                                 </t>
                             </t>
                             <div t-else="" class="bxi-pr-empty-question">No appraisee questions configured.</div>
                         </div>
 
-                        <div t-if="canSeeManagerQuestions()" class="bxi-pr-section-title">Manager Questions</div>
+                        <div t-if="canSeeManagerQuestions()" class="bxi-pr-section-title">Manager / RM Questions</div>
                         <div t-if="canSeeManagerQuestions()" class="bxi-pr-question-header">
                             <div>Question</div>
-                            <div>Answer</div>
+                            <div>Manager / RM Answer</div>
                         </div>
                         <div t-if="canSeeManagerQuestions()" class="bxi-pr-questions-list">
                             <t t-if="state.managerQuestions.length">
