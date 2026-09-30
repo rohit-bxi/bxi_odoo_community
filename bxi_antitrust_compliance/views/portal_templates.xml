@@ -114,7 +114,7 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="situation">Situation</label>
-                    <textarea name="situation" id="situation" rows="6" class="form-control" required="required" t-esc="post.get('situation')"/>
+                    <textarea name="situation" id="situation" rows="6" class="form-control" required="required" t-out="post.get('situation') or ''"/>
                 </div>
                 <div class="col-md-8">
                     <label class="form-label" for="attachments">Attachments</label>
@@ -167,7 +167,7 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="other_parties">Organisations and people present</label>
-                    <textarea name="other_parties" id="other_parties" rows="2" class="form-control" required="required" t-esc="post.get('other_parties')"/>
+                    <textarea name="other_parties" id="other_parties" rows="2" class="form-control" required="required" t-out="post.get('other_parties') or ''"/>
                 </div>
                 <div class="col-12">
                     <label class="form-label">Topics raised</label>
@@ -186,11 +186,11 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="explanation">If the discussion continued and you did not leave, explain why</label>
-                    <textarea name="explanation" id="explanation" rows="2" class="form-control" t-esc="post.get('explanation')"/>
+                    <textarea name="explanation" id="explanation" rows="2" class="form-control" t-out="post.get('explanation') or ''"/>
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="description">What happened</label>
-                    <textarea name="description" id="description" rows="5" class="form-control" required="required" t-esc="post.get('description')"/>
+                    <textarea name="description" id="description" rows="5" class="form-control" required="required" t-out="post.get('description') or ''"/>
                 </div>
                 <div class="col-md-8">
                     <label class="form-label" for="attachments">Evidence (minutes, emails)</label>
@@ -221,15 +221,15 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="organisations">Organisations / competitors involved</label>
-                    <textarea name="organisations" id="organisations" rows="2" class="form-control" required="required" t-esc="post.get('organisations')"/>
+                    <textarea name="organisations" id="organisations" rows="2" class="form-control" required="required" t-out="post.get('organisations') or ''"/>
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="purpose">Purpose</label>
-                    <textarea name="purpose" id="purpose" rows="3" class="form-control" required="required" t-esc="post.get('purpose')"/>
+                    <textarea name="purpose" id="purpose" rows="3" class="form-control" required="required" t-out="post.get('purpose') or ''"/>
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="agenda">Agenda</label>
-                    <textarea name="agenda" id="agenda" rows="3" class="form-control" t-esc="post.get('agenda')"/>
+                    <textarea name="agenda" id="agenda" rows="3" class="form-control" t-out="post.get('agenda') or ''"/>
                 </div>
                 <div class="col-md-8">
                     <label class="form-label" for="attachments">Agenda / documents</label>

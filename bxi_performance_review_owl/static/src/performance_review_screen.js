@@ -100,7 +100,7 @@ export class PerformanceReviewScreen extends Component {
         const questions = await this.orm.searchRead(
             "performance.review.question",
             [["review_id", "=", id]],
-            ["id", "sequence", "question_type", "question", "answer"],
+            ["id", "sequence", "question_type", "question", "response_type", "answer", "rating_scale", "appraisee_rating"],
             { order: "question_type, sequence, id" }
         );
 
@@ -125,21 +125,33 @@ export class PerformanceReviewScreen extends Component {
     }
 
     canSeeManagerQuestions() {
-        const review = this.state.review;
-        const uid = this.state.currentUserId;
+        // This OWL dashboard is intentionally READONLY.
+        // If the employee can open the review, the employee can see the
+        // complete review, including manager/RM questions and answers.
+        return Boolean(this.state.review);
+    }
 
-        if (!review || !uid) {
-            return false;
+    getStarDisplay(item) {
+        if (!item || item.question_type !== "appraisee" || !["rating", "both"].includes(item.response_type)) {
+            return "";
         }
 
-        // The dashboard is readonly, so visibility must not depend on
-        // can_edit_* flags. A manager must still be able to see the
-        // questions after the review is completed.
-        return Boolean(
-            review.can_edit_hr ||
-            (review.manager_id && review.manager_id[0] === uid) ||
-            (review.second_manager_id && review.second_manager_id[0] === uid)
+        const maxStars = Math.min(5, Math.max(1, Number(item.rating_scale || 5)));
+        const rating = Math.min(
+            maxStars,
+            Math.max(0, Number(item.appraisee_rating || 0))
         );
+
+        return "★".repeat(rating) + "☆".repeat(maxStars - rating);
+    }
+
+    getRatingText(item) {
+        if (!item || item.question_type !== "appraisee" || !["rating", "both"].includes(item.response_type) || !item.appraisee_rating) {
+            return "Not rated";
+        }
+
+        const maxStars = Math.min(5, Math.max(1, Number(item.rating_scale || 5)));
+        return `${item.appraisee_rating}/${maxStars}`;
     }
 
     getStatusLabel() {

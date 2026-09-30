@@ -40,10 +40,11 @@ class PerformanceReview(models.Model):
         "performance.review.question", "review_id",
         string="Manager Questions", domain=[("question_type", "=", "manager")],
     )
+    note = fields.Text()
     successor_1 = fields.Char()
     successor_2 = fields.Char()
-    appraisee_remarks = fields.Text()
-    manager_remarks = fields.Text()
+    appraisee_remarks = fields.Text("Appraisee Remarks(Self)")
+    manager_remarks = fields.Text("Appraise Remarks(RM)")
     calibration = fields.Selection(
         [
             ('5', 'Outstanding'),
@@ -53,7 +54,24 @@ class PerformanceReview(models.Model):
             ('1', 'Unsatisfactory'),
         ],
         string='Calibration',
-    )    
+    ) 
+    can_edit_manager = fields.Boolean(
+        compute="_compute_can_edit_manager"
+    )
+    @api.depends(
+        "manager_user_id",
+        "second_manager_user_id",
+    )
+    def _compute_can_edit_manager(self):
+        current_user = self.env.user
+        for review in self:
+            review.can_edit_manager = (
+                review.manager_user_id == current_user
+                or review.second_manager_user_id == current_user
+                or current_user.has_group(
+                    "bxi_performance_review_owl.group_performance_review_hr"
+                )
+            )   
     reviewer_remarks = fields.Text()
 
     final_score = fields.Float(compute="_compute_final_score", store=True, digits=(16, 2))
@@ -210,6 +228,8 @@ class PerformanceReview(models.Model):
                     "sequence": question.sequence,
                     "question_type": question.question_type,
                     "question": question.question,
+                    "response_type": question.response_type,
+                    "rating_scale": question.rating_scale if question.response_type in ("rating", "both") else False,
                 })
             if vals_list:
                 Question.create(vals_list)
@@ -401,14 +421,89 @@ class PerformanceReviewQuestion(models.Model):
         required=True,
     )
     question = fields.Text(required=True, readonly=True)
+    response_type = fields.Selection(
+        [
+            ("answer", "Answer Only"),
+            ("rating", "Rating Only"),
+            ("both", "Answer + Rating"),
+        ],
+        required=True,
+        default="answer",
+        readonly=True,
+    )
+    rating_scale = fields.Selection(
+        [(str(i), f"{i} Star{'s' if i != 1 else ''}") for i in range(1, 6)],
+        string="Rating Scale",
+        readonly=True,
+    )
     answer = fields.Text()
+    appraisee_rating = fields.Selection(
+        [(str(i), str(i)) for i in range(1, 6)],
+        string="Appraisee Rating",
+    )
+
+    @api.constrains("response_type", "rating_scale", "appraisee_rating")
+    def _check_response_configuration(self):
+        for rec in self:
+            if rec.response_type == "answer" and rec.appraisee_rating:
+                raise ValidationError(
+                    _("An Answer Only question cannot have a rating.")
+                )
+            if rec.response_type == "rating" and rec.answer:
+                raise ValidationError(
+                    _("A Rating Only question cannot have an answer.")
+                )
+            if rec.question_type == "manager" and rec.appraisee_rating:
+                raise ValidationError(
+                    _("Manager questions cannot have an appraisee rating.")
+                )
+            if rec.appraisee_rating and rec.rating_scale:
+                if int(rec.appraisee_rating) > int(rec.rating_scale):
+                    raise ValidationError(
+                        _(
+                            "The appraisee rating cannot be greater than the configured "
+                            "rating scale (%s stars)."
+                        ) % rec.rating_scale
+                    )
+
+    def _validate_response_values(self, vals):
+        """Enforce the configured response type and rating scale server-side."""
+        for rec in self:
+            response_type = rec.response_type
+
+            if "answer" in vals and response_type not in ("answer", "both"):
+                raise AccessError(
+                    _("This question is configured for rating only, so an answer is not allowed.")
+                )
+
+            if "appraisee_rating" in vals:
+                if rec.question_type != "appraisee":
+                    raise AccessError(
+                        _("Manager questions do not support an appraisee rating.")
+                    )
+                if response_type not in ("rating", "both"):
+                    raise AccessError(
+                        _("This question is configured for answer only, so a rating is not allowed.")
+                    )
+                if vals.get("appraisee_rating") and rec.rating_scale:
+                    if int(vals["appraisee_rating"]) > int(rec.rating_scale):
+                        raise ValidationError(
+                            _(
+                                "The selected rating cannot be greater than the configured "
+                                "rating scale (%s stars)."
+                            ) % rec.rating_scale
+                        )
 
     def write(self, vals):
         is_hr = self.env.user.has_group("bxi_performance_review_owl.group_performance_review_hr")
+        if set(vals) - {"answer", "appraisee_rating"}:
+            raise AccessError(_("Question configuration cannot be modified from a Performance Review."))
+
+        self._validate_response_values(vals)
+
         if is_hr:
             return super().write(vals)
-        if set(vals) - {"answer"}:
-            raise AccessError(_("Question text and question type cannot be modified from a Performance Review."))
+
         for rec in self:
             review = rec.review_id
             if rec.question_type == "appraisee":
@@ -420,4 +515,5 @@ class PerformanceReviewQuestion(models.Model):
                 )
             if not allowed:
                 raise AccessError(_("You cannot modify this question answer at this stage."))
+
         return super().write(vals)

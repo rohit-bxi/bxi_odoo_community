@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models
+from datetime import datetime, time
+
+from pytz import timezone, utc
+
+from odoo import _, api, fields, models
 
 
 class BxiDesktimeLog(models.Model):
@@ -58,6 +62,31 @@ class BxiDesktimeLog(models.Model):
     is_late = fields.Boolean(
         string='Late',
         default=False,
+    )
+
+    # ─────────────────────────────────────────────
+    #  Shift Based Times (clamped to the employee's working schedule)
+    # ─────────────────────────────────────────────
+    # Not dependent on the employee's calendar: logs keep the shift times
+    # computed at sync time even if the working schedule changes later.
+    shift_arrived = fields.Datetime(
+        string='Shift Based Arrived',
+        compute='_compute_shift_times',
+        store=True,
+        help='Arrival time, counted from the shift start when the employee arrived earlier.',
+    )
+    shift_left = fields.Datetime(
+        string='Shift Based Left',
+        compute='_compute_shift_times',
+        store=True,
+        help='Leaving time, counted up to the shift end when the employee left later.',
+    )
+    shift_productive_hours = fields.Float(
+        string='Shift Wise Production Hours',
+        compute='_compute_shift_times',
+        store=True,
+        digits=(10, 2),
+        help='Time present within the shift working hours, lunch break included.',
     )
 
     # ─────────────────────────────────────────────
@@ -167,6 +196,67 @@ class BxiDesktimeLog(models.Model):
             emp = rec.employee_id.name or ''
             dt = str(rec.date) if rec.date else ''
             rec.display_name = f'{emp} / {dt}'
+
+    @api.depends('arrived', 'left', 'date', 'employee_id')
+    def _compute_shift_times(self):
+        for rec in self:
+            rec.shift_arrived = False
+            rec.shift_left = False
+            rec.shift_productive_hours = 0.0
+
+            intervals = rec._get_shift_intervals()
+            if not intervals or not rec.arrived:
+                continue
+            shift_start = intervals[0][0]
+            shift_end = intervals[-1][1]
+            arrived = utc.localize(rec.arrived)
+            left = utc.localize(rec.left) if rec.left else False
+            # Present only outside the shift window: nothing to count
+            if arrived >= shift_end or (left and left <= shift_start):
+                continue
+
+            shift_arrived = max(arrived, shift_start)
+            rec.shift_arrived = shift_arrived.astimezone(utc).replace(tzinfo=None)
+            if not left:
+                continue
+            shift_left = min(left, shift_end)
+            rec.shift_left = shift_left.astimezone(utc).replace(tzinfo=None)
+            # Lunch break is counted: whole span between shift based arrived and left
+            rec.shift_productive_hours = round((shift_left - shift_arrived).total_seconds() / 3600.0, 4)
+
+    def _get_shift_intervals(self):
+        """Working intervals of the employee's schedule on the log date, as a sorted list of
+        (start, stop, attendance) with timezone-aware datetimes. Only the first start and the
+        last stop are used, so the lunch break between them is counted."""
+        self.ensure_one()
+        calendar = self.employee_id.resource_calendar_id
+        if not calendar or calendar.flexible_hours or not self.date:
+            return []
+        tz = timezone(calendar.tz or 'UTC')
+        day_start = tz.localize(datetime.combine(self.date, time.min))
+        day_end = tz.localize(datetime.combine(self.date, time.max))
+        intervals = calendar._attendance_intervals_batch(day_start, day_end, tz=tz)[False]
+        return sorted(intervals, key=lambda interval: interval[0])
+
+    def action_recompute_shift_times(self):
+        """Recalculate shift based arrived/left and shift wise hours with the employees'
+        current working schedules (logs otherwise keep the values from sync time)."""
+        self.check_access('write')
+        fnames = ['shift_arrived', 'shift_left', 'shift_productive_hours']
+        for fname in fnames:
+            self.env.add_to_compute(self._fields[fname], self)
+        self._recompute_recordset(fnames)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Shift Times Recalculated'),
+                'message': _('%s log(s) recalculated with the current working schedules.') % len(self),
+                'type': 'success',
+                'sticky': False,
+                'next': {'type': 'ir.actions.client', 'tag': 'soft_reload'},
+            },
+        }
 
     def action_view_timesheet(self):
         """Open the linked timesheet entry."""

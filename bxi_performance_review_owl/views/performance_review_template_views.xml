@@ -37,16 +37,18 @@
                             </field>
                         </page>
                         <page string="Appraisee Questions">
-                            <field name="appraisee_question_ids" context="{'default_question_type': 'appraisee'}" domain="[('question_type', '=', 'appraisee')]">
+                            <field name="appraisee_question_ids" context="{'default_question_type': 'appraisee'}">
                                 <list editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="question"/>
+                                    <field name="response_type"/>
+                                    <field name="rating_scale" invisible="response_type == 'answer'"/>
                                     <field name="active"/>
                                 </list>
                             </field>
                         </page>
                         <page string="Manager Questions">
-                            <field name="manager_question_ids" context="{'default_question_type': 'manager'}" domain="[('question_type', '=', 'manager')]">
+                            <field name="manager_question_ids" context="{'default_question_type': 'manager'}">
                                 <list editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="question"/>

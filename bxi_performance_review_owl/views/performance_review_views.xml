@@ -180,12 +180,15 @@
                         <!-- ================================================= -->
                         <!-- Appraisee Questions -->
                         <!-- ================================================= -->
-                        <page string="Appraisee Questions">
+                        <page string="Appraisee Questions(Self)">
                             <field name="appraisee_question_ids">
                                 <list>
                                     <field name="sequence"/>
                                     <field name="question" readonly="1"/>
-                                    <field name="answer"/>
+                                    <field name="response_type" readonly="1"/>
+                                    <!-- <field name="rating_scale" readonly="1"/> -->
+                                    <field name="answer" invisible="response_type == 'rating'"/>
+                                    <field name="appraisee_rating" widget="priority" invisible="response_type == 'answer'"/>
                                 </list>
                             </field>
                         </page>
@@ -193,10 +196,11 @@
                         <!-- ================================================= -->
                         <!-- Manager Questions -->
                         <!-- ================================================= -->
-                        <page string="Manager Questions">
-                            <field name="manager_question_ids">
+                       <page string="Manager Questions(RM)">
+                            <field name="manager_question_ids"
+                                readonly="not can_edit_manager">
                                 <list>
-                                    <field name="sequence"/>
+                                    <field name="sequence" readonly="1"/>
                                     <field name="question" readonly="1"/>
                                     <field name="answer"/>
                                 </list>
@@ -219,9 +223,9 @@
                         <page string="Overall Remarks">
                             <group>
                                 <field name="appraisee_remarks"/>
-                                <field name="manager_remarks"/>
-                                <field name="calibration"/>
-                                <field name="reviewer_remarks"/>
+                                <field name="manager_remarks" readonly="not can_edit_manager"/>
+                                <field name="calibration" readonly="not can_edit_manager"/>
+                                <field name="reviewer_remarks" readonly="not can_edit_manager"/>
                             </group>
                         </page>
 
@@ -248,11 +252,11 @@
                             readonly="1"
                         />
                     </group>
-
+                    <group string="Important Note">
+                        <field name="note"/>
+                    </group>
                     <chatter/>
-
                 </sheet>
-
             </form>
         </field>
     </record>

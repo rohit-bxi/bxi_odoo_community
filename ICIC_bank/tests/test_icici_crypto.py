@@ -213,6 +213,37 @@ class TestICICIApiCall(ICICICommon):
         self.assertNotIn("SECRET", str(capture.exception))
 
     @patch('odoo.addons.ICIC_bank.model.custom_payslip.requests.post')
+    def test_call_icici_api_sandbox_no_responder_is_explained(
+        self, mock_post,
+    ):
+        response = MagicMock(status_code=404)
+        response.json.side_effect = ValueError("not json")
+        response.text = (
+            "Could not find a valid Message Responder to respond to this "
+            "request.\nPOST /corp/BANKAWAYMOBILE?REQUESTFROM=AGTR"
+            "&REQUESTTYPE=BLKFU&CORP_ID=TXBCORP2 HTTP/1.0\n"
+            "apikey: TEST-API-KEY\nhmac: SECRETHMAC\n"
+        )
+        response.headers = {}
+        mock_post.return_value = response
+
+        with self.assertLogs(
+            'odoo.addons.ICIC_bank.model.custom_payslip', level='ERROR',
+        ) as logs, self.assertRaises(ValidationError) as capture:
+            self.env['hr.payslip'].call_icici_api(
+                "https://example.invalid/api",
+                {"AGGR_ID": "CIBBULK001", "CORP_ID": "TXBCORP2"},
+            )
+        message = str(capture.exception)
+        self.assertIn("sandbox has no mock responder", message)
+        self.assertIn("REQUESTTYPE=BLKFU", message)
+        self.assertIn("CIBBULK001", message)
+        self.assertNotIn("TEST-API-KEY", message)
+        logged = "\n".join(logs.output)
+        self.assertNotIn("TEST-API-KEY", logged)
+        self.assertNotIn("SECRETHMAC", logged)
+
+    @patch('odoo.addons.ICIC_bank.model.custom_payslip.requests.post')
     def test_call_icici_api_invalid_json_raises(self, mock_post):
         response = MagicMock(status_code=200)
         response.json.side_effect = ValueError("bad json")

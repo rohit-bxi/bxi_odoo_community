@@ -360,12 +360,12 @@
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="information">Information about the certification</label>
-                    <textarea name="information" id="information" class="form-control" rows="3" t-esc="post.get('information')"/>
+                    <textarea name="information" id="information" class="form-control" rows="3" t-out="post.get('information') or ''"/>
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="business_case">Business case</label>
                     <textarea name="business_case" id="business_case" class="form-control" rows="3" required="required"
-                              t-esc="post.get('business_case')"/>
+                              t-out="post.get('business_case') or ''"/>
                 </div>
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">Submit to LoB Academy</button>
