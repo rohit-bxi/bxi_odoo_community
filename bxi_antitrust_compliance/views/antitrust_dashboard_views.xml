@@ -11,7 +11,7 @@
                         <div class="col-lg-4 col-md-6">
                             <div class="border rounded p-3 h-100">
                                 <div class="text-muted">Policies acknowledged (current versions)</div>
-                                <h2><field name="ack_rate" widget="percentage" readonly="1" nolabel="1"/></h2>
+                                <h2><field name="ack_rate" readonly="1" nolabel="1" class="oe_inline"/> %</h2>
                                 <button name="action_open_overdue" type="object" class="btn btn-link p-0">
                                     <field name="ack_overdue" readonly="1" class="oe_inline"/> overdue
                                 </button>
