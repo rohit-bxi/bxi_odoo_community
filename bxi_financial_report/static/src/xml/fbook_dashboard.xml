@@ -1364,7 +1364,7 @@
                         <t t-else="">
                             <tr>
                                 <td colspan="11" class="text-center text-muted" style="padding: 16px;">
-                                    No CSR Fund transfers found for the selected period.
+                                    No CSR Expense records found for the selected period.
                                 </td>
                             </tr>
                         </t>
