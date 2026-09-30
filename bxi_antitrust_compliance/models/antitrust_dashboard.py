@@ -7,7 +7,7 @@ class AntitrustDashboard(models.TransientModel):
     _name = 'antitrust.dashboard'
     _description = 'Compliance Dashboard'
 
-    ack_rate = fields.Float(string='Policies Acknowledged (%)', compute='_compute_counts')
+    ack_rate = fields.Float(string='Policies Acknowledged (%)', digits=(16, 2), compute='_compute_counts')
     ack_overdue = fields.Integer(string='Overdue Acknowledgements', compute='_compute_counts')
     open_queries = fields.Integer(string='Open Queries', compute='_compute_counts')
     open_incidents = fields.Integer(string='Open Incidents', compute='_compute_counts')
@@ -17,6 +17,10 @@ class AntitrustDashboard(models.TransientModel):
     rfp_without_declaration = fields.Integer(string='RFPs Without Valid Declaration', compute='_compute_counts')
     declarations_to_approve = fields.Integer(string='Bid Declarations to Approve', compute='_compute_counts')
     open_cases = fields.Integer(string='Open Cases', compute='_compute_counts')
+
+    def _compute_display_name(self):
+        for dashboard in self:
+            dashboard.display_name = self.env._('Compliance Dashboard')
 
     @api.depends_context('uid')
     def _compute_counts(self):
