@@ -694,9 +694,10 @@ class HrEmployeeLeave(models.Model):
             if leave_code != 'SICK':
                 continue
 
-            # ---------------------------------------------------------
-            # Attachment requirement
-            # ---------------------------------------------------------
+            if not leave.request_date_from or not leave.request_date_to:
+                continue
+
+            self._validate_sick_leave_monthly_limit(leave)
 
             req_days = float(leave.number_of_days or 0.0)
 
@@ -885,6 +886,171 @@ class HrEmployeeLeave(models.Model):
             self.env['hr.leave'].with_context(
                 skip_sick_leave_policy=True
             ).create(lwp_vals)
+
+    def _validate_sick_leave_monthly_limit(self, leave):
+        """
+        BXI Sick Leave monthly limit.
+
+        Maximum Sick Leave allowed:
+            2 days per calendar month.
+
+        Pending, approved and validated Sick Leave requests are counted.
+        Refused and cancelled requests are ignored.
+
+        The current leave record is excluded from the existing leave search
+        and its requested days are then added separately.
+        """
+
+        MONTHLY_SICK_LIMIT = 2.0
+
+        if not leave.employee_id:
+            return
+
+        if not leave.request_date_from or not leave.request_date_to:
+            return
+
+        start_date = leave.request_date_from
+        end_date = leave.request_date_to
+
+        if start_date > end_date:
+            raise ValidationError(
+                _(
+                    "Invalid Sick Leave dates.\n"
+                    "The start date cannot be after the end date."
+                )
+            )
+
+        # ---------------------------------------------------------
+        # Collect every calendar month touched by this request
+        # ---------------------------------------------------------
+
+        current_month = start_date.replace(day=1)
+        months = []
+
+        while current_month <= end_date:
+            months.append(current_month)
+
+            if current_month.month == 12:
+                current_month = current_month.replace(
+                    year=current_month.year + 1,
+                    month=1,
+                    day=1,
+                )
+            else:
+                current_month = current_month.replace(
+                    month=current_month.month + 1,
+                    day=1,
+                )
+
+        # ---------------------------------------------------------
+        # Find existing Sick Leave records
+        # ---------------------------------------------------------
+
+        sick_domain = [
+            ('employee_id', '=', leave.employee_id.id),
+            ('holiday_status_id.code', '=', 'SICK'),
+            ('state', 'not in', ['cancel', 'refuse']),
+            ('request_date_from', '!=', False),
+            ('request_date_to', '!=', False),
+        ]
+
+        # Do not count the current record again if it already exists.
+        if leave.id:
+            sick_domain.append(('id', '!=', leave.id))
+
+        existing_sick_leaves = self.env['hr.leave'].search(sick_domain)
+
+        # ---------------------------------------------------------
+        # Check each calendar month separately
+        # ---------------------------------------------------------
+
+        for month_start in months:
+
+            if month_start.month == 12:
+                next_month = month_start.replace(
+                    year=month_start.year + 1,
+                    month=1,
+                    day=1,
+                )
+            else:
+                next_month = month_start.replace(
+                    month=month_start.month + 1,
+                    day=1,
+                )
+
+            month_end = next_month - timedelta(days=1)
+
+            # -----------------------------------------------------
+            # Days from CURRENT Sick Leave falling in this month
+            # -----------------------------------------------------
+
+            current_start = max(start_date, month_start)
+            current_end = min(end_date, month_end)
+
+            current_days = 0
+
+            if current_start <= current_end:
+                current_days = (
+                    current_end - current_start
+                ).days + 1
+
+            # -----------------------------------------------------
+            # Existing Sick Leave days in this month
+            # -----------------------------------------------------
+
+            existing_days = 0.0
+
+            for existing_leave in existing_sick_leaves:
+
+                existing_start = existing_leave.request_date_from
+                existing_end = existing_leave.request_date_to
+
+                if not existing_start or not existing_end:
+                    continue
+
+                overlap_start = max(
+                    existing_start,
+                    month_start,
+                )
+
+                overlap_end = min(
+                    existing_end,
+                    month_end,
+                )
+
+                if overlap_start <= overlap_end:
+                    existing_days += (
+                        overlap_end - overlap_start
+                    ).days + 1
+
+            total_sick_days = existing_days + current_days
+
+            # -----------------------------------------------------
+            # Monthly limit
+            # -----------------------------------------------------
+
+            if total_sick_days > MONTHLY_SICK_LIMIT:
+
+                month_name = month_start.strftime('%B %Y')
+
+                raise ValidationError(
+                    _(
+                        "Sick Leave Limit Exceeded\n\n"
+                        "You can take a maximum of 2 Sick Leave "
+                        "days in a calendar month.\n\n"
+                        "Month: %(month)s\n"
+                        "Existing Sick Leave: %(existing).1f day(s)\n"
+                        "Requested Sick Leave: %(requested).1f day(s)\n"
+                        "Total Sick Leave: %(total).1f day(s)\n"
+                        "Maximum Allowed: 2 days"
+                    )
+                    % {
+                        'month': month_name,
+                        'existing': existing_days,
+                        'requested': current_days,
+                        'total': total_sick_days,
+                    }
+                )
 
     @api.model_create_multi
     def create(self, vals_list):
