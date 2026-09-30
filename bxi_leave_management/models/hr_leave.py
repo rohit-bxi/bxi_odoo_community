@@ -383,9 +383,15 @@ class HrEmployeeLeave(models.Model):
             # Allow compensation from 7 days before the leave date
             # until 7 days after the leave date.
             # ==========================================================
-            min_allowed_date = leave_date - timedelta(days=7)
-            max_allowed_date = leave.request_date_to + timedelta(days=7)
+            min_allowed_date = self._get_working_day_before(
+                leave_date,
+                7,
+            )
 
+            max_allowed_date = self._get_working_day_after(
+                leave.request_date_to,
+                7,
+            )
             if not (
                 min_allowed_date
                 <= compensation_date
@@ -478,6 +484,30 @@ class HrEmployeeLeave(models.Model):
                         leave.employee_id.name,
                     )
                 )
+    def _get_working_day_before(self, date_value, working_days):
+        current_date = date_value
+        days_count = 0
+
+        while days_count < working_days:
+            current_date -= timedelta(days=1)
+
+            if current_date.weekday() < 5:
+                days_count += 1
+
+        return current_date
+
+
+    def _get_working_day_after(self, date_value, working_days):
+        current_date = date_value
+        days_count = 0
+
+        while days_count < working_days:
+            current_date += timedelta(days=1)
+
+            if current_date.weekday() < 5:
+                days_count += 1
+
+        return current_date
 
     def action_confirm(self):
         """
