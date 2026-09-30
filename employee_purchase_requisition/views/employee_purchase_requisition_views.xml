@@ -164,6 +164,8 @@
                 <field name="employee_id" string="Requested By"/>
                 <field name="dept_id"/>
                 <field name="company_id" optional="show"/>
+                <field name="customer_id"/>
+                <field name="requisition_description"/>
                 <field name="user_id"/>
                 <field name="requisition_date"/>
                 <field name="state" widget="badge"
