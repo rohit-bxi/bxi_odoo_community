@@ -29,6 +29,7 @@
         'data/ir_sequence_data.xml',
         'data/ir_config_parameter_data.xml',
         'data/work_pattern_data.xml',
+        'data/rate_matrix_update.xml',
         'data/salary_rule_data.xml',
         'report/payout_statement_report.xml',
         'wizard/generate_payout_wizard_views.xml',

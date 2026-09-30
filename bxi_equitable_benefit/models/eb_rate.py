@@ -63,6 +63,29 @@ class BxiEbRate(models.Model):
                     pattern=rate.work_pattern_id.name))
 
     @api.model
+    def _ensure_hybrid_client_rate(self):
+        """Hybrid is Not Applicable under the policy (section 4): it is not an
+        extended schedule. The seeded matrix only covers Non-Client Aligned, so
+        a Client Aligned Hybrid assignment could not be submitted. Add a 0% row
+        unless the administrator already configured one (even archived).
+        """
+        pattern = self.env.ref('bxi_equitable_benefit.work_pattern_hybrid', raise_if_not_found=False)
+        if not pattern:
+            return
+        if self.with_context(active_test=False).search_count([
+            ('work_pattern_id', '=', pattern.id),
+            ('work_category', 'in', ('client', 'any')),
+        ], limit=1):
+            return
+        self.create({
+            'work_pattern_id': pattern.id,
+            'work_category': 'client',
+            'deployment': 'any',
+            'rate_percent': 0,
+            'note': 'Not Applicable',
+        })
+
+    @api.model
     def _find_rate(self, work_pattern, work_category, deployment, date, company):
         """Return the most specific rate row valid on ``date``, or an empty recordset.
 
