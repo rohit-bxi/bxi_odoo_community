@@ -1,5 +1,7 @@
 from odoo import fields, models
 
+PARAM_PREFIX = 'bxi_equitable_benefit.'
+
 
 class HrEmployee(models.Model):
     _inherit = 'hr.employee'
@@ -39,3 +41,26 @@ class HrEmployee(models.Model):
         action['domain'] = [('employee_id', '=', self.id)]
         action['context'] = {'default_employee_id': self.id}
         return action
+
+    def _eb_settle_separation(self, last_day, resignation=False):
+        """Settle the Equitable Benefit of separating employees in their Full & Final Settlement."""
+        Payout = self.env['bxi.eb.payout'].sudo()
+        Assignment = self.env['bxi.eb.assignment'].sudo()
+        for employee in self:
+            if Assignment.search_count([('employee_id', '=', employee.id), ('state', '=', 'approved')], limit=1):
+                Payout._create_fnf_payout(employee, last_day, resignation)
+
+    def get_equitable_benefit_tds(self, amount):
+        """Income tax on a lump-sum Equitable Benefit payout (used by the EQB_TDS salary rule).
+
+        The regular monthly TDS covers the annual salary only, so the payout is taxed at the
+        employee's marginal slab: tax on the annual income including it, minus tax without it.
+        """
+        self.ensure_one()
+        params = self.env['ir.config_parameter'].sudo()
+        if not amount or params.get_param(PARAM_PREFIX + 'payout_tds', 'incremental') != 'incremental':
+            return 0.0
+        employee = self.sudo()
+        annual_income = employee.employee_ctc or (employee.version_id.wage or 0.0) * 12
+        tax = employee._compute_annual_tax_new_regime
+        return round(max(tax(annual_income + amount) - tax(annual_income), 0.0), 2)

@@ -16,7 +16,7 @@
     <menuitem id="menu_compliance_cpo" name="Compliance Team" parent="menu_compliance_root"
               sequence="50" groups="bxi_hr_policy.group_policy_cpo"/>
     <menuitem id="menu_compliance_dashboard" name="Dashboard" parent="menu_compliance_cpo"
-              action="action_antitrust_dashboard" sequence="1"/>
+              action="action_compliance_dashboard" sequence="1"/>
     <menuitem id="menu_compliance_queries_all" name="Queries" parent="menu_compliance_cpo"
               action="action_antitrust_query_all" sequence="10"/>
     <menuitem id="menu_compliance_incidents_all" name="Incidents" parent="menu_compliance_cpo"

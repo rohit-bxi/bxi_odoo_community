@@ -30,6 +30,14 @@
         <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
     </record>
 
+    <!-- Designated leadership authority: approves exceptions to the policy in writing. -->
+    <record id="group_eb_leadership" model="res.groups">
+        <field name="name">Leadership (Exception Approver)</field>
+        <field name="sequence">40</field>
+        <field name="privilege_id" ref="res_groups_privilege_equitable_benefit"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
     <!-- Employees and managers see their own / their team's records. -->
     <record id="bxi_eb_assignment_rule_own" model="ir.rule">
         <field name="name">Equitable Benefit Assignment: own and team</field>

@@ -58,6 +58,40 @@ class TestCaseDashboard(ComplianceCommon):
             self.assertEqual(action['type'], 'ir.actions.act_window')
             self.env[action['res_model']].with_user(self.cpo).search(action['domain'])  # CPO can open every list
 
+    def test_dashboard_data(self):
+        """The client action data: KPIs, trend, worklist, and every figure opens a list the CPO can read."""
+        query = self.env['antitrust.query'].with_user(self.employee.user_id).create(
+            {'subject': 'Urgent doubt', 'situation': '<p>?</p>', 'urgency': 'urgent'})
+        query.action_submit()
+        self._case().follow_up_date = self.today.replace(day=1).replace(year=self.today.year - 1)
+        Dashboard = self.env['antitrust.dashboard'].with_user(self.cpo)
+        data = Dashboard.get_dashboard_data(months=3)
+        kpis = {kpi['key']: kpi for kpi in data['kpis']}
+        self.assertEqual(set(kpis), {'acks', 'queries', 'incidents', 'interactions', 'rfps', 'cases'})
+        self.assertGreaterEqual(kpis['queries']['value'], 1)
+        self.assertEqual(kpis['queries']['tone'], 'danger', "An urgent query makes the card red")
+        self.assertGreaterEqual(data['attention'], 2)
+        self.assertEqual(len(data['trend']['months']), 3)
+        queries = next(series for series in data['trend']['series'] if series['key'] == 'queries')
+        self.assertGreaterEqual(queries['values'][-1], 1)
+        worklist = {(item['model'], item['id']): item for item in data['worklist']}
+        self.assertEqual(worklist[('antitrust.query', query.id)]['priority'], 'high')
+        self.assertEqual(data['worklist'][0]['priority'], 'high')
+
+        keys = list(Dashboard._kpi_domains())
+        for key in keys:
+            action = Dashboard.open_kpi(key)
+            self.env[action['res_model']].with_user(self.cpo).search(action['domain'])
+        action = Dashboard.open_trend('queries', data['trend']['months'][-1]['start'])
+        self.assertIn(query, self.env['antitrust.query'].with_user(self.cpo).search(action['domain']))
+
+    def test_dashboard_api_is_cpo_only(self):
+        Dashboard = self.env['antitrust.dashboard'].with_user(self.employee.user_id)
+        with self.assertRaises(AccessError):
+            Dashboard.get_dashboard_data()
+        with self.assertRaises(AccessError):
+            Dashboard.open_kpi('cases')
+
     def test_dashboard_is_cpo_only(self):
         with self.assertRaises(AccessError):
             self.env['antitrust.dashboard'].with_user(self.employee.user_id).create({})

@@ -7,7 +7,7 @@ from venv import logger
 import requests
 
 from odoo import models, fields, _, api
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from datetime import date, timedelta
 
 class HrEmployee(models.Model):
@@ -27,6 +27,12 @@ class HrEmployee(models.Model):
     psa = fields.Char(string="PSA")
     disp = fields.Char(string="DISP")
     role_band = fields.Char(string="Role Band")  
+
+    # Organisation hierarchy (L1 is the most senior). Used by policy approval matrices.
+    l1_head_id = fields.Many2one('hr.employee', string='L1 Head', tracking=True, groups='hr.group_hr_user')
+    l2_head_id = fields.Many2one('hr.employee', string='L2 Head', tracking=True, groups='hr.group_hr_user')
+    l3_head_id = fields.Many2one('hr.employee', string='L3 Head', tracking=True, groups='hr.group_hr_user')
+    l4_head_id = fields.Many2one('hr.employee', string='L4 Head', tracking=True, groups='hr.group_hr_user')
     aadhar_card = fields.Char(string="Aadhar Card")
     emp_category = fields.Char(string="EMP Category")
     emp_skill_category = fields.Char(string="EMP Skill Category")
@@ -241,11 +247,32 @@ class HrEmployee(models.Model):
     sunday_location_id = fields.Many2one('hr.work.location', string='Sunday Location')
     employee_ctc = fields.Float(string="Employee Earning (Annual)")
 
+    @api.constrains('l1_head_id', 'l2_head_id', 'l3_head_id', 'l4_head_id')
+    def _check_level_heads(self):
+        for employee in self:
+            if employee in (employee.l1_head_id | employee.l2_head_id | employee.l3_head_id | employee.l4_head_id):
+                raise ValidationError(_("%s cannot be their own L1-L4 Head.", employee.name))
+
+    def _get_level_head(self, level):
+        """Head of the employee at ``level`` (1 = L1 ... 4 = L4).
+
+        When the level is not set, the next more senior level is used (L4 -> L3 -> L2 -> L1).
+        """
+        self.ensure_one()
+        for current in range(level, 0, -1):
+            head = self['l%s_head_id' % current]
+            if head:
+                return head
+        return self.env['hr.employee']
+
     def get_employee_earning(self):
         for data in self:
             data.employee_ctc = (data.wage)*12
 
     def _compute_monthly_tds_new_regime(self, annual_ctc):
+        return round(self._compute_annual_tax_new_regime(annual_ctc) / 12.0, 2)
+
+    def _compute_annual_tax_new_regime(self, annual_ctc):
 
         if not annual_ctc:
             return 0.0
@@ -298,10 +325,7 @@ class HrEmployee(models.Model):
         # Apply Health & Education Cess (4%)
         tax *= 1.04
 
-        annual_tax = round(tax, 2)
-        monthly_tds = round(annual_tax / 12.0, 2)
-
-        return monthly_tds
+        return round(tax, 2)
 
     def action_calculate_l10n_in_tds_new_regime(self):
         self.get_employee_earning()

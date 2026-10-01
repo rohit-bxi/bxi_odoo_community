@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
@@ -8,7 +10,7 @@ class BxiEbAssignment(models.Model):
     """A period during which an employee followed one work pattern."""
     _name = 'bxi.eb.assignment'
     _description = 'Equitable Benefit Work Pattern Assignment'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'bxi.eb.notify.mixin']
     _order = 'date_from desc, id desc'
 
     name = fields.Char(string='Reference', default='New', copy=False, readonly=True)
@@ -89,15 +91,33 @@ class BxiEbAssignment(models.Model):
             ]
             if rec.date_to:
                 domain.append(('date_from', '<=', rec.date_to))
-            if self.search_count(domain, limit=1):
+            others = self.search(domain)
+            if rec.state == 'submitted':
+                # A change of pattern: the ongoing assignment is closed when this one is approved.
+                others -= rec._superseded_assignments()
+            if others:
                 raise ValidationError(_(
                     "%(employee)s already has a work pattern assignment overlapping this period.",
                     employee=rec.employee_id.name))
+
+    def _superseded_assignments(self):
+        """Approved open-ended assignments of the employee that started before this one."""
+        self.ensure_one()
+        return self.search([
+            ('id', '!=', self.id),
+            ('employee_id', '=', self.employee_id.id),
+            ('state', '=', 'approved'),
+            ('date_to', '=', False),
+            ('date_from', '<', self.date_from),
+        ])
 
     def action_submit(self):
         for rec in self:
             if rec.state != 'draft':
                 raise UserError(_("Only draft assignments can be submitted."))
+            suspended_from = (rec.company_id or self.env.company).sudo().eb_suspended_from
+            if suspended_from and rec.date_from >= suspended_from:
+                raise UserError(_("The Equitable Benefit Policy is suspended from %s.", suspended_from))
             rate = self.env['bxi.eb.rate'].sudo()._find_rate(
                 rec.work_pattern_id, rec.work_category, rec.deployment, rec.date_from, rec.company_id)
             if not rate:
@@ -111,28 +131,49 @@ class BxiEbAssignment(models.Model):
                 raise UserError(_("Client aligned work patterns must be supported by a documented "
                                   "client or project requirement."))
         self.sudo().write({'state': 'submitted'})
+        for rec in self:
+            rec._eb_notify_group(
+                'bxi_equitable_benefit.group_eb_revenue_assurance',
+                _("Review the work pattern of %s", rec.employee_id.name))
 
     def action_approve(self):
         self._check_reviewer()
         if any(rec.state != 'submitted' for rec in self):
             raise UserError(_("Only submitted assignments can be approved."))
+        for rec in self.sorted('date_from'):
+            previous = rec._superseded_assignments()
+            if previous:
+                previous.write({'date_to': rec.date_from - timedelta(days=1)})
+                for assignment in previous:
+                    assignment.message_post(body=_("Closed on %(day)s: superseded by %(new)s.",
+                                                   day=assignment.date_to, new=rec.name))
         self.write({
             'state': 'approved',
             'approved_by_id': self.env.user.id,
             'approved_date': fields.Date.context_today(self),
         })
+        self._eb_close_activities()
+        for rec in self:
+            rec._eb_notify_employee(_("Your work pattern %(pattern)s from %(day)s was approved for the "
+                                      "Equitable Benefit.", pattern=rec.work_pattern_id.name, day=rec.date_from))
 
     def action_reject(self):
         self._check_reviewer()
         if any(rec.state != 'submitted' for rec in self):
             raise UserError(_("Only submitted assignments can be rejected."))
         self.write({'state': 'rejected'})
+        self._eb_close_activities()
+        for rec in self:
+            rec._eb_notify_employee(_("Your work pattern %(pattern)s from %(day)s was rejected. %(reason)s",
+                                      pattern=rec.work_pattern_id.name, day=rec.date_from,
+                                      reason=rec.rejection_reason or ''))
 
     def action_cancel(self):
         for rec in self:
             if rec.state == 'approved':
                 rec._check_reviewer()
         self.sudo().write({'state': 'cancelled'})
+        self._eb_close_activities()
 
     def action_reset_draft(self):
         if any(rec.state not in ('rejected', 'cancelled', 'submitted') for rec in self):
