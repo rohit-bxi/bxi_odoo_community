@@ -23,32 +23,10 @@ class BxiEbGeneratePayoutWizard(models.TransientModel):
 
     def action_generate(self):
         self.ensure_one()
-        Payout = self.env['bxi.eb.payout']
-        domain = [
-            ('state', '=', 'approved'),
-            ('date_from', '<=', self.fy_end),
-            '|', ('date_to', '=', False), ('date_to', '>=', self.fy_start),
-        ]
-        if self.employee_ids:
-            domain.append(('employee_id', 'in', self.employee_ids.ids))
-        employees = self.env['bxi.eb.assignment'].search(domain).employee_id
-        existing = Payout.search([
-            ('fy_start', '=', self.fy_start),
-            ('employee_id', 'in', employees.ids),
-            ('state', 'not in', ('rejected', 'cancelled')),
-        ])
-        drafts = existing.filtered(lambda p: p.state == 'draft')
-        new = Payout.create([{
-            'employee_id': employee.id,
-            'payout_type': 'annual',
-            'fy_start': self.fy_start,
-            'fy_end': self.fy_end,
-            'period_end': self.fy_end,
-        } for employee in employees - existing.employee_id])
-        payouts = new | drafts
+        payouts = self.env['bxi.eb.payout']._generate_annual_payouts(
+            self.fy_start, self.fy_end, self.employee_ids or None)
         if not payouts:
             raise UserError(_("No payout to generate: every eligible employee already has a processed payout."))
-        payouts.action_compute()
         action = self.env['ir.actions.act_window']._for_xml_id('bxi_equitable_benefit.action_bxi_eb_payout')
         action['domain'] = [('id', 'in', payouts.ids)]
         return action

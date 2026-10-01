@@ -45,6 +45,13 @@
         'views/portal_templates.xml',
         'views/menus.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'bxi_antitrust_compliance/static/src/dashboard/compliance_dashboard.scss',
+            'bxi_antitrust_compliance/static/src/dashboard/compliance_dashboard.js',
+            'bxi_antitrust_compliance/static/src/dashboard/compliance_dashboard.xml',
+        ],
+    },
     'installable': True,
     'application': False,
     'auto_install': False,

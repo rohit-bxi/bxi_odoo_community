@@ -15,4 +15,15 @@
         <field name="code">EQB</field>
         <field name="input_id" ref="hr_rule_equitable_benefit"/>
     </record>
+    <!-- Statutory deduction: the monthly TDS covers the salary only, so the lump sum is taxed here. -->
+    <record id="hr_rule_equitable_benefit_tds" model="hr.salary.rule">
+        <field name="name">TDS on Equitable Benefit</field>
+        <field name="sequence" eval="160"/>
+        <field name="code">EQB_TDS</field>
+        <field name="category_id" ref="om_hr_payroll.DED"/>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = bool(inputs.EQB and inputs.EQB.amount)</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = -employee.get_equitable_benefit_tds(inputs.EQB.amount)</field>
+    </record>
 </odoo>

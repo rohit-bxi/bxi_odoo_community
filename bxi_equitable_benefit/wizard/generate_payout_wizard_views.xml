@@ -17,7 +17,8 @@
                 </group>
                 <p class="text-muted">
                     Creates or recomputes a draft payout for each employee with an approved work pattern
-                    assignment in the financial year. Payouts already validated are left untouched.
+                    assignment in the financial year. Payouts already validated are left untouched, and
+                    employees whose work patterns carry no benefit (Not Applicable) are skipped.
                 </p>
                 <footer>
                     <button name="action_generate" string="Generate" type="object" class="btn-primary"/>

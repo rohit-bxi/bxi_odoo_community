@@ -17,6 +17,11 @@ class HrPayslip(models.Model):
             ('state', '=', 'approved'),
         ])
         payouts.write({'state': 'paid'})
+        for payout in payouts:
+            payout._eb_notify_employee(_(
+                "Your Equitable Benefit of %(amount)s for %(fy)s was paid with payslip %(slip)s.",
+                amount=payout.currency_id.format(payout.amount_final), fy=payout.fy_name,
+                slip=payout.payslip_id.number or payout.payslip_id.name))
         return res
 
     def action_payslip_cancel(self):

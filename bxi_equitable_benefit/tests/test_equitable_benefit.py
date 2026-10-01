@@ -1,7 +1,9 @@
-from datetime import date
+from datetime import date, datetime, time, timedelta
+
+from freezegun import freeze_time
 
 from odoo.exceptions import UserError, ValidationError
-from odoo.tests import TransactionCase, new_test_user, tagged
+from odoo.tests import Form, TransactionCase, new_test_user, tagged
 
 
 @tagged('post_install', '-at_install')
@@ -17,16 +19,24 @@ class TestEquitableBenefit(TransactionCase):
         set_param('bxi_equitable_benefit.allow_missing_rating', False)
         set_param('bxi_equitable_benefit.max_unauthorized_days', 3)
         set_param('bxi_equitable_benefit.unpaid_leave_threshold_days', 30)
+        set_param('bxi_equitable_benefit.absence_source', 'attendance')
+        set_param('bxi_equitable_benefit.fnf_rating', 'latest')
+        set_param('bxi_equitable_benefit.min_pattern_compliance', 80)
+        set_param('bxi_equitable_benefit.payout_tds', 'incremental')
+        set_param('bxi_equitable_benefit.auto_generate_days', 0)
 
         cls.reviewer = new_test_user(
             cls.env, login='eb_reviewer', groups='base.group_user,bxi_equitable_benefit.group_eb_revenue_assurance')
         cls.finance = new_test_user(
             cls.env, login='eb_finance', groups='base.group_user,bxi_equitable_benefit.group_eb_finance')
+        cls.leader = new_test_user(
+            cls.env, login='eb_leader', groups='base.group_user,bxi_equitable_benefit.group_eb_leadership')
         cls.employee_user = new_test_user(cls.env, login='eb_employee', groups='base.group_user')
         cls.employee = cls.env['hr.employee'].create({
             'name': 'Riya',
             'user_id': cls.employee_user.id,
             'date_version': date(2020, 1, 1),
+            'tz': 'Asia/Kolkata',
         })
         cls.employee.eb_annual_component_a = 600000
 
@@ -252,6 +262,10 @@ class TestEquitableBenefit(TransactionCase):
             'exception_approver_id': self.finance.id,
             'exception_attachment_ids': [(0, 0, {'name': 'approval.txt', 'raw': b'ok'})],
         })
+        # Finance is not the designated leadership authority
+        with self.assertRaises(UserError):
+            payout.with_user(self.reviewer).action_validate()
+        payout.exception_approver_id = self.leader
         payout.with_user(self.reviewer).action_validate()
         self.assertEqual(payout.amount_final, 10000)
 
@@ -296,3 +310,281 @@ class TestEquitableBenefit(TransactionCase):
         self._payout(employee=other)
         visible = self.env['bxi.eb.payout'].with_user(self.employee_user).search([])
         self.assertEqual(visible.employee_id, self.employee)
+
+    # ------------------------------------------------------------------
+    # Separation (Full & Final Settlement)
+    # ------------------------------------------------------------------
+    def test_fnf_uses_latest_rating(self):
+        """Nobody has a rating for the year they leave in: the latest one applies."""
+        self._assignment(self.pattern_6, self.fy_start, deployment='onsite')
+        payout = self.env['bxi.eb.payout']._create_fnf_payout(self.employee, date(2026, 6, 30))
+        self.assertTrue(payout.is_eligible)
+        self.assertIn('FY 2025-26', payout.rating)
+        self.assertIn('latest available rating', payout.warning_note)
+        self.assertAlmostEqual(payout.amount_final, 600000 * 0.096 * 3 / 12)
+
+        self.env['ir.config_parameter'].sudo().set_param('bxi_equitable_benefit.fnf_rating', 'required')
+        payout.with_user(self.reviewer).action_compute()
+        self.assertFalse(payout.is_eligible)
+
+    def test_fnf_settles_unpaid_previous_year(self):
+        """Leaving before the annual payout cycle: the closed year is paid in the FNF too."""
+        self._assignment(self.pattern_6, self.fy_start, deployment='onsite')
+        last_day = date(2026, 5, 31)
+        current = self.env['bxi.eb.payout']._create_fnf_payout(self.employee, last_day)
+        previous = self.env['bxi.eb.payout'].search([
+            ('employee_id', '=', self.employee.id), ('fy_start', '=', self.fy_start)])
+        self.assertEqual(previous.payout_type, 'annual')
+        self.assertEqual(previous.separation_date, last_day)
+        self.assertAlmostEqual(previous.amount_final, 57600)
+        self.assertEqual(current.payout_type, 'fnf')
+        self.assertAlmostEqual(current.amount_final, 600000 * 0.096 * 2 / 12)
+        for payout in previous | current:
+            payout.with_user(self.reviewer).action_validate()
+            payout.with_user(self.finance).action_approve()
+            self.assertEqual(payout.payout_date, last_day)
+
+    def test_fnf_brings_forward_approved_payout(self):
+        self._assignment(self.pattern_6, self.fy_start, deployment='onsite')
+        previous = self._payout()
+        previous.with_user(self.reviewer).action_validate()
+        previous.with_user(self.finance).action_approve()
+        previous.payout_date = date(2026, 6, 30)
+        self.env['bxi.eb.payout']._create_fnf_payout(self.employee, date(2026, 5, 31))
+        self.assertEqual(previous.state, 'approved')
+        self.assertEqual(previous.payout_date, date(2026, 5, 31))
+        self.assertEqual(previous.separation_date, date(2026, 5, 31))
+
+    def test_resignation_and_change_of_last_day(self):
+        self._assignment(self.pattern_6, self.fy_start, deployment='onsite')
+        resignation = self.env['employee.resignation'].create({
+            'employee_id': self.employee.id,
+            'resignation_date': date(2025, 10, 1),
+            'last_working_day': date(2025, 11, 30),
+            'reason': 'personal',
+            'resignation_body': '<p>Resigning</p>',
+        })
+        resignation.action_submit()
+        resignation.action_approve()
+        payout = self.env['bxi.eb.payout'].search([('resignation_id', '=', resignation.id)])
+        self.assertEqual(payout.payout_type, 'fnf')
+        self.assertAlmostEqual(payout.amount_final, 600000 * 0.096 * 8 / 12)
+        self.assertIn(self.reviewer, payout.activity_ids.user_id)
+
+        resignation.approved_last_working_day = date(2025, 12, 31)
+        self.assertEqual(payout.period_end, date(2025, 12, 31))
+        self.assertAlmostEqual(payout.amount_final, 600000 * 0.096 * 9 / 12)
+        self.assertEqual(len(payout.activity_ids.filtered(lambda a: a.user_id == self.reviewer)), 1)
+
+    def test_departure_without_resignation(self):
+        self._assignment(self.pattern_6, self.fy_start, deployment='onsite')
+        self.employee.departure_date = date(2025, 9, 30)
+        payout = self.env['bxi.eb.payout'].search([('employee_id', '=', self.employee.id)])
+        self.assertEqual(payout.payout_type, 'fnf')
+        self.assertEqual(payout.period_end, date(2025, 9, 30))
+        self.assertAlmostEqual(payout.amount_final, 28800)
+
+    # ------------------------------------------------------------------
+    # Leave and attendance
+    # ------------------------------------------------------------------
+    def _leave(self, leave_type, date_from, date_to):
+        leave = self.env['hr.leave'].create({
+            'employee_id': self.employee.id,
+            'holiday_status_id': leave_type.id,
+            'request_date_from': date_from,
+            'request_date_to': date_to,
+        })
+        if leave.state != 'validate':
+            leave.action_approve()
+        if leave.state != 'validate':
+            leave.action_validate()
+        return leave
+
+    def _leave_type(self, name, **vals):
+        return self.env['hr.leave.type'].create(dict({
+            'name': name, 'requires_allocation': False, 'leave_validation_type': 'no_validation'}, **vals))
+
+    def test_unpaid_leave_counts_working_days(self):
+        """A Friday to Monday unpaid leave is 2 days, not 4 calendar days."""
+        self.env['ir.config_parameter'].sudo().set_param('bxi_equitable_benefit.unpaid_leave_threshold_days', 1)
+        self._assignment(self.pattern_6, self.fy_start, deployment='onsite')
+        self._leave(self._leave_type('EB Unpaid', eb_is_unpaid=True), date(2025, 5, 2), date(2025, 5, 5))
+        payout = self._payout()
+        self.assertEqual(payout.unpaid_leave_days, 2)
+        self.assertTrue(payout.unpaid_leave_prorated)
+        self.assertAlmostEqual(payout.amount_final, round(57600 * 363 / 365, 2))
+
+    def test_flag_default_unpaid_leave_types(self):
+        LeaveType = self.env['hr.leave.type'].with_context(active_test=False)
+        LeaveType.search([]).write({'eb_is_unpaid': False})
+        lwp = self._leave_type('Leave Without Pay')
+        paid = self._leave_type('Privilege Leave')
+        LeaveType._eb_flag_default_unpaid_types()
+        self.assertTrue(lwp.eb_is_unpaid)
+        self.assertFalse(paid.eb_is_unpaid)
+        # An administrator's choice is kept
+        lwp.eb_is_unpaid = False
+        paid.eb_is_unpaid = True
+        LeaveType._eb_flag_default_unpaid_types()
+        self.assertFalse(lwp.eb_is_unpaid)
+
+    def _attend(self, days):
+        # 09:30 to 17:30 India time
+        self.env['hr.attendance'].create([{
+            'employee_id': self.employee.id,
+            'check_in': datetime.combine(day, time(4, 0)),
+            'check_out': datetime.combine(day, time(12, 0)),
+        } for day in days])
+
+    @staticmethod
+    def _weekdays(date_from, date_to, weekdays=(0, 1, 2, 3, 4)):
+        days = [date_from + timedelta(days=offset) for offset in range((date_to - date_from).days + 1)]
+        return [day for day in days if day.weekday() in weekdays]
+
+    def test_unauthorized_absence_from_attendance(self):
+        if 'hr.attendance' not in self.env:
+            self.skipTest("hr_attendance is not installed")
+        self._assignment(self.pattern_6, self.fy_start, deployment='onsite')
+        absent = {date(2025, 4, 14), date(2025, 4, 15), date(2025, 4, 16), date(2025, 4, 17)}
+        self._attend([day for day in self._weekdays(date(2025, 4, 1), date(2025, 4, 30)) if day not in absent])
+        payout = self._payout(period_end=date(2025, 4, 30))
+        self.assertEqual(payout.unauthorized_absence_days, 4)
+        self.assertFalse(payout.is_eligible)
+
+        # Approved leave is not an unauthorized absence
+        self._leave(self._leave_type('EB Casual'), date(2025, 4, 14), date(2025, 4, 15))
+        payout.with_user(self.reviewer).action_compute()
+        self.assertEqual(payout.unauthorized_absence_days, 2)
+        self.assertTrue(payout.is_eligible)
+
+        self.env['ir.config_parameter'].sudo().set_param('bxi_equitable_benefit.absence_source', 'leave')
+        payout.with_user(self.reviewer).action_compute()
+        self.assertEqual(payout.unauthorized_absence_days, 0)
+
+    def test_pattern_compliance(self):
+        if 'hr.attendance' not in self.env:
+            self.skipTest("hr_attendance is not installed")
+        set_param = self.env['ir.config_parameter'].sudo().set_param
+        set_param('bxi_equitable_benefit.absence_source', 'leave')
+        set_param('bxi_equitable_benefit.min_pattern_compliance', 90)
+        self._assignment(self.pattern_6, self.fy_start, date(2025, 4, 30), deployment='onsite')
+        self._attend(self._weekdays(date(2025, 4, 1), date(2025, 4, 30), weekdays=(0, 1, 2, 3, 4, 5)))
+        payout = self._payout()
+        line = payout.line_ids
+        self.assertTrue(line.compliance_checked)
+        self.assertEqual(line.attended_days, 26)
+        self.assertEqual(line.compliance_percent, 100)
+        self.assertFalse(payout.warning_note)
+
+        # Mondays are work from home: they are not office days
+        home = self.env['hr.work.location'].create({
+            'name': 'Home', 'location_type': 'home', 'address_id': self.env.company.partner_id.id})
+        self.employee.monday_location_id = home
+        payout.with_user(self.reviewer).action_compute()
+        self.assertEqual(payout.line_ids.attended_days, 22)
+        self.assertIn('office days attended', payout.warning_note)
+        self.assertTrue(payout.is_eligible, "The compliance check never blocks the payout")
+
+    # ------------------------------------------------------------------
+    # Other policy points
+    # ------------------------------------------------------------------
+    def test_compliance_case_disciplinary_outcome(self):
+        if 'antitrust.case' not in self.env:
+            self.skipTest("bxi_antitrust_compliance is not installed")
+        self._assignment(self.pattern_6, self.fy_start, deployment='onsite')
+        case = self.env['antitrust.case'].create({
+            'employee_ids': [(6, 0, self.employee.ids)],
+            'summary': 'Shared pricing with a competitor',
+            'outcome': 'disciplinary',
+        })
+        self.env.cr.execute("UPDATE antitrust_case SET create_date = %s WHERE id = %s",
+                            (datetime(2025, 6, 1), case.id))
+        case.invalidate_recordset(['create_date'])
+        payout = self._payout()
+        self.assertFalse(payout.is_eligible)
+        self.assertEqual(payout.disciplinary_count, 1)
+
+    def test_missing_component_a_blocks_validation(self):
+        other = self.env['hr.employee'].create({'name': 'Aman', 'date_version': date(2020, 1, 1)})
+        self.env['bxi.eb.performance.rating'].create({
+            'employee_id': other.id, 'fy_start': self.fy_start, 'rating': 'meets'})
+        self._assignment(self.pattern_6, self.fy_start, deployment='onsite', employee=other)
+        payout = self._payout(employee=other)
+        self.assertTrue(payout.missing_component_a)
+        self.assertIn('Component A', payout.warning_note)
+        with self.assertRaises(UserError):
+            payout.with_user(self.reviewer).action_validate()
+
+    def test_new_pattern_closes_ongoing_one(self):
+        six_day = self._assignment(self.pattern_6, self.fy_start, deployment='onsite')
+        five_day = self.env['bxi.eb.assignment'].create({
+            'employee_id': self.employee.id, 'date_from': date(2025, 10, 1), 'work_pattern_id': self.pattern_5.id,
+            'work_category': 'client', 'deployment': 'offshore', 'justification': 'New SOW'})
+        five_day.action_submit()
+        self.assertIn(self.reviewer, five_day.activity_ids.user_id)
+        five_day.with_user(self.reviewer).action_approve()
+        self.assertEqual(six_day.date_to, date(2025, 9, 30))
+        self.assertFalse(five_day.activity_ids)
+        self.assertAlmostEqual(self._payout().amount_final, 28800 + 15000)
+
+    def test_policy_suspension(self):
+        self.employee.company_id.eb_suspended_from = date(2025, 10, 1)
+        self._assignment(self.pattern_6, self.fy_start, deployment='onsite')
+        self.assertAlmostEqual(self._payout().amount_final, 28800)
+        late = self.env['bxi.eb.assignment'].create({
+            'employee_id': self.employee.id, 'date_from': date(2025, 11, 1), 'work_pattern_id': self.pattern_5.id,
+            'work_category': 'client', 'deployment': 'offshore', 'justification': 'SOW'})
+        with self.assertRaises(UserError):
+            late.action_submit()
+
+    def test_tds_on_payout(self):
+        """2,00,000 of annual income taxed at 20% then 25%, plus 4% cess."""
+        self.employee.employee_ctc = 2000000
+        self.assertAlmostEqual(self.employee.get_equitable_benefit_tds(100000), 22100)
+        self.env['ir.config_parameter'].sudo().set_param('bxi_equitable_benefit.payout_tds', 'none')
+        self.assertEqual(self.employee.get_equitable_benefit_tds(100000), 0)
+
+        eqb = self.env.ref('bxi_equitable_benefit.hr_rule_equitable_benefit')
+        tds = self.env.ref('bxi_equitable_benefit.hr_rule_equitable_benefit_tds')
+        for structure in self.env['hr.payroll.structure'].search([('rule_ids', 'in', eqb.id)]):
+            self.assertIn(tds, structure.rule_ids)
+
+    def test_generate_skips_not_applicable(self):
+        other = self.env['hr.employee'].create({'name': 'Neha'})
+        self._assignment(self.pattern_6, self.fy_start, deployment='onsite')
+        self._assignment(self.pattern_hybrid, self.fy_start, category='non_client', employee=other)
+        payouts = self.env['bxi.eb.payout']._generate_annual_payouts(self.fy_start, self.fy_end)
+        self.assertEqual(payouts.employee_id, self.employee)
+
+    def test_cron_generates_once_after_year_close(self):
+        set_param = self.env['ir.config_parameter'].sudo().set_param
+        set_param('bxi_equitable_benefit.auto_generate_days', 15)
+        set_param('bxi_equitable_benefit.last_auto_generated_fy', False)
+        self._assignment(self.pattern_6, self.fy_start, deployment='onsite')
+        Payout = self.env['bxi.eb.payout']
+        domain = [('employee_id', '=', self.employee.id), ('fy_start', '=', self.fy_start)]
+        with freeze_time('2026-04-10'):
+            Payout._cron_generate_annual_payouts()
+        self.assertFalse(Payout.search(domain))
+        with freeze_time('2026-04-20'):
+            Payout._cron_generate_annual_payouts()
+            payout = Payout.search(domain)
+            self.assertAlmostEqual(payout.amount_final, 57600)
+            payout.unlink()
+            Payout._cron_generate_annual_payouts()
+        self.assertFalse(Payout.search(domain))
+
+    def test_payout_form_fills_the_year(self):
+        """Entering any date of the year is enough; changing the year moves the other dates with it."""
+        with Form(self.env['bxi.eb.payout']) as form:
+            form.employee_id = self.employee
+            form.fy_start = date(2025, 7, 15)
+            self.assertEqual(form.fy_start, self.fy_start)
+            self.assertEqual(form.fy_end, self.fy_end)
+            self.assertEqual(form.period_end, self.fy_end)
+            form.fy_start = date(2024, 4, 1)
+            self.assertEqual(form.fy_end, date(2025, 3, 31))
+            self.assertEqual(form.period_end, date(2025, 3, 31))
+        payout = form.record
+        with self.assertRaises(ValidationError):
+            payout.period_end = date(2025, 6, 30)

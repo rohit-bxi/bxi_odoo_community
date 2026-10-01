@@ -20,4 +20,8 @@
         <field name="key">bxi_equitable_benefit.unpaid_leave_threshold_days</field>
         <field name="value">30</field>
     </record>
+    <record id="param_min_pattern_compliance" model="ir.config_parameter">
+        <field name="key">bxi_equitable_benefit.min_pattern_compliance</field>
+        <field name="value">80</field>
+    </record>
 </odoo>

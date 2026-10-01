@@ -57,6 +57,11 @@
                         <strong>Not eligible</strong>
                         <field name="ineligibility_reason" class="d-block" style="white-space: pre-line;"/>
                     </div>
+                    <div class="alert alert-warning" role="alert" invisible="not warning_note"
+                         groups="bxi_equitable_benefit.group_eb_revenue_assurance,bxi_equitable_benefit.group_eb_finance">
+                        <strong>To review</strong>
+                        <field name="warning_note" class="d-block" style="white-space: pre-line;"/>
+                    </div>
                     <group>
                         <group string="Employee">
                             <field name="employee_id" readonly="state != 'draft' or computed_date"/>
@@ -64,6 +69,7 @@
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="payout_type" readonly="1"/>
                             <field name="resignation_id" invisible="not resignation_id"/>
+                            <field name="separation_date" invisible="not separation_date"/>
                         </group>
                         <group string="Period">
                             <field name="fy_name"/>
@@ -80,6 +86,7 @@
                             <field name="unauthorized_absence_days"/>
                             <field name="unpaid_leave_days"/>
                             <field name="unpaid_leave_prorated"/>
+                            <field name="missing_component_a" invisible="not missing_component_a"/>
                             <field name="computed_date"/>
                         </group>
                         <group string="Payout">
@@ -107,6 +114,11 @@
                                     <field name="component_a"/>
                                     <field name="rate_percent"/>
                                     <field name="amount" sum="Total"/>
+                                    <field name="compliance_checked" column_invisible="1"/>
+                                    <field name="expected_days" optional="hide" invisible="not compliance_checked"/>
+                                    <field name="attended_days" optional="hide" invisible="not compliance_checked"/>
+                                    <field name="compliance_percent" optional="show" invisible="not compliance_checked"
+                                           groups="bxi_equitable_benefit.group_eb_revenue_assurance,bxi_equitable_benefit.group_eb_finance"/>
                                 </list>
                             </field>
                         </page>
@@ -118,7 +130,8 @@
                             <group>
                                 <field name="is_exception" readonly="state != 'draft'"/>
                                 <field name="exception_amount" invisible="not is_exception" readonly="state != 'draft'"/>
-                                <field name="exception_approver_id" invisible="not is_exception" readonly="state != 'draft'"/>
+                                <field name="exception_approver_id" invisible="not is_exception" readonly="state != 'draft'"
+                                       options="{'no_create': True}"/>
                                 <field name="exception_reason" invisible="not is_exception" readonly="state != 'draft'"/>
                                 <field name="exception_attachment_ids" widget="many2many_binary"
                                        invisible="not is_exception" readonly="state != 'draft'"/>
@@ -147,7 +160,8 @@
                 <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
                 <separator/>
                 <filter name="not_eligible" string="Not Eligible" domain="[('is_eligible', '=', False)]"/>
-                <filter name="fnf" string="Full &amp; Final" domain="[('payout_type', '=', 'fnf')]"/>
+                <filter name="fnf" string="Full &amp; Final" domain="['|', ('payout_type', '=', 'fnf'), ('separation_date', '!=', False)]"/>
+                <filter name="to_review" string="Review Notes" domain="[('warning_note', '!=', False)]"/>
                 <group>
                     <filter name="group_fy" string="Financial Year" context="{'group_by': 'fy_name'}"/>
                     <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
@@ -169,10 +183,22 @@
         </field>
     </record>
 
+    <record id="view_bxi_eb_payout_graph" model="ir.ui.view">
+        <field name="name">bxi.eb.payout.graph</field>
+        <field name="model">bxi.eb.payout</field>
+        <field name="arch" type="xml">
+            <graph type="bar">
+                <field name="fy_name"/>
+                <field name="department_id"/>
+                <field name="amount_final" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
     <record id="action_bxi_eb_payout" model="ir.actions.act_window">
         <field name="name">Payouts</field>
         <field name="res_model">bxi.eb.payout</field>
-        <field name="view_mode">list,form,pivot</field>
+        <field name="view_mode">list,form,pivot,graph</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">No equitable benefit payout yet</p>
             <p>Use "Generate Payouts" after the close of the financial year.</p>
