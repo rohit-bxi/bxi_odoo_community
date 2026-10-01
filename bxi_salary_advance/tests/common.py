@@ -63,9 +63,10 @@ class SalaryAdvanceTestMixin:
         cls.vendor = cls.env['res.partner'].create({'name': 'Housing Partner Ltd'})
 
     @classmethod
-    def _create_employee(cls, name, parent=None, joined=None, basic=40000, hra=16000, allowance=24000):
+    def _create_employee(cls, name, parent=None, joined=None, basic=40000, hra=16000, allowance=24000,
+                         groups='base.group_user'):
         login = 'sa_test_' + name.lower().replace(' ', '_')
-        user = new_test_user(cls.env, login=login, groups='base.group_user',
+        user = new_test_user(cls.env, login=login, groups=groups,
                              email=f"{login}@example.com", name=name)
         employee = cls.env['hr.employee'].create({
             'name': name,

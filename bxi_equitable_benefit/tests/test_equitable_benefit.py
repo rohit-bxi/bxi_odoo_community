@@ -150,6 +150,40 @@ class TestEquitableBenefit(TransactionCase):
         self.assertTrue(payout.is_eligible)
         self.assertEqual(payout.amount_final, 0)
 
+    def test_payout_statement_report_renders(self):
+        self._assignment(self.pattern_5, self.fy_start)
+        payout = self._payout()
+        html, _ = self.env['ir.actions.report']._render_qweb_html(
+            'bxi_equitable_benefit.report_payout_statement', payout.ids)
+        self.assertIn(b'Equitable Benefit Statement', html)
+        self.assertIn(self.employee.name.encode(), html)
+        self.assertIn(payout.name.encode(), html)
+
+    def test_hybrid_client_aligned_not_applicable(self):
+        Rate = self.env['bxi.eb.rate']
+        day = date(2025, 6, 1)
+        for deployment in ('onsite', 'offshore'):
+            rate = Rate._find_rate(self.pattern_hybrid, 'client', deployment, day, self.env.company)
+            self.assertTrue(rate)
+            self.assertEqual(rate.rate_percent, 0)
+
+        self._assignment(self.pattern_hybrid, self.fy_start, category='client', deployment='offshore')
+        payout = self._payout()
+        self.assertTrue(payout.is_eligible)
+        self.assertEqual(payout.amount_final, 0)
+
+    def test_ensure_hybrid_client_rate_keeps_admin_rows(self):
+        Rate = self.env['bxi.eb.rate'].with_context(active_test=False)
+        domain = [('work_pattern_id', '=', self.pattern_hybrid.id), ('work_category', '=', 'client')]
+        Rate._ensure_hybrid_client_rate()
+        self.assertEqual(Rate.search_count(domain), 1)
+
+        Rate.search(domain).write({'rate_percent': 2.5, 'deployment': 'offshore'})
+        Rate._ensure_hybrid_client_rate()
+        rows = Rate.search(domain)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows.rate_percent, 2.5)
+
     def test_separation_fnf(self):
         """Example 5 with the exact 8/12 share: 6,00,000 x 10.33% x 8/12."""
         self.env['bxi.eb.rate'].create({

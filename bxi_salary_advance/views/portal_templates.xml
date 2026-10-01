@@ -74,6 +74,7 @@
                             <th class="text-end">Approved</th>
                             <th class="text-end">Balance</th>
                             <th>Status</th>
+                            <th/>
                         </tr>
                     </thead>
                     <tbody>
@@ -84,6 +85,12 @@
                             <td class="text-end"><span t-if="record.amount_approved" t-field="record.amount_approved"/></td>
                             <td class="text-end"><span t-if="record.amount_disbursed" t-field="record.amount_balance"/></td>
                             <td><t t-call="bxi_salary_advance.portal_salary_advance_state_badge"/></td>
+                            <td class="text-end">
+                                <a t-if="record.state == 'draft'" t-attf-href="/my/salary-advances/#{record.id}/edit"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fa fa-pencil me-1"/>Update
+                                </a>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -94,8 +101,14 @@
     <template id="portal_salary_advance_form" name="New Salary Advance">
         <t t-call="portal.portal_layout">
             <div class="my-3">
-                <a href="/my/salary-advances">&#8592; My Salary Advances</a>
-                <h3 class="mt-2">New Salary Advance</h3>
+                <t t-if="advance">
+                    <a t-attf-href="/my/salary-advances/#{advance.id}">&#8592; <t t-esc="advance.name"/></a>
+                    <h3 class="mt-2">Update <t t-esc="advance.name"/></h3>
+                </t>
+                <t t-else="">
+                    <a href="/my/salary-advances">&#8592; My Salary Advances</a>
+                    <h3 class="mt-2">New Salary Advance</h3>
+                </t>
             </div>
             <div t-if="error" class="alert alert-danger" style="white-space: pre-line;" t-esc="error"/>
             <t t-call="bxi_salary_advance.portal_salary_advance_policy_note"/>
@@ -108,7 +121,7 @@
                     <b t-esc="category[1]"/>: <t t-esc="' '.join(category_issues[category[0]])"/>
                 </div>
             </t>
-            <form method="post" action="/my/salary-advances/new" enctype="multipart/form-data" class="row g-3">
+            <form method="post" t-att-action="form_action" enctype="multipart/form-data" class="row g-3">
                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                 <div class="col-md-6">
                     <label class="form-label" for="category">Category</label>
@@ -160,6 +173,9 @@
                 <div class="col-md-6">
                     <label class="form-label" for="rental_agreement">Category III - Rental agreement / Letter of Intent</label>
                     <input type="file" name="rental_agreement" id="rental_agreement" class="form-control" multiple="multiple"/>
+                    <div t-if="advance and advance.rental_agreement_ids" class="form-text">
+                        Uploaded: <t t-esc="', '.join(advance.rental_agreement_ids.mapped('name'))"/>. New files are added.
+                    </div>
                 </div>
                 <div class="col-12">
                     <label class="form-label" for="reason">Details</label>
@@ -174,10 +190,16 @@
                         save a draft to download a pre-filled form, sign it and upload it before submitting.
                         <t t-if="form_optional">The signed form is optional.</t>
                     </div>
+                    <div t-if="advance and advance.request_form_ids" class="form-text">
+                        Uploaded: <t t-esc="', '.join(advance.request_form_ids.mapped('name'))"/>. New files are added.
+                    </div>
                 </div>
                 <div class="col-12 d-flex gap-2">
                     <button type="submit" name="submit_now" value="1" class="btn btn-primary">Submit to Reporting Manager</button>
-                    <button type="submit" class="btn btn-secondary">Save Draft</button>
+                    <button type="submit" class="btn btn-secondary">
+                        <t t-if="advance">Save Changes</t><t t-else="">Save Draft</t>
+                    </button>
+                    <a t-if="advance" t-attf-href="/my/salary-advances/#{advance.id}" class="btn btn-link">Discard</a>
                 </div>
             </form>
         </t>
@@ -240,6 +262,9 @@
                     <ul class="mb-0"><li t-foreach="issues" t-as="issue" t-esc="issue"/></ul>
                 </div>
                 <div class="d-flex flex-wrap gap-2 mb-3">
+                    <a t-attf-href="/my/salary-advances/#{record.id}/edit" class="btn btn-outline-primary">
+                        <i class="fa fa-pencil me-1"/>Update Request
+                    </a>
                     <a t-attf-href="/my/salary-advances/#{record.id}/request-form" class="btn btn-secondary">
                         <i class="fa fa-download me-1"/>Download Pre-filled Request Form
                     </a>

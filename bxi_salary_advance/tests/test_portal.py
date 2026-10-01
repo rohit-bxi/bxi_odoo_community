@@ -2,7 +2,7 @@ from datetime import timedelta
 from urllib.parse import unquote
 
 from odoo.http import Request
-from odoo.tests import HttpCase, tagged
+from odoo.tests import HttpCase, new_test_user, tagged
 
 from .common import SalaryAdvanceTestMixin, make_pdf
 
@@ -37,6 +37,47 @@ class TestSalaryAdvancePortal(SalaryAdvanceTestMixin, HttpCase):
         self.assertIn('/my/salary-advances', self.url_open('/my').text)
         self.assertIn(advance.name, self.url_open('/my/salary-advances').text)
         self.assertIn('60,000', self.url_open('/my/salary-advances/new').text)
+
+    def test_no_access_employee_uses_portal_for_own_advances(self):
+        """Salary Advance access "No" is a regular employee: own advances only."""
+        self.assertFalse(self.employee.user_id.has_group('bxi_salary_advance.group_salary_advance_hr'))
+        self.assertIn('/my/salary-advances', self.url_open('/my').text)
+        response = self._post('/my/salary-advances/new', {
+            'category': 'emergency', 'emergency_type': 'birth', 'amount_requested': '30000',
+        })
+        self.assertEqual(response.status_code, 303)
+        own = self.env['bxi.salary.advance'].search([('employee_id', '=', self.employee.id)])
+        self.assertEqual(len(own), 1)
+        other = self._new_advance(employee=self.manager)
+        page = self.url_open('/my/salary-advances').text
+        self.assertIn(own.name, page)
+        self.assertNotIn(other.name, page)
+
+    def test_same_work_email_on_other_employee_is_not_matched(self):
+        """An employee of another user sharing the work email (sorted first by
+        name) must not be taken as the current user's employee."""
+        admin = self._create_employee('Adminstrator')
+        admin.work_email = self.employee.work_email
+        admin_advance = self._new_advance(employee=admin)
+        own = self._new_advance(amount=30000)
+
+        page = self.url_open('/my/salary-advances').text
+        self.assertIn(own.name, page)
+        self.assertNotIn(admin_advance.name, page)
+        self.assertEqual(self.url_open(f'/my/salary-advances/{admin_advance.id}').status_code, 404)
+        self.assertEqual(self.url_open(f'/my/salary-advances/{admin_advance.id}/edit').status_code, 404)
+
+    def test_email_fallback_only_for_unlinked_employee(self):
+        user = new_test_user(self.env, login='sa_test_unlinked', groups='base.group_user',
+                             email='sa_test_unlinked@example.com')
+        linked_elsewhere = self._create_employee('Linked Elsewhere')
+        linked_elsewhere.work_email = user.email
+        self._new_advance(employee=linked_elsewhere)
+        self.authenticate(user.login, user.login)
+        self.assertIn('No employee record is linked', self.url_open('/my/salary-advances').text)
+
+        self.env['hr.employee'].create({'name': 'Unlinked', 'work_email': user.email})
+        self.assertNotIn('No employee record is linked', self.url_open('/my/salary-advances').text)
 
     def test_other_employees_advance_is_not_found(self):
         other = self._new_advance(employee=self.manager)
@@ -84,6 +125,66 @@ class TestSalaryAdvancePortal(SalaryAdvanceTestMixin, HttpCase):
         })
         self._post(f'/my/salary-advances/{advance.id}/submit')
         self.assertEqual(advance.state, 'submitted')
+
+    def test_update_draft(self):
+        advance = self._new_advance(amount=30000)
+        self.assertIn(f'/my/salary-advances/{advance.id}/edit', self.url_open('/my/salary-advances').text)
+        self.assertIn(f'/my/salary-advances/{advance.id}/edit', self.url_open(f'/my/salary-advances/{advance.id}').text)
+
+        page = self.url_open(f'/my/salary-advances/{advance.id}/edit')
+        self.assertEqual(page.status_code, 200)
+        self.assertIn(f'Update {advance.name}', page.text)
+        self.assertIn('30000', page.text)
+
+        # Switch category: the emergency type of the old category is cleared.
+        response = self._post(f'/my/salary-advances/{advance.id}/edit', {
+            'category': 'non_processing', 'nonprocessing_reason': 'joining', 'emergency_type': 'medical',
+            'amount_requested': '40000', 'reason': 'Joining formalities pending',
+        }, files={'request_form': ('second.pdf', make_pdf('Second'), 'application/pdf')})
+        self.assertEqual(response.status_code, 303)
+        self.assertTrue(response.headers['Location'].endswith(f'/my/salary-advances/{advance.id}'))
+        self.assertEqual(advance.state, 'draft')
+        self.assertEqual(advance.category, 'non_processing')
+        self.assertEqual(advance.nonprocessing_reason, 'joining')
+        self.assertFalse(advance.emergency_type)
+        self.assertEqual(advance.amount_requested, 40000)
+        self.assertEqual(advance.reason, 'Joining formalities pending')
+        self.assertEqual(len(advance.request_form_ids), 2)
+
+    def test_update_and_submit(self):
+        advance = self._new_advance(amount=30000)
+        self._post(f'/my/salary-advances/{advance.id}/edit', {
+            'category': 'emergency', 'emergency_type': 'birth', 'amount_requested': '35000', 'submit_now': '1',
+        })
+        self.assertEqual(advance.state, 'submitted')
+        self.assertEqual(advance.amount_requested, 35000)
+        self.assertEqual(advance.emergency_type, 'birth')
+
+    def test_update_error_keeps_draft_unchanged(self):
+        advance = self._new_advance(amount=30000)
+        response = self._post(f'/my/salary-advances/{advance.id}/edit', {
+            'category': 'emergency', 'emergency_type': 'birth', 'amount_requested': '70000', 'submit_now': '1',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('75%', response.text)
+        self.assertEqual(advance.state, 'draft')
+        self.assertEqual(advance.amount_requested, 30000)
+
+    def test_update_only_own_draft(self):
+        advance = self._new_advance(amount=30000)
+        self._post(f'/my/salary-advances/{advance.id}/submit')
+        self.assertEqual(advance.state, 'submitted')
+        self.assertNotIn(f'/my/salary-advances/{advance.id}/edit', self.url_open('/my/salary-advances').text)
+
+        response = self.url_open(f'/my/salary-advances/{advance.id}/edit', allow_redirects=False)
+        self.assertEqual(response.status_code, 303)
+        self._post(f'/my/salary-advances/{advance.id}/edit', {
+            'category': 'emergency', 'emergency_type': 'birth', 'amount_requested': '1000',
+        })
+        self.assertEqual(advance.amount_requested, 30000)
+
+        other = self._new_advance(employee=self.manager)
+        self.assertEqual(self.url_open(f'/my/salary-advances/{other.id}/edit').status_code, 404)
 
     def test_prefilled_request_form(self):
         advance = self._new_advance()
