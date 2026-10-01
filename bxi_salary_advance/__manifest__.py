@@ -1,7 +1,7 @@
 {
     'name': 'BXI Salary Advance',
     'category': 'Human Resources/Payroll',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'sequence': 1,
     'author': 'BXI Technologies',
     'website': 'https://bxitech.com/',

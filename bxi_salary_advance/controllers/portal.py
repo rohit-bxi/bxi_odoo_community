@@ -16,11 +16,18 @@ class SalaryAdvancePortal(http.Controller):
 
     # ── Helpers ──────────────────────────────────────────────────────────
     def _get_employee(self):
+        """The employee linked to the current user. The work email is only a
+        fallback for an employee not linked to any user yet: an employee linked
+        to another user is never matched, or that user's advances would show."""
         user = request.env.user
-        return request.env['hr.employee'].sudo().search([
-            '|', ('user_id', '=', user.id),
-            ('work_email', '=ilike', user.email or user.login),
-        ], limit=1)
+        Employee = request.env['hr.employee'].sudo()
+        employee = Employee.search([('user_id', '=', user.id)], limit=1)
+        if not employee and (user.email or user.login):
+            employee = Employee.search([
+                ('user_id', '=', False),
+                ('work_email', '=ilike', user.email or user.login),
+            ], limit=1)
+        return employee
 
     def _get_own_advance(self, employee, advance_id):
         advance = request.env['bxi.salary.advance'].sudo().browse(advance_id).exists()
@@ -73,7 +80,35 @@ class SalaryAdvancePortal(http.Controller):
             'has_blank_form': bool(employee.company_id.sa_request_form),
             'form_optional': Advance._get_bool_param('request_form_optional'),
             'policy_status': employee._sa_get_policy_status(create=True),
+            'advance': False,
+            'form_action': '/my/salary-advances/new',
         }
+
+    def _request_vals(self, post):
+        """Request fields from the portal form. The fields of the other
+        categories are cleared, so switching category on update leaves no
+        stale value behind."""
+        category = post.get('category')
+        if category not in CATEGORY_FIELDS:
+            raise UserError(request.env._("Select the salary advance category."))
+        return {
+            'category': category,
+            'reason': (post.get('reason') or '').strip() or False,
+            'amount_requested': float(post.get('amount_requested') or 0),
+            'nonprocessing_reason': category == 'non_processing' and post.get('nonprocessing_reason') or False,
+            'emergency_type': category == 'emergency' and post.get('emergency_type') or False,
+            'tenancy_months': int(post.get('tenancy_months') or 0) if category == 'housing' else 0,
+        }
+
+    def _attach_uploads(self, advance):
+        files = request.httprequest.files
+        request_form = self._create_attachments(files.getlist('request_form'), advance._name, advance.id)
+        rental = self._create_attachments(files.getlist('rental_agreement'), advance._name, advance.id)
+        if request_form or rental:
+            advance.write({
+                'request_form_ids': [(4, att.id) for att in request_form],
+                'rental_agreement_ids': [(4, att.id) for att in rental],
+            })
 
     def _redirect_error(self, advance, error):
         message = error.args[0] if error.args else str(error)
@@ -106,32 +141,11 @@ class SalaryAdvancePortal(http.Controller):
         if request.httprequest.method != 'POST':
             return request.render(template, values)
 
-        category = post.get('category')
-        vals = {
-            'employee_id': employee.id,
-            'company_id': employee.company_id.id,
-            'category': category,
-            'reason': (post.get('reason') or '').strip() or False,
-        }
         try:
-            vals['amount_requested'] = float(post.get('amount_requested') or 0)
-            if category == 'non_processing':
-                vals['nonprocessing_reason'] = post.get('nonprocessing_reason') or False
-            elif category == 'emergency':
-                vals['emergency_type'] = post.get('emergency_type') or False
-            elif category == 'housing':
-                vals['tenancy_months'] = int(post.get('tenancy_months') or 0)
-            else:
-                raise UserError(request.env._("Select the salary advance category."))
+            vals = dict(self._request_vals(post), employee_id=employee.id, company_id=employee.company_id.id)
             with request.env.cr.savepoint():
                 advance = request.env['bxi.salary.advance'].sudo().create(vals)
-                files = request.httprequest.files
-                request_form = self._create_attachments(files.getlist('request_form'), advance._name, advance.id)
-                rental = self._create_attachments(files.getlist('rental_agreement'), advance._name, advance.id)
-                advance.write({
-                    'request_form_ids': [(4, att.id) for att in request_form],
-                    'rental_agreement_ids': [(4, att.id) for att in rental],
-                })
+                self._attach_uploads(advance)
                 if post.get('submit_now'):
                     advance.action_submit()
         except (UserError, ValidationError, ValueError) as error:
@@ -153,6 +167,39 @@ class SalaryAdvancePortal(http.Controller):
         }
         return request.render('bxi_salary_advance.portal_salary_advance', values)
 
+    @http.route('/my/salary-advances/<int:advance_id>/edit', type='http', auth='user', website=True,
+                methods=['GET', 'POST'])
+    def portal_salary_advance_edit(self, advance_id, **post):
+        employee = self._get_employee()
+        advance = self._get_own_advance(employee, advance_id)
+        if advance.state != 'draft':
+            return request.redirect(f'/my/salary-advances/{advance.id}')
+        template = 'bxi_salary_advance.portal_salary_advance_form'
+        if request.httprequest.method != 'POST':
+            post = {
+                'category': advance.category,
+                'amount_requested': advance.amount_requested,
+                'nonprocessing_reason': advance.nonprocessing_reason,
+                'emergency_type': advance.emergency_type,
+                'tenancy_months': advance.tenancy_months or '',
+                'reason': advance.reason or '',
+            }
+        values = dict(self._form_values(employee, post),
+                      advance=advance, form_action=f'/my/salary-advances/{advance.id}/edit')
+        if request.httprequest.method != 'POST':
+            return request.render(template, values)
+
+        try:
+            with request.env.cr.savepoint():
+                advance.write(self._request_vals(post))
+                self._attach_uploads(advance)
+                if post.get('submit_now'):
+                    advance.action_submit()
+        except (UserError, ValidationError, ValueError) as error:
+            values['error'] = error.args[0] if error.args else str(error)
+            return request.render(template, values)
+        return request.redirect(f'/my/salary-advances/{advance.id}')
+
     @http.route('/my/salary-advances/<int:advance_id>/documents', type='http', auth='user', website=True,
                 methods=['POST'])
     def portal_salary_advance_documents(self, advance_id, **post):
@@ -160,13 +207,7 @@ class SalaryAdvancePortal(http.Controller):
         advance = self._get_own_advance(employee, advance_id)
         if advance.state != 'draft':
             return request.redirect(f'/my/salary-advances/{advance.id}')
-        files = request.httprequest.files
-        request_form = self._create_attachments(files.getlist('request_form'), advance._name, advance.id)
-        rental = self._create_attachments(files.getlist('rental_agreement'), advance._name, advance.id)
-        advance.write({
-            'request_form_ids': [(4, att.id) for att in request_form],
-            'rental_agreement_ids': [(4, att.id) for att in rental],
-        })
+        self._attach_uploads(advance)
         return request.redirect(f'/my/salary-advances/{advance.id}')
 
     @http.route('/my/salary-advances/<int:advance_id>/submit', type='http', auth='user', website=True,
