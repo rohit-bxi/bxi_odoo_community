@@ -20,11 +20,12 @@ class PerformanceReviewTemplate(models.Model):
     )
     appraisee_question_ids = fields.One2many(
         "performance.review.template.question", "template_id",
-        string="Appraisee Questions", domain=[("question_type", "=", "appraisee")],
+        string="Appraisee Questions", domain=[("question_type", "=", "appraisee")],context={"default_question_type": "appraisee"},
+
     )
     manager_question_ids = fields.One2many(
         "performance.review.template.question", "template_id",
-        string="Manager Questions", domain=[("question_type", "=", "manager")],
+        string="Manager Questions", domain=[("question_type", "=", "manager")],context={"default_question_type": "manager"},
     )
 
     @api.constrains("line_ids")
@@ -100,15 +101,10 @@ class PerformanceReviewTemplateQuestion(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Respect the question tab used in the template.
-
-        The two One2many fields use default_question_type in their context.
-        Explicitly apply that context here so a question added from the
-        Manager Questions tab can never silently fall back to Appraisee.
-        """
         default_type = self.env.context.get("default_question_type")
+
         if default_type in ("appraisee", "manager"):
             for vals in vals_list:
-                if not vals.get("question_type"):
-                    vals["question_type"] = default_type
+                vals["question_type"] = default_type
+
         return super().create(vals_list)
