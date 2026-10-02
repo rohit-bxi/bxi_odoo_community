@@ -47,8 +47,10 @@
                             <div t-else="" class="bxi-pr-company-logo-placeholder">LOGO</div>
                         </div>
                         <div class="bxi-pr-title">
-                            <span>Performance Review</span>
-                            <span class="bxi-pr-title-period"><t t-esc="getQuarter()"/> - <t t-esc="state.review.year"/></span>
+                            <span>Performance Review </span>
+                            <span>
+                                <t t-esc="state.review.template_id ? state.review.template_id[1] : 'Performance Review'"/>
+                            </span>
                         </div>
                         <div class="bxi-pr-status"><t t-esc="getStatusLabel()"/></div>
                     </div>
@@ -63,7 +65,7 @@
                             <div class="bxi-pr-value-box"><t t-esc="state.review.employee_email || '-'"/></div>
                         </div>
                         <div class="bxi-pr-detail">
-                            <label>Manager Mail</label>
+                            <label>Manager`s Email</label>
                             <div class="bxi-pr-value-box"><t t-esc="state.review.manager_email || '-'"/></div>
                         </div>
                     </div>
