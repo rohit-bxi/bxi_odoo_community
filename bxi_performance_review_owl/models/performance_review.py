@@ -34,11 +34,11 @@ class PerformanceReview(models.Model):
     question_ids = fields.One2many("performance.review.question", "review_id", copy=True)
     appraisee_question_ids = fields.One2many(
         "performance.review.question", "review_id",
-        string="Appraisee Questions", domain=[("question_type", "=", "appraisee")],
+        string="Appraisee Questions", domain=[("question_type", "=", "appraisee")],context={"default_question_type": "appraisee"},
     )
     manager_question_ids = fields.One2many(
         "performance.review.question", "review_id",
-        string="Manager Questions", domain=[("question_type", "=", "manager")],
+        string="Manager Questions", domain=[("question_type", "=", "manager")],context={"default_question_type": "manager"},
     )
     note = fields.Text()
     successor_1 = fields.Char()
