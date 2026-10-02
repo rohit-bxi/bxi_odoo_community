@@ -43,7 +43,7 @@ class PerformanceReviewTemplateLine(models.Model):
     template_id = fields.Many2one(
         "performance.review.template", required=True, ondelete="cascade"
     )
-    sequence = fields.Integer(default=10)
+    sequence = fields.Integer(default=1)
     category = fields.Char(required=True)
     weightage = fields.Float(required=True, digits=(16, 2))
     target = fields.Char()
@@ -65,7 +65,7 @@ class PerformanceReviewTemplateQuestion(models.Model):
     template_id = fields.Many2one(
         "performance.review.template", required=True, ondelete="cascade"
     )
-    sequence = fields.Integer(default=10)
+    sequence = fields.Integer(default=1)
     question_type = fields.Selection(
         [
             ("appraisee", "Appraisee Question"),
