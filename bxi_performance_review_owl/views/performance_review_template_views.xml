@@ -52,6 +52,8 @@
                                 <list editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="question"/>
+                                    <field name="response_type"/>
+                                    <field name="rating_scale" invisible="response_type == 'answer'"/>
                                     <field name="active"/>
                                 </list>
                             </field>

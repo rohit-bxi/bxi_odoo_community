@@ -5,9 +5,9 @@
             <div class="bxi-pr-toolbar">
                 <div class="bxi-pr-breadcrumb">
                     <span class="bxi-pr-breadcrumb-link">Performance Reviews</span>
-                    <span class="bxi-pr-breadcrumb-separator">/</span>
+                    <!-- <span class="bxi-pr-breadcrumb-separator">/</span> -->
                     <span t-if="state.review">
-                        <t t-esc="state.review.name"/> - <t t-esc="getQuarter()"/> - <t t-esc="state.review.year"/>
+                        <!-- <t t-esc="state.review.name"/> - <t t-esc="getQuarter()"/> - <t t-esc="state.review.year"/> -->
                     </span>
                     <span t-else="">Performance Review</span>
                 </div>
