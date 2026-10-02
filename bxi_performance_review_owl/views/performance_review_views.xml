@@ -202,7 +202,12 @@
                                 <list>
                                     <field name="sequence" readonly="1"/>
                                     <field name="question" readonly="1"/>
-                                    <field name="answer"/>
+                                    <field name="response_type" readonly="1"/>
+                                    <field name="answer"
+                                        invisible="response_type == 'rating'"/>
+                                    <field name="manager_rating"
+                                        widget="priority"
+                                        invisible="response_type == 'answer'"/>
                                 </list>
                             </field>
                         </page>
