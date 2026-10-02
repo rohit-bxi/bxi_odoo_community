@@ -219,17 +219,28 @@ class PerformanceReview(models.Model):
                 review.question_ids.mapped("template_question_id").ids
             )
             vals_list = []
+            sequence_by_type = {
+                "appraisee": 0,
+                "manager": 0,
+            }
             for question in review.template_id.question_ids.filtered("active"):
                 if question.id in existing_template_question_ids:
                     continue
+                question_type = question.question_type
+
+                sequence_by_type[question_type] += 1
                 vals_list.append({
                     "review_id": review.id,
                     "template_question_id": question.id,
-                    "sequence": question.sequence,
-                    "question_type": question.question_type,
+                    "sequence": sequence_by_type[question_type],
+                    "question_type": question_type,
                     "question": question.question,
                     "response_type": question.response_type,
-                    "rating_scale": question.rating_scale if question.response_type in ("rating", "both") else False,
+                    "rating_scale": (
+                        question.rating_scale
+                        if question.response_type in ("rating", "both")
+                        else False
+                    ),
                 })
             if vals_list:
                 Question.create(vals_list)
