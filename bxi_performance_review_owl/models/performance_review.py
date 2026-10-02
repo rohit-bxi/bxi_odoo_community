@@ -415,7 +415,7 @@ class PerformanceReviewQuestion(models.Model):
     template_question_id = fields.Many2one(
         "performance.review.template.question", ondelete="set null", index=True
     )
-    sequence = fields.Integer(default=10)
+    sequence = fields.Integer(default=1)
     question_type = fields.Selection(
         [("appraisee", "Appraisee Question"), ("manager", "Manager Question")],
         required=True,

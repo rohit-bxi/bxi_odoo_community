@@ -9,5 +9,5 @@ class PerformanceReviewRating(models.Model):
     name = fields.Char(required=True)
     score = fields.Float(required=True)
     description = fields.Char()
-    sequence = fields.Integer(default=10)
+    sequence = fields.Integer(default=1)
     active = fields.Boolean(default=True)
