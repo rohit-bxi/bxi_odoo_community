@@ -452,13 +452,17 @@ class PerformanceReviewQuestion(models.Model):
         [(str(i), str(i)) for i in range(1, 6)],
         string="Appraisee Rating",
     )
+    manager_rating = fields.Selection(
+        [(str(i), str(i)) for i in range(1, 6)],
+        string="Manager Rating",
+    )
 
     @api.constrains("response_type", "rating_scale", "appraisee_rating")
     def _check_response_configuration(self):
         for rec in self:
             if rec.response_type == "answer" and rec.appraisee_rating:
                 raise ValidationError(
-                    _("An Answer Only question cannot have a rating.")
+                    _("An Answer Only question cannot have an appraisee rating.")
                 )
             if rec.response_type == "rating" and rec.answer:
                 raise ValidationError(
@@ -468,11 +472,24 @@ class PerformanceReviewQuestion(models.Model):
                 raise ValidationError(
                     _("Manager questions cannot have an appraisee rating.")
                 )
+            if rec.question_type == "appraisee" and rec.manager_rating:
+                raise ValidationError(
+                    _("Appraisee questions cannot have a manager rating.")
+                )
             if rec.appraisee_rating and rec.rating_scale:
                 if int(rec.appraisee_rating) > int(rec.rating_scale):
                     raise ValidationError(
                         _(
                             "The appraisee rating cannot be greater than the configured "
+                            "rating scale (%s stars)."
+                        ) % rec.rating_scale
+                    )
+
+            if rec.manager_rating and rec.rating_scale:
+                if int(rec.manager_rating) > int(rec.rating_scale):
+                    raise ValidationError(
+                        _(
+                            "The manager rating cannot be greater than the configured "
                             "rating scale (%s stars)."
                         ) % rec.rating_scale
                     )
@@ -504,10 +521,28 @@ class PerformanceReviewQuestion(models.Model):
                                 "rating scale (%s stars)."
                             ) % rec.rating_scale
                         )
+                    
+            if "manager_rating" in vals:
+                if rec.question_type != "manager":
+                    raise AccessError(
+                        _("Appraisee questions do not support a manager rating.")
+                    )
+                if response_type not in ("rating", "both"):
+                    raise AccessError(
+                        _("This question is configured for answer only, so a rating is not allowed.")
+                    )
+                if vals.get("manager_rating") and rec.rating_scale:
+                    if int(vals["manager_rating"]) > int(rec.rating_scale):
+                        raise ValidationError(
+                            _(
+                                "The selected manager rating cannot be greater than the configured "
+                                "rating scale (%s stars)."
+                            ) % rec.rating_scale
+                        )
 
     def write(self, vals):
         is_hr = self.env.user.has_group("bxi_performance_review_owl.group_performance_review_hr")
-        if set(vals) - {"answer", "appraisee_rating"}:
+        if set(vals) - {"answer", "appraisee_rating", "manager_rating"}:
             raise AccessError(_("Question configuration cannot be modified from a Performance Review."))
 
         self._validate_response_values(vals)
