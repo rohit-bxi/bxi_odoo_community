@@ -419,6 +419,18 @@
                             Variable Components (in INR)
                         </td>
                     </tr>
+                    <tr>
+                        <td colspan="3" style="padding: 6px;">
+                            Performance Bonus in
+                        </td>
+                        <td
+                            style="
+                padding: 6px;
+                text-align: right;
+            ">
+                            <t t-esc="o.performance_bonus" />
+                        </td>
+                    </tr>
 
                     <tr>
                         <td colspan="3" style="padding: 6px;">
@@ -694,7 +706,7 @@
                     (Medical Insurance, Term Life Insurance, Personal Accident Insurance).
                 </p>
                 <ul style="margin-left:25px; padding-left:20px; line-height:1.8;">
-                    <li><strong>Medical Insurance:</strong> Enrollment in the Company’s Group Health
+                    <strong>Medical Insurance:</strong> <li>Enrollment in the Company’s Group Health
                         Medical Insurance policy is compulsory for all employees not covered under
                         the ESI Act, 1948. 
                         <li>Coverage shall commence only upon successful
@@ -724,14 +736,14 @@
                 </ul>
                 <ul style="margin-left:25px; padding-left:20px; line-height:1.8;">
                     <p>
-                        <strong>b. Coverage under ESI:</strong>
-                        <li>Employees eligible under the Employees’ State Insurance Act, 1948 shall
+                        <strong>Coverage under ESI:</strong>
+                        <li>Employees eligible under the Employees&amp; State Insurance Act, 1948 shall
                             be automatically enrolled in the
                             Employee State Insurance Scheme in accordance with applicable norms and
                             amendments.</li>
                         <li>Employees covered under ESI will not be automatically included in the
-                        Company’s medical insurance benefit.
-                        Enrollment under the Company’s medical insurance is available; however, in
+                        Company&amp; medical insurance benefit.
+                        Enrollment under the Company&amp; medical insurance is available; however, in
                         such cases, the full cost of the
                         annual premium shall be borne by the employee.
                         </li>
@@ -741,7 +753,7 @@
                     Employer&amp;contribution to Provident Fund: As per statutory requirements, an
                     employee has to contribute 12% of the basic
                     salary towards Provident Fund (PF). BXITech contributes matching amount to PF.
-                    Out of employer's contribution, 8.33%
+                    Out of employer&amp; contribution, 8.33%
                     of monthly basic or INR. 1,250/- whichever is lower is remitted to PF
                     authorities towards Employees’ Pension Scheme
                     (EPS). All employees are thereby eligible to draw pension after superannuation,
@@ -811,7 +823,7 @@
                     "confirmed" on completion of your probation period. </p>
 
                 <p><strong>4. Performance and Compensation Reviews:</strong> Your performance
-                    appraisal and compensation review will be governed by the Company's policy being
+                    appraisal and compensation review will be governed by the Company&amp; policy being
                     in force from time to time. </p>
                 <p><strong>5. Notice Period / Separation:</strong> Your employment with the Company
                     can also be terminated either by the Company or by you by giving the other party
@@ -829,12 +841,7 @@
                     all documents and return all Company property. The Company will not be bound to
                     pay the dues, if any, till you have
                     completed all the separation procedur</p>
-            </div>
-            <!-- ===================== PAGE 10 ===================== -->
-            <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
-
-                <p><strong>6. Agreements:</strong> You may be required to e-sign necessary
+                    <p><strong>6. Agreements:</strong> You may be required to e-sign necessary
                     agreements with the Company or client and complete all formalities at the time
                     of joining and during the tenure of employment. You may also be required to sign
                     other Agreements with the Company, as the Company may decide from time to time,
@@ -850,6 +857,12 @@
                     companies, you must voluntarily declare the same when the offer is made. Direct
                     relatives include parents, spouse, brothers, sisters, and children of the
                     employee. </p>
+            </div>
+            <!-- ===================== PAGE 10 ===================== -->
+            <div class="page"
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
+
+                
                 <p>
                     <strong>8. Background and Reference Check:</strong>
                     <ul style="margin-left:25px; padding-left:20px; line-height:1.8;">
@@ -896,12 +909,7 @@
                     requirements. These
                     are subject to change from time to time.
                 </p>
-
-            </div>
-            <!-- ===================== PAGE 11 ===================== -->
-            <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
-                <h5>10. MOBILITY</h5>
+                 <h5>10. MOBILITY</h5>
 
                 <p>
                     The Company may require you to perform duties and undertake assignments in
@@ -952,8 +960,7 @@
                     your appointment with the Company shall stand terminated/cancelled without
                     any notice.
                 </p>
-
-            </div>
+            </div>            
             <!-- ===================== PAGE 13 ===================== -->
             <div class="page"
                 style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
@@ -964,7 +971,7 @@
                     a. The Employee consents to the holding and processing of personal data
                     provided to the
                     Employer for all purposes
-                    of administration and management of employment and/or the Company's
+                    of administration and management of employment and/or the Company&amp;
                     business.
                 </p>
 
@@ -1014,7 +1021,7 @@
                     Further, during the period of your employment with the Company, you will be
                     required to
                     inter alia comply with the
-                    Company's Code of Business Ethics &amp; Conduct, Anti Bribery &amp;
+                    Company&amp; Code of Business Ethics &amp; Conduct, Anti Bribery &amp;
                     Anti-Corruption,
                     Business Gift and Entertainment Policy
                     and failure to do so shall entitle the Company to take appropriate
@@ -1142,14 +1149,14 @@
 
                 <ol style="margin-left:20px; padding-left:10px;">
                     <li style="margin-bottom:8px;">
-                        Highest Qualification - Admit card, college and university official's
+                        Highest Qualification - Admit card, college and university official&amp;
                         (Registrar and Director) detail
                     </li>
 
                     <li style="margin-bottom:8px;">
                         Previous Employer - Direct HR Contact, PF account details, bank
                         statement showing
-                        salary transfer and Form 16, If company is active, employer's active
+                        salary transfer and Form 16, If company is active, employer&amp; active
                         address.
                     </li>
                 </ol>
@@ -1507,7 +1514,29 @@
                     proprietary information in the strictest confidence and agree not to disclose it
                     to any person, corporation, or entity. I also agree not to use such information
                     except as necessary in carrying out my work for the Company consistent with the
-                    Company's agreement with such third party. </p>
+                    Company&amp; agreement with such third party. </p>
+                    <p>
+                    <strong>2. Inventions</strong>
+                </p>
+
+                <!-- a. PRIOR INVENTIONS -->
+                <p>
+                    <u>
+                        <strong>Inventions Retained and Licensed</strong>
+                    </u>: I
+                    have shared and declared a list describing all inventions, original works of
+                    authorship, developments, improvements, and trade secrets which were made by me
+                    prior to my employment with the Company (collectively referred to as "Prior
+                    Inventions"), which belong to me, which relate to the Company&amp; proposed
+                    business, products, or research and development, and which are not assigned to
+                    the Company hereunder. If no such list is attached, I represent that there are
+                    no such Prior Inventions. If in the course of my employment with the Company I
+                    incorporate into a Company product, process, or machine a Prior Invention owned
+                    by me or in which I have an interest, the Company is hereby granted a
+                    nonexclusive, royalty-free, irrevocable, perpetual, worldwide license to make,
+                    have made, modify, use, and sell such Prior Invention as part of or in
+                    connection with such product, process, or machine. </p>
+
 
             </div>
             <!-- ===================== PAGE 19 ===================== -->
@@ -1520,28 +1549,7 @@
 
 
                 <!-- INVENTIONS -->
-                <p>
-                    <strong>2. Inventions</strong>
-                </p>
-
-                <!-- a. PRIOR INVENTIONS -->
-                <p>
-                    <u>
-                        <strong>Inventions Retained and Licensed</strong>
-                    </u>: I
-                    have shared and declared a list describing all inventions, original works of
-                    authorship, developments, improvements, and trade secrets which were made by me
-                    prior to my employment with the Company (collectively referred to as "Prior
-                    Inventions"), which belong to me, which relate to the Company's proposed
-                    business, products, or research and development, and which are not assigned to
-                    the Company hereunder. If no such list is attached, I represent that there are
-                    no such Prior Inventions. If in the course of my employment with the Company I
-                    incorporate into a Company product, process, or machine a Prior Invention owned
-                    by me or in which I have an interest, the Company is hereby granted a
-                    nonexclusive, royalty-free, irrevocable, perpetual, worldwide license to make,
-                    have made, modify, use, and sell such Prior Invention as part of or in
-                    connection with such product, process, or machine. </p>
-                <p>
+                                <p>
                     <u>
                         <strong>Assignment of Inventions</strong>
                     </u>: I agree
@@ -1570,17 +1578,12 @@
                     drawings, or any other format as specified by the Company, and shall remain
                     available to the Company at all times. Such records shall always remain the sole
                     property of the Company. </p>
-
-            </div>
-            <!-- ===================== PAGE 21 ===================== -->
-            <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
-                <p>
+                    <p>
                     <u>
                         <strong>Patent and Copyright Registrations</strong>
                     </u>:
-                    I agree to assist the Company, or its designee, at the Company's expense, in
-                    every proper way to secure the Company's rights in the Inventions and any
+                    I agree to assist the Company, or its designee, at the Company&amp; expense, in
+                    every proper way to secure the Company&amp; rights in the Inventions and any
                     related copyrights, patents, mask work rights, or other intellectual property
                     rights in any country. This includes disclosing all necessary information and
                     executing all applications, specifications, oaths, assignments, and other
@@ -1629,6 +1632,12 @@
                     the Company in writing of any inventions that meet the criteria of this
                     exception.
                 </p>
+
+            </div>
+            <!-- ===================== PAGE 21 ===================== -->
+            <div class="page"
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
+                
                 <p>
                     <strong>3. Returning Company Documents</strong>
                 </p>
@@ -1659,13 +1668,6 @@
                     to notify my new employer about my rights and obligations under this
                     agreement.
                 </p>
-
-            </div>
-            <!-- ===================== PAGE 22 ===================== -->
-            <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
-
-                <!-- 5 -->
                 <p>
                     <strong>5. Non-Solicitation</strong>
                 </p>
@@ -1741,7 +1743,15 @@
                     or redundancy,
                     this non-compete clause shall not apply.
                 </p>
-                <!-- 7 -->
+
+
+            </div>
+            <!-- ===================== PAGE 22 ===================== -->
+            <div class="page"
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
+
+                <!-- 5 -->
+                                <!-- 7 -->
                 <p style="font-weight:bold; color:#000000;">
                     7. General Provisions Regarding Covenants
                 </p>
@@ -1760,16 +1770,8 @@
                     </u>
                     I confirm that I have carefully read and understood the provisions of this
                     Annexure and agree that all restrictions set forth are fair, reasonable, and
-                    necessary for the protection of the Company's interests and goodwill. </p>
-
-
-            </div>
-            <!-- ===================== PAGE 24 ===================== -->
-            <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
-
-                <!-- 8 -->
-                <p style="font-weight:bold; color:#000000;">
+                    necessary for the protection of the Company&amp; interests and goodwill. </p>
+<p style="font-weight:bold; color:#000000;">
                     8. Protection of Systems &amp; Environment
                 </p>
 
@@ -1786,10 +1788,10 @@
                     Company systems,
                     data, or infrastructure. I undertake to use such resources responsibly and
                     strictly for
-                    official purposes in compliance with Company guidelines.Customer's work and
+                    official purposes in compliance with Company guidelines.Customer&amp; work and
                     computer environment and, as such, I undertake not to
                     incorporate into
-                    the Company's or any customer deliverables any software, computer code,
+                    the Company&amp; or any customer deliverables any software, computer code,
                     network component,
                     data, or other electronically stored information containing any security
                     risk.
@@ -1819,7 +1821,7 @@
                     By virtue of my duties and responsibilities, I understand that any breach of
                     this Annexure
                     may result in irreparable damage to the Company. I acknowledge that these terms
-                    are necessary to protect the Company's
+                    are necessary to protect the Company&amp;
                     interests.
                     Therefore, in addition to all other remedies available under law, the
                     Company shall be
@@ -1828,6 +1830,7 @@
                     These remedies may be enforced without the requirement of posting any bond,
                     to prevent or stop any breach of this Agreement.
                 </p>
+                 
                 <p style="font-weight:bold; color:#000000;">
                     10. Representations
                 </p>
@@ -1908,7 +1911,7 @@
                         or suggesting
                         on aspects of taxation or tax-saving measures in any form, and that the
                         same is an
-                        individual's decision and personal choice.
+                        individual&amp; decision and personal choice.
                     </p>
 
                     <p>
@@ -1916,7 +1919,7 @@
                         of your
                         compensation structure. BXI Tech reserves the right to alter, append, or
                         withdraw
-                        the benefits extended either in part or in full based on management's
+                        the benefits extended either in part or in full based on management&amp;
                         discretion.
                     </p>
                 </div>
