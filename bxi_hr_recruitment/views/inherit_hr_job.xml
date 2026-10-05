@@ -24,6 +24,7 @@
                            invisible="location_type == 'all'"/>
 
                     <field name="employee_category"/>
+                    <field name="no_of_hired_employee" readonly="0"/>
 
                     <field name="min_experience"/>
 
