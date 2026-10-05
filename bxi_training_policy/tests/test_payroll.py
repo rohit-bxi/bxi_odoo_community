@@ -61,8 +61,13 @@ class TestTrainingPayroll(TrainingCommon):
         return training.agreement_id.recovery_ids
 
     def test_rule_added_to_existing_structures(self):
-        structures = self.env['hr.payroll.structure'].search([('id', '!=', self.structure.id)])
-        for structure in structures.filtered(lambda s: s.create_date < self.structure.create_date):
+        # The post-init hook adds the recovery rule to every salary structure
+        # that exists when the module is installed. Assert that contract by
+        # re-running the (idempotent) hook, rather than guessing which of the
+        # current structures predate the install from their create_date.
+        from odoo.addons.bxi_training_policy import _post_init_hook
+        _post_init_hook(self.env)
+        for structure in self.env['hr.payroll.structure'].search([]):
             self.assertIn(self.rule, structure.rule_ids, structure.name)
 
     def test_recovered_in_final_settlement(self):

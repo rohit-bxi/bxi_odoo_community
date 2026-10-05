@@ -86,7 +86,7 @@ class BxiDesktimeLog(models.Model):
         compute='_compute_shift_times',
         store=True,
         digits=(10, 2),
-        help='Time present within the shift working hours, lunch break included.',
+        help='Time present within the shift working hours, lunch break excluded.',
     )
 
     # ─────────────────────────────────────────────
@@ -221,13 +221,17 @@ class BxiDesktimeLog(models.Model):
                 continue
             shift_left = min(left, shift_end)
             rec.shift_left = shift_left.astimezone(utc).replace(tzinfo=None)
-            # Lunch break is counted: whole span between shift based arrived and left
-            rec.shift_productive_hours = round((shift_left - shift_arrived).total_seconds() / 3600.0, 4)
+            # Lunch break is not counted: only the time within the working intervals
+            seconds = sum(
+                max((min(shift_left, stop) - max(shift_arrived, start)).total_seconds(), 0)
+                for start, stop, _attendance in intervals
+            )
+            rec.shift_productive_hours = round(seconds / 3600.0, 4)
 
     def _get_shift_intervals(self):
         """Working intervals of the employee's schedule on the log date, as a sorted list of
-        (start, stop, attendance) with timezone-aware datetimes. Only the first start and the
-        last stop are used, so the lunch break between them is counted."""
+        (start, stop, attendance) with timezone-aware datetimes. Lunch break lines are excluded,
+        so the break between the intervals is not counted in the shift wise hours."""
         self.ensure_one()
         calendar = self.employee_id.resource_calendar_id
         if not calendar or calendar.flexible_hours or not self.date:

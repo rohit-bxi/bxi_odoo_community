@@ -430,10 +430,17 @@ class TestEquitableBenefit(TransactionCase):
 
     def _attend(self, days):
         # 09:30 to 17:30 India time
-        self.env['hr.attendance'].create([{
+        Attendance = self.env['hr.attendance']
+        # bxi_attendance (when installed) enforces GPS/work-location checks on
+        # check-in/out. Those are UI guards, irrelevant to the attendance data
+        # this helper seeds, so skip them via the auto-checkout bypass when the
+        # field is available (EB counts attendance by employee/date regardless).
+        extra = {'is_auto_checkout': True} if 'is_auto_checkout' in Attendance._fields else {}
+        Attendance.create([{
             'employee_id': self.employee.id,
             'check_in': datetime.combine(day, time(4, 0)),
             'check_out': datetime.combine(day, time(12, 0)),
+            **extra,
         } for day in days])
 
     @staticmethod
