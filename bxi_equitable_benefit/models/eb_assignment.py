@@ -5,6 +5,9 @@ from odoo.exceptions import UserError, ValidationError
 
 from .eb_rate import DEPLOYMENT, WORK_CATEGORY
 
+# Set by the workflow actions only, never directly by employees or managers.
+WORKFLOW_FIELDS = {'state', 'approved_by_id', 'approved_date'}
+
 
 class BxiEbAssignment(models.Model):
     """A period during which an employee followed one work pattern."""
@@ -49,15 +52,26 @@ class BxiEbAssignment(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+            if not self._is_reviewer() and (vals.get('state', 'draft') != 'draft'
+                                            or vals.get('approved_by_id') or vals.get('approved_date')):
+                raise UserError(_("Work pattern assignments are created as drafts and approved by "
+                                  "Revenue Assurance."))
             if vals.get('name', 'New') == 'New':
                 vals['name'] = self.env['ir.sequence'].next_by_code('bxi.eb.assignment') or 'New'
         return super().create(vals_list)
 
     def write(self, vals):
-        if not self.env.user.has_group('bxi_equitable_benefit.group_eb_revenue_assurance') \
-                and not self.env.su and any(rec.state != 'draft' for rec in self):
-            raise UserError(_("Only draft work pattern assignments can be modified."))
+        if not self._is_reviewer():
+            if WORKFLOW_FIELDS & set(vals):
+                raise UserError(_("Use the Submit, Cancel and Reset to Draft buttons to change the status "
+                                  "of a work pattern assignment."))
+            if any(rec.state != 'draft' for rec in self):
+                raise UserError(_("Only draft work pattern assignments can be modified."))
         return super().write(vals)
+
+    def _is_reviewer(self):
+        """Superuser (the workflow actions write as sudo) or Revenue Assurance."""
+        return self.env.su or self.env.user.has_group('bxi_equitable_benefit.group_eb_revenue_assurance')
 
     def unlink(self):
         if any(rec.state not in ('draft', 'cancelled') for rec in self):
@@ -98,7 +112,7 @@ class BxiEbAssignment(models.Model):
             if others:
                 raise ValidationError(_(
                     "%(employee)s already has a work pattern assignment overlapping this period.",
-                    employee=rec.employee_id.name))
+                    employee=rec.employee_id.sudo().name))
 
     def _superseded_assignments(self):
         """Approved open-ended assignments of the employee that started before this one."""
@@ -134,7 +148,7 @@ class BxiEbAssignment(models.Model):
         for rec in self:
             rec._eb_notify_group(
                 'bxi_equitable_benefit.group_eb_revenue_assurance',
-                _("Review the work pattern of %s", rec.employee_id.name))
+                _("Review the work pattern of %s", rec.employee_id.sudo().name))
 
     def action_approve(self):
         self._check_reviewer()

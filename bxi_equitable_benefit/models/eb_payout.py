@@ -124,6 +124,19 @@ class BxiEbPayout(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('bxi.eb.payout') or 'New'
         return super().create(vals_list)
 
+    def write(self, vals):
+        """Freeze a payout once it leaves draft: amounts, exception and status change only
+        through the workflow buttons, which check the user's group and then write as sudo."""
+        if not self.env.su:
+            editable = {'rejection_reason'}
+            if all(rec.state == 'validated' for rec in self):
+                editable.add('payout_date')
+            locked = {name for name in vals if name not in editable
+                      and not name.startswith(('message_', 'activity_'))}
+            if locked and any(rec.state != 'draft' for rec in self):
+                raise UserError(_("Only draft payouts can be modified. Reset the payout to draft first."))
+        return super().write(vals)
+
     def unlink(self):
         if any(rec.state not in ('draft', 'cancelled', 'rejected') for rec in self):
             raise UserError(_("Only draft, rejected or cancelled payouts can be deleted."))
@@ -174,7 +187,7 @@ class BxiEbPayout(models.Model):
             ], limit=1):
                 raise ValidationError(_(
                     "%(employee)s already has an equitable benefit payout for %(fy)s.",
-                    employee=rec.employee_id.name, fy=rec.fy_name))
+                    employee=rec.employee_id.sudo().name, fy=rec.fy_name))
 
     @api.constrains('fy_start', 'fy_end', 'period_end')
     def _check_period(self):
@@ -540,7 +553,7 @@ class BxiEbPayout(models.Model):
             elif rec.is_eligible and rec.missing_component_a:
                 raise UserError(_(
                     "Set the Annualized Component A on %s's contract and recompute before validating.",
-                    rec.employee_id.name))
+                    rec.employee_id.sudo().name))
         self.write({'state': 'validated', 'validated_by_id': self.env.user.id})
         self._eb_close_activities()
 
@@ -552,7 +565,7 @@ class BxiEbPayout(models.Model):
                 raise UserError(_("Only validated payouts can be approved."))
             if not rec.payout_date:
                 rec.payout_date = rec._default_payout_date()
-        self.write({'state': 'approved', 'approved_by_id': self.env.user.id})
+        self.sudo().write({'state': 'approved', 'approved_by_id': self.env.user.id})
 
     def action_reject(self):
         if not self.env.user.has_group('bxi_equitable_benefit.group_eb_revenue_assurance') and \
@@ -560,19 +573,25 @@ class BxiEbPayout(models.Model):
             raise UserError(_("You are not allowed to reject equitable benefit payouts."))
         if any(rec.state not in ('draft', 'validated') for rec in self):
             raise UserError(_("Only draft or validated payouts can be rejected."))
-        self.write({'state': 'rejected'})
+        self.sudo().write({'state': 'rejected'})
         self._eb_close_activities()
 
     def action_cancel(self):
+        self._check_revenue_assurance()
         if any(rec.state == 'paid' or rec.payslip_id for rec in self):
             raise UserError(_("Payouts already included in a payslip cannot be cancelled."))
-        self.write({'state': 'cancelled'})
+        self.sudo().write({'state': 'cancelled'})
         self._eb_close_activities()
 
     def action_reset_draft(self):
+        self._check_revenue_assurance()
         if any(rec.state == 'paid' or rec.payslip_id for rec in self):
             raise UserError(_("Payouts already included in a payslip cannot be reset."))
-        self.write({'state': 'draft', 'validated_by_id': False, 'approved_by_id': False})
+        self.sudo().write({'state': 'draft', 'validated_by_id': False, 'approved_by_id': False})
+
+    def _check_revenue_assurance(self):
+        if not self.env.su and not self.env.user.has_group('bxi_equitable_benefit.group_eb_revenue_assurance'):
+            raise UserError(_("Only Revenue Assurance can cancel or reset equitable benefit payouts."))
 
     def _default_payout_date(self):
         self.ensure_one()

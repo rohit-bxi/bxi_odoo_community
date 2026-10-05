@@ -132,6 +132,24 @@ class TestEquitableBenefit(TransactionCase):
         with self.assertRaises(UserError):
             assignment.write({'client_name': 'Other'})
 
+    def test_employee_cannot_self_approve(self):
+        Assignment = self.env['bxi.eb.assignment'].with_user(self.employee_user)
+        vals = {
+            'employee_id': self.employee.id, 'date_from': self.fy_start, 'work_pattern_id': self.pattern_6.id,
+            'work_category': 'non_client', 'deployment': 'onsite'}
+        with self.assertRaises(UserError):
+            Assignment.create(dict(vals, state='approved'))
+        with self.assertRaises(UserError):
+            Assignment.create(dict(vals, approved_by_id=self.reviewer.id))
+        assignment = Assignment.create(vals)
+        with self.assertRaises(UserError):
+            assignment.write({'state': 'approved'})
+        with self.assertRaises(UserError):
+            assignment.write({'approved_date': self.fy_start})
+        assignment.action_submit()
+        assignment.action_reset_draft()
+        self.assertEqual(assignment.state, 'draft')
+
     # ------------------------------------------------------------------
     # Computation (policy illustrative examples)
     # ------------------------------------------------------------------
@@ -283,6 +301,29 @@ class TestEquitableBenefit(TransactionCase):
         payout.with_user(self.finance).action_approve()
         self.assertEqual(payout.state, 'approved')
         self.assertEqual(payout.payout_date, date(2026, 4, 1))
+
+    def test_payout_locked_after_draft(self):
+        self._assignment(self.pattern_6, self.fy_start, deployment='onsite')
+        payout = self._payout()
+        payout.with_user(self.reviewer).action_validate()
+        for user in (self.finance, self.reviewer):
+            with self.assertRaises(UserError):
+                payout.with_user(user).write({'is_exception': True, 'exception_amount': 1})
+        with self.assertRaises(UserError):
+            payout.with_user(self.finance).write({'state': 'approved'})
+        # Finance picks the payroll month while approving
+        payout.with_user(self.finance).payout_date = date(2026, 5, 15)
+        payout.with_user(self.finance).action_approve()
+        self.assertEqual(payout.payout_date, date(2026, 5, 15))
+        with self.assertRaises(UserError):
+            payout.with_user(self.finance).payout_date = date(2026, 6, 15)
+        with self.assertRaises(UserError):
+            payout.with_user(self.finance).action_reset_draft()
+        with self.assertRaises(UserError):
+            payout.with_user(self.employee_user).action_cancel()
+        payout.with_user(self.reviewer).action_reset_draft()
+        payout.with_user(self.reviewer).write({'is_exception': True, 'exception_amount': 1})
+        self.assertEqual(payout.amount_final, 1)
 
     def test_one_payout_per_year(self):
         self._assignment(self.pattern_6, self.fy_start, deployment='onsite')
