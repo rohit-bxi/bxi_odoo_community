@@ -37,6 +37,13 @@
               action="action_bxi_service_agreement"
               sequence="40"/>
 
+    <menuitem id="menu_employee_existing_certificate"
+              name="Existing Certificate"
+              parent="menu_certification_root"
+              action="action_employee_existing_certificate"
+              sequence="42"
+              groups="hr.group_hr_user"/>
+
     <menuitem id="menu_bxi_certification_voucher"
               name="Vouchers"
               parent="menu_certification_root"
