@@ -175,27 +175,33 @@ class HrHire(models.Model):
         copy=False
     )
     def _generate_offer_letter_id(self):
-        BASE = "66c277d4-e4a-42fb-8a41-10488f7d59b67"
+        BASE = "66c277d4-e4a-42fb-8a41-10488f7d59b"
+        START_SEQUENCE = 102
+
         self.env.cr.execute("""
             SELECT offer_letter_id
             FROM hr_applicant
             WHERE offer_letter_id IS NOT NULL
+            AND offer_letter_id LIKE %s
             ORDER BY id DESC
             LIMIT 1
             FOR UPDATE
-        """)
+        """, (BASE + '%',))
+
         row = self.env.cr.fetchone()
 
         if not row or not row[0]:
-            return BASE
+            return f"{BASE}{START_SEQUENCE}"
 
         last_id = row[0]
-        parts = last_id.split('-')
-        last_hex = parts[-1]
-        new_int = int(last_hex, 16) + 1
-        new_hex = format(new_int, 'x').zfill(len(last_hex))
-        parts[-1] = new_hex
-        return '-'.join(parts)
+        sequence = last_id[len(BASE):]
+
+        try:
+            next_sequence = int(sequence) + 1
+        except (ValueError, TypeError):
+            next_sequence = START_SEQUENCE
+
+        return f"{BASE}{next_sequence}"
 
     def create_attachment(self, name, data, res_model, res_id):
         if not data:
