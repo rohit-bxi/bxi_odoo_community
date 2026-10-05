@@ -293,3 +293,13 @@
     color: #000000 !important;
 }
 
+/* DeskTime rows on a public holiday / leave day without tracked hours */
+.state-ph {
+    background-color: #ffd8a8 !important; /* Light Orange */
+    color: #7c3e00 !important;
+}
+.state-leave {
+    background-color: #e0d4f7 !important; /* Lavender */
+    color: #4c1d95 !important;
+}
+

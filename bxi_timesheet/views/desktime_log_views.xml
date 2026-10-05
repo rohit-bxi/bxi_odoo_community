@@ -50,13 +50,13 @@
                     </group>
                     <group string="Time &amp; Performance Metrics">
                         <group string="Hours tracked">
-                            <field name="at_work_hours"/>
-                            <field name="online_hours"/>
-                            <field name="offline_hours"/>
-                            <field name="productive_hours"/>
-                            <field name="desktime_hours"/>
-                            <field name="unproductive_hours"/>
-                            <field name="neutral_hours"/>
+                            <field name="at_work_hours" widget="float_time"/>
+                            <field name="online_hours" widget="float_time"/>
+                            <field name="offline_hours" widget="float_time"/>
+                            <field name="productive_hours" widget="float_time"/>
+                            <field name="desktime_hours" widget="float_time"/>
+                            <field name="unproductive_hours" widget="float_time"/>
+                            <field name="neutral_hours" widget="float_time"/>
                         </group>
                         <group string="Efficiency Scores">
                             <field name="productivity"/>
@@ -90,14 +90,14 @@
                 <field name="shift_arrived"/>
                 <field name="shift_left"/>
                 <field name="shift_productive_hours" widget="float_time" sum="Total Shift Hours"/>
-                <field name="at_work_hours" sum="Total Hours"/>
-                <field name="productive_hours" sum="Total Productive Hours"/>
+                <field name="at_work_hours" widget="float_time" sum="Total Hours"/>
+                <field name="productive_hours" widget="float_time" sum="Total Productive Hours"/>
                 <field name="productivity" avg="Avg Productivity"/>
                 <field name="is_late" widget="boolean_toggle"/>
                 <field name="is_absent" optional="hide"/>
-                <field name="desktime_hours" optional="hide"/>
-                <field name="unproductive_hours" optional="hide"/>
-                <field name="neutral_hours" optional="hide"/>
+                <field name="desktime_hours" widget="float_time" optional="hide"/>
+                <field name="unproductive_hours" widget="float_time" optional="hide"/>
+                <field name="neutral_hours" widget="float_time" optional="hide"/>
                 <field name="active_level" optional="hide"/>
                 <field name="suspicious_count" optional="hide"/>
                 <field name="timesheet_id" optional="hide"/>

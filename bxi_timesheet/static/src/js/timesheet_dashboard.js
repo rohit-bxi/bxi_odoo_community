@@ -37,6 +37,7 @@ class BxiTimesheetDashboard extends Component {
             is_target_employee_manager: false,
             is_past_week: false,
             total_prod_str: "0:00",
+            total_shift_prod_str: "0:00",
             total_shift_str: "0:00",
 
             // Modal states
@@ -102,6 +103,7 @@ class BxiTimesheetDashboard extends Component {
             this.state.is_target_employee_manager = result.is_target_employee_manager || false;
             this.state.is_past_week = result.is_past_week || false;
             this.state.total_prod_str = result.total_prod_str || "0:00";
+            this.state.total_shift_prod_str = result.total_shift_prod_str || "0:00";
             this.state.total_shift_str = result.total_shift_str || "0:00";
             this.state.draft_count = result.draft_count || 0;
             this.state.submitted_count = result.submitted_count || 0;

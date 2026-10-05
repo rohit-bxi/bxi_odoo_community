@@ -281,14 +281,36 @@
                                 </td>
                                 <t t-foreach="state.dates" t-as="d" t-key="'prod_' + d.date_str">
                                     <td colspan="2" t-attf-class="text-center py-2 fw-bold text-success font-12 border-end #{
+                                        (d.day_status and !d.prod_hours_raw) ? 'state-' + d.day_status : 
                                         (d.day_name === 'Saturday' || d.day_name === 'Sunday' || d.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
                                         d.is_today ? 'today-column-cell' : ''
                                     }">
-                                        <t t-esc="d.prod_hours"/>
+                                        <t t-if="d.day_status and !d.prod_hours_raw" t-esc="d.day_status === 'ph' ? 'PH' : 'Leave'"/>
+                                        <t t-else="" t-esc="d.prod_hours"/>
                                     </td>
                                 </t>
                                 <td class="text-center py-2 fw-bold text-success font-12 bg-light border-end-0">
                                     <t t-esc="state.total_prod_str"/>
+                                </td>
+                            </tr>
+
+                            <!-- DeskTime Shift Wise Production Hours (lunch break excluded) -->
+                            <tr class="table-shift-prod-hours-row border-top">
+                                <td colspan="2" class="ps-3 py-2 text-start fw-bold text-success border-end font-12 bg-light">
+                                    Shift Wise Production Hours
+                                </td>
+                                <t t-foreach="state.dates" t-as="d" t-key="'shift_prod_' + d.date_str">
+                                    <td colspan="2" t-attf-class="text-center py-2 fw-bold text-success font-12 border-end #{
+                                        (d.day_status and !d.shift_prod_hours_raw) ? 'state-' + d.day_status : 
+                                        (d.day_name === 'Saturday' || d.day_name === 'Sunday' || d.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
+                                        d.is_today ? 'today-column-cell' : ''
+                                    }">
+                                        <t t-if="d.day_status and !d.shift_prod_hours_raw" t-esc="d.day_status === 'ph' ? 'PH' : 'Leave'"/>
+                                        <t t-else="" t-esc="d.shift_prod_hours"/>
+                                    </td>
+                                </t>
+                                <td class="text-center py-2 fw-bold text-success font-12 bg-light border-end-0">
+                                    <t t-esc="state.total_shift_prod_str"/>
                                 </td>
                             </tr>
 
@@ -330,6 +352,14 @@
                     <div class="d-flex align-items-center gap-2">
                         <span class="rounded-circle shadow-sm" style="width: 20px; height: 20px; background-color: #d1ecf1; display: inline-block; border: 1px solid #bee5eb;"></span>
                         <span class="fw-bold text-dark font-12">Weekly Off</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rounded-circle shadow-sm" style="width: 20px; height: 20px; background-color: #ffd8a8; display: inline-block; border: 1px solid #f5a65b;"></span>
+                        <span class="fw-bold text-dark font-12">Public Holiday (PH)</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="rounded-circle shadow-sm" style="width: 20px; height: 20px; background-color: #e0d4f7; display: inline-block; border: 1px solid #b9a3e8;"></span>
+                        <span class="fw-bold text-dark font-12">Leave</span>
                     </div>
                 </div>
             </t>
@@ -394,12 +424,40 @@
                                     </tr>
 
                                     <!-- Employee Logged Hours Row -->
-                                    <tr class="team-row-hours border-bottom">
+                                    <tr class="team-row-hours">
                                         <t t-foreach="row.day_data" t-as="day" t-key="'hrs_' + day.date_str">
                                             <td colspan="2" t-attf-class="text-center py-2 border-end text-dark fw-bold small #{day.is_today ? 'today-column-cell' : ''}">
                                                 <t t-esc="day.hours"/>
                                             </td>
                                         </t>
+                                    </tr>
+
+                                    <!-- DeskTime ACS Hours Row -->
+                                    <tr class="team-row-prod-hours">
+                                        <td class="ps-3 py-1 border-end text-start fw-bold text-success font-11 bg-light">ACS Hours</td>
+                                        <t t-foreach="row.day_data" t-as="day" t-key="'prod_' + day.date_str">
+                                            <td colspan="2" t-attf-class="text-center py-1 border-end text-success fw-bold font-11 #{(day.day_status and !day.prod_hours_raw) ? 'state-' + day.day_status : day.is_today ? 'today-column-cell' : ''}">
+                                                <t t-if="day.day_status and !day.prod_hours_raw" t-esc="day.day_status === 'ph' ? 'PH' : 'Leave'"/>
+                                                <t t-else="" t-esc="day.prod_hours"/>
+                                            </td>
+                                        </t>
+                                        <td class="text-center py-1 fw-bold text-success font-11 bg-light border-start">
+                                            <t t-esc="row.total_prod_hours"/>
+                                        </td>
+                                    </tr>
+
+                                    <!-- DeskTime Shift Wise Production Hours Row (lunch break excluded) -->
+                                    <tr class="team-row-shift-prod-hours border-bottom">
+                                        <td class="ps-3 py-1 border-end text-start fw-bold text-success font-11 bg-light">Shift Wise Production Hours</td>
+                                        <t t-foreach="row.day_data" t-as="day" t-key="'shift_prod_' + day.date_str">
+                                            <td colspan="2" t-attf-class="text-center py-1 border-end text-success fw-bold font-11 #{(day.day_status and !day.shift_prod_hours_raw) ? 'state-' + day.day_status : day.is_today ? 'today-column-cell' : ''}">
+                                                <t t-if="day.day_status and !day.shift_prod_hours_raw" t-esc="day.day_status === 'ph' ? 'PH' : 'Leave'"/>
+                                                <t t-else="" t-esc="day.shift_prod_hours"/>
+                                            </td>
+                                        </t>
+                                        <td class="text-center py-1 fw-bold text-success font-11 bg-light border-start">
+                                            <t t-esc="row.total_shift_prod_hours"/>
+                                        </td>
                                     </tr>
                                 </t>
                             </t>
