@@ -143,6 +143,11 @@ class HrEmployee(models.Model):
         default=False,
         copy=False,
     )
+    is_pf_done = fields.Boolean(
+        string="PF exit Initiated",
+        default=False,
+        copy=False,
+    )
 
     def _sync_portal_access_to_alumni(self):
         url = "https://alumni.bxiventures.com/api/alumni/employee/update-access"
