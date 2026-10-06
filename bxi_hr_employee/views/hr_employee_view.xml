@@ -119,7 +119,7 @@
                     <group>
                         <field name="template_company_id"/>
                         <field name="is_pf_done"/>
-                        <field name="portal_access"/>
+                        <!-- <field name="portal_access"/> -->
                         <field name="is_fnf_done" string="Is FNF Done"/>
                         <field name="expected_clearance" string="FNF Due Date"/>
                         <field name="date_of_leaving" string="Date of Leaving"/>
