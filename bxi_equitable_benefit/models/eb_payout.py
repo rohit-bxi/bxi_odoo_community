@@ -564,7 +564,14 @@ class BxiEbPayout(models.Model):
             if rec.state != 'validated':
                 raise UserError(_("Only validated payouts can be approved."))
             if not rec.payout_date:
-                rec.payout_date = rec._default_payout_date()
+                rec.payout_date = rec._open_payout_date(rec._default_payout_date())
+            slip = rec._closed_payslip(rec.payout_date)
+            if slip:
+                raise UserError(_(
+                    "The payroll of %(employee)s for %(date_from)s to %(date_to)s is already done, so a payout "
+                    "dated %(day)s would never be paid. Choose a later payroll date.",
+                    employee=rec.employee_id.sudo().name, date_from=slip.date_from, date_to=slip.date_to,
+                    day=rec.payout_date))
         self.sudo().write({'state': 'approved', 'approved_by_id': self.env.user.id})
 
     def action_reject(self):
@@ -598,6 +605,25 @@ class BxiEbPayout(models.Model):
         if self.separation_date:
             return self.separation_date
         return self.period_end if self.payout_type == 'fnf' else self.fy_end + timedelta(days=1)
+
+    def _closed_payslip(self, day):
+        """The employee's done payslip whose period contains ``day``: it can no longer take a payout."""
+        self.ensure_one()
+        return self.env['hr.payslip'].sudo().search([
+            ('employee_id', '=', self.employee_id.id),
+            ('state', '=', 'done'),
+            ('credit_note', '=', False),
+            ('date_from', '<=', day),
+            ('date_to', '>=', day),
+        ], order='date_to desc', limit=1)
+
+    def _open_payout_date(self, day):
+        """``day``, moved past the done payslips covering it (approval after that payroll closed)."""
+        slip = self._closed_payslip(day)
+        while slip:
+            day = slip.date_to + timedelta(days=1)
+            slip = self._closed_payslip(day)
+        return day
 
     # ------------------------------------------------------------------
     # Annual cycle
@@ -705,7 +731,7 @@ class BxiEbPayout(models.Model):
             last_day = settlement['separation_date']
             payout.separation_date = last_day
             if payout.payout_date and payout.payout_date > last_day:
-                payout.payout_date = last_day
+                payout.payout_date = payout._open_payout_date(last_day)
             payout.message_post(body=_(
                 "%(employee)s separates on %(day)s: settle this payout in the Full & Final Settlement. "
                 "Reset it to draft and recompute if the eligibility period must change.",

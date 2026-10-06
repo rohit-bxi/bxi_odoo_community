@@ -309,6 +309,9 @@ class HrEmployee(models.Model):
             else:
                 break
 
+        # Section 87A marginal relief: the tax cannot exceed the income above ₹12,00,000
+        tax = min(tax, taxable_income - 1200000)
+
         # Apply surcharge if applicable
         surcharge = 0.0
         if taxable_income > 50000000:  # Above ₹5 Cr

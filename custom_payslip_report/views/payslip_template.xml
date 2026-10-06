@@ -44,7 +44,8 @@
                     <t t-set="ara_earn" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code == 'ARA').mapped('total'))) or 0.0"/>
                     <t t-set="gross_earn" t-value="sum(o.line_ids.filtered(lambda l: l.category_id.code == 'GROSS').mapped('total')) or sum(o.line_ids.filtered(lambda l: l.code == 'GROSS').mapped('total')) or 0.0"/>
                     <t t-set="spl_earn_lines" t-value="o.line_ids.filtered(lambda l: l.code in ('SPL', 'FLEX', 'FLEXI', 'FLEXIBLE', 'FA', 'FIXED', 'SA', 'SPECIAL', 'FIXED_ALLOWANCE', 'SPEC_ALW') or (l.name and ('flex' in l.name.lower() or 'special' in l.name.lower() or 'fixed allow' in l.name.lower())))"/>
-                    <t t-set="spl_earn" t-value="sum(spl_earn_lines.mapped('total')) if (spl_earn_lines and sum(spl_earn_lines.mapped('total')) &gt; 0) else (gross_earn - basic_earn - hra_earn - ara_earn if (gross_earn - basic_earn - hra_earn - ara_earn) &gt; 0.01 else 0.0)"/>
+                    <t t-set="eqb_earn" t-value="sum(o.line_ids.filtered(lambda l: l.code == 'EQB').mapped('total')) or 0.0"/>
+                    <t t-set="spl_earn" t-value="sum(spl_earn_lines.mapped('total')) if (spl_earn_lines and sum(spl_earn_lines.mapped('total')) &gt; 0) else (gross_earn - basic_earn - hra_earn - ara_earn - eqb_earn if (gross_earn - basic_earn - hra_earn - ara_earn - eqb_earn) &gt; 0.01 else 0.0)"/>
 
                     <t t-set="mip_ded" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code == 'MIP' or (l.name and 'medical' in l.name.lower())).mapped('total'))) or 0.0"/>
                     <t t-set="ee_pf_val" t-value="abs(sum(o.line_ids.filtered(lambda l: l.code in ('PF', 'EPF', 'EE_PF', 'EEPF') or (l.name and 'provident' in l.name.lower() and 'er' not in l.code.lower())).mapped('total'))) or 0.0"/>
@@ -174,6 +175,17 @@
                             <td style="border:1px solid #000;">
                               <t t-if="tds_ded &gt; 0"><t t-esc="'%.2f' % tds_ded"/></t>
                             </td>
+                        </tr>
+                        <!-- Equitable Benefit (annual lump sum, bxi_equitable_benefit) -->
+                        <tr t-if="eqb_earn &gt; 0">
+                            <td style="border:1px solid #000;"></td>
+                            <td style="border:1px solid #000;"></td>
+                            <td style="border:1px solid #000;"><b>Equitable Benefit</b></td>
+                            <td style="border:1px solid #000;">
+                              <t t-esc="'%.2f' % eqb_earn"/>
+                            </td>
+                            <td style="border:1px solid #000;"></td>
+                            <td style="border:1px solid #000;"></td>
                         </tr>
                         <!-- LOP & Arrear / Other Deduction Rows -->
                         <t t-if="lop_ded &gt; 0 or ara_earn &gt; 0 or other_ded &gt; 0">
