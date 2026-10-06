@@ -117,7 +117,7 @@
                         <t t-esc="company.name" />
                     </span>. You are requested to
                     join us on or before <strong>
-                        <t t-esc="o.joining_date.strftime('%Y-%m-%d') if o.joining_date else ''" />
+                        <t t-esc="o.joining_date.strftime('%d-%m-%y') if o.joining_date else ''" />
                     </strong>
                     . </p>
 
@@ -243,8 +243,8 @@
                             Entity / Department
                         </td>
                         <td style="padding: 6px;">
-                            Information Technology
-                        </td>
+                            Information Technology(department_id)
+                        </td> 
 
                         <td style="padding: 6px; font-weight: bold;">
                             Category

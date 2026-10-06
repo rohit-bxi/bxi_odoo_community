@@ -447,7 +447,7 @@ class PerformanceReviewQuestion(models.Model):
         string="Rating Scale",
         readonly=True,
     )
-    answer = fields.Text()
+    answer = fields.Text(invisible="response_type == 'rating'")
     appraisee_rating = fields.Selection(
         [(str(i), str(i)) for i in range(1, 6)],
         string="Appraisee Rating",

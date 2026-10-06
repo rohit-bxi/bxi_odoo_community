@@ -121,6 +121,7 @@
                         <field name="is_pf_done"/>
                         <field name="portal_access"/>
                         <field name="is_fnf_done" string="Is FNF Done"/>
+                        <field name="expected_clearance" string="FNF Due Date"/>
                         <field name="date_of_leaving" string="Date of Leaving"/>
                         <field name="re_hire" string="Re-Hire"/>
                         <field name="rehire_not_description" string="Rehire Remarks"/>
@@ -151,30 +152,25 @@
                                 filename="form_16_filename"
                                 string="Form 16"/>
                     </group>
-                    <field name="fnf_status"/>
+                                        
 
-                    
-                    <group
-                        string="CLEARANCE STATUS"
-                        invisible="fnf_status != 'pending_clearance'"
-                        col="2"
-                    >
-                    <field name="expected_clearance"/>
-                        <group string="HR Clearance">
+                    <group string="CLEARANCE STATUS">
+                        <field name="fnf_status"/>
+                    </group>                  
+
+                        <group string="HR Clearance" invisible="fnf_status != 'pending_clearance'" col="2">
                             <field name="hr_clearance"/>
-
                             <field
                                 name="hr_clearance_reason"
                                 invisible="hr_clearance != 'no'"
                             />
-
                             <field
                                 name="hr_clearance_status"
                                 readonly="1"
                             />
                         </group>
 
-                        <group string="RM Clearance">
+                        <group string="RM Clearance" invisible="fnf_status != 'pending_clearance'" col="2">
                             <field name="rm_clearance"/>
 
                             <field
@@ -188,7 +184,7 @@
                             />
                         </group>
 
-                        <group string="Internal IT Clearance">
+                        <group string="Internal IT Clearance" invisible="fnf_status != 'pending_clearance'" col="2">
                             <field name="it_clearance"/>
 
                             <field
@@ -202,21 +198,18 @@
                             />
                         </group>
 
-                        <group string="Finance Clearance">
+                        <group string="Finance Clearance" invisible="fnf_status != 'pending_clearance'" col="2">
                             <field name="finance_clearance"/>
-
                             <field
                                 name="finance_clearance_reason"
                                 invisible="finance_clearance != 'no'"
                             />
-
                             <field
                                 name="finance_clearance_status"
                                 readonly="1"
                             />
                         </group>
 
-                    </group>                  
                 </page>
             </xpath>
         </field>
