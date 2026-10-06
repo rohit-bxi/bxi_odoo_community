@@ -54,6 +54,11 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,approved,transferred,returned"/>
                 </header>
                 <sheet>
+                    <div class="alert alert-warning" role="alert" invisible="not residency_review">
+                        The employee is projected abroad for <field name="fy_days_abroad" class="oe_inline"/> days this
+                        financial year and can no longer spend 182 days in India: review the tax residency and the India TDS.
+                    </div>
+                    <field name="residency_review" invisible="1"/>
                     <div class="oe_title">
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
@@ -63,15 +68,20 @@
                             <field name="department_id"/>
                             <field name="manager_id"/>
                             <field name="company_id" groups="base.group_multi_company" readonly="state != 'draft'"/>
-                            <field name="travel_request_id" readonly="state not in ('draft', 'approved')"/>
+                            <field name="travel_request_id" readonly="state not in ('draft', 'approved')" options="{'no_create': True}"/>
                         </group>
                         <group string="Host Country">
                             <field name="host_country_id" readonly="state not in ('draft', 'approved')"/>
+                            <field name="host_state_ids" widget="many2many_tags" readonly="state in ('returned', 'cancelled')"
+                                   options="{'no_create': True}"/>
                             <field name="host_city" readonly="state in ('returned', 'cancelled')"/>
                             <field name="host_company_id" readonly="state in ('returned', 'cancelled')"/>
-                            <field name="client_name" readonly="state in ('returned', 'cancelled')"/>
+                            <field name="project_id" readonly="state in ('returned', 'cancelled')"
+                                   options="{'no_create': True}"/>
+                            <field name="client_name" readonly="1" invisible="project_id or not client_name"/>
                             <field name="planned_start_date" readonly="state not in ('draft', 'approved')"/>
                             <field name="planned_end_date" readonly="state in ('returned', 'cancelled')"/>
+                            <field name="fy_days_abroad" invisible="state not in ('transferred', 'returned')"/>
                         </group>
                     </group>
                     <group string="Salary Processing">

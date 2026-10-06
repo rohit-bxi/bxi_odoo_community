@@ -2,7 +2,7 @@
 {
     'name': 'BXI International Deputation',
     'category': 'Human Resources',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.2.0',
     'sequence': 1,
     'author': 'BXI Technologies',
     'website': 'https://bxitech.com/',
@@ -39,6 +39,7 @@
         'views/deputation_views.xml',
         'views/country_rule_views.xml',
         'views/hr_employee_views.xml',
+        'views/hr_payslip_views.xml',
         'views/travel_request_views.xml',
         'views/menus.xml',
     ],

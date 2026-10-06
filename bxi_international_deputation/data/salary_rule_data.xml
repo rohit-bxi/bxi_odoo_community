@@ -36,4 +36,56 @@
         <field name="code">DEP_NOPAY_BASIC</field>
         <field name="input_id" ref="hr_rule_deputation_pf_adjustment"/>
     </record>
+
+    <!-- Correction of confirmed payslips whose days on the host payroll changed after they
+         were confirmed (arrival or return confirmed late). Signed: a positive input recovers
+         pay, a negative one gives it back. -->
+    <record id="hr_rule_deputation_retro" model="hr.salary.rule">
+        <field name="name">Deputation - Correction of Earlier Payslips</field>
+        <field name="sequence" eval="31"/>
+        <field name="code">DEP_RETRO</field>
+        <field name="category_id" ref="om_hr_payroll.ALW"/>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = bool(inputs.DEP_RETRO and inputs.DEP_RETRO.amount)</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = -inputs.DEP_RETRO.amount</field>
+    </record>
+    <record id="hr_rule_input_deputation_retro" model="hr.rule.input">
+        <field name="name">Deputation - Correction of Earlier Payslips</field>
+        <field name="code">DEP_RETRO</field>
+        <field name="input_id" ref="hr_rule_deputation_retro"/>
+    </record>
+    <record id="hr_rule_deputation_retro_pf" model="hr.salary.rule">
+        <field name="name">PF Adjustment - Deputation Correction</field>
+        <field name="sequence" eval="102"/>
+        <field name="code">DEP_RETRO_PF</field>
+        <field name="category_id" ref="om_hr_payroll.DED"/>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = bool(inputs.DEP_RETRO_BASIC and inputs.DEP_RETRO_BASIC.amount)</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = round(inputs.DEP_RETRO_BASIC.amount * 0.12, 2)</field>
+    </record>
+    <record id="hr_rule_input_deputation_retro_basic" model="hr.rule.input">
+        <field name="name">Deputation - Correction, Basic Part</field>
+        <field name="code">DEP_RETRO_BASIC</field>
+        <field name="input_id" ref="hr_rule_deputation_retro_pf"/>
+    </record>
+
+    <!-- The TDS rule deducts the full monthly TDS; give back the share of the days spent
+         on the host payroll (this period and corrected periods). -->
+    <record id="hr_rule_deputation_tds_adjustment" model="hr.salary.rule">
+        <field name="name">TDS Adjustment - Deputation</field>
+        <field name="sequence" eval="103"/>
+        <field name="code">DEP_TDS_ADJ</field>
+        <field name="category_id" ref="om_hr_payroll.DED"/>
+        <field name="condition_select">python</field>
+        <field name="condition_python">result = bool(inputs.DEP_TDS_ADJ and inputs.DEP_TDS_ADJ.amount)</field>
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">result = inputs.DEP_TDS_ADJ.amount</field>
+    </record>
+    <record id="hr_rule_input_deputation_tds_adjustment" model="hr.rule.input">
+        <field name="name">Deputation - TDS on Host Payroll Days</field>
+        <field name="code">DEP_TDS_ADJ</field>
+        <field name="input_id" ref="hr_rule_deputation_tds_adjustment"/>
+    </record>
 </odoo>
