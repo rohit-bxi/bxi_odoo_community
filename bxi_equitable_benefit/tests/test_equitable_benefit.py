@@ -632,6 +632,24 @@ class TestEquitableBenefit(TransactionCase):
         assignment.invalidate_recordset(['component_a_missing'])
         self.assertFalse(assignment.component_a_missing)
 
+    def test_deployment_change_prepares_successor(self):
+        """Moving onsite (international deputation): a draft onsite successor is prepared for review."""
+        current = self._assignment(self.pattern_6, self.fy_start)
+        self.employee._eb_deployment_changed('onsite', date(2025, 9, 1), 'International deputation DEP/1')
+        successor = self.env['bxi.eb.assignment'].search([
+            ('employee_id', '=', self.employee.id), ('id', '!=', current.id)])
+        self.assertEqual(successor.state, 'draft')
+        self.assertEqual(successor.deployment, 'onsite')
+        self.assertEqual(successor.date_from, date(2025, 9, 1))
+        self.assertEqual(successor.work_pattern_id, self.pattern_6)
+        self.assertIn(self.reviewer, successor.activity_ids.user_id)
+        successor.action_submit()
+        successor.with_user(self.reviewer).action_approve()
+        self.assertEqual(current.date_to, date(2025, 8, 31))
+        # Same deployment again: nothing to do.
+        self.employee._eb_deployment_changed('onsite', date(2025, 10, 1), 'International deputation DEP/1')
+        self.assertEqual(self.env['bxi.eb.assignment'].search_count([('employee_id', '=', self.employee.id)]), 2)
+
     def test_generate_skips_not_applicable(self):
         other = self.env['hr.employee'].create({'name': 'Neha'})
         self._assignment(self.pattern_6, self.fy_start, deployment='onsite')

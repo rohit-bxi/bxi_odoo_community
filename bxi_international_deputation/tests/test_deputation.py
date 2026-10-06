@@ -1,8 +1,10 @@
 import re
 from datetime import date, datetime
 
+from freezegun import freeze_time
+
 from odoo.exceptions import UserError, ValidationError
-from odoo.tests import TransactionCase, new_test_user, tagged
+from odoo.tests import Form, TransactionCase, new_test_user, tagged
 
 
 @tagged('post_install', '-at_install')
@@ -18,6 +20,9 @@ class TestDeputation(TransactionCase):
         cls.officer = new_test_user(
             cls.env, login='dep_officer',
             groups='base.group_user,hr.group_hr_user,bxi_international_deputation.group_deputation_officer')
+        cls.manager = new_test_user(
+            cls.env, login='dep_manager',
+            groups='base.group_user,hr.group_hr_user,bxi_international_deputation.group_deputation_manager')
         cls.employee_user = new_test_user(cls.env, login='dep_employee', groups='base.group_user')
         cls.employee = cls.env['hr.employee'].create({
             'name': 'Aarav',
@@ -180,9 +185,146 @@ class TestDeputation(TransactionCase):
         with self.assertRaises(UserError):
             june._sync_deputation_input()
 
+    def _home_slip(self, date_from, date_to, done=False):
+        slip = self.env['hr.payslip'].create({
+            'name': 'Home %s' % date_from,
+            'employee_id': self.employee.id,
+            'version_id': self.employee.version_id.id,
+            'struct_id': self.env.ref('custom_payslip_report.structure_india_regular_pay').id,
+            'date_from': date_from,
+            'date_to': date_to,
+        })
+        slip._sync_deputation_input()
+        if done:
+            slip.state = 'done'
+        return slip
+
+    def _patch_input_rules(self):
+        # Some rules of custom_payslip_report test inputs with "'X' in inputs",
+        # which InputLine does not support; use the attribute form here.
+        for rule in self.env['hr.salary.rule'].search([('amount_python_compute', 'like', ' in inputs')]):
+            rule.amount_python_compute = re.sub(r"'(\w+)' in inputs", r"inputs.\1", rule.amount_python_compute)
+
+    def _inputs(self, slip):
+        return {line.code: line.amount for line in slip.input_line_ids}
+
+    def test_tds_prorated(self):
+        """The TDS share of the days on the host payroll is refunded: 3100 x 29 / 31."""
+        self.employee.l10n_in_tds = 3100
+        self._deputation().action_confirm_arrival()
+        slip = self._home_slip(date(2026, 5, 1), date(2026, 5, 31))
+        self.assertAlmostEqual(self._inputs(slip)['DEP_TDS_ADJ'], 2900.0)
+
+    def test_late_arrival_recovered_on_next_payslip(self):
+        """May was paid in full before the arrival on 2 May was confirmed: the 29 days on the UK
+        payroll are recovered with the September payslip, TDS included."""
+        self.employee.l10n_in_tds = 3100
+        deputation = self._deputation()
+        may = self._home_slip(date(2026, 5, 1), date(2026, 5, 31), done=True)
+        self.assertFalse(self._inputs(may).get('DEP_NOPAY'))
+        deputation.action_confirm_arrival()
+        self.assertIn('29 day(s) to recover', ''.join(deputation.message_ids.mapped('body')))
+        deputation.return_landing_date = date(2026, 9, 13)
+        deputation.action_confirm_return()
+
+        september = self._home_slip(date(2026, 9, 1), date(2026, 9, 30))
+        inputs = self._inputs(september)
+        self.assertEqual(september.dep_retro_line_ids.source_payslip_id, may)
+        self.assertEqual(september.dep_retro_line_ids.days, 29)
+        self.assertAlmostEqual(inputs['DEP_RETRO'], 29000.0)
+        self.assertAlmostEqual(inputs['DEP_RETRO_BASIC'], 18709.68)
+        # 12 September days on the UK payroll (3100 x 12 / 30) plus May's 29 days (100 a day).
+        self.assertAlmostEqual(inputs['DEP_TDS_ADJ'], 1240.0 + 2900.0)
+
+        self._patch_input_rules()
+        september.action_payslip_done()
+        self.assertEqual(may.dep_settled_days, 29)
+        october = self._home_slip(date(2026, 10, 1), date(2026, 10, 31))
+        self.assertFalse(october.dep_retro_line_ids)
+        self.assertFalse(self._inputs(october).get('DEP_RETRO'))
+
+        september.action_payslip_cancel()
+        self.assertEqual(may.dep_settled_days, 0)
+
+    def test_corrected_arrival_pays_back(self):
+        """A later arrival date than the one May was paid on gives the withheld days back."""
+        deputation = self._deputation()
+        deputation.action_confirm_arrival()
+        may = self._home_slip(date(2026, 5, 1), date(2026, 5, 31), done=True)
+        self.assertEqual(may.dep_settled_days, 29)
+        # Corrected by a manager: the employee landed on Saturday 9 May, UK payroll from Monday 11.
+        deputation.with_user(self.manager).arrival_date = date(2026, 5, 9)
+        deputation.return_landing_date = date(2026, 9, 13)
+        deputation.action_confirm_return()
+        september = self._home_slip(date(2026, 9, 1), date(2026, 9, 30))
+        self.assertEqual(september.dep_retro_line_ids.days, -7)
+        self.assertAlmostEqual(self._inputs(september)['DEP_RETRO'], -7000.0)
+
+    def test_untracked_payslips_left_alone(self):
+        """Payslips confirmed before the tracking existed are never corrected."""
+        deputation = self._deputation()
+        may = self._home_slip(date(2026, 5, 1), date(2026, 5, 31), done=True)
+        may.dep_tracked = False
+        deputation.action_confirm_arrival()
+        deputation.return_landing_date = date(2026, 9, 13)
+        deputation.action_confirm_return()
+        self.assertFalse(self._home_slip(date(2026, 9, 1), date(2026, 9, 30)).dep_retro_line_ids)
+
+    @freeze_time('2026-06-15')
+    def test_tax_residency_review(self):
+        deputation = self._deputation()
+        deputation.planned_end_date = date(2026, 8, 31)
+        deputation.action_confirm_arrival()
+        # 2 May - 31 Aug: 122 days abroad, still 182 days possible in India.
+        self.assertEqual(deputation.fy_days_abroad, 122)
+        self.assertFalse(deputation.residency_review)
+        deputation.planned_end_date = date(2027, 3, 31)
+        # 2 May 2026 - 31 Mar 2027: 334 days abroad.
+        self.assertEqual(deputation.fy_days_abroad, 334)
+        self.assertTrue(deputation.residency_review)
+        self.env['bxi.deputation']._cron_deputation_reminders()
+        self.assertIn('Deputation: review tax residency', deputation.activity_ids.mapped('summary'))
+
     def test_attendance_geofence_skipped(self):
         deputation = self._deputation()
         deputation.action_confirm_arrival()
         # No GPS and no work location: would raise for an employee in India.
         self.env['hr.attendance']._validate_location_access({
             'employee_id': self.employee.id, 'check_in': datetime(2026, 5, 6, 9, 0)})
+
+    def test_host_states_follow_country(self):
+        us = self.env.ref('base.us')
+        georgia, texas = self.env.ref('base.state_us_11'), self.env.ref('base.state_us_44')
+        form = Form(self.env['bxi.deputation'].with_user(self.officer))
+        form.employee_id = self.employee
+        form.host_country_id = us
+        form.host_state_ids.add(georgia)
+        form.host_state_ids.add(texas)
+        form.host_city = 'Atlanta'
+        # Changing the country drops the states of the previous country
+        form.host_country_id = self.uk
+        self.assertFalse(form.host_state_ids)
+        form.host_country_id = us
+        form.host_state_ids.add(georgia)
+        form.planned_start_date = date(2026, 5, 2)
+        deputation = form.save()
+        self.assertEqual(deputation.host_state_ids, georgia)
+        self.assertEqual(deputation.host_city, 'Atlanta')
+
+    def test_travel_request_fills_host_details_and_project(self):
+        us, georgia = self.env.ref('base.us'), self.env.ref('base.state_us_11')
+        project = self.env['project.project'].create({'name': 'Acme Rollout'})
+        request = self.env['travel.request'].create({
+            'employee_id': self.employee.id, 'travel_purpose': 'Deputation',
+            'from_country': self.env.ref('base.in').id, 'from_city': 'Pune',
+            'to_country': us.id, 'to_state': georgia.id, 'to_city': 'Atlanta',
+            'departure_date': date(2026, 5, 2), 'project_id': project.id,
+        })
+        form = Form(self.env['bxi.deputation'])
+        form.employee_id = self.employee
+        form.travel_request_id = request
+        self.assertEqual(form.host_country_id, us)
+        self.assertEqual(form.host_state_ids[:], georgia)
+        self.assertEqual(form.host_city, 'Atlanta')
+        self.assertEqual(form.project_id, project)
+        self.assertEqual(form.planned_start_date, date(2026, 5, 2))

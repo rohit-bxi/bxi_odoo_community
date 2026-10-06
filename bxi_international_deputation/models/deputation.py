@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError, ValidationError
@@ -14,6 +14,15 @@ OUTBOUND_FIELDS = {
 RETURN_FIELDS = {'return_landing_date'}
 REMINDER_SUMMARY_START = 'Deputation: confirm arrival'
 REMINDER_SUMMARY_END = 'Deputation: plan repatriation'
+REMINDER_SUMMARY_RESIDENCY = 'Deputation: review tax residency'
+# Income-tax Act s.6: an employee leaving India for employment abroad is resident only
+# with 182 days or more in India in the financial year (April - March).
+RESIDENCY_DAYS = 182
+
+
+def _india_fy_bounds(day):
+    start = date(day.year if day.month >= 4 else day.year - 1, 4, 1)
+    return start, date(start.year + 1, 3, 31)
 
 
 def _format_dates(dates):
@@ -39,8 +48,14 @@ class BxiDeputation(models.Model):
         'res.company', string='Host Entity', tracking=True,
         help='Company that runs the host country payroll, when it exists in Odoo.',
     )
+    host_state_ids = fields.Many2many(
+        'res.country.state', 'bxi_deputation_host_state_rel', 'deputation_id', 'state_id',
+        string='Host State', domain="[('country_id', '=', host_country_id)]",
+    )
     host_city = fields.Char(string='Host City')
-    client_name = fields.Char(string='Client / Project')
+    project_id = fields.Many2one('project.project', string='Client / Project', tracking=True)
+    # Free text of the records created before the project link, used when no project is selected
+    client_name = fields.Char(string='Client / Project (old)')
     travel_request_id = fields.Many2one(
         'travel.request', string='Travel Request',
         domain="[('employee_id', '=', employee_id)]",
@@ -131,6 +146,15 @@ class BxiDeputation(models.Model):
         help='Paid by the host country with the final settlement.',
     )
 
+    fy_days_abroad = fields.Integer(
+        string='Projected Days Abroad (FY)', compute='_compute_residency',
+        help='Days the employee is abroad on deputations in the current financial year (April - March), '
+             'up to the return landing date, else the planned end date, else the year end.')
+    residency_review = fields.Boolean(
+        string='Tax Residency Review', compute='_compute_residency',
+        help='The employee can no longer spend 182 days in India this financial year and may become '
+             'non-resident for income tax: review the India TDS.')
+
     approved_by_id = fields.Many2one('res.users', string='Approved By', readonly=True, copy=False)
     approved_on = fields.Datetime(string='Approved On', readonly=True, copy=False)
     transferred_by_id = fields.Many2one('res.users', string='Transfer Confirmed By', readonly=True, copy=False)
@@ -172,6 +196,15 @@ class BxiDeputation(models.Model):
     def _compute_gap_day_rate(self):
         for rec in self:
             rec.gap_day_rate = rec.host_annual_gross / rec.annual_divisor if rec.annual_divisor else 0.0
+
+    @api.depends('employee_id', 'arrival_date', 'return_landing_date', 'planned_end_date', 'state')
+    def _compute_residency(self):
+        fy_start, fy_end = _india_fy_bounds(fields.Date.context_today(self))
+        india_max = (fy_end - fy_start).days + 1 - RESIDENCY_DAYS
+        for rec in self:
+            days = rec.employee_id._get_days_abroad(fy_start, fy_end) if rec.employee_id.id else 0
+            rec.fy_days_abroad = days
+            rec.residency_review = rec.state == 'transferred' and days > india_max
 
     def _is_working_day_function(self):
         self.ensure_one()
@@ -291,10 +324,20 @@ class BxiDeputation(models.Model):
             return
         if request.to_country:
             self.host_country_id = request.to_country
+        if request.to_state:
+            self.host_state_ids = request.to_state
+        if request.to_city:
+            self.host_city = request.to_city
+        if request.project_id:
+            self.project_id = request.project_id
         if request.departure_date:
             self.planned_start_date = request.departure_date
         if request.return_date and not self.planned_end_date:
             self.planned_end_date = request.return_date
+
+    @api.onchange('host_country_id')
+    def _onchange_host_country_id(self):
+        self.host_state_ids = self.host_state_ids.filtered(lambda s: s.country_id == self.host_country_id)
 
     # ---------------------------------------------------------------
     # Workflow
@@ -329,6 +372,8 @@ class BxiDeputation(models.Model):
                 country=rec.host_country_id.name, last=rec.home_last_date, start=rec.host_start_date,
                 gaps=rec.outbound_gap_dates or self.env._('none')))
             rec._send_commencement_letter()
+            rec._post_payslip_corrections()
+            rec._notify_deployment_change('onsite', rec.host_start_date)
         return True
 
     def action_confirm_return(self):
@@ -353,6 +398,8 @@ class BxiDeputation(models.Model):
                                     raise_if_not_found=False)
             if template and rec._employee_email():
                 template.send_mail(rec.id, force_send=False)
+            rec._post_payslip_corrections()
+            rec._notify_deployment_change('offshore', rec.home_restart_date)
         return True
 
     def action_cancel(self):
@@ -374,6 +421,8 @@ class BxiDeputation(models.Model):
             if rec.state not in ('transferred', 'returned'):
                 raise UserError(self.env._('The commencement letter is available once the arrival is confirmed.'))
             rec._send_commencement_letter()
+            rec._post_payslip_corrections()
+            rec._notify_deployment_change('onsite', rec.host_start_date)
         return True
 
     def action_print_commencement_letter(self):
@@ -407,6 +456,38 @@ class BxiDeputation(models.Model):
         last = self.home_restart_date - timedelta(days=1) if self.home_restart_date else None
         return first, last
 
+    def _post_payslip_corrections(self):
+        """Tell payroll which confirmed home payslips the new dates change."""
+        self.ensure_one()
+        employee = self.employee_id.sudo()
+        slips = self.env['hr.payslip'].sudo().search([
+            ('employee_id', '=', employee.id),
+            ('state', '=', 'done'),
+            ('credit_note', '=', False),
+            ('dep_tracked', '=', True),
+            ('date_to', '>', self.home_last_date),
+        ])
+        if self.home_restart_date:
+            slips = slips.filtered(lambda s: s.date_from < self.home_restart_date)
+        changed = []
+        for slip in slips:
+            days = employee._get_off_home_payroll_days(slip.date_from, slip.date_to) - slip.dep_settled_days
+            if days:
+                changed.append(self.env._(
+                    '%(slip)s: %(days)s day(s) to %(action)s', slip=slip.name, days=abs(days),
+                    action=self.env._('recover') if days > 0 else self.env._('pay back')))
+        if changed:
+            self.message_post(body=self.env._(
+                'These confirmed home payslips are corrected on the next home payslip of the employee: %s.',
+                '; '.join(changed)))
+
+    def _notify_deployment_change(self, deployment, day):
+        """Benefits keyed on the onsite / offshore deployment (Equitable Benefit) follow the deputation."""
+        self.ensure_one()
+        employee = self.employee_id.sudo()
+        if day and hasattr(employee, '_eb_deployment_changed'):
+            employee._eb_deployment_changed(deployment, day, self.env._('International deputation %s', self.name))
+
     # ---------------------------------------------------------------
     # Reminders
     # ---------------------------------------------------------------
@@ -429,6 +510,12 @@ class BxiDeputation(models.Model):
                 REMINDER_SUMMARY_END,
                 self.env._('The deputation is planned to end on %s. Plan the repatriation and the host final settlement.',
                            rec.planned_end_date))
+        for rec in self.search([('state', '=', 'transferred')]).filtered('residency_review'):
+            rec._schedule_reminder(
+                REMINDER_SUMMARY_RESIDENCY,
+                self.env._('%(employee)s is projected abroad for %(days)s days this financial year and can no '
+                           'longer spend 182 days in India: review the tax residency and the India TDS.',
+                           employee=rec.employee_id.name, days=rec.fy_days_abroad))
 
     def _schedule_reminder(self, summary, note):
         self.ensure_one()
