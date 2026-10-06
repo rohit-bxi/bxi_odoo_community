@@ -38,6 +38,11 @@ class BxiEbAssignment(models.Model):
     rate_percent = fields.Float(
         string='Current Rate (%)', digits=(16, 4), compute='_compute_rate_percent',
         help="Rate valid on the start date. Payouts use the rate valid on each day.")
+    component_a_missing = fields.Boolean(
+        string='Component A Missing', compute='_compute_component_a_missing',
+        search='_search_component_a_missing',
+        groups='hr.group_hr_user,bxi_equitable_benefit.group_eb_revenue_assurance,bxi_equitable_benefit.group_eb_finance',
+        help="The employee's contract has no Annualized Component A for this period, so it would pay nothing.")
     state = fields.Selection([
         ('draft', 'Draft'),
         ('submitted', 'Submitted'),
@@ -87,6 +92,24 @@ class BxiEbAssignment(models.Model):
                 rate = Rate._find_rate(rec.work_pattern_id, rec.work_category, rec.deployment,
                                        rec.date_from, rec.company_id or self.env.company)
             rec.rate_percent = rate.rate_percent
+
+    @api.depends('employee_id', 'date_from', 'date_to', 'rate_percent')
+    def _compute_component_a_missing(self):
+        today = fields.Date.context_today(self)
+        for rec in self:
+            missing = False
+            if rec.employee_id and rec.date_from and rec.rate_percent:
+                employee = rec.employee_id.sudo()
+                days = {rec.date_from, max(rec.date_from, min(rec.date_to or today, today))}
+                missing = any(not employee._get_version(day).eb_annual_component_a for day in days)
+            rec.component_a_missing = missing
+
+    def _search_component_a_missing(self, operator, value):
+        if operator not in ('=', '!=') or not isinstance(value, bool):
+            return NotImplemented
+        candidates = self.search([('state', 'in', ('submitted', 'approved'))])
+        missing = candidates.filtered('component_a_missing')
+        return [('id', 'in' if (operator == '=') == value else 'not in', missing.ids)]
 
     @api.constrains('date_from', 'date_to')
     def _check_dates(self):

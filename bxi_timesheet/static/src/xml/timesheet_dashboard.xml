@@ -294,7 +294,7 @@
                                 </td>
                             </tr>
 
-                            <!-- DeskTime Shift Wise Production Hours (lunch break excluded) -->
+                            <!-- DeskTime Shift Wise Production Hours (lunch break included) -->
                             <tr class="table-shift-prod-hours-row border-top">
                                 <td colspan="2" class="ps-3 py-2 text-start fw-bold text-success border-end font-12 bg-light">
                                     Shift Wise Production Hours
@@ -446,7 +446,7 @@
                                         </td>
                                     </tr>
 
-                                    <!-- DeskTime Shift Wise Production Hours Row (lunch break excluded) -->
+                                    <!-- DeskTime Shift Wise Production Hours Row (lunch break included) -->
                                     <tr class="team-row-shift-prod-hours border-bottom">
                                         <td class="ps-3 py-1 border-end text-start fw-bold text-success font-11 bg-light">Shift Wise Production Hours</td>
                                         <t t-foreach="row.day_data" t-as="day" t-key="'shift_prod_' + day.date_str">

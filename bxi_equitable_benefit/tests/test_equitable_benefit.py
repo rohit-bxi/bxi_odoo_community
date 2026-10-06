@@ -597,6 +597,41 @@ class TestEquitableBenefit(TransactionCase):
         for structure in self.env['hr.payroll.structure'].search([('rule_ids', 'in', eqb.id)]):
             self.assertIn(tds, structure.rule_ids)
 
+    def test_tds_marginal_relief(self):
+        """Crossing the ₹12,00,000 rebate limit: the tax is capped at the income above it (plus cess),
+        never more than the benefit itself."""
+        self.employee.employee_ctc = 1250000
+        self.assertAlmostEqual(self.employee.get_equitable_benefit_tds(60000), 36400)
+
+    def test_approval_after_payroll_closed(self):
+        """Approving after the April payroll is done moves the payout to the next payroll."""
+        self._assignment(self.pattern_6, self.fy_start, deployment='onsite')
+        april = self.env['hr.payslip'].create({
+            'employee_id': self.employee.id, 'date_from': date(2026, 4, 1), 'date_to': date(2026, 4, 30)})
+        april.state = 'done'
+        payout = self._payout()
+        payout.with_user(self.reviewer).action_validate()
+        payout.with_user(self.finance).payout_date = date(2026, 4, 15)
+        with self.assertRaises(UserError):
+            payout.with_user(self.finance).action_approve()
+        payout.with_user(self.finance).payout_date = False
+        payout.with_user(self.finance).action_approve()
+        self.assertEqual(payout.payout_date, date(2026, 5, 1))
+
+    def test_component_a_missing_flagged_on_assignment(self):
+        other = self.env['hr.employee'].create({'name': 'Aman', 'date_version': date(2020, 1, 1)})
+        assignment = self._assignment(self.pattern_6, self.fy_start, deployment='onsite', employee=other)
+        hybrid = self._assignment(self.pattern_hybrid, self.fy_start, category='non_client')
+        self.assertTrue(assignment.component_a_missing)
+        self.assertFalse(hybrid.component_a_missing)
+        Assignment = self.env['bxi.eb.assignment'].with_user(self.reviewer)
+        missing = Assignment.search([('component_a_missing', '=', True)])
+        self.assertIn(assignment, missing)
+        self.assertNotIn(hybrid, missing)
+        other.eb_annual_component_a = 500000
+        assignment.invalidate_recordset(['component_a_missing'])
+        self.assertFalse(assignment.component_a_missing)
+
     def test_generate_skips_not_applicable(self):
         other = self.env['hr.employee'].create({'name': 'Neha'})
         self._assignment(self.pattern_6, self.fy_start, deployment='onsite')

@@ -86,7 +86,7 @@ class BxiDesktimeLog(models.Model):
         compute='_compute_shift_times',
         store=True,
         digits=(10, 2),
-        help='Time present within the shift working hours, lunch break excluded.',
+        help='Time present within the shift working hours, lunch break included.',
     )
 
     # ─────────────────────────────────────────────
@@ -221,7 +221,7 @@ class BxiDesktimeLog(models.Model):
                 continue
             shift_left = min(left, shift_end)
             rec.shift_left = shift_left.astimezone(utc).replace(tzinfo=None)
-            # Lunch break is not counted: only the time within the working intervals
+            # Lunch break is counted: the intervals include the schedule's break lines
             seconds = sum(
                 max((min(shift_left, stop) - max(shift_arrived, start)).total_seconds(), 0)
                 for start, stop, _attendance in intervals
@@ -230,8 +230,8 @@ class BxiDesktimeLog(models.Model):
 
     def _get_shift_intervals(self):
         """Working intervals of the employee's schedule on the log date, as a sorted list of
-        (start, stop, attendance) with timezone-aware datetimes. Lunch break lines are excluded,
-        so the break between the intervals is not counted in the shift wise hours."""
+        (start, stop, attendances) with timezone-aware datetimes. Lunch break lines are included,
+        so the break between the intervals is counted in the shift wise hours."""
         self.ensure_one()
         calendar = self.employee_id.resource_calendar_id
         if not calendar or calendar.flexible_hours or not self.date:
@@ -239,8 +239,10 @@ class BxiDesktimeLog(models.Model):
         tz = timezone(calendar.tz or 'UTC')
         day_start = tz.localize(datetime.combine(self.date, time.min))
         day_end = tz.localize(datetime.combine(self.date, time.max))
-        intervals = calendar._attendance_intervals_batch(day_start, day_end, tz=tz)[False]
-        return sorted(intervals, key=lambda interval: interval[0])
+        work = calendar._attendance_intervals_batch(day_start, day_end, tz=tz)[False]
+        lunch = calendar._attendance_intervals_batch(day_start, day_end, tz=tz, lunch=True)[False]
+        # Union merges overlapping lines, so no time is counted twice
+        return sorted(work | lunch, key=lambda interval: interval[0])
 
     def action_recompute_shift_times(self):
         """Recalculate shift based arrived/left and shift wise hours with the employees'

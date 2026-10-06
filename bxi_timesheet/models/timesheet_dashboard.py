@@ -266,8 +266,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
                 day_atts = calendar.attendance_ids.filtered(lambda a: a.dayofweek == day_str)
                 if 'date_from' in day_atts._fields:
                     day_atts = day_atts.filtered(lambda a: (not a.date_from or a.date_from <= d) and (not a.date_to or a.date_to >= d))
-                # Lunch break excluded, same as the shift wise production hours
-                day_shift_h = sum(a.hour_to - a.hour_from for a in day_atts if a._is_work_period())
+                # Lunch break included, same as the shift wise production hours
+                day_shift_h = sum(a.hour_to - a.hour_from for a in day_atts if not a.display_type)
             else:
                 day_shift_h = 0.0
 
