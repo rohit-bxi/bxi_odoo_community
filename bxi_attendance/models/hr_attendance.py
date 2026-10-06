@@ -1058,15 +1058,14 @@ class HrAttendance(models.Model):
 
     @api.model
     def _create_missed_checkout_lwp(self, attendance):
-        """Create and validate exactly one full-day LWP for the missed checkout date."""
+        """Create exactly one full-day LWP and directly validate it."""
         if not attendance.employee_id:
             return False
-        # Reuse the LWP already linked to this attendance, if any.
+        # Reuse existing LWP linked to attendance
         if 'lwp_leave_id' in attendance._fields and attendance.lwp_leave_id:
             leave = attendance.lwp_leave_id.sudo()
-            for _attempt in range(2):
-                if leave.state in ('validate', 'refuse', 'cancel'):
-                    break
+
+            if leave.state not in ('validate', 'refuse', 'cancel'):
                 leave.action_validate()
             return leave
         leave_type = self._get_missed_checkout_leave_type()
@@ -1079,7 +1078,7 @@ class HrAttendance(models.Model):
             return False
         leave_date = self._get_local_date(attendance)
         Leave = self.env['hr.leave'].sudo()
-        # Prevent a duplicate LWP if the cron runs more than once.
+        # Prevent duplicate LWP
         domain = [
             ('employee_id', '=', attendance.employee_id.id),
             ('holiday_status_id', '=', leave_type.id),
@@ -1096,26 +1095,38 @@ class HrAttendance(models.Model):
                 'request_date_from': leave_date,
                 'request_date_to': leave_date,
             })
-        # Validate the leave completely, including two-level approval setups.
-        for _attempt in range(2):
-            if leave.state in ('validate', 'refuse', 'cancel'):
-                break
-            leave.action_validate()
+        if leave.state != 'validate':
+            leave.sudo().action_validate()
+
+        if leave.state != 'validate':
+            _logger.error(
+                "LWP %s could not be directly validated. Current state: %s",
+                leave.id,
+                leave.state,
+            )
+
         if 'lwp_leave_id' in attendance._fields:
-            attendance.sudo().write({'lwp_leave_id': leave.id})
+            attendance.sudo().write({
+                'lwp_leave_id': leave.id
+            })
         return leave
 
     @api.model
     def _send_missed_checkout_email(self, attendance, leave=False):
-        """Send one missed-checkout email from hrsupport to the employee."""
+        """Send missed-checkout notification to the employee."""
         if 'missed_checkout_email_sent' in attendance._fields:
             if attendance.missed_checkout_email_sent:
                 return False
         employee = attendance.employee_id
-        recipient = employee.work_email or employee.user_id.email
+        recipient = (
+            employee.work_email
+            or employee.user_id.email
+            or employee.private_email
+        )
         if not recipient:
             _logger.warning(
-                "Cannot send missed-checkout email for attendance %s: employee %s has no email.",
+                "Cannot send missed-checkout email for attendance %s. "
+                "Employee %s has no email address.",
                 attendance.id,
                 employee.display_name,
             )
@@ -1124,30 +1135,54 @@ class HrAttendance(models.Model):
         body_html = """
             <p>Dear %s,</p>
             <p>
-                Your attendance for <strong>%s</strong> was automatically checked out
-                at 11:00 PM because you did not complete the checkout manually from
-                your approved/configured work location.
+                Your attendance for <strong>%s</strong> was automatically
+                checked out at <strong>11:00 PM</strong> because you did not
+                complete the checkout manually.
             </p>
             <p>
-                As per the attendance policy, <strong>one LWP (Leave Without Pay)</strong>
-                has been created and validated for this date.
+                As per the attendance policy, an
+                <strong>LWP (Leave Without Pay)</strong> has been automatically
+                created and approved for this date.
             </p>
             <p>
-                If this was due to an approved exception or a system issue, please
-                contact HR Support for review.
+                If you believe this was due to an exception or a system issue,
+                please contact HR Support.
             </p>
-            <p>Regards,<br/>HR Support</p>
-        """ % (employee.name, local_date.strftime('%d-%m-%Y'))
+            <p>
+                Regards,<br/>
+                HR Support
+            </p>
+        """ % (
+            employee.name,
+            local_date.strftime('%d-%m-%Y'),
+        )
         mail = self.env['mail.mail'].sudo().create({
             'email_from': 'hrsupport@bxitech.com',
             'email_to': recipient,
-            'subject': 'LWP Created - Missed Checkout - %s' % local_date.strftime('%d-%m-%Y'),
+            'subject': 'LWP Created - Missed Checkout - %s' % (
+                local_date.strftime('%d-%m-%Y')
+            ),
             'body_html': body_html,
             'auto_delete': True,
         })
-        mail.send(raise_exception=True)
+        try:
+            mail.sudo().send(raise_exception=True)
+        except Exception:
+            _logger.exception(
+                "Failed to send missed-checkout email to %s for attendance %s",
+                recipient,
+                attendance.id,
+            )
+            return False
         if 'missed_checkout_email_sent' in attendance._fields:
-            attendance.sudo().write({'missed_checkout_email_sent': True})
+            attendance.sudo().write({
+                'missed_checkout_email_sent': True
+            })
+        _logger.info(
+            "Missed-checkout email sent successfully to %s for attendance %s",
+            recipient,
+            attendance.id,
+        )
         return True
 
     @api.model

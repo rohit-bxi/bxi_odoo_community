@@ -325,119 +325,228 @@ class AccountAnalyticLine(models.Model):
     @api.model
     def _cron_check_unpaid_leaves(self):
         """
-        Daily check for employees who haven't logged timesheets for 6 consecutive days.
-        Creates a 1-day Leave Without Pay on the 7th day (today).
+        Daily check for employees who have not logged timesheets
+        for 6 consecutive working days.
+        If all previous 6 working days have no timesheet and no
+        approved leave, create a 1-day LWP for today and validate it
+        automatically.
         """
         import logging
         _logger = logging.getLogger(__name__)
-        
         today = fields.Date.today()
-        
-        # Do not auto-apply leave on weekends; only apply on weekdays
-        if today.weekday() >= 5:  # 5 = Saturday, 6 = Sunday
-            _logger.info("BXI Timesheet Cron: Weekend detected (%s), skipping auto LWP creation.", today.strftime('%A'))
+
+        # Do not create automatic LWP on Saturday/Sunday
+        if today.weekday() >= 5:
+            _logger.info(
+                "BXI Timesheet Cron: Weekend detected (%s), "
+                "skipping auto LWP creation.",
+                today.strftime('%A')
+            )
             return True
 
-        # Build the last 6 working days excluding Sundays
+        # ---------------------------------------------------------
+        # Get previous 6 working days
+        # Monday = 0 ... Friday = 4
+        # Saturday/Sunday are excluded
+        # ---------------------------------------------------------
         working_days = []
         check_date = today - timedelta(days=1)
         while len(working_days) < 6:
-            if check_date.weekday() != 6:  # Sunday excluded
+            if check_date.weekday() < 5:  # Monday-Friday
                 working_days.append(check_date)
+
             check_date -= timedelta(days=1)
 
-        employees = self.env['hr.employee'].sudo().search([('active', '=', True)])
+        # Optional: sort oldest -> newest
+        working_days.sort()
+
+        _logger.info(
+            "BXI Timesheet Cron: Checking previous 6 working days: %s",
+            working_days
+        )
+
+        # ---------------------------------------------------------
+        # Get active employees
+        # ---------------------------------------------------------
+        employees = self.env['hr.employee'].sudo().search([
+            ('active', '=', True)
+        ])
 
         for emp in employees:
-            # Apply auto-LWP only for employees with role_band < 8.
-            try:
-                emp_rb = int(emp.role_band) if emp.role_band else None
-            except Exception:
-                emp_rb = None
 
-            if emp_rb is not None and emp_rb >= ROLE_BAND_THRESHOLD:
-                continue
-            # Search by exact leave code 'LOP': company-specific first, then global
-            unpaid_type = self.env['hr.leave.type'].sudo().search([
-                ('company_id', '=', emp.company_id.id),
-                ('code', '=', 'LOP'),
-            ], limit=1)
-            if not unpaid_type:
+            try:
+                try:
+                    emp_rb = int(emp.role_band) if emp.role_band else None
+                except Exception:
+                    emp_rb = None
+
+                if emp_rb is not None and emp_rb >= ROLE_BAND_THRESHOLD:
+                    continue
+
+                # -------------------------------------------------
+                # Find LWP Leave Type
+                # Company-specific first, then global
+                # -------------------------------------------------
                 unpaid_type = self.env['hr.leave.type'].sudo().search([
-                    ('company_id', '=', False),
-                    ('code', '=', 'LOP'),
+                    ('company_id', '=', emp.company_id.id),
+                    ('code', '=', 'LWP'),
                 ], limit=1)
 
-            if not unpaid_type:
-                _logger.warning(
-                    "LOP leave type (code='LOP') not found for employee %s (company: %s). Please configure it.",
-                    emp.name,
-                    emp.company_id.name,
+                if not unpaid_type:
+                    unpaid_type = self.env['hr.leave.type'].sudo().search([
+                        ('company_id', '=', False),
+                        ('code', '=', 'LWP'),
+                    ], limit=1)
+
+                if not unpaid_type:
+                    _logger.warning(
+                        "LWP leave type (code='LWP') not found for employee %s "
+                        "(company: %s).",
+                        emp.name,
+                        emp.company_id.name,
+                    )
+                    continue
+
+                # -------------------------------------------------
+                # Find timesheets for previous 6 working days
+                # -------------------------------------------------
+                logged_days = self.env['account.analytic.line'].sudo().search([
+                    ('employee_id', '=', emp.id),
+                    ('date', 'in', working_days),
+                    ('unit_amount', '>', 0.0),
+                ])
+
+                # Dates on which employee has timesheet
+                distinct_logged_dates = set(
+                    logged_days.mapped('date')
                 )
-                continue
 
-            logged_days = self.env['account.analytic.line'].sudo().search([
-                ('employee_id', '=', emp.id),
-                ('date', 'in', working_days),
-                ('unit_amount', '>', 0.0),
-            ])
+                # -------------------------------------------------
+                # Find approved/validated leaves
+                #
+                # Approved leave counts as attendance/presence
+                # for that working day and therefore should NOT
+                # trigger automatic LWP.
+                # -------------------------------------------------
+                approved_leaves = self.env['hr.leave'].sudo().search([
+                    ('employee_id', '=', emp.id),
+                    ('request_date_from', '<=', max(working_days)),
+                    ('request_date_to', '>=', min(working_days)),
+                    ('state', '=', 'validate'),
+                ])
 
-            distinct_logged_dates = set(logged_days.mapped('date'))
+                for leave in approved_leaves:
 
-            # Treat approved/validated leaves as presence for that day (do not count as missing)
-            approved_leaves = self.env['hr.leave'].sudo().search([
-                ('employee_id', '=', emp.id),
-                ('request_date_from', '<=', max(working_days)),
-                ('request_date_to', '>=', min(working_days)),
-                ('state', 'not in', ('draft', 'cancel', 'refuse')),
-            ])
-            for lv in approved_leaves:
-                # Add each covered date to the distinct set
-                start_dt = lv.request_date_from
-                end_dt = lv.request_date_to
-                cur = start_dt
-                while cur <= end_dt:
-                    if cur in working_days:
-                        distinct_logged_dates.add(cur)
-                    cur = cur + timedelta(days=1)
+                    start_date = leave.request_date_from
+                    end_date = leave.request_date_to
 
-            if len(distinct_logged_dates) == 0:
+                    current_date = start_date
+
+                    while current_date <= end_date:
+
+                        if current_date in working_days:
+                            distinct_logged_dates.add(current_date)
+
+                        current_date += timedelta(days=1)
+
+                # -------------------------------------------------
+                # Calculate missing working days
+                # -------------------------------------------------
+                missing_days = [
+                    day
+                    for day in working_days
+                    if day not in distinct_logged_dates
+                ]
+
+                _logger.info(
+                    "Employee: %s | Working Days: %s | "
+                    "Missing Days: %s",
+                    emp.name,
+                    working_days,
+                    missing_days,
+                )
+
+                # -------------------------------------------------
+                # IMPORTANT:
+                # LWP should be created ONLY when ALL 6 previous
+                # working days are missing.
+                # -------------------------------------------------
+                if len(missing_days) != 6:
+                    continue
+
+                # -------------------------------------------------
+                # Check whether LWP already exists for TODAY
+                # -------------------------------------------------
                 existing_leave = self.env['hr.leave'].sudo().search([
                     ('employee_id', '=', emp.id),
+                    ('holiday_status_id', '=', unpaid_type.id),
                     ('request_date_from', '=', today),
-                    ('state', '!=', 'refuse'),
+                    ('request_date_to', '=', today),
+                    ('state', 'not in', ('cancel', 'refuse')),
                 ], limit=1)
-                
-                if not existing_leave:
-                    try:
-                        leave = self.env['hr.leave'].sudo().with_context(
-                            allowed_company_ids=[emp.company_id.id]
-                        ).create({
-                            'employee_id': emp.id,
-                            'holiday_status_id': unpaid_type.id,
-                            'request_date_from': today,
-                            'request_date_to': today,
-                            'number_of_days': 1.0,
-                            'company_id': emp.company_id.id,
-                            'name': 'Auto-created: Leave Without Pay (No timesheet logged for 6 working days)',
-                        })
-                        # Auto-create the LOP and validate it immediately so it is not held for
-                        # a separate manager/HR approval step.
-                        if hasattr(leave, 'action_validate'):
-                            leave.action_validate()
-                        elif hasattr(leave, 'action_approve'):
-                            leave.action_approve()
-                        elif hasattr(leave, 'action_submit'):
-                            leave.action_submit()
-                        elif hasattr(leave, 'action_confirm'):
-                            leave.action_confirm()
-                        _logger.info(
-                            f"Auto-created and validated Unpaid Leave for employee {emp.name} on {today}"
-                        )
-                    except Exception as e:
-                        _logger.error(
-                            f"Failed to auto-create Unpaid Leave for employee {emp.name}: {str(e)}"
-                        )
+
+                if existing_leave:
+                    _logger.info(
+                        "LWP already exists for employee %s on %s. "
+                        "Skipping duplicate.",
+                        emp.name,
+                        today,
+                    )
+                    continue
+
+                # -------------------------------------------------
+                # Create LWP
+                # -------------------------------------------------
+                leave = self.env['hr.leave'].sudo().with_context(
+                    allowed_company_ids=[emp.company_id.id]
+                ).create({
+                    'employee_id': emp.id,
+                    'holiday_status_id': unpaid_type.id,
+                    'request_date_from': today,
+                    'request_date_to': today,
+                    'number_of_days': 1.0,
+                    'company_id': emp.company_id.id,
+                    'name': (
+                        'Auto-created: Leave Without Pay '
+                        '(No timesheet logged for 6 consecutive working days)'
+                    ),
+                })
+
+                # -------------------------------------------------
+                # Directly validate / approve LWP
+                # -------------------------------------------------
+                if leave.state != 'validate':
+                    leave.sudo().action_validate()
+
+                # -------------------------------------------------
+                # Verify final state
+                # -------------------------------------------------
+                if leave.state == 'validate':
+                    _logger.info(
+                        "BXI Timesheet Cron: LWP successfully "
+                        "created and validated for employee %s "
+                        "on %s. Leave ID: %s",
+                        emp.name,
+                        today,
+                        leave.id,
+                    )
+                else:
+                    _logger.error(
+                        "BXI Timesheet Cron: LWP created for employee %s "
+                        "but could not be validated. Current state: %s, "
+                        "Leave ID: %s",
+                        emp.name,
+                        leave.state,
+                        leave.id,
+                    )
+
+            except Exception:
+                _logger.exception(
+                    "BXI Timesheet Cron: Failed to process automatic "
+                    "LWP for employee %s",
+                    emp.name,
+                )
+
         return True
 
     @api.model
