@@ -36,7 +36,9 @@ class TestSalaryAdvancePortal(SalaryAdvanceTestMixin, HttpCase):
             self.assertEqual(response.status_code, 200, url)
         self.assertIn('/my/salary-advances', self.url_open('/my').text)
         self.assertIn(advance.name, self.url_open('/my/salary-advances').text)
-        self.assertIn('60,000', self.url_open('/my/salary-advances/new').text)
+        new_page = self.url_open('/my/salary-advances/new').text
+        self.assertIn('60,000', new_page)
+        self.assertIn('50%', new_page)
 
     def test_no_access_employee_uses_portal_for_own_advances(self):
         """Salary Advance access "No" is a regular employee: own advances only."""
@@ -100,11 +102,19 @@ class TestSalaryAdvancePortal(SalaryAdvanceTestMixin, HttpCase):
 
     def test_error_keeps_nothing(self):
         response = self._post('/my/salary-advances/new', {
+            'category': 'emergency', 'emergency_type': 'birth', 'amount_requested': '30000', 'submit_now': '1',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Advance Request Form', response.text)
+        self.assertFalse(self.env['bxi.salary.advance'].search([('employee_id', '=', self.employee.id)]))
+
+    def test_amount_above_limit_is_submitted_for_exception(self):
+        response = self._post('/my/salary-advances/new', {
             'category': 'emergency', 'emergency_type': 'birth', 'amount_requested': '70000', 'submit_now': '1',
         }, files=self._form_file())
-        self.assertEqual(response.status_code, 200)
-        self.assertIn('75%', response.text)
-        self.assertFalse(self.env['bxi.salary.advance'].search([('employee_id', '=', self.employee.id)]))
+        self.assertEqual(response.status_code, 303)
+        advance = self.env['bxi.salary.advance'].search([('employee_id', '=', self.employee.id)])
+        self.assertEqual(advance.state, 'submitted')
 
     def test_draft_upload_and_submit(self):
         response = self._post('/my/salary-advances/new', {
@@ -163,10 +173,10 @@ class TestSalaryAdvancePortal(SalaryAdvanceTestMixin, HttpCase):
     def test_update_error_keeps_draft_unchanged(self):
         advance = self._new_advance(amount=30000)
         response = self._post(f'/my/salary-advances/{advance.id}/edit', {
-            'category': 'emergency', 'emergency_type': 'birth', 'amount_requested': '70000', 'submit_now': '1',
+            'category': 'housing', 'amount_requested': '40000', 'submit_now': '1',
         })
         self.assertEqual(response.status_code, 200)
-        self.assertIn('75%', response.text)
+        self.assertIn('rental agreement', response.text)
         self.assertEqual(advance.state, 'draft')
         self.assertEqual(advance.amount_requested, 30000)
 
