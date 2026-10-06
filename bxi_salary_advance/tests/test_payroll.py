@@ -72,7 +72,7 @@ class TestSalaryAdvancePayroll(SalaryAdvanceCommon):
         credit = advance.disbursement_move_id.line_ids.filtered(lambda line: line.credit)
         self.assertEqual(credit.account_id, self.vendor_payable)
         self.assertEqual(credit.partner_id, self.vendor)
-        self.assertEqual(advance.installment_ids.mapped('amount'), [10000] * 6)
+        self.assertEqual(advance.installment_ids.mapped('amount'), [20000] * 3)
 
     def test_last_emi_absorbs_rounding(self):
         advance = self._disbursed_advance(amount=10000)

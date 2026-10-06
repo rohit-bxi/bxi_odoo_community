@@ -31,9 +31,8 @@ REQUEST_FIELDS = {
     'employee_id', 'category', 'emergency_type', 'nonprocessing_reason', 'reason',
     'amount_requested', 'tenancy_months', 'request_form_ids', 'rental_agreement_ids',
 }
-# Category I reasons for which the minimum service is waived: a new joiner or a transferee
-# cannot have 6 months of service when the delay happens.
-SERVICE_EXEMPT_REASONS = ('joining', 'transfer')
+# Every advance is recovered in this number of EMIs; another number needs an exception approval.
+STANDARD_INSTALLMENTS = 3
 HR_GROUP = 'bxi_salary_advance.group_salary_advance_hr'
 HR_HEAD_GROUP = 'bxi_salary_advance.group_salary_advance_hr_head'
 FINANCE_GROUP = 'bxi_salary_advance.group_salary_advance_finance'
@@ -128,7 +127,7 @@ class BxiSalaryAdvance(models.Model):
     max_eligible = fields.Monetary(
         string='Maximum Eligible', currency_field='currency_id', compute='_compute_max_eligible',
         groups='bxi_salary_advance.group_salary_advance_hr,bxi_salary_advance.group_salary_advance_finance',
-        help="Policy limit for this category. Empty for housing advances when no limit is configured.",
+        help="Policy limit, as a percentage of the monthly salary. A higher amount needs an exception approval.",
     )
     request_form_ids = fields.Many2many(
         'ir.attachment', 'bxi_salary_advance_request_form_rel', 'advance_id', 'attachment_id',
@@ -144,8 +143,7 @@ class BxiSalaryAdvance(models.Model):
     amount_approved = fields.Monetary(string='Amount Approved', currency_field='currency_id', tracking=True, copy=False)
     installment_count = fields.Integer(
         string='Number of EMIs', compute='_compute_installment_count', store=True, readonly=False,
-        help="Category I: recovered in full from the next payroll. Category II: equal EMIs. "
-             "Category III: one EMI per month of the tenancy.",
+        help="Advances are recovered in 3 equal EMIs. Another number needs an exception approval.",
     )
     installment_amount = fields.Monetary(
         string='Monthly EMI', currency_field='currency_id', compute='_compute_installment_amount',
@@ -227,24 +225,16 @@ class BxiSalaryAdvance(models.Model):
             else:
                 rec.monthly_salary = rec.monthly_salary
 
-    @api.depends('monthly_salary', 'category')
+    @api.depends('monthly_salary')
     def _compute_max_eligible(self):
-        limit = self._get_param('limit_percent', 75)
-        housing_limit = self._get_param('housing_limit_percent', 0)
+        limit = self._get_param('limit_percent', 50)
         for rec in self:
-            percent = housing_limit if rec.category == 'housing' else limit
-            rec.max_eligible = rec.currency_id.round(rec.monthly_salary * percent / 100) if percent else 0.0
+            rec.max_eligible = rec.currency_id.round(rec.monthly_salary * limit / 100) if limit else 0.0
 
-    @api.depends('category', 'tenancy_months')
+    @api.depends('category')
     def _compute_installment_count(self):
-        emergency = int(self._get_param('emergency_installments', 3))
         for rec in self:
-            if rec.category == 'non_processing':
-                rec.installment_count = 1
-            elif rec.category == 'emergency':
-                rec.installment_count = emergency
-            else:
-                rec.installment_count = rec.tenancy_months
+            rec.installment_count = STANDARD_INSTALLMENTS
 
     @api.depends('amount_approved', 'amount_requested', 'installment_count')
     def _compute_installment_amount(self):
@@ -358,11 +348,6 @@ class BxiSalaryAdvance(models.Model):
     def _get_str_param(self, key, default):
         return self.env['ir.config_parameter'].sudo().get_param(PARAM_PREFIX + key, default) or default
 
-    @api.model
-    def _get_housing_tenancies(self):
-        value = self.env['ir.config_parameter'].sudo().get_param(PARAM_PREFIX + 'housing_tenancies', '6,12')
-        return sorted({int(part) for part in (value or '').split(',') if part.strip().isdigit()})
-
     def _category_label(self):
         self.ensure_one()
         return dict(self._fields['category']._description_selection(self.env)).get(self.category)
@@ -423,12 +408,8 @@ class BxiSalaryAdvance(models.Model):
         if employee._sa_is_serving_notice():
             issues.append(self.env._("Employees serving their notice period are not eligible for a salary advance."))
 
-        min_months = int(self._get_param('min_service_months', 6))
-        needs_service = rec.category == 'emergency' or (
-            rec.category == 'non_processing' and (
-                rec.nonprocessing_reason not in SERVICE_EXEMPT_REASONS
-                or self._get_bool_param('nonprocessing_require_service')))
-        if needs_service and min_months:
+        min_months = int(self._get_param('min_service_months', 12))
+        if min_months:
             start = employee._sa_get_service_start()
             if not start or start + relativedelta(months=min_months) > today:
                 issues.append(self.env._(
@@ -460,19 +441,12 @@ class BxiSalaryAdvance(models.Model):
             issues.append(self.env._("Select why your salary was not processed."))
         if rec.category == 'emergency' and not rec.emergency_type:
             issues.append(self.env._("Select the type of emergency."))
-        if rec.category == 'housing' and rec.tenancy_months <= 0:
-            issues.append(self.env._("Enter the tenancy duration of the rental agreement."))
 
+        # An amount above the limit is not refused: it needs an exception approval (_get_exceptions).
         if rec.currency_id.compare_amounts(rec.amount_requested, 0) <= 0:
             issues.append(self.env._("Enter the amount requested."))
-        elif rec.category in ('non_processing', 'emergency'):
-            if rec.monthly_salary <= 0:
-                issues.append(self.env._("Your monthly salary is not configured. Please contact HR."))
-            elif rec.currency_id.compare_amounts(rec.amount_requested, rec.max_eligible) > 0:
-                issues.append(self.env._(
-                    "The amount requested exceeds the limit of %(percent)s%% of the monthly salary (%(max)s).",
-                    percent=int(self._get_param('limit_percent', 75)),
-                    max=rec.currency_id.format(rec.max_eligible)))
+        elif rec.monthly_salary <= 0:
+            issues.append(self.env._("Your monthly salary is not configured. Please contact HR."))
 
         if check_documents:
             if not rec.request_form_ids and not self._get_bool_param('request_form_optional'):
@@ -494,21 +468,14 @@ class BxiSalaryAdvance(models.Model):
         self.ensure_one()
         rec = self.sudo()
         exceptions = []
-        if rec.category == 'housing':
-            tenancies = self._get_housing_tenancies()
-            if tenancies and rec.installment_count not in tenancies:
-                exceptions.append(self.env._(
-                    "Recovery over %(count)s months instead of the standard %(standard)s months.",
-                    count=rec.installment_count, standard='/'.join(str(t) for t in tenancies)))
-            if rec.max_eligible and rec.currency_id.compare_amounts(rec.amount_approved, rec.max_eligible) > 0:
-                exceptions.append(self.env._(
-                    "The amount exceeds the housing limit of %(max)s.", max=rec.currency_id.format(rec.max_eligible)))
-        elif rec.category == 'emergency':
-            standard = int(self._get_param('emergency_installments', 3))
-            if rec.installment_count != standard:
-                exceptions.append(self.env._(
-                    "Recovery in %(count)s EMIs instead of the standard %(standard)s.",
-                    count=rec.installment_count, standard=standard))
+        if rec.max_eligible and rec.currency_id.compare_amounts(rec.amount_approved, rec.max_eligible) > 0:
+            exceptions.append(self.env._(
+                "The amount exceeds the limit of %(percent)s%% of the monthly salary (%(max)s).",
+                percent=int(self._get_param('limit_percent', 50)), max=rec.currency_id.format(rec.max_eligible)))
+        if rec.installment_count != STANDARD_INSTALLMENTS:
+            exceptions.append(self.env._(
+                "Recovery in %(count)s EMIs instead of the standard %(standard)s.",
+                count=rec.installment_count, standard=STANDARD_INSTALLMENTS))
         return exceptions
 
     def _get_exception_approver(self):
@@ -584,9 +551,6 @@ class BxiSalaryAdvance(models.Model):
                 sudo_rec.amount_approved = sudo_rec.amount_requested
             if sudo_rec.installment_count <= 0:
                 raise UserError(self.env._("Enter the number of EMIs."))
-            if rec.category == 'non_processing' and sudo_rec.installment_count != 1:
-                raise UserError(self.env._(
-                    "Category I advances are recovered in full from the next payroll; no exceptions are allowed."))
             rec._check_eligibility()
             if rec.category == 'housing' and not rec.vendor_partner_id:
                 raise UserError(self.env._("Select the third-party vendor the housing advance is routed through."))
@@ -862,7 +826,7 @@ class BxiSalaryAdvance(models.Model):
             emi=rec.currency_id.format(first.amount), month=first.due_date.strftime('%B %Y')))
 
     def _get_recovery_start(self, disbursed_on):
-        """Category I is recovered in full by the next payroll, which also pays the arrears: the
+        """Category I recovery starts with the next payroll, which also pays the arrears: the
         first month from the disbursement on whose payroll is not confirmed yet. The other
         categories are recovered from the month following the disbursement."""
         self.ensure_one()

@@ -8,7 +8,7 @@ from odoo.http import content_disposition, request
 CATEGORY_FIELDS = {
     'non_processing': {'nonprocessing_reason': 'joining'},
     'emergency': {'emergency_type': 'other'},
-    'housing': {'tenancy_months': 12},
+    'housing': {},
 }
 
 
@@ -62,7 +62,7 @@ class SalaryAdvancePortal(http.Controller):
 
     def _form_values(self, employee, post):
         Advance = request.env['bxi.salary.advance'].sudo()
-        limit = Advance._get_param('limit_percent', 75)
+        limit = Advance._get_param('limit_percent', 50)
         monthly_salary = employee._sa_get_monthly_salary()
         currency = employee.company_id.currency_id
         return {
@@ -72,7 +72,6 @@ class SalaryAdvancePortal(http.Controller):
             'categories': Advance._fields['category']._description_selection(request.env),
             'emergency_types': Advance._fields['emergency_type']._description_selection(request.env),
             'nonprocessing_reasons': Advance._fields['nonprocessing_reason']._description_selection(request.env),
-            'tenancies': Advance._get_housing_tenancies(),
             'limit_percent': int(limit),
             'max_eligible': currency.round(monthly_salary * limit / 100),
             'currency': currency,

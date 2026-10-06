@@ -231,7 +231,7 @@
                             <td>
                                 <t t-esc="doc.installment_count"/> interest-free EMI(s) of about
                                 <span t-field="doc.installment_amount"/>,
-                                <t t-if="doc.category == 'non_processing'">recovered from the next payroll.</t>
+                                <t t-if="doc.category == 'non_processing'">starting with the next payroll.</t>
                                 <t t-else="">starting the month after disbursement.</t>
                             </td>
                         </tr>
@@ -316,7 +316,7 @@
                             <li>
                                 I will repay the advance within the agreed timelines, in
                                 <t t-esc="doc.installment_count"/> interest-free monthly instalments of about
-                                <span t-field="doc.installment_amount"/>, aligned with my rental agreement.
+                                <span t-field="doc.installment_amount"/>.
                             </li>
                             <li>
                                 I authorise <t t-esc="company_name"/> to deduct the instalments from my salary and to
