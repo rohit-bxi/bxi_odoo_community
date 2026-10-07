@@ -9,7 +9,7 @@ class TestDesktimeShiftTimes(TransactionCase):
     """Shift based arrived/left and shift wise hours on DeskTime logs.
 
     Schedule: Monday 09:00-13:00, lunch 13:00-14:00, 14:00-18:00 (Asia/Kolkata, UTC+5:30).
-    The lunch break is counted in the shift wise hours.
+    The lunch break is counted in the shift wise hours, capped to the ACS (productive) hours.
     All datetimes below are stored UTC values.
     """
 
@@ -34,12 +34,13 @@ class TestDesktimeShiftTimes(TransactionCase):
             'resource_calendar_id': cls.calendar.id,
         })
 
-    def _log(self, arrived, left, log_date=MONDAY, employee=None):
+    def _log(self, arrived, left, log_date=MONDAY, employee=None, productive_hours=12.0):
         return self.env['bxi.desktime.log'].create({
             'employee_id': (employee or self.employee).id,
             'date': log_date,
             'arrived': arrived,
             'left': left,
+            'productive_hours': productive_hours,
         })
 
     def test_early_arrival_and_late_leave_clamped_to_shift(self):
@@ -114,3 +115,19 @@ class TestDesktimeShiftTimes(TransactionCase):
         self.assertEqual(log.shift_arrived, log.arrived)
         self.assertEqual(log.shift_left, log.left)
         self.assertAlmostEqual(log.shift_productive_hours, 40 / 60, places=2)
+
+    def test_capped_to_acs_hours(self):
+        # 08:00 -> 19:30 IST: 9h in the shift, but only 6h30 ACS hours
+        log = self._log(datetime(2026, 9, 28, 2, 30), datetime(2026, 9, 28, 14, 0), productive_hours=6.5)
+        self.assertEqual(log.shift_left, datetime(2026, 9, 28, 12, 30))
+        self.assertAlmostEqual(log.shift_productive_hours, 6.5, places=2)
+
+    def test_no_acs_hours(self):
+        log = self._log(datetime(2026, 9, 28, 2, 30), datetime(2026, 9, 28, 14, 0), productive_hours=0.0)
+        self.assertEqual(log.shift_productive_hours, 0.0)
+
+    def test_acs_hours_resync_recomputes_cap(self):
+        log = self._log(datetime(2026, 9, 28, 2, 30), datetime(2026, 9, 28, 14, 0), productive_hours=5.0)
+        self.assertAlmostEqual(log.shift_productive_hours, 5.0, places=2)
+        log.write({'productive_hours': 10.0})  # more ACS hours than the shift: shift hours apply
+        self.assertAlmostEqual(log.shift_productive_hours, 9.0, places=2)

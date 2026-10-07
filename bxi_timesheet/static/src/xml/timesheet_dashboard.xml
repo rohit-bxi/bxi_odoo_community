@@ -285,7 +285,7 @@
                                         (d.day_name === 'Saturday' || d.day_name === 'Sunday' || d.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
                                         d.is_today ? 'today-column-cell' : ''
                                     }">
-                                        <t t-if="d.day_status and !d.prod_hours_raw" t-esc="d.day_status === 'ph' ? 'PH' : 'Leave'"/>
+                                        <t t-if="d.day_status and !d.prod_hours_raw" t-esc="d.day_status === 'ph' ? 'PH' : d.day_status === 'lop' ? 'LOP' : d.day_status === 'absent' ? 'Absent' : 'Leave'"/>
                                         <t t-else="" t-esc="d.prod_hours"/>
                                     </td>
                                 </t>
@@ -305,7 +305,7 @@
                                         (d.day_name === 'Saturday' || d.day_name === 'Sunday' || d.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
                                         d.is_today ? 'today-column-cell' : ''
                                     }">
-                                        <t t-if="d.day_status and !d.shift_prod_hours_raw" t-esc="d.day_status === 'ph' ? 'PH' : 'Leave'"/>
+                                        <t t-if="d.day_status and !d.shift_prod_hours_raw" t-esc="d.day_status === 'ph' ? 'PH' : d.day_status === 'lop' ? 'LOP' : d.day_status === 'absent' ? 'Absent' : 'Leave'"/>
                                         <t t-else="" t-esc="d.shift_prod_hours"/>
                                     </td>
                                 </t>
@@ -437,7 +437,7 @@
                                         <td class="ps-3 py-1 border-end text-start fw-bold text-success font-11 bg-light">ACS Hours</td>
                                         <t t-foreach="row.day_data" t-as="day" t-key="'prod_' + day.date_str">
                                             <td colspan="2" t-attf-class="text-center py-1 border-end text-success fw-bold font-11 #{(day.day_status and !day.prod_hours_raw) ? 'state-' + day.day_status : day.is_today ? 'today-column-cell' : ''}">
-                                                <t t-if="day.day_status and !day.prod_hours_raw" t-esc="day.day_status === 'ph' ? 'PH' : 'Leave'"/>
+                                                <t t-if="day.day_status and !day.prod_hours_raw" t-esc="day.day_status === 'ph' ? 'PH' : day.day_status === 'lop' ? 'LOP' : day.day_status === 'absent' ? 'Absent' : 'Leave'"/>
                                                 <t t-else="" t-esc="day.prod_hours"/>
                                             </td>
                                         </t>
@@ -451,7 +451,7 @@
                                         <td class="ps-3 py-1 border-end text-start fw-bold text-success font-11 bg-light">Shift Wise Production Hours</td>
                                         <t t-foreach="row.day_data" t-as="day" t-key="'shift_prod_' + day.date_str">
                                             <td colspan="2" t-attf-class="text-center py-1 border-end text-success fw-bold font-11 #{(day.day_status and !day.shift_prod_hours_raw) ? 'state-' + day.day_status : day.is_today ? 'today-column-cell' : ''}">
-                                                <t t-if="day.day_status and !day.shift_prod_hours_raw" t-esc="day.day_status === 'ph' ? 'PH' : 'Leave'"/>
+                                                <t t-if="day.day_status and !day.shift_prod_hours_raw" t-esc="day.day_status === 'ph' ? 'PH' : day.day_status === 'lop' ? 'LOP' : day.day_status === 'absent' ? 'Absent' : 'Leave'"/>
                                                 <t t-else="" t-esc="day.shift_prod_hours"/>
                                             </td>
                                         </t>

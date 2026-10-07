@@ -42,5 +42,29 @@
             <field name="interval_type">days</field>
             <field name="active">True</field>
         </record>
+
+        <!-- Monday 09:00 IST: remind employees of the days to regularize until the 25th -->
+        <record id="ir_cron_attendance_regularization_reminder" model="ir.cron">
+            <field name="name">Attendance Regularization: Weekly Reminder</field>
+            <field name="model_id" ref="model_bxi_shift_exception"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_send_regularization_reminders()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">weeks</field>
+            <field name="nextcall" eval="(DateTime.now() + relativedelta(days=1, weekday=0)).strftime('%Y-%m-%d 03:30:00')"/>
+            <field name="active">True</field>
+        </record>
+
+        <!-- 26th 01:00 IST: LWP for the days of the closed cycle not regularized -->
+        <record id="ir_cron_attendance_regularization_lop" model="ir.cron">
+            <field name="name">Attendance Regularization: Apply LOP at Cutoff</field>
+            <field name="model_id" ref="model_bxi_shift_exception"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_apply_regularization_lop()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">months</field>
+            <field name="nextcall" eval="(DateTime.now() + relativedelta(months=1 if DateTime.now().day >= 25 else 0, day=25)).strftime('%Y-%m-%d 19:30:00')"/>
+            <field name="active">True</field>
+        </record>
     </data>
 </odoo>
