@@ -2,7 +2,7 @@
 {
     'name': 'BXI Equitable Benefit',
     'category': 'Human Resources',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'sequence': 1,
     'author': 'BXI Technologies',
     'website': 'https://bxitech.com/',
@@ -16,14 +16,17 @@
         - Validation by Revenue Assurance, approval by Finance, payout through payroll with TDS
         - Attendance based unauthorized absence and work pattern compliance checks
         - Full & Final Settlement on resignation or departure, including an unpaid earlier year
+        - Performance rating and Annualized Component A taken from released appraisals
     """,
     'depends': [
         'hr',
         'hr_holidays',
         'mail',
+        'project',
         'om_hr_payroll',
         'bxi_hr_employee',
         'employee_onboarding',
+        'bxi_hr_performance_bonus',
     ],
     'data': [
         'security/security.xml',
@@ -36,6 +39,7 @@
         'data/ir_cron_data.xml',
         'report/payout_statement_report.xml',
         'wizard/generate_payout_wizard_views.xml',
+        'wizard/component_a_wizard_views.xml',
         'views/work_pattern_views.xml',
         'views/rate_views.xml',
         'views/assignment_views.xml',
@@ -44,6 +48,7 @@
         'views/hr_employee_views.xml',
         'views/hr_version_views.xml',
         'views/hr_leave_type_views.xml',
+        'views/hr_employee_appraisal_views.xml',
         'views/res_config_settings_views.xml',
         'views/menus.xml',
     ],

@@ -32,6 +32,8 @@
               action="action_bxi_eb_rate" sequence="10"/>
     <menuitem id="menu_eb_patterns" name="Work Patterns" parent="menu_eb_config"
               action="action_bxi_eb_work_pattern" sequence="20"/>
+    <menuitem id="menu_eb_component_a" name="Fill Component A" parent="menu_eb_config"
+              action="action_bxi_eb_component_a_wizard" sequence="25"/>
     <menuitem id="menu_eb_settings" name="Settings" parent="menu_eb_config"
               action="action_bxi_eb_settings" sequence="30"/>
 </odoo>

@@ -54,6 +54,9 @@ class BxiEbPerformanceRating(models.Model):
     fy_start = fields.Date(string='Financial Year Start', required=True, tracking=True)
     fy_name = fields.Char(string='Financial Year', compute='_compute_fy_name', store=True)
     rating = fields.Selection(RATINGS, required=True, tracking=True)
+    appraisal_id = fields.Many2one(
+        'hr.employee.appraisal', string='Appraisal', readonly=True, ondelete='set null',
+        help="Released appraisal the rating was taken from.")
     note = fields.Text()
 
     _employee_fy_unique = models.Constraint(

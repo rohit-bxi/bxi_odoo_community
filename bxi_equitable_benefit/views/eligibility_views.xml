@@ -57,6 +57,7 @@
                 <field name="fy_start"/>
                 <field name="fy_name"/>
                 <field name="rating"/>
+                <field name="appraisal_id" optional="show"/>
                 <field name="note" optional="show"/>
             </list>
         </field>
