@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="bxi_performance_review_owl.PerformanceReviewScreen">
+        <div class="bxi-pr-screen">
+            <div class="bxi-pr-toolbar">
+                <div class="bxi-pr-breadcrumb">
+                    <span class="bxi-pr-breadcrumb-link">Performance Reviews</span>
+                    <!-- <span class="bxi-pr-breadcrumb-separator">/</span> -->
+                    <span t-if="state.review">
+                        <!-- <t t-esc="state.review.name"/> - <t t-esc="getQuarter()"/> - <t t-esc="state.review.year"/> -->
+                    </span>
+                    <span t-else="">Performance Review</span>
+                </div>
+                <div class="bxi-pr-toolbar-actions">
+                    <button class="btn btn-outline-secondary btn-sm"
+                            t-att-class="{'active': state.filter === 'my'}"
+                            t-on-click="() => this.onFilterChange('my')">
+                        My Reviews
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm"
+                            t-att-class="{'active': state.filter === 'approve'}"
+                            t-on-click="() => this.onFilterChange('approve')">
+                        Reviews to Approve
+                    </button>
+                    <select class="form-select form-select-sm bxi-pr-review-selector"
+                            t-if="state.reviews.length"
+                            t-on-change="onReviewChange">
+                        <t t-foreach="state.reviews" t-as="review" t-key="review.id">
+                            <option t-att-value="review.id" t-att-selected="state.review and review.id === state.review.id">
+                                <t t-esc="review.name"/> - <t t-esc="review.employee_id and review.employee_id[1]"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+            </div>
+
+            <div t-if="state.loading" class="bxi-pr-loading">Loading Performance Review...</div>
+            <div t-elif="state.error" class="alert alert-danger"><t t-esc="state.error"/></div>
+            <div t-elif="!state.review" class="bxi-pr-empty">No Performance Review found.</div>
+
+            <t t-else="">
+                <div class="bxi-pr-card">
+                    <div class="bxi-pr-header">
+                        <div class="bxi-pr-company">
+                            <img t-if="state.review.company_logo" class="bxi-pr-company-logo"
+                                 t-att-src="getCompanyLogoSrc()" alt="Company Logo"/>
+                            <div t-else="" class="bxi-pr-company-logo-placeholder">LOGO</div>
+                        </div>
+                        <div class="bxi-pr-title">
+                            <span>Performance Review </span>
+                            <span>
+                                <t t-esc="state.review.template_id ? state.review.template_id[1] : 'Performance Review'"/>
+                            </span>
+                        </div>
+                        <div class="bxi-pr-status"><t t-esc="getStatusLabel()"/></div>
+                    </div>
+
+                    <div class="bxi-pr-employee-row">
+                        <div class="bxi-pr-detail">
+                            <label>Employee Name</label>
+                            <div class="bxi-pr-value-box"><t t-esc="state.review.employee_id and state.review.employee_id[1]"/></div>
+                        </div>
+                        <div class="bxi-pr-detail">
+                            <label>Email Address</label>
+                            <div class="bxi-pr-value-box"><t t-esc="state.review.employee_email || '-'"/></div>
+                        </div>
+                        <div class="bxi-pr-detail">
+                            <label>Manager`s Email</label>
+                            <div class="bxi-pr-value-box"><t t-esc="state.review.manager_email || '-'"/></div>
+                        </div>
+                    </div>
+
+                    <div class="bxi-pr-tab-content">
+                        <div class="bxi-pr-performance-table">
+                            <div class="bxi-pr-table-header">
+                                <div>Weightage</div>
+                                <div>Target</div>
+                                <div>Appraisee Actual Achievement (Self)</div>
+                                <div>Appraise Review (RM)</div>
+                                <div>Appraise Score (RM)</div>
+                            </div>
+                            <t t-foreach="getGroupedLines()" t-as="group" t-key="group.key">
+                                <div t-att-class="'bxi-pr-category-header ' + group.cssClass"><t t-esc="group.title"/></div>
+                                <t t-foreach="group.lines" t-as="line" t-key="line.id">
+                                    <div t-att-class="'bxi-pr-line ' + group.cssClass">
+                                        <div class="bxi-pr-weightage"><t t-esc="line.weightage"/>%</div>
+                                        <div class="bxi-pr-target"><t t-esc="getLineTarget(line)"/></div>
+                                        <div class="bxi-pr-readonly-cell"><t t-esc="line.self_achievement || '-'"/></div>
+                                        <div class="bxi-pr-readonly-cell"><t t-esc="line.manager_review || '-'"/></div>
+                                        <div class="bxi-pr-score-cell"><span class="bxi-pr-readonly-score"><t t-esc="getScoreDisplay(line)"/></span></div>
+                                    </div>
+                                </t>
+                            </t>
+                        </div>
+
+                        <div class="bxi-pr-section-title">Successor Identification</div>
+                        <div class="bxi-pr-successor-header">
+                            <div>Successor (1) (Self)</div>
+                            <div>Successor (2) (Self)</div>
+                        </div>
+                        <div class="bxi-pr-successor-row bxi-pr-readonly-grid">
+                            <div class="bxi-pr-value-box"><t t-esc="state.review.successor_1 || '-'"/></div>
+                            <div class="bxi-pr-value-box"><t t-esc="state.review.successor_2 || '-'"/></div>
+                        </div>
+
+                        <div class="bxi-pr-section-title">Appraisee Questions</div>
+                        <div class="bxi-pr-question-header">
+                            <div>Question</div>
+                            <div>Appraisee Answer</div>
+                            <div>Rating</div>
+                        </div>
+                        <div class="bxi-pr-questions-list">
+                            <t t-if="state.appraiseeQuestions.length">
+                                <t t-foreach="state.appraiseeQuestions" t-as="item" t-key="item.id">
+                                    <div class="bxi-pr-question-card">
+                                        <div class="bxi-pr-question-number"><t t-esc="item.sequence"/></div>
+                                        <div class="bxi-pr-question-content">
+                                            <div class="bxi-pr-question-text"><t t-esc="item.question"/></div>
+                                            <div class="bxi-pr-question-answer" t-if="item.response_type !== 'rating'"><t t-esc="item.answer || '-'"/></div>
+                                            <div class="bxi-pr-question-answer" t-else="">-</div>
+                                        </div>
+                                        <div class="bxi-pr-question-rating" t-if="item.response_type !== 'answer'">
+                                            <div class="bxi-pr-stars">
+                                                <t t-esc="getStarDisplay(item)"/>
+                                            </div>
+                                            <div class="bxi-pr-rating-text">
+                                                <t t-esc="getRatingText(item)"/>
+                                            </div>
+                                        </div>
+                                        <div class="bxi-pr-question-rating" t-else="">-</div>
+                                    </div>
+                                </t>
+                            </t>
+                            <div t-else="" class="bxi-pr-empty-question">No appraisee questions configured.</div>
+                        </div>
+
+                        <!-- ========================================================= -->
+            <!-- MANAGER / RM QUESTIONS                                   -->
+            <!-- ========================================================= -->
+
+            <div t-if="canSeeManagerQuestions()"
+                class="bxi-pr-section-title">
+                Manager / RM Questions
+            </div>
+
+            <div t-if="canSeeManagerQuestions()"
+                class="bxi-pr-question-header">
+
+                <div>Question</div>
+                <div>Manager / RM Answer</div>
+                <div>Manager / RM Rating</div>
+
+            </div>
+
+            <div t-if="canSeeManagerQuestions()"
+                class="bxi-pr-questions-list">
+
+                <t t-if="state.managerQuestions.length">
+
+                    <t t-foreach="state.managerQuestions"
+                    t-as="item"
+                    t-key="item.id">
+
+                        <div class="bxi-pr-question-card">
+
+                            <!-- Question Number -->
+                            <div class="bxi-pr-question-number">
+                                <t t-esc="item.sequence"/>
+                            </div>
+
+                            <!-- Question + Answer -->
+                            <div class="bxi-pr-question-content">
+
+                                <div class="bxi-pr-question-text">
+                                    <t t-esc="item.question"/>
+                                </div>
+
+                                <!-- Answer -->
+                                <div class="bxi-pr-question-answer"
+                                    t-if="item.response_type === 'answer' || item.response_type === 'both'">
+
+                                    <t t-esc="item.answer || '-'"/>
+
+                                </div>
+
+                                <div class="bxi-pr-question-answer"
+                                    t-if="item.response_type === 'rating'">
+
+                                    -
+
+                                </div>
+
+                            </div>
+
+                            <!-- Manager Rating -->
+                            <div class="bxi-pr-question-rating"
+                                t-if="item.response_type === 'rating' || item.response_type === 'both'">
+
+                                <div class="bxi-pr-stars">
+                                    <t t-esc="getManagerStarDisplay(item)"/>
+                                </div>
+
+                                <div class="bxi-pr-rating-text">
+                                    <t t-esc="getManagerRatingText(item)"/>
+                                </div>
+
+                            </div>
+
+                            <div class="bxi-pr-question-rating"
+                                t-if="item.response_type === 'answer'">
+
+                                -
+
+                            </div>
+
+                        </div>
+
+                    </t>
+
+                </t>
+
+                <div t-else=""
+                    class="bxi-pr-empty-question">
+                    No manager questions configured.
+                </div>
+
+                </div>
+
+                        <div class="bxi-pr-section-title">Overall</div>
+                        <div class="bxi-pr-overall-grid">
+                            <div class="bxi-pr-overall-label">Appraisee Remarks (Self)</div>
+                            <div class="bxi-pr-readonly-answer"><t t-esc="state.review.appraisee_remarks || '-'"/></div>
+                            <div class="bxi-pr-overall-label">Appraise Remarks (RM)</div>
+                            <div class="bxi-pr-readonly-answer"><t t-esc="state.review.manager_remarks || '-'"/></div>
+                            <div class="bxi-pr-overall-label">Calibration</div>
+                            <div class="bxi-pr-readonly-answer"><t t-esc="getCalibrationLabel(state.review.calibration)"/></div>
+                            <div class="bxi-pr-overall-label">Reviewer Remarks</div>
+                            <div class="bxi-pr-readonly-answer"><t t-esc="state.review.reviewer_remarks || '-'"/></div>
+                        </div>
+
+                        <div class="bxi-pr-final-score-row">
+                            <strong>Final Score</strong>
+                            <div class="bxi-pr-final-score"><t t-esc="getFinalScore()"/></div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

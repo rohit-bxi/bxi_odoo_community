@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class RequisitionOrder(models.Model):
@@ -26,8 +27,23 @@ class RequisitionOrder(models.Model):
     uom = fields.Char(related='product_id.uom_id.name',
                       string='Unit of Measure', help='Product unit of measure')
     partner_id = fields.Many2one(comodel_name='res.partner', string='Vendor',
+                                 domain="[('customer_type', 'in', ('vendor', 'customer_and_vendor'))]",
                                  help='Vendor for the requisition',
                                  readonly=False)
+    company_id = fields.Many2one(
+        comodel_name='res.company',
+        string='Company',
+        related='requisition_product_id.company_id',
+        store=True,
+        readonly=True,
+    )
+
+    @api.constrains('partner_id')
+    def _check_partner_customer_type(self):
+        for rec in self:
+            if rec.partner_id and 'customer_type' in rec.partner_id._fields:
+                if rec.partner_id.customer_type not in ('vendor', 'customer_and_vendor'):
+                    raise ValidationError("Selected vendor must have type 'Vendor' or 'Customer and Vendor'.")
 
     @api.depends('product_id')
     def _compute_name(self):
@@ -39,9 +55,12 @@ class RequisitionOrder(models.Model):
                 lang=self.requisition_product_id.employee_id.lang)
             option.description = product_lang.get_product_multiline_description_sale()
 
-    @api.onchange('requisition_type')
+    @api.onchange('requisition_type', 'product_id')
     def _onchange_product(self):
         """Fetching product vendors"""
-        vendors_list = [data.partner_id.id for data in
-                        self.product_id.seller_ids]
-        return {'domain': {'partner_id': [('id', 'in', vendors_list)]}}
+        partner_model = self.env['res.partner']
+        if 'customer_type' in partner_model._fields:
+            domain = [('customer_type', 'in', ('vendor', 'customer_and_vendor'))]
+        else:
+            domain = [('supplier_rank', '>', 0)]
+        return {'domain': {'partner_id': domain}}

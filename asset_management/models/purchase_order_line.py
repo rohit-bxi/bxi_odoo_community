@@ -37,6 +37,7 @@ class PurchaseOrder(models.Model):
                         'product_id': line.product_id.id,
                         'model_type': 'multiple',
                         'initial_stock': line.product_qty,
+                        'vendor_id': order.partner_id.id,
                     })
 
         return res

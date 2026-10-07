@@ -1212,14 +1212,18 @@ class FbookReportWizard(models.TransientModel):
                     'Unknown Vendor'
                 ).strip()
                 partner_key = partner_name.strip().lower()
+                tags = partner.category_id.mapped('name') or (partner.commercial_partner_id.category_id.mapped('name') if partner.commercial_partner_id else [])
+                tag_str = ', '.join([t for t in tags if t and t.upper() != 'NA'])
+                if not tag_str and 'vendor_category' in partner._fields and partner.vendor_category:
+                    vcat_dict = dict(partner._fields['vendor_category'].selection or [])
+                    tag_str = vcat_dict.get(partner.vendor_category, '')
+                description = tag_str
                 b_date = bill.invoice_date or bill.date
                 if not b_date:
                     continue
                 b_date_str = b_date.strftime('%Y-%m-%d')
 
                 if partner_key not in vendor_data_map:
-                    tags = partner.category_id.mapped('name') or (partner.commercial_partner_id.category_id.mapped('name') if partner.commercial_partner_id else [])
-                    description = ', '.join([t for t in tags if t]) if tags else ''
                     vendor_data_map[partner_key] = {
                         'name': partner_name,
                         'description': description,
@@ -1232,10 +1236,8 @@ class FbookReportWizard(models.TransientModel):
                         'y2_q3': 0.0,
                         'y2_q4': 0.0,
                     }
-                elif not vendor_data_map[partner_key].get('description'):
-                    tags = partner.category_id.mapped('name') or (partner.commercial_partner_id.category_id.mapped('name') if partner.commercial_partner_id else [])
-                    if tags:
-                        vendor_data_map[partner_key]['description'] = ', '.join([t for t in tags if t])
+                elif not vendor_data_map[partner_key].get('description') and description:
+                    vendor_data_map[partner_key]['description'] = description
 
                 sign = -1.0 if bill.move_type == 'in_refund' else 1.0
                 conv_y1 = sign * custom_convert(
@@ -1290,7 +1292,11 @@ class FbookReportWizard(models.TransientModel):
                     ).strip()
                     partner_key = partner_name.strip().lower()
                     tags = partner.category_id.mapped('name') or (partner.commercial_partner_id.category_id.mapped('name') if partner.commercial_partner_id else [])
-                    description = ', '.join([t for t in tags if t]) if tags else ''
+                    tag_str = ', '.join([t for t in tags if t and t.upper() != 'NA'])
+                    if not tag_str and 'vendor_category' in partner._fields and partner.vendor_category:
+                        vcat_dict = dict(partner._fields['vendor_category'].selection or [])
+                        tag_str = vcat_dict.get(partner.vendor_category, '')
+                    description = tag_str
                 else:
                     partner_name = 'Expenses Paid by Company'
                     partner_key = 'unassigned_company_expense'
@@ -1367,6 +1373,7 @@ class FbookReportWizard(models.TransientModel):
                 continue
 
             vendor_rows.append({
+                'key': v_id,
                 'vendor': v_info['name'],
                 'description': v_info.get('description', ''),
                 'y1_q1': target_currency.round(y1_q1),
@@ -1381,11 +1388,10 @@ class FbookReportWizard(models.TransientModel):
                 'y2_total': target_currency.round(y2_total),
             })
 
-        # Sort vendors by highest spend in the respective year (y2_total descending, then y1_total descending)
+        # Sort vendors alphabetically by vendor name
         vendor_rows = sorted(
             vendor_rows,
-            key=lambda r: (r['y2_total'], r['y1_total']),
-            reverse=True
+            key=lambda r: (r['vendor'] or '').strip().lower()
         )
 
         vendor_totals = {
@@ -1606,7 +1612,7 @@ class FbookReportWizard(models.TransientModel):
             'stop_depr_total': target_currency.round(sum(r['stop_depr_total'] for r in asset_rows)),
         }
 
-        # CSR Fund Section Calculation (Quarter-wise Fund transfers to BXI Foundation)
+        # CSR Fund Section: entries under Chart of Accounts 'CSR Expense', grouped by partner name
         csr_data_map = {}
         if 'account.move.line' in self.env:
             domain_lines = [
@@ -1615,40 +1621,41 @@ class FbookReportWizard(models.TransientModel):
                 ('date', '>=', min(y1_start_str, y2_start_str)),
                 ('date', '<=', max(y1_end_str, y2_end_str)),
             ]
-            all_lines = self.env['account.move.line'].sudo().search(domain_lines)
+            # Locate accounts matching 'CSR Expense' (or 'CSR Expenses')
+            csr_accounts = self.env['account.account'].sudo().search([
+                ('company_ids', 'in', company_ids),
+                '|', '|',
+                ('name', 'ilike', 'CSR Expense'),
+                ('name', 'ilike', 'CSR Expenses'),
+                ('name', 'ilike', 'CSR - Expense'),
+            ])
+            if not csr_accounts:
+                csr_accounts = self.env['account.account'].sudo().search([
+                    ('company_ids', 'in', company_ids),
+                ]).filtered(lambda a: 'csr' in (a.name or '').lower() and 'expense' in (a.name or '').lower())
+
+            if not csr_accounts:
+                # Fallback to search without company_ids constraint in case company_ids is unassigned
+                csr_accounts = self.env['account.account'].sudo().search([]).filtered(
+                    lambda a: 'csr' in (a.name or '').lower() and 'expense' in (a.name or '').lower()
+                )
+
+            if csr_accounts:
+                domain_lines.append(('account_id', 'in', csr_accounts.ids))
+                all_lines = self.env['account.move.line'].sudo().search(domain_lines)
+            else:
+                all_lines = self.env['account.move.line'].browse()
+
             for line in all_lines:
-                p_name = (line.partner_id.name or '').strip()
-                p_comm = (line.partner_id.commercial_partner_id.name or '').strip()
-                acc_name = (line.account_id.name or '').strip()
-                acc_code = (line.account_id.code or '').strip()
-                l_name = (line.name or '').strip()
-                m_ref = (line.move_id.ref or '').strip()
-                m_name = (line.move_id.name or '').strip()
-
-                combined_text = f"{p_name} {p_comm} {acc_name} {acc_code} {l_name} {m_ref} {m_name}".lower()
-
-                # Check if matches foundation / csr in any format or variation
-                is_csr = False
-                if 'foundation' in combined_text or 'csr' in combined_text:
-                    is_csr = True
-                elif 'bxi' in combined_text and ('found' in combined_text or 'trust' in combined_text):
-                    is_csr = True
-
-                if not is_csr:
-                    continue
-
                 ldate = line.date
                 if not ldate:
                     continue
                 ldate_str = ldate.strftime('%Y-%m-%d')
 
-                # Display name: use partner name if present, or account name / BXI Foundation
-                if p_name and ('foundation' in p_name.lower() or 'csr' in p_name.lower() or 'bxi' in p_name.lower()):
-                    display_name = p_name
-                elif acc_name and ('foundation' in acc_name.lower() or 'csr' in acc_name.lower()):
-                    display_name = acc_name
-                else:
-                    display_name = 'BXI Foundation'
+                # Group by partner name based on the entry
+                partner = line.partner_id or line.move_id.partner_id
+                partner_name = (partner.name or '').strip()
+                display_name = partner_name or 'Unspecified Partner'
 
                 if display_name not in csr_data_map:
                     csr_data_map[display_name] = {
@@ -1663,7 +1670,10 @@ class FbookReportWizard(models.TransientModel):
                         'y2_q4': 0.0,
                     }
 
-                line_amt = line.debit if line.debit > 0 else (abs(line.debit - line.credit) if (line.debit or line.credit) else 0.0)
+                # Net expense amount on CSR Expense account (Debit increases expense, Credit reduces it)
+                line_amt = (line.debit - line.credit) if (line.debit or line.credit) else 0.0
+                if abs(line_amt) < 0.0001:
+                    continue
 
                 conv_y1 = custom_convert(
                     line_amt, line.company_id.currency_id, target_currency,

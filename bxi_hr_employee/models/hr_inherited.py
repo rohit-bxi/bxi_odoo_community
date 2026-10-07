@@ -22,6 +22,13 @@ class HrEmployee(models.Model):
              "elements without requiring direct access to the group-"
              "restricted 'employee_type' field.",
     )
+    bxi_offer_letter = fields.Many2many(
+        'ir.attachment',
+        'hr_employee_bxi_offer_letter_rel',
+        'employee_id',
+        'attachment_id',
+        string='BXI Offer Letter',
+    )
     employee_code = fields.Char(string="Employee Code")
     pa_name = fields.Char(string="PA Name")  
     psa = fields.Char(string="PSA")
@@ -72,7 +79,7 @@ class HrEmployee(models.Model):
     l10n_in_pf_employee_amount = fields.Monetary(string="Employee EPF Monthly", currency_field="currency_id")
     l10n_in_tds = fields.Monetary(string="Monthly TDS Amount", currency_field="currency_id")
     date_of_leaving = fields.Date(string="Date of Leaving")
-    is_fnf_done = fields.Boolean(string="Is FNF Done", default=False)
+    is_fnf_done = fields.Boolean(string="Is F&F Done", default=False)
     re_hire = fields.Boolean(string="Re-Hire", default=False)
     rehire_not_description = fields.Text(string="Rehire Remarks")
     departure_reason_id = fields.Many2one(
@@ -133,6 +140,11 @@ class HrEmployee(models.Model):
     )
     portal_access = fields.Boolean(
         string="Portal Access",
+        default=False,
+        copy=False,
+    )
+    is_pf_done = fields.Boolean(
+        string="PF exit Initiated",
         default=False,
         copy=False,
     )
@@ -818,6 +830,157 @@ class HrEmployee(models.Model):
         )
         return True
 
+    fnf_status = fields.Selection(
+        [
+            ("pending_clearance", "Pending Clearance"),
+            ("completed", "Completed"),
+        ],
+        string="F&F Status",
+    )
+    hr_clearance = fields.Selection(
+        [
+            ("yes", "Yes"),
+            ("no", "No"),
+        ],
+        string="HR Clearance",
+    )
+
+    hr_clearance_reason = fields.Selection(
+        [
+            ("notice_period_served", "Notice Period Served"),
+            ("notice_period_not_served", "Notice Period Not Served"),
+            ("hr_formalities", "HR Formalities Pending"),
+            ("exit_interview", "Exit Interview Pending"),
+            ("document_pending", "Document Submission Pending"),
+            ("other", "Other"),
+        ],
+        string="HR Clearance Details",
+    )
+
+    rm_clearance = fields.Selection(
+        [
+            ("yes", "Yes"),
+            ("no", "No"),
+        ],
+        string="RM Clearance",
+    )
+
+    rm_clearance_reason = fields.Selection(
+        [
+            ("task_handover_pending", "Task Handover Pending"),
+            ("knowledge_transfer_pending", "Knowledge Transfer Pending"),
+            ("project_handover_pending", "Project Handover Pending"),
+            ("rm_approval_pending", "RM Approval Pending"),
+            ("other", "Other"),
+        ],
+        string="RM Clearance Details",
+    )
+
+    it_clearance = fields.Selection(
+        [
+            ("yes", "Yes"),
+            ("no", "No"),
+        ],
+        string="Internal IT Clearance",
+    )
+
+    it_clearance_reason = fields.Selection(
+        [
+            ("assets_collected", "Company Assets Collected"),
+            ("assets_pending", "Company Assets Pending"),
+            ("laptop_pending", "Laptop / System Pending"),
+            ("access_revocation_pending", "Access Revocation Pending"),
+            ("other", "Other"),
+        ],
+        string="IT Clearance Details",
+    )
+
+    finance_clearance = fields.Selection(
+        [
+            ("yes", "Yes"),
+            ("no", "No"),
+        ],
+        string="Finance Clearance",
+    )
+
+    finance_clearance_reason = fields.Selection(
+        [
+            ("verification_pending", "Verification Pending"),
+            ("outstanding_dues", "Outstanding Dues Pending"),
+            ("advance_settlement", "Advance Settlement Pending"),
+            ("expense_pending", "Expense / Reimbursement Pending"),
+            ("other", "Other"),
+        ],
+        string="Finance Clearance Details",
+    )
+    @api.onchange("fnf_status")
+    def _onchange_fnf_status(self):
+        if self.fnf_status == "completed":
+            self.hr_clearance = "yes"
+            self.rm_clearance = "yes"
+            self.it_clearance = "yes"
+            self.finance_clearance = "yes"
+
+    hr_clearance_status = fields.Char(
+        string="HR Status",
+        compute="_compute_clearance_status",
+    )
+
+    rm_clearance_status = fields.Char(
+        string="RM Status",
+        compute="_compute_clearance_status",
+    )
+
+    it_clearance_status = fields.Char(
+        string="IT Status",
+        compute="_compute_clearance_status",
+    )
+
+    finance_clearance_status = fields.Char(
+        string="Finance Status",
+        compute="_compute_clearance_status",
+    )
+    expected_clearance = fields.Date(string ="Expected F&F Completion Date")
+
+    @api.depends(
+        "hr_clearance",
+        "rm_clearance",
+        "it_clearance",
+        "finance_clearance",
+    )
+    def _compute_clearance_status(self):
+        for employee in self:
+            employee.hr_clearance_status = (
+                "Completed"
+                if employee.hr_clearance == "yes"
+                else "Action Required"
+                if employee.hr_clearance == "no"
+                else ""
+            )
+
+            employee.rm_clearance_status = (
+                "Completed"
+                if employee.rm_clearance == "yes"
+                else "Action Required"
+                if employee.rm_clearance == "no"
+                else ""
+            )
+
+            employee.it_clearance_status = (
+                "Completed"
+                if employee.it_clearance == "yes"
+                else "Action Required"
+                if employee.it_clearance == "no"
+                else ""
+            )
+
+            employee.finance_clearance_status = (
+                "Completed"
+                if employee.finance_clearance == "yes"
+                else "Pending"
+                if employee.finance_clearance == "no"
+                else ""
+            )
 
 class HrApplicantExperience(models.Model):
     _name = 'hr.experience.employee'

@@ -59,9 +59,9 @@
                     <button name="action_create_purchase_order"
                             class="oe_highlight"
                             invisible="state != 'approved'"
-                            string="Create Picking and PO"
+                            string="Create PO"
                             type="object"
-                            help="Create Picking/Purchase order"
+                            help="Create Purchase Order"
                             groups="employee_purchase_requisition.material_category_finance_group,employee_purchase_requisition.material_category_admin_group"
                             />
                     <button name="action_receive" class="oe_highlight"
@@ -103,6 +103,7 @@
                             <field name="req_type" string="Request Type" readonly="state not in ['new']"/>
                             <field name="customer_id" string="Customers" readonly="state not in ['new']" invisible = "req_type != 'customer'"
                                 required = "req_type == 'customer'"
+                                domain="[('customer_type', 'in', ('customer', 'customer_and_vendor'))]"
                                 />
                         </group>
                         <group>
@@ -116,16 +117,15 @@
                         <page string="Requisition Orders ">
                             <field name="requisition_order_ids" readonly="1 if state not in ['new','waiting_department_approval','waiting_head_approval', 'approved'] else 0"/>
                         </page>
-                        <page string="Picking Details"
-                              >
+                        <page string="Picking Details">
                             <group>
                                 <group>
-                                    <field name="source_location_id"/>
-                                    <field name="delivery_type_id"/>
+                                    <field name="source_location_id" domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]"/>
+                                    <field name="delivery_type_id" domain="[('company_id', '=', company_id), ('code', '=', 'incoming')]"/>
                                 </group>
                                 <group>
-                                    <field name="destination_location_id"/>
-                                    <field name="internal_picking_id"/>
+                                    <field name="destination_location_id" domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]"/>
+                                    <field name="internal_picking_id" domain="[('company_id', '=', company_id), ('code', '=', 'internal')]"/>
                                 </group>
                             </group>
                         </page>
@@ -163,6 +163,9 @@
                 <field name="name"/>
                 <field name="employee_id" string="Requested By"/>
                 <field name="dept_id"/>
+                <field name="company_id" optional="show"/>
+                <field name="customer_id"/>
+                <field name="requisition_description"/>
                 <field name="user_id"/>
                 <field name="requisition_date"/>
                 <field name="state" widget="badge"

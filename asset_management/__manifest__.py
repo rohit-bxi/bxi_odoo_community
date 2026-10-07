@@ -30,6 +30,7 @@
         'account',
         'purchase',
         'mail',
+        'bxi_crm',
     ],
     'data': [
         'security/security.xml',
@@ -45,11 +46,11 @@
         'report/depreciation_schedule_report.xml',
         # Views
         'views/asset_views.xml',
+        'views/asset_stage_views.xml',
         'views/asset_vendor_views.xml',
         'views/asset_dashboard_views.xml',
         'views/asset_report.xml',
         'views/stock_movement_report_views.xml',
-        'views/purchase_order_line_view.xml',
     ],
     'assets': {
         'web.assets_backend': [

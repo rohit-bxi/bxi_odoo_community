@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template
+        id="portal_performance_bonus"
+        name="Performance / Bonus Letters"
+    >
+
+        <t t-call="portal.portal_layout">
+
+            <div class="container my-4">
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+
+                    <div>
+                        <h2>Performance / Bonus</h2>
+                        <p class="text-muted mb-0">
+                            View your released performance and bonus letters.
+                        </p>
+                    </div>
+
+                </div>
+
+                <t t-if="appraisals">
+
+                    <div class="row">
+
+                        <t t-foreach="appraisals" t-as="appraisal">
+
+                            <div class="col-lg-4 col-md-6 mb-4">
+
+                                <div class="card h-100 shadow-sm">
+
+                                    <div class="card-body">
+
+                                        <h5 class="card-title">
+                                            <t t-esc="dict(
+                                                appraisal._fields['letter_type'].selection
+                                            ).get(
+                                                appraisal.letter_type,
+                                                appraisal.letter_type
+                                            )"/>
+                                        </h5>
+
+                                        <div class="mb-2">
+
+                                            <strong>Release Date:</strong>
+
+                                            <span t-field="appraisal.release_date"/>
+
+                                        </div>
+
+                                        <t t-if="appraisal.effective_date">
+
+                                            <div class="mb-2">
+
+                                                <strong>Effective Date:</strong>
+
+                                                <span t-field="appraisal.effective_date"/>
+
+                                            </div>
+
+                                        </t>
+
+                                        <div class="mb-3">
+
+                                            <span class="badge bg-success">
+                                                Released
+                                            </span>
+
+                                        </div>
+
+                                        <a
+                                            t-att-href="'/my/performance-bonus/letter/%s' % appraisal.id"
+                                            class="btn btn-primary"
+                                            target="_blank"
+                                        >
+                                            View Letter
+                                        </a>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </t>
+
+                    </div>
+
+                </t>
+
+                <t t-else="">
+
+                    <div class="alert alert-info">
+
+                        No released performance or bonus letters are
+                        currently available.
+
+                    </div>
+
+                </t>
+
+            </div>
+
+        </t>
+
+    </template>
+
+</odoo>

@@ -1,4 +1,5 @@
 from odoo import api, fields, models
+from odoo.tools import SQL
 
 
 class CrmLead(models.Model):
@@ -8,6 +9,7 @@ class CrmLead(models.Model):
         "res.currency",
         string="Currency",
         compute="_compute_company_currency",
+        compute_sudo=True,
         readonly=True,
     )
 
@@ -36,6 +38,18 @@ class CrmLead(models.Model):
         )
         for lead in self:
             lead.company_currency = usd_currency
+
+    def _field_to_sql(self, alias, field_expr, query=None) -> SQL:
+        """Override to ensure SQL aggregations on company_currency (e.g. kanban column totals)
+        evaluate to USD rather than company currency."""
+        if field_expr == "company_currency":
+            usd_currency = (
+                self.env.ref("base.USD", raise_if_not_found=False)
+                or self.env["res.currency"].search([("name", "=", "USD")], limit=1)
+                or self.env.company.currency_id
+            )
+            return SQL("%s", usd_currency.id)
+        return super()._field_to_sql(alias, field_expr, query)
 
     @api.depends("contract_ids")
     def _compute_contract_count(self):

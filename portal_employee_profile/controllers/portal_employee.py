@@ -80,6 +80,7 @@ class EmployeePortal(http.Controller):
         'data_privacy_doc',
         'data_security_doc',
         'passport_doc',
+        'bxi_offer_letter',
     ]
 
     EXPERIENCE_DOCUMENT_FIELDS = [

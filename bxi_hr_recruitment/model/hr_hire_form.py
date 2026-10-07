@@ -172,30 +172,34 @@ class HrHire(models.Model):
     offer_letter_id = fields.Char(
         string="Document ID",
         readonly=True,
-        copy=False
+        copy=False,
     )
     def _generate_offer_letter_id(self):
-        BASE = "66c277d4-e4a-42fb-8a41-10488f7d59b67"
+        BASE = "66c277d4-e4a-42fb-8a41-10488f7d59b102"
+        START_SEQUENCE = 102
+
         self.env.cr.execute("""
             SELECT offer_letter_id
             FROM hr_applicant
-            WHERE offer_letter_id IS NOT NULL
+            WHERE offer_letter_id LIKE %s
             ORDER BY id DESC
             LIMIT 1
-            FOR UPDATE
-        """)
+        """, (BASE + '%',))
+
         row = self.env.cr.fetchone()
 
-        if not row or not row[0]:
-            return BASE
+        if not row:
+            sequence = START_SEQUENCE
+        else:
+            last_id = row[0]
+            last_sequence = last_id[len(BASE):]
 
-        last_id = row[0]
-        parts = last_id.split('-')
-        last_hex = parts[-1]
-        new_int = int(last_hex, 16) + 1
-        new_hex = format(new_int, 'x').zfill(len(last_hex))
-        parts[-1] = new_hex
-        return '-'.join(parts)
+            try:
+                sequence = int(last_sequence) + 1
+            except (ValueError, TypeError):
+                sequence = START_SEQUENCE
+
+        return f"{BASE}{sequence}"
 
     def create_attachment(self, name, data, res_model, res_id):
         if not data:
@@ -469,6 +473,109 @@ class HrHire(models.Model):
                 rec.variable_total
             )
 
+    def create_employee_from_applicant(self):
+        result = super().create_employee_from_applicant()
+
+        for applicant in self:
+            employee = self.env['hr.employee'].search(
+                [
+                    ('name', '=', applicant.partner_name or applicant.name),
+                    ('work_email', '=', applicant.email_from),
+                ],
+                order='id desc',
+                limit=1,
+            )
+
+            if not employee:
+                continue
+
+            # ---------------------------------------------------------
+            # EMPLOYEE DOCUMENTS
+            # ---------------------------------------------------------
+            employee.write({
+                'doc_10th_id': [(6, 0, applicant.doc_10th_id.ids)],
+                'doc_12th_id': [(6, 0, applicant.doc_12th_id.ids)],
+                'doc_graduation_id': [
+                    (6, 0, applicant.doc_graduation_id.ids)
+                ],
+                'doc_master_id': [
+                    (6, 0, applicant.doc_master_id.ids)
+                ],
+                'any_certificate': [
+                    (6, 0, applicant.any_certificate.ids)
+                ],
+                'photograph': [
+                    (6, 0, applicant.photograph.ids)
+                ],
+            })
+
+            # ---------------------------------------------------------
+            # EXPERIENCE
+            # ---------------------------------------------------------
+            for experience in applicant.experience_ids:
+
+                experience_vals = {
+                    'employee_id': employee.id,
+                    'company_name': experience.company_name,
+                    'years': experience.years,
+                    'bank_statement_id': [
+                        (6, 0, experience.bank_statement_id.ids)
+                    ],
+                    'salary_slip_id': [
+                        (6, 0, experience.salary_slip_id.ids)
+                    ],
+                }
+
+                # -----------------------------------------------------
+                # EXPERIENCE CERTIFICATE
+                # Applicant field is Binary
+                # Employee field is Many2many ir.attachment
+                # -----------------------------------------------------
+                if experience.experience_certificate:
+                    attachment = self.env['ir.attachment'].create({
+                        'name': 'Experience Certificate',
+                        'type': 'binary',
+                        'datas': experience.experience_certificate,
+                        'res_model': 'hr.experience.employee',
+                    })
+
+                    experience_vals['experience_certificate'] = [
+                        (6, 0, [attachment.id])
+                    ]
+
+                # -----------------------------------------------------
+                # JOINING LETTER
+                # -----------------------------------------------------
+                if experience.joining_letter:
+                    attachment = self.env['ir.attachment'].create({
+                        'name': 'Joining Letter',
+                        'type': 'binary',
+                        'datas': experience.joining_letter,
+                        'res_model': 'hr.experience.employee',
+                    })
+
+                    experience_vals['joining_letter'] = [
+                        (6, 0, [attachment.id])
+                    ]
+
+                # -----------------------------------------------------
+                # RELIEVING LETTER
+                # -----------------------------------------------------
+                if experience.relieving_letter:
+                    attachment = self.env['ir.attachment'].create({
+                        'name': 'Relieving Letter',
+                        'type': 'binary',
+                        'datas': experience.relieving_letter,
+                        'res_model': 'hr.experience.employee',
+                    })
+
+                    experience_vals['relieving_letter'] = [
+                        (6, 0, [attachment.id])
+                    ]
+
+                self.env['hr.experience.employee'].create(experience_vals)
+
+        return result
     
 class HrApplicantCompany(models.Model):
     _name = 'hr.applicant.company'

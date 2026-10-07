@@ -24,6 +24,7 @@
                            invisible="location_type == 'all'"/>
 
                     <field name="employee_category"/>
+                    <field name="no_of_hired_employee" readonly="0"/>
 
                     <field name="min_experience"/>
 
@@ -88,7 +89,7 @@
                     <button
                         name="action_rm_approve"
                         type="object"
-                        string="RM Approve"
+                        string="Approve"
                         class="btn-primary"
                         invisible="approval_state != 'rm_approval'"
                     />
@@ -97,7 +98,7 @@
                     <button
                         name="action_manager_approve"
                         type="object"
-                        string="Manager Approve"
+                        string="Approve"
                         class="btn-primary"
                         invisible="approval_state != 'manager_approval'"
                     />
@@ -106,7 +107,7 @@
                     <button
                         name="action_finance_approve"
                         type="object"
-                        string="Finance Approve"
+                        string="Approve"
                         class="btn-primary"
                         invisible="approval_state != 'finance_approval'"
                     />
@@ -115,7 +116,7 @@
                     <button
                         name="action_hr_approve"
                         type="object"
-                        string="HR Approve"
+                        string="Approve"
                         class="btn-primary"
                         invisible="approval_state != 'hr_approval'"
                     />

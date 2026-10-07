@@ -26,6 +26,13 @@
                 <t t-set="url" t-value="'/my/payslips'"/>
                 <t t-set="config_card" t-value="True"/>
             </t>
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="icon" t-value="'/portal_employee_profile/static/src/img/user.svg'"/>
+                <t t-set="title">Performance / Bonus</t>
+                <t t-set="text">View Your Performance Letters</t>
+                <t t-set="url" t-value="'/my/performance-bonus'"/>
+                <t t-set="config_card" t-value="True"/>
+            </t>
         </xpath>
 
     </template>

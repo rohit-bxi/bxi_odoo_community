@@ -118,8 +118,10 @@
                 <page string="Final Settlement" invisible="active">
                     <group>
                         <field name="template_company_id"/>
-                        <field name="portal_access"/>
-                        <field name="is_fnf_done" string="Is FNF Done"/>
+                        <field name="is_pf_done"/>
+                        <!-- <field name="portal_access"/> -->
+                        <field name="is_fnf_done" string="Is F&amp;F Done"/>
+                        <field name="expected_clearance" string="F&amp;F Due Date"/>
                         <field name="date_of_leaving" string="Date of Leaving"/>
                         <field name="re_hire" string="Re-Hire"/>
                         <field name="rehire_not_description" string="Rehire Remarks"/>
@@ -150,6 +152,64 @@
                                 filename="form_16_filename"
                                 string="Form 16"/>
                     </group>
+                                        
+
+                    <group string="CLEARANCE STATUS">
+                        <field name="fnf_status"/>
+                    </group>                  
+
+                        <group string="HR Clearance" invisible="fnf_status != 'pending_clearance'" col="2">
+                            <field name="hr_clearance"/>
+                            <field
+                                name="hr_clearance_reason"
+                                invisible="hr_clearance != 'no'"
+                            />
+                            <field
+                                name="hr_clearance_status"
+                                readonly="1"
+                            />
+                        </group>
+
+                        <group string="RM Clearance" invisible="fnf_status != 'pending_clearance'" col="2">
+                            <field name="rm_clearance"/>
+
+                            <field
+                                name="rm_clearance_reason"
+                                invisible="rm_clearance != 'no'"
+                            />
+
+                            <field
+                                name="rm_clearance_status"
+                                readonly="1"
+                            />
+                        </group>
+
+                        <group string="Internal IT Clearance" invisible="fnf_status != 'pending_clearance'" col="2">
+                            <field name="it_clearance"/>
+
+                            <field
+                                name="it_clearance_reason"
+                                invisible="it_clearance != 'no'"
+                            />
+
+                            <field
+                                name="it_clearance_status"
+                                readonly="1"
+                            />
+                        </group>
+
+                        <group string="Finance Clearance" invisible="fnf_status != 'pending_clearance'" col="2">
+                            <field name="finance_clearance"/>
+                            <field
+                                name="finance_clearance_reason"
+                                invisible="finance_clearance != 'no'"
+                            />
+                            <field
+                                name="finance_clearance_status"
+                                readonly="1"
+                            />
+                        </group>
+
                 </page>
             </xpath>
         </field>
@@ -162,6 +222,11 @@
         <field name="arch" type="xml">
             <xpath expr="//page[@name='hr_settings']" position="after">
                 <page string="Employee Documents">
+                     <group name="employee_documents" string="BXI Offer Letter">
+                        <field name="bxi_offer_letter"
+                            widget="many2many_binary"
+                            options="{'accepted_file_extensions': '.jpg,.jpeg,.png,.pdf'}"/>
+                    </group>
                     <group name="name" string="Data Privacy Document">
                         <field name="data_privacy_doc" widget="many2many_binary" />
                         <field name="data_security_doc" widget="many2many_binary"/>

@@ -13,7 +13,7 @@
         </record>
 
         <record id="ir_cron_check_unpaid_leave_consecutive_days" model="ir.cron">
-            <field name="name">Check Unpaid Leaves (7 Days Empty Timesheets)</field>
+            <field name="name">Check Unpaid Leaves (6 Days Empty Timesheets)</field>
             <field name="model_id" ref="model_account_analytic_line"/>
             <field name="state">code</field>
             <field name="code">model._cron_check_unpaid_leaves()</field>

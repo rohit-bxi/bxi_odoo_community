@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_performance_review_rating_list" model="ir.ui.view">
+        <field name="name">performance.review.rating.list</field>
+        <field name="model">performance.review.rating</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence"/>
+                <field name="name"/>
+                <field name="score"/>
+                <field name="description"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_performance_review_ratings" model="ir.actions.act_window">
+        <field name="name">Rating Configuration</field>
+        <field name="res_model">performance.review.rating</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

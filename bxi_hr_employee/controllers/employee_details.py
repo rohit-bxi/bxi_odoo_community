@@ -716,21 +716,11 @@ class EmployeeAPIController(http.Controller):
                 "company": employee.company_id.name or False,
                 "manager": employee.parent_id.name or False,
                 "is_fnf_done" : employee.is_fnf_done or False,
+                "is_pf_done":employee.is_pf_done or False,
                 "re_hire" : employee.re_hire or False,
-                "rehire_not_description": employee.rehire_not_description or False,
-                "date_of_joining": (
-                    employee.emp_date_of_joining.strftime("%Y-%m-%d")
-                    if employee.emp_date_of_joining
-                    else False
-                ),
-                "hr_responsible": (
-                    employee.hr_responsible_id.name
-                    if employee.hr_responsible_id
-                    else False
-                ),
-                "department": (
-                    employee.department_id.name
-                    if employee.department_id
+                "rehire_not_description": (
+                    employee.rehire_not_description
+                    if employee.rehire_not_description
                     else False
                 ),
                 "date_of_joining": (
@@ -752,6 +742,47 @@ class EmployeeAPIController(http.Controller):
                     employee.departure_description
                     if employee.departure_description
                     else False
+                ),
+                "hr_responsible": (
+                    employee.hr_responsible_id.name
+                    if employee.hr_responsible_id
+                    else False
+                ),
+
+                "department": (
+                    employee.department_id.name
+                    if employee.department_id
+                    else False
+                ),
+                "fnf_status": employee.fnf_status or False,
+                "expected_clearance":employee.expected_clearance or False,
+                "hr_clearance": employee.hr_clearance or False,
+                "hr_clearance_reason": (
+                    employee.hr_clearance_reason or False
+                ),
+                "hr_clearance_status": (
+                    employee.hr_clearance_status or False
+                ),
+                "rm_clearance": employee.rm_clearance or False,
+                "rm_clearance_reason": (
+                    employee.rm_clearance_reason or False
+                ),
+                "rm_clearance_status": (
+                    employee.rm_clearance_status or False
+                ),
+                "it_clearance": employee.it_clearance or False,
+                "it_clearance_reason": (
+                    employee.it_clearance_reason or False
+                ),
+                "it_clearance_status": (
+                    employee.it_clearance_status or False
+                ),
+                "finance_clearance": employee.finance_clearance or False,
+                "finance_clearance_reason": (
+                    employee.finance_clearance_reason or False
+                ),
+                "finance_clearance_status": (
+                    employee.finance_clearance_status or False
                 ),
             })
         return {
@@ -918,3 +949,185 @@ class EmployeeAPIController(http.Controller):
             },
         }
 
+    @http.route(
+        '/api/employee/offboarding/tasks/<int:employee_id>',
+        type='http',
+        auth='public',
+        methods=['GET'],
+        csrf=False,
+    )
+    def get_offboarding_tasks(self, employee_id, **kwargs):
+
+        employee = request.env['hr.employee'].sudo().browse(employee_id)
+
+        if not employee.exists():
+            return request.make_json_response(
+                {
+                    'success': False,
+                    'message': 'Employee not found.',
+                },
+                status=404,
+            )
+
+        # Find OFFBOARDING records using offboarding_employee_id
+        onboarding_records = request.env[
+            'employee.onboarding.offboarding'
+        ].sudo().search([
+            ('offboarding_employee_id', '=', employee_id),
+        ])
+
+        if not onboarding_records:
+            return request.make_json_response(
+                {
+                    'success': True,
+                    'employee_id': employee.id,
+                    'employee_name': employee.name,
+                    'total_tasks': 0,
+                    'completed_tasks': 0,
+                    'incomplete_tasks': 0,
+                    'review_pending': 0,
+                    'review_done': 0,
+                    'data': [],
+                    'message': 'No offboarding records found for this employee.',
+                },
+                status=200,
+            )
+
+        # Find tasks linked with the offboarding records
+        tasks = request.env[
+            'employee.onboarding.task'
+        ].sudo().search(
+            [
+                ('onboarding_id', 'in', onboarding_records.ids),
+            ],
+            order='sequence asc, id asc',
+        )
+
+        status_selection = dict(
+            request.env[
+                'employee.onboarding.task'
+            ]._fields['status'].selection
+        )
+
+        review_selection = dict(
+            request.env[
+                'employee.onboarding.task'
+            ]._fields['review'].selection
+        )
+
+        task_data = []
+
+        for task in tasks:
+
+            task_data.append({
+                'task_id': task.id,
+
+                'offboarding_id': (
+                    task.onboarding_id.id
+                    if task.onboarding_id
+                    else False
+                ),
+
+                'offboarding_name': (
+                    task.onboarding_id.name
+                    if task.onboarding_id
+                    else False
+                ),
+
+                'task': task.task,
+
+                'sequence': task.sequence,
+
+                'performed_by': (
+                    task.performed_by.name
+                    if task.performed_by
+                    else False
+                ),
+
+                'status': task.status,
+
+                'status_label': status_selection.get(
+                    task.status
+                ),
+
+                'review': task.review,
+
+                'review_label': review_selection.get(
+                    task.review
+                ),
+            })
+
+        completed_tasks = tasks.filtered(
+            lambda t: t.status == 'completed'
+        )
+
+        incomplete_tasks = tasks.filtered(
+            lambda t: t.status == 'incomplete'
+        )
+
+        review_pending = tasks.filtered(
+            lambda t: t.review == 'pending'
+        )
+
+        review_done = tasks.filtered(
+            lambda t: t.review == 'done'
+        )
+
+        total_tasks = len(tasks)
+
+        completion_percentage = (
+            len(completed_tasks) * 100 / total_tasks
+            if total_tasks
+            else 0
+        )
+
+        review_percentage = (
+            len(review_done) * 100 / total_tasks
+            if total_tasks
+            else 0
+        )
+
+        return request.make_json_response(
+            {
+                'success': True,
+
+                'employee_id': employee.id,
+
+                'employee_name': employee.name,
+
+                'total_offboarding_records': len(
+                    onboarding_records
+                ),
+
+                'total_tasks': total_tasks,
+
+                'completed_tasks': len(
+                    completed_tasks
+                ),
+
+                'incomplete_tasks': len(
+                    incomplete_tasks
+                ),
+
+                'review_pending': len(
+                    review_pending
+                ),
+
+                'review_done': len(
+                    review_done
+                ),
+
+                'completion_percentage': round(
+                    completion_percentage,
+                    2,
+                ),
+
+                'review_percentage': round(
+                    review_percentage,
+                    2,
+                ),
+
+                'data': task_data,
+            },
+            status=200,
+        )
