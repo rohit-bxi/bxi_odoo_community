@@ -229,8 +229,8 @@
                             <group>
                                 <field name="appraisee_remarks" readonly="1"/>
                                 <field name="manager_remarks" readonly="not can_edit_manager"/>
-                                <field name="calibration" readonly="not can_edit_manager"/>
-                                <field name="reviewer_remarks" readonly="not can_edit_manager"/>
+                                <field name="calibration" readonly="1"/>
+                                <field name="reviewer_remarks" readonly="1"/>
                             </group>
                         </page>
 
