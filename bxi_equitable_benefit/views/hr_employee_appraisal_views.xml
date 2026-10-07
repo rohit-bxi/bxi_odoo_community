@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_employee_appraisal_form_eb" model="ir.ui.view">
+        <field name="name">hr.employee.appraisal.form.equitable.benefit</field>
+        <field name="model">hr.employee.appraisal</field>
+        <field name="inherit_id" ref="bxi_hr_performance_bonus.view_hr_employee_appraisal_form"/>
+        <field name="arch" type="xml">
+            <field name="effective_date" position="after">
+                <field name="eb_rating"/>
+                <field name="eb_rating_fy_start" invisible="not eb_rating" required="eb_rating"/>
+            </field>
+        </field>
+    </record>
+</odoo>

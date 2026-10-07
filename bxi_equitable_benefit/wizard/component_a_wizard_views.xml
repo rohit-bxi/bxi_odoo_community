@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bxi_eb_component_a_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.eb.component.a.wizard.form</field>
+        <field name="model">bxi.eb.component.a.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Fill Annualized Component A">
+                <div class="alert alert-info" role="alert">
+                    Component A is the yearly value of Basic + Flexible Allowance from the offer letter.
+                    The proposal comes from the latest released appraisal, otherwise from the basic salary.
+                    Review the amounts, untick the employees to skip, then apply.
+                </div>
+                <group>
+                    <field name="scope" widget="radio"/>
+                    <field name="only_missing"/>
+                </group>
+                <field name="line_ids">
+                    <list editable="bottom" create="0" delete="0">
+                        <field name="apply" widget="boolean_toggle"/>
+                        <field name="employee_id" force_save="1"/>
+                        <field name="currency_id" column_invisible="1"/>
+                        <field name="current_amount" force_save="1"/>
+                        <field name="proposed_amount"/>
+                        <field name="source" force_save="1"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_apply" string="Apply" type="object" class="btn-primary"/>
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_bxi_eb_component_a_wizard" model="ir.actions.act_window">
+        <field name="name">Fill Component A</field>
+        <field name="res_model">bxi.eb.component.a.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
