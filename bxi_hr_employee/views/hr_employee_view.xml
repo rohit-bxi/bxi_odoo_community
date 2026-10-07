@@ -120,8 +120,8 @@
                         <field name="template_company_id"/>
                         <field name="is_pf_done"/>
                         <!-- <field name="portal_access"/> -->
-                        <field name="is_fnf_done" string="Is FNF Done"/>
-                        <field name="expected_clearance" string="FNF Due Date"/>
+                        <field name="is_fnf_done" string="Is F&amp;F Done"/>
+                        <field name="expected_clearance" string="F&amp;F Due Date"/>
                         <field name="date_of_leaving" string="Date of Leaving"/>
                         <field name="re_hire" string="Re-Hire"/>
                         <field name="rehire_not_description" string="Rehire Remarks"/>
