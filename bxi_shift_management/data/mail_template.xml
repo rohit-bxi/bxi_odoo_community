@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Rendered with ctx regularization_rows, regularization_period and regularization_deadline. -->
+        <record id="mail_template_regularization_manager_summary" model="mail.template">
+            <field name="name">Attendance: Regularization Summary (Manager)</field>
+            <field name="model_id" ref="hr.model_hr_employee"/>
+            <field name="subject">Team attendance / timesheet exceptions pending (deadline {{ ctx.get('regularization_deadline') or '' }})</field>
+            <field name="email_from">hrsupport@bxitech.com</field>
+            <field name="email_to">{{ object.work_email }}</field>
+            <!-- Use email_to above, not the record default recipients -->
+            <field name="use_default_to" eval="False"/>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px; font-size: 13px;">
+    <p>Dear <t t-out="object.name or ''"/>,</p>
+    <p>
+        The following working days of your team for
+        <strong><t t-out="ctx.get('regularization_period') or ''"/></strong>
+        have a missing check-in / check-out or timesheet without an approved
+        Exception Working Request:
+    </p>
+    <table style="border-collapse: collapse; font-size: 13px;" cellpadding="6">
+        <tr style="background-color: #f2f2f2;">
+            <th style="border: 1px solid #ddd; text-align: left;">Employee</th>
+            <th style="border: 1px solid #ddd; text-align: left;">Date</th>
+            <th style="border: 1px solid #ddd; text-align: left;">Issue</th>
+            <th style="border: 1px solid #ddd; text-align: left;">Status</th>
+        </tr>
+        <t t-foreach="ctx.get('regularization_rows') or []" t-as="row">
+            <tr>
+                <td style="border: 1px solid #ddd;"><t t-out="row['employee']"/></td>
+                <td style="border: 1px solid #ddd;"><t t-out="row['date']"/></td>
+                <td style="border: 1px solid #ddd;"><t t-out="row['issue']"/></td>
+                <td style="border: 1px solid #ddd;"><t t-out="row['status']"/></td>
+            </tr>
+        </t>
+    </table>
+    <p>
+        The requests must be created and approved on or before
+        <strong><t t-out="ctx.get('regularization_deadline') or ''"/></strong>.
+        Days without an approved request by then are marked as
+        <strong>Loss of Pay (LOP)</strong>.
+    </p>
+    <p>Regards,<br/>HR Support</p>
+</div>
+            </field>
+        </record>
+
+        <record id="mail_template_regularization_hr_summary" model="mail.template">
+            <field name="name">Attendance: Regularization Summary (HR)</field>
+            <field name="model_id" ref="base.model_res_company"/>
+            <field name="subject">{{ object.name }}: attendance / timesheet exceptions pending (deadline {{ ctx.get('regularization_deadline') or '' }})</field>
+            <field name="email_from">hrsupport@bxitech.com</field>
+            <field name="email_to">hrsupport@bxitech.com</field>
+            <!-- Use email_to above, not the record default recipients -->
+            <field name="use_default_to" eval="False"/>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px; font-size: 13px;">
+    <p>Dear HR,</p>
+    <p>
+        The following working days of <strong><t t-out="object.name or ''"/></strong> for
+        <strong><t t-out="ctx.get('regularization_period') or ''"/></strong>
+        have a missing check-in / check-out or timesheet without an approved
+        Exception Working Request:
+    </p>
+    <table style="border-collapse: collapse; font-size: 13px;" cellpadding="6">
+        <tr style="background-color: #f2f2f2;">
+            <th style="border: 1px solid #ddd; text-align: left;">Employee</th>
+            <th style="border: 1px solid #ddd; text-align: left;">Date</th>
+            <th style="border: 1px solid #ddd; text-align: left;">Issue</th>
+            <th style="border: 1px solid #ddd; text-align: left;">Status</th>
+        </tr>
+        <t t-foreach="ctx.get('regularization_rows') or []" t-as="row">
+            <tr>
+                <td style="border: 1px solid #ddd;"><t t-out="row['employee']"/></td>
+                <td style="border: 1px solid #ddd;"><t t-out="row['date']"/></td>
+                <td style="border: 1px solid #ddd;"><t t-out="row['issue']"/></td>
+                <td style="border: 1px solid #ddd;"><t t-out="row['status']"/></td>
+            </tr>
+        </t>
+    </table>
+    <p>
+        Days without an approved request on
+        <strong><t t-out="ctx.get('regularization_deadline') or ''"/></strong>
+        are marked as <strong>Loss of Pay (LOP)</strong>.
+    </p>
+    <p>Regards,<br/>HR Support</p>
+</div>
+            </field>
+        </record>
+    </data>
+</odoo>

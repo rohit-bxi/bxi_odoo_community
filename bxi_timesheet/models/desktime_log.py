@@ -86,7 +86,8 @@ class BxiDesktimeLog(models.Model):
         compute='_compute_shift_times',
         store=True,
         digits=(10, 2),
-        help='Time present within the shift working hours, lunch break included.',
+        help='Time present within the shift working hours, lunch break included, '
+             'never more than the ACS (productive) hours.',
     )
 
     # ─────────────────────────────────────────────
@@ -197,7 +198,7 @@ class BxiDesktimeLog(models.Model):
             dt = str(rec.date) if rec.date else ''
             rec.display_name = f'{emp} / {dt}'
 
-    @api.depends('arrived', 'left', 'date', 'employee_id')
+    @api.depends('arrived', 'left', 'date', 'employee_id', 'productive_hours')
     def _compute_shift_times(self):
         for rec in self:
             rec.shift_arrived = False
@@ -226,7 +227,8 @@ class BxiDesktimeLog(models.Model):
                 max((min(shift_left, stop) - max(shift_arrived, start)).total_seconds(), 0)
                 for start, stop, _attendance in intervals
             )
-            rec.shift_productive_hours = round(seconds / 3600.0, 4)
+            # Never more than the ACS hours
+            rec.shift_productive_hours = min(round(seconds / 3600.0, 4), rec.productive_hours or 0.0)
 
     def _get_shift_intervals(self):
         """Working intervals of the employee's schedule on the log date, as a sorted list of

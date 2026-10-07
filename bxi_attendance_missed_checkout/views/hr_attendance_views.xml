@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="hr_attendance_view_form_inherit_missed_checkout" model="ir.ui.view">
+        <field name="name">hr.attendance.view.form.inherit.missed.checkout</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="bxi_attendance.hr_attendance_view_form_inherit_geo"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='is_auto_checkout']" position="after">
+                <field name="is_missed_checkout" readonly="1" invisible="not is_missed_checkout"/>
+                <field name="lwp_leave_id" readonly="1" invisible="not lwp_leave_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_attendance_tree_inherit_missed_checkout" model="ir.ui.view">
+        <field name="name">hr.attendance.view.tree.inherit.missed.checkout</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="bxi_attendance.view_attendance_tree_inherit_geo"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='is_auto_checkout']" position="after">
+                <field name="is_missed_checkout" optional="show"
+                       decoration-danger="is_missed_checkout"/>
+                <field name="lwp_leave_id" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="hr_attendance_view_filter_inherit_missed_checkout" model="ir.ui.view">
+        <field name="name">hr.attendance.view.filter.inherit.missed.checkout</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='auto_check']" position="after">
+                <filter string="Missed Check-out" name="missed_checkout"
+                        domain="[('is_missed_checkout', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -190,13 +190,20 @@ class HrAttendance(models.Model):
             ShiftException = self.env[
                 "bxi.shift.exception"
             ].sudo()
+
+            domain = [
+                ("employee_id", "=", employee.id),
+                ("state", "=", "approved"),
+                ("date_from", "<=", check_date),
+                ("date_to", ">=", check_date),
+            ]
+
+            # Attendance regularization requests do not change the location.
+            if "category" in ShiftException._fields:
+                domain.append(("category", "=", "exception"))
+
             exceptions = ShiftException.search(
-                [
-                    ("employee_id", "=", employee.id),
-                    ("state", "=", "approved"),
-                    ("date_from", "<=", check_date),
-                    ("date_to", ">=", check_date),
-                ],
+                domain,
                 order="id desc",
             )
             for exception in exceptions:

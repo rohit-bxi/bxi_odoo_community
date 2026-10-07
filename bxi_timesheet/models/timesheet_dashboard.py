@@ -174,6 +174,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
         shift_name = calendar.name if calendar else _('No Shift')
         holiday_dates = self._get_public_holiday_dates(target_employee, start_date, end_date, user_tz)
         leave_dates = self._get_leave_dates(target_employee, start_date, end_date)
+        attendance_overrides = self._get_attendance_overrides(target_employee, start_date, end_date)
 
         # 5. Retrieve grid lines for target employee to compute daily totals first
         grid_lines = []
@@ -272,6 +273,11 @@ class BxiTimesheetDashboard(models.AbstractModel):
                 day_shift_h = 0.0
 
             day_status = self._get_day_status(target_employee, d, holiday_dates, leave_dates)
+
+            override = attendance_overrides.get((target_employee.id, d)) if target_employee else None
+            if override:
+                shift_prod_h = override['shift_prod']
+                day_status = override['status'] or day_status
 
             if day_shift_h > 0:
                 shift_hours_str = f"{shift_name} ({self._float_to_time(day_shift_h)})"
@@ -380,6 +386,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
 
             team_holiday_dates = self._get_public_holiday_dates(team_members, start_date, end_date, user_tz)
             team_leave_dates = self._get_leave_dates(team_members, start_date, end_date)
+            team_attendance_overrides = self._get_attendance_overrides(team_members, start_date, end_date)
 
             # Fetch ONLY approved timesheet lines — scoped to company
             domain = [
@@ -436,6 +443,11 @@ class BxiTimesheetDashboard(models.AbstractModel):
                     day_dt_log = member_dt_logs.filtered(lambda l: l.date == d_val)[:1]
                     member_prod = day_dt_log.productive_hours
                     member_shift_prod = day_dt_log.shift_productive_hours
+                    member_day_status = self._get_day_status(member, d_val, team_holiday_dates, team_leave_dates)
+                    override = team_attendance_overrides.get((member.id, d_val))
+                    if override:
+                        member_shift_prod = override['shift_prod']
+                        member_day_status = override['status'] or member_day_status
                     total_member_prod += member_prod
                     total_member_shift_prod += member_shift_prod
 
@@ -448,7 +460,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
                         'prod_hours_raw': member_prod,
                         'shift_prod_hours': self._float_to_time(member_shift_prod),
                         'shift_prod_hours_raw': member_shift_prod,
-                        'day_status': self._get_day_status(member, d_val, team_holiday_dates, team_leave_dates),
+                        'day_status': member_day_status,
                         'leave': False,
                         'is_today': d_dict['is_today']
                     })
@@ -562,6 +574,11 @@ class BxiTimesheetDashboard(models.AbstractModel):
                 result[leave.employee_id.id].add(day)
                 day += timedelta(days=1)
         return result
+
+    def _get_attendance_overrides(self, employees, start_date, end_date):
+        """Hook: {(employee_id, date): {'shift_prod': hours, 'status': 'absent'/'lop'/False}}
+        replacing the DeskTime shift wise production hours and, when set, the day status."""
+        return {}
 
     def _get_day_status(self, employee, day, holiday_dates, leave_dates):
         """'ph' or 'leave' on a working day of the employee, else False."""
