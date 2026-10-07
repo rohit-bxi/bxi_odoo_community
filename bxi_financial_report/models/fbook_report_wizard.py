@@ -1212,14 +1212,18 @@ class FbookReportWizard(models.TransientModel):
                     'Unknown Vendor'
                 ).strip()
                 partner_key = partner_name.strip().lower()
+                tags = partner.category_id.mapped('name') or (partner.commercial_partner_id.category_id.mapped('name') if partner.commercial_partner_id else [])
+                tag_str = ', '.join([t for t in tags if t and t.upper() != 'NA'])
+                if not tag_str and 'vendor_category' in partner._fields and partner.vendor_category:
+                    vcat_dict = dict(partner._fields['vendor_category'].selection or [])
+                    tag_str = vcat_dict.get(partner.vendor_category, '')
+                description = tag_str
                 b_date = bill.invoice_date or bill.date
                 if not b_date:
                     continue
                 b_date_str = b_date.strftime('%Y-%m-%d')
 
                 if partner_key not in vendor_data_map:
-                    tags = partner.category_id.mapped('name') or (partner.commercial_partner_id.category_id.mapped('name') if partner.commercial_partner_id else [])
-                    description = ', '.join([t for t in tags if t]) if tags else ''
                     vendor_data_map[partner_key] = {
                         'name': partner_name,
                         'description': description,
@@ -1232,10 +1236,8 @@ class FbookReportWizard(models.TransientModel):
                         'y2_q3': 0.0,
                         'y2_q4': 0.0,
                     }
-                elif not vendor_data_map[partner_key].get('description'):
-                    tags = partner.category_id.mapped('name') or (partner.commercial_partner_id.category_id.mapped('name') if partner.commercial_partner_id else [])
-                    if tags:
-                        vendor_data_map[partner_key]['description'] = ', '.join([t for t in tags if t])
+                elif not vendor_data_map[partner_key].get('description') and description:
+                    vendor_data_map[partner_key]['description'] = description
 
                 sign = -1.0 if bill.move_type == 'in_refund' else 1.0
                 conv_y1 = sign * custom_convert(
@@ -1290,7 +1292,11 @@ class FbookReportWizard(models.TransientModel):
                     ).strip()
                     partner_key = partner_name.strip().lower()
                     tags = partner.category_id.mapped('name') or (partner.commercial_partner_id.category_id.mapped('name') if partner.commercial_partner_id else [])
-                    description = ', '.join([t for t in tags if t]) if tags else ''
+                    tag_str = ', '.join([t for t in tags if t and t.upper() != 'NA'])
+                    if not tag_str and 'vendor_category' in partner._fields and partner.vendor_category:
+                        vcat_dict = dict(partner._fields['vendor_category'].selection or [])
+                        tag_str = vcat_dict.get(partner.vendor_category, '')
+                    description = tag_str
                 else:
                     partner_name = 'Expenses Paid by Company'
                     partner_key = 'unassigned_company_expense'
@@ -1367,6 +1373,7 @@ class FbookReportWizard(models.TransientModel):
                 continue
 
             vendor_rows.append({
+                'key': v_id,
                 'vendor': v_info['name'],
                 'description': v_info.get('description', ''),
                 'y1_q1': target_currency.round(y1_q1),

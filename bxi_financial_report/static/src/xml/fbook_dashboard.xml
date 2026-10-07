@@ -314,6 +314,7 @@
                 z-index: 2;
                 background-color: #f8fafc;
                 box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+                text-align: left;
             }
             .fbook-table thead .fbook-sticky-col,
             .fbook-table thead th.main-header.fbook-sticky-col,
@@ -872,11 +873,11 @@
                 <div class="fbook-scroll-hint"><i class="fa fa-arrows-h"/> Scroll horizontally</div>
             </div>
             <div class="fbook-table-wrapper">
-                <table class="fbook-table" style="min-width: 1280px;">
+                <table class="fbook-table" style="min-width: 1050px;">
                     <thead>
                         <!-- Row 1: FY Labels -->
                         <tr>
-                            <th colspan="5" class="main-header" style="text-align: left;"><t t-esc="state.report_data.currency_symbol"/></th>
+                            <th colspan="3" class="main-header" style="text-align: left;"><t t-esc="state.report_data.currency_symbol"/></th>
                             <th colspan="4" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year1_label"/></th>
                             <th colspan="4" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year2_label"/></th>
                         </tr>
@@ -884,8 +885,6 @@
                         <tr>
                             <th class="fbook-sticky-col" style="text-align: left;">Customers</th>
                             <th style="text-align: left;">Industry</th>
-                            <th style="text-align: left;">Business</th>
-                            <th style="text-align: left;">Engagement</th>
                             <th style="text-align: right; width: 110px;">Contract Value</th>
                             <th style="text-align: right; width: 90px;">Booking</th>
                             <th style="text-align: right; width: 90px;">Billed</th>
@@ -900,10 +899,8 @@
                     <tbody>
                         <t t-foreach="state.report_data.contracts_data" t-as="c" t-key="c.customers">
                             <tr class="metric-row">
-                                <td class="fbook-sticky-col" style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-weight: 700; color: #475569; font-style: italic;' : ''"><t t-esc="c.customers"/></td>
-                                <td style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-style: italic; color: #64748b;' : ''"><t t-esc="c.industry"/></td>
-                                <td style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-style: italic; color: #64748b;' : ''"><t t-esc="c.business"/></td>
-                                <td style="text-align: left;" t-att-style="c.customers == 'Others' ? 'font-style: italic; color: #64748b;' : ''"><t t-esc="c.engagement"/></td>
+                                <td class="fbook-sticky-col" t-att-style="'text-align: left;' + (c.customers == 'Others' ? ' font-weight: 700; color: #475569; font-style: italic;' : '')"><t t-esc="c.customers"/></td>
+                                <td t-att-style="'text-align: left;' + (c.customers == 'Others' ? ' font-style: italic; color: #64748b;' : '')"><t t-esc="c.industry"/></td>
                                 <td><t t-out="formatAmt(c.contract_value)"/></td>
                                 <!-- Year 1 -->
                                 <td><t t-out="formatAmt(c.y1_booking)"/></td>
@@ -919,7 +916,7 @@
                         </t>
                         <!-- Totals row -->
                         <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
-                            <td class="fbook-sticky-col" colspan="4" style="text-align: left;">Total</td>
+                            <td class="fbook-sticky-col" colspan="2" style="text-align: left;">Total</td>
                             <td><t t-out="formatAmt(state.report_data.total_contract_value)"/></td>
                             <!-- Year 1 -->
                             <td><t t-out="formatAmt(state.report_data.total_y1_booking)"/></td>
@@ -993,23 +990,35 @@
                 <div class="fbook-scroll-hint"><i class="fa fa-arrows-h"/> Scroll horizontally</div>
             </div>
             <div class="fbook-table-wrapper">
-                <table class="fbook-table" style="min-width: 800px;">
+                <table class="fbook-table" style="min-width: 960px; table-layout: fixed;">
+                    <colgroup>
+                        <!-- Part 1: Month (33.33%) -->
+                        <col style="width: 33.33%;"/>
+                        <!-- Part 2: Year 1 (33.33% total) -->
+                        <col style="width: 11.11%;"/>
+                        <col style="width: 11.11%;"/>
+                        <col style="width: 11.11%;"/>
+                        <!-- Part 3: Year 2 (33.34% total) -->
+                        <col style="width: 11.11%;"/>
+                        <col style="width: 11.11%;"/>
+                        <col style="width: 11.12%;"/>
+                    </colgroup>
                     <thead>
                         <!-- Row 1: FY Labels -->
                         <tr>
-                            <th colspan="1" class="main-header" style="text-align: left;"><t t-esc="state.report_data.currency_symbol"/></th>
-                            <th colspan="3" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year1_label"/></th>
-                            <th colspan="3" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year2_label"/></th>
+                            <th colspan="1" class="main-header" style="text-align: left; width: 33.33%;"><t t-esc="state.report_data.currency_symbol"/></th>
+                            <th colspan="3" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'" style="width: 33.33%;"><t t-esc="state.report_data.year1_label"/></th>
+                            <th colspan="3" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'" style="width: 33.34%;"><t t-esc="state.report_data.year2_label"/></th>
                         </tr>
                         <!-- Row 2: Column names -->
                         <tr>
                             <th class="fbook-sticky-col" style="text-align: left;">Month</th>
-                            <th style="text-align: right; width: 120px;">In</th>
-                            <th style="text-align: right; width: 120px;">Out</th>
-                            <th style="text-align: right; width: 130px;">Remaining</th>
-                            <th style="text-align: right; width: 120px;">In</th>
-                            <th style="text-align: right; width: 120px;">Out</th>
-                            <th style="text-align: right; width: 130px;">Remaining</th>
+                            <th style="text-align: right;">In</th>
+                            <th style="text-align: right;">Out</th>
+                            <th style="text-align: right;">Remaining</th>
+                            <th style="text-align: right;">In</th>
+                            <th style="text-align: right;">Out</th>
+                            <th style="text-align: right;">Remaining</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1140,7 +1149,7 @@
                         <!-- Row 2: Quarter Headers -->
                         <tr>
                             <th class="fbook-sticky-col" style="text-align: left; min-width: 220px; background: #f8fafc; font-weight: 700;">Vendor</th>
-                            <th style="text-align: left; min-width: 180px; background: #f8fafc; font-weight: 700;">Description</th>
+                            <th style="text-align: left; min-width: 180px; background: #f8fafc; font-weight: 700;">Category</th>
                             <!-- Year 1 Quarters -->
                             <th class="text-center" style="width: 85px;">Q1</th>
                             <th class="text-center" style="width: 85px;">Q2</th>
@@ -1157,7 +1166,7 @@
                     </thead>
                     <tbody>
                         <t t-if="state.report_data.vendor_rows and state.report_data.vendor_rows.length">
-                            <t t-foreach="state.report_data.vendor_rows" t-as="v" t-key="v.vendor">
+                            <t t-foreach="state.report_data.vendor_rows" t-as="v" t-key="v.key or (v.vendor + '_' + (v.description or ''))">
                                 <tr class="metric-row">
                                     <td class="fbook-sticky-col" style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="v.vendor"/></td>
                                     <td style="text-align: left; color: #475569;"><t t-esc="v.description"/></td>
