@@ -5,3 +5,5 @@ access_bxi_deputation_officer,bxi.deputation.officer,model_bxi_deputation,group_
 access_bxi_deputation_manager,bxi.deputation.manager,model_bxi_deputation,group_deputation_manager,1,1,1,1
 access_bxi_deputation_country_rule_user,bxi.deputation.country.rule.user,model_bxi_deputation_country_rule,base.group_user,1,0,0,0
 access_bxi_deputation_country_rule_manager,bxi.deputation.country.rule.manager,model_bxi_deputation_country_rule,group_deputation_manager,1,1,1,1
+access_bxi_deputation_payslip_retro_payroll,bxi.deputation.payslip.retro.payroll,model_bxi_deputation_payslip_retro,om_hr_payroll.group_hr_payroll_user,1,0,0,0
+access_bxi_deputation_payslip_retro_manager,bxi.deputation.payslip.retro.manager,model_bxi_deputation_payslip_retro,om_hr_payroll.group_hr_payroll_manager,1,1,1,1

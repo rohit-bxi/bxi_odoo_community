@@ -1,18 +1,19 @@
 {
     'name': 'BXI Salary Advance',
     'category': 'Human Resources/Payroll',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.2.0',
     'sequence': 1,
     'author': 'BXI Technologies',
     'website': 'https://bxitech.com/',
     'summary': 'Salary Advance Policy: requests, approvals, disbursement and EMI recovery through payroll',
     'description': """
         Implements the BXI Tech Salary Advance Policy.
-        - Category I: salary not processed (India), recovered in full from the next payroll
-        - Category II: emergencies, recovered in 3 interest-free EMIs
-        - Category III: housing deposit / rent, recovered over the 6/12-month tenancy
-        - Eligibility: full-time employees, 6 months of service (waived for Category I joining/transfer delays), not on notice period, no outstanding advance, up to 75% of the monthly salary
-        - Category I only when the last payroll did not pay the employee; recovered by the next payroll together with the arrears
+        - Category I: salary not processed (India), recovery starts with the next payroll
+        - Category II: emergencies
+        - Category III: housing deposit / rent
+        - Every category: up to 50% of the monthly salary, recovered in 3 interest-free EMIs; a higher amount or another number of EMIs needs an exception approval
+        - Eligibility: full-time employees, 1 year of service, not on notice period, no outstanding advance
+        - Category I only when the last payroll did not pay the employee; recovery starts with the next payroll, which pays the arrears
         - Policy document linked on the portal; acknowledgement required before applying
         - Reporting Manager approval, HR processing within 7 working days, exception approval and Finance disbursement
         - Loan undertaking for housing advances signed electronically

@@ -49,8 +49,8 @@ class TestDesktimeShiftTimes(TransactionCase):
         self.assertEqual(log.shift_left, datetime(2026, 9, 28, 12, 30))  # 18:00 IST
         self.assertAlmostEqual(log.shift_productive_hours, 9.0, places=2)  # lunch included
 
-    def test_inside_shift_keeps_actual_times_and_counts_break(self):
-        # 09:40 -> 17:00 IST: 7h20, lunch break included
+    def test_inside_shift_keeps_actual_times_and_includes_break(self):
+        # 09:40 -> 17:00 IST: 7h20 including the 1h lunch break
         log = self._log(datetime(2026, 9, 28, 4, 10), datetime(2026, 9, 28, 11, 30))
         self.assertEqual(log.shift_arrived, log.arrived)
         self.assertEqual(log.shift_left, log.left)
@@ -107,3 +107,10 @@ class TestDesktimeShiftTimes(TransactionCase):
         log.action_recompute_shift_times()
         self.assertEqual(log.shift_arrived, datetime(2026, 9, 28, 4, 30))  # 10:00 IST
         self.assertAlmostEqual(log.shift_productive_hours, 8.0, places=2)
+
+    def test_presence_during_lunch_only(self):
+        # 13:10 -> 13:50 IST, entirely inside the lunch break: counted
+        log = self._log(datetime(2026, 9, 28, 7, 40), datetime(2026, 9, 28, 8, 20))
+        self.assertEqual(log.shift_arrived, log.arrived)
+        self.assertEqual(log.shift_left, log.left)
+        self.assertAlmostEqual(log.shift_productive_hours, 40 / 60, places=2)

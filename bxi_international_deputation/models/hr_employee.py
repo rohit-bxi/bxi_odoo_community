@@ -62,6 +62,28 @@ class HrEmployee(models.Model):
                 current += timedelta(days=1)
         return len(off_days)
 
+    def _get_days_abroad(self, date_from, date_to):
+        """Days between ``date_from`` and ``date_to`` (inclusive) the employee is abroad on
+        deputation: from the arrival date to the day before the return landing, projected to
+        the planned end date (or ``date_to``) while the employee has not returned."""
+        self.ensure_one()
+        deputations = self.env['bxi.deputation'].sudo().search([
+            ('employee_id', '=', self.id),
+            ('state', 'in', ('transferred', 'returned')),
+            ('arrival_date', '<=', date_to),
+        ])
+        days = set()
+        for deputation in deputations:
+            if deputation.return_landing_date:
+                last = deputation.return_landing_date - timedelta(days=1)
+            else:
+                last = deputation.planned_end_date or date_to
+            current = max(deputation.arrival_date, date_from)
+            while current <= min(last, date_to):
+                days.add(current)
+                current += timedelta(days=1)
+        return len(days)
+
     def action_open_deputations(self):
         self.ensure_one()
         action = self.env['ir.actions.act_window']._for_xml_id('bxi_international_deputation.action_bxi_deputation')

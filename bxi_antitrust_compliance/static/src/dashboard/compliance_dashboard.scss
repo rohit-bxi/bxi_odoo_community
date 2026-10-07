@@ -1,0 +1,400 @@
+// Compliance Dashboard. Colours come from Odoo's SCSS variables, which the dark theme bundle recompiles.
+.o_compliance_dashboard {
+    --cd-radius: 0.75rem;
+    --cd-gap: 1rem;
+    --cd-surface: #{$o-view-background-color};
+    --cd-border: #{$border-color};
+    --cd-muted: #{$text-muted};
+    --cd-text: #{$o-main-text-color};
+    --cd-track: #{$o-gray-200};
+    --cd-hover: #{$o-gray-100};
+    --cd-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+    --cd-shadow-hover: 0 10px 24px rgba(16, 24, 40, 0.12);
+    background: $o-webclient-background-color;
+
+    .o_cd_container {
+        max-width: 1480px;
+        margin: 0 auto;
+        padding: 1.5rem;
+    }
+
+    // Tones shared by cards, chips, badges and the banner
+    .o_cd_tone_success { --cd-tone: #{$success}; --cd-tone-soft: #{rgba($success, 0.12)}; }
+    .o_cd_tone_warning { --cd-tone: #{$warning}; --cd-tone-soft: #{rgba($warning, 0.16)}; }
+    .o_cd_tone_danger { --cd-tone: #{$danger}; --cd-tone-soft: #{rgba($danger, 0.12)}; }
+    .o_cd_tone_info { --cd-tone: #{$info}; --cd-tone-soft: #{rgba($info, 0.12)}; }
+
+    // Header
+    .o_cd_header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: var(--cd-gap);
+        margin-bottom: 1.25rem;
+    }
+    .o_cd_title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    .o_cd_subtitle, .o_cd_muted, .o_cd_updated {
+        color: var(--cd-muted);
+        font-size: 0.875rem;
+    }
+    .o_cd_toolbar {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .o_cd_period {
+        width: auto;
+    }
+    .o_cd_loading {
+        display: flex;
+        justify-content: center;
+        padding: 5rem 0;
+        color: var(--cd-muted);
+    }
+
+    // Attention banner
+    .o_cd_banner {
+        display: flex;
+        align-items: center;
+        gap: 0.875rem;
+        padding: 0.875rem 1.25rem;
+        margin-bottom: var(--cd-gap);
+        border-radius: var(--cd-radius);
+        background: var(--cd-tone-soft);
+        border: 1px solid var(--cd-tone);
+        color: var(--cd-text);
+    }
+    .o_cd_banner_icon {
+        font-size: 1.4rem;
+        color: var(--cd-tone);
+    }
+
+    // Cards
+    .o_cd_card {
+        background: var(--cd-surface);
+        border: 1px solid var(--cd-border);
+        border-radius: var(--cd-radius);
+        box-shadow: var(--cd-shadow);
+    }
+    .o_cd_kpis {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--cd-gap);
+        margin-bottom: var(--cd-gap);
+        @media (max-width: 1199.98px) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        @media (max-width: 767.98px) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+    .o_cd_kpi {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1.1rem 1.25rem 1rem;
+        cursor: pointer;
+        overflow: hidden;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+
+        &::before {
+            content: "";
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 4px;
+            background: var(--cd-tone);
+        }
+        &:hover, &:focus-visible {
+            transform: translateY(-2px);
+            box-shadow: var(--cd-shadow-hover);
+            border-color: var(--cd-tone);
+            outline: none;
+            .o_cd_kpi_go {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    }
+    .o_cd_kpi_head {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+    }
+    .o_cd_kpi_icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 0.6rem;
+        background: var(--cd-tone-soft);
+        color: var(--cd-tone);
+        font-size: 1.05rem;
+    }
+    .o_cd_kpi_title {
+        flex-grow: 1;
+        font-weight: 600;
+        color: var(--cd-text);
+    }
+    .o_cd_kpi_go {
+        color: var(--cd-muted);
+        font-size: 1.25rem;
+        opacity: 0;
+        transform: translateX(-4px);
+        transition: all 0.15s ease;
+    }
+    .o_cd_kpi_body {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .o_cd_kpi_value {
+        font-size: 2.25rem;
+        font-weight: 700;
+        line-height: 1.1;
+        color: var(--cd-text);
+    }
+    .o_cd_kpi_caption {
+        color: var(--cd-muted);
+        font-size: 0.82rem;
+    }
+    .o_cd_ring {
+        width: 64px;
+        height: 64px;
+        flex-shrink: 0;
+        transform: rotate(-90deg);
+        circle {
+            fill: none;
+            stroke-width: 9;
+        }
+        .o_cd_ring_track {
+            stroke: var(--cd-track);
+        }
+        .o_cd_ring_value {
+            stroke: var(--cd-tone);
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.6s ease;
+        }
+    }
+
+    // Chips and badges
+    .o_cd_chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-top: auto;
+    }
+    .o_cd_chip, .o_cd_badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        background: var(--cd-tone-soft);
+        color: var(--cd-tone);
+        font-size: 0.78rem;
+        line-height: 1.4;
+        white-space: nowrap;
+    }
+    .o_cd_chip {
+        cursor: pointer;
+        transition: border-color 0.15s ease, filter 0.15s ease;
+        &:hover {
+            border-color: var(--cd-tone);
+            filter: brightness(0.95);
+        }
+    }
+
+    // Panels
+    .o_cd_grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--cd-gap);
+        margin-bottom: var(--cd-gap);
+        @media (max-width: 1199.98px) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+    .o_cd_span_2 {
+        grid-column: span 2;
+        @media (max-width: 1199.98px) {
+            grid-column: span 1;
+        }
+    }
+    .o_cd_panel {
+        padding: 1.1rem 1.25rem;
+        min-width: 0;
+    }
+    .o_cd_panel_head {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin: 0 0 0.15rem;
+        }
+    }
+    .o_cd_empty {
+        padding: 2rem 0;
+        text-align: center;
+        color: var(--cd-muted);
+    }
+
+    // Trend chart
+    .o_cd_legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+    .o_cd_legend_item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.2rem 0.55rem;
+        border: 1px solid var(--cd-border);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--cd-text);
+        font-size: 0.78rem;
+        &.o_cd_off {
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+    }
+    .o_cd_swatch {
+        width: 0.65rem;
+        height: 0.65rem;
+        border-radius: 3px;
+    }
+    .o_cd_chart {
+        display: flex;
+        align-items: stretch;
+        gap: 0.5rem;
+        height: 220px;
+        padding-top: 1rem;
+        border-bottom: 1px solid var(--cd-border);
+        overflow-x: auto;
+    }
+    .o_cd_chart_group {
+        flex: 1 0 56px;
+        display: flex;
+        flex-direction: column;
+    }
+    .o_cd_chart_bars {
+        flex-grow: 1;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 3px;
+    }
+    .o_cd_bar_slot {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+        width: 14px;
+        height: 100%;
+    }
+    .o_cd_bar {
+        width: 100%;
+        border-radius: 4px 4px 0 0;
+        cursor: pointer;
+        transition: height 0.4s ease, opacity 0.15s ease;
+        &:hover {
+            opacity: 0.8;
+        }
+    }
+    .o_cd_bar_value {
+        font-size: 0.68rem;
+        color: var(--cd-muted);
+        margin-bottom: 2px;
+    }
+    .o_cd_chart_label {
+        padding-top: 0.4rem;
+        text-align: center;
+        font-size: 0.75rem;
+        color: var(--cd-muted);
+    }
+
+    // Progress lists (policies, outcomes)
+    .o_cd_policy, .o_cd_outcome {
+        padding: 0.6rem 0.5rem;
+        border-radius: 0.5rem;
+    }
+    .o_cd_policy {
+        cursor: pointer;
+        &:hover, &:focus-visible {
+            background: var(--cd-hover);
+            outline: none;
+        }
+    }
+    .o_cd_policy_row {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-bottom: 0.35rem;
+        font-size: 0.875rem;
+    }
+    .o_cd_policy_name {
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .o_cd_policy_rate {
+        font-weight: 700;
+    }
+    .o_cd_progress {
+        height: 6px;
+        border-radius: 999px;
+        background: var(--cd-track);
+        overflow: hidden;
+    }
+    .o_cd_progress_bar {
+        height: 100%;
+        border-radius: 999px;
+        transition: width 0.6s ease;
+    }
+    .o_cd_policy_meta {
+        margin-top: 0.35rem;
+        font-size: 0.78rem;
+        color: var(--cd-muted);
+    }
+
+    // Worklist
+    .o_cd_table {
+        font-size: 0.875rem;
+        th {
+            color: var(--cd-muted);
+            font-weight: 500;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            border-bottom-width: 1px;
+        }
+        tbody tr {
+            cursor: pointer;
+        }
+        td {
+            vertical-align: middle;
+        }
+    }
+    .o_cd_ellipsis {
+        max-width: 320px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}

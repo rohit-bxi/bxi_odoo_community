@@ -716,6 +716,7 @@ class EmployeeAPIController(http.Controller):
                 "company": employee.company_id.name or False,
                 "manager": employee.parent_id.name or False,
                 "is_fnf_done" : employee.is_fnf_done or False,
+                "is_pf_done":employee.is_pf_done or False,
                 "re_hire" : employee.re_hire or False,
                 "rehire_not_description": (
                     employee.rehire_not_description

@@ -33,6 +33,34 @@
                                  help="Beyond this many unpaid leave days in the year, unpaid days are deducted pro-rata.">
                             <field name="eb_unpaid_leave_threshold_days"/>
                         </setting>
+                        <setting id="eb_absence_source" string="Unauthorized Absence Source"
+                                 help="Attendance counts working days with neither attendance nor approved leave.">
+                            <field name="eb_absence_source"/>
+                        </setting>
+                        <setting id="eb_fnf_rating" string="Rating on Separation"
+                                 help="Separating employees rarely have a rating for the current year yet.">
+                            <field name="eb_fnf_rating"/>
+                        </setting>
+                        <setting id="eb_min_pattern_compliance" string="Minimum Pattern Compliance (%)"
+                                 help="Flag payouts whose office attendance is below this share of the expected days. 0 disables the check.">
+                            <field name="eb_min_pattern_compliance"/>
+                        </setting>
+                    </block>
+                    <block title="Payout" name="eb_payout">
+                        <setting id="eb_payout_tds" string="TDS on Payout"
+                                 help="The monthly TDS covers the salary only; the payout is taxed at the employee's marginal slab.">
+                            <field name="eb_payout_tds"/>
+                        </setting>
+                        <setting id="eb_auto_generate_days" string="Generate Payouts Automatically"
+                                 help="Days after the financial year closes to create the draft annual payouts. 0 disables it.">
+                            <field name="eb_auto_generate_days"/>
+                        </setting>
+                    </block>
+                    <block title="Governance" name="eb_governance">
+                        <setting id="eb_suspended_from" string="Policy Suspended From"
+                                 help="The benefit stops accruing from this date. Leave empty while the policy applies.">
+                            <field name="eb_suspended_from"/>
+                        </setting>
                     </block>
                 </app>
             </xpath>

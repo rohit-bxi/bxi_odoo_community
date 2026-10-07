@@ -3,6 +3,7 @@ from odoo import models, fields, api, _
 from datetime import datetime, timedelta, date
 from odoo.exceptions import UserError
 import logging
+import pytz
 
 _logger = logging.getLogger(__name__)
 ROLE_BAND_THRESHOLD = 8
@@ -171,6 +172,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
 
         calendar = target_employee.resource_calendar_id if target_employee else False
         shift_name = calendar.name if calendar else _('No Shift')
+        holiday_dates = self._get_public_holiday_dates(target_employee, start_date, end_date, user_tz)
+        leave_dates = self._get_leave_dates(target_employee, start_date, end_date)
 
         # 5. Retrieve grid lines for target employee to compute daily totals first
         grid_lines = []
@@ -255,6 +258,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
             dt_log = dt_logs.filtered(lambda l: l.date == d)
             prod_h = dt_log[0].productive_hours if (dt_log and dt_log[0].productive_hours) else 0.0
             prod_hours_str = self._float_to_time(prod_h)
+            shift_prod_h = dt_log[0].shift_productive_hours if dt_log else 0.0
 
             # Shift Hours
             if calendar:
@@ -262,9 +266,12 @@ class BxiTimesheetDashboard(models.AbstractModel):
                 day_atts = calendar.attendance_ids.filtered(lambda a: a.dayofweek == day_str)
                 if 'date_from' in day_atts._fields:
                     day_atts = day_atts.filtered(lambda a: (not a.date_from or a.date_from <= d) and (not a.date_to or a.date_to >= d))
-                day_shift_h = sum(a.hour_to - a.hour_from for a in day_atts)
+                # Lunch break included, same as the shift wise production hours
+                day_shift_h = sum(a.hour_to - a.hour_from for a in day_atts if not a.display_type)
             else:
                 day_shift_h = 0.0
+
+            day_status = self._get_day_status(target_employee, d, holiday_dates, leave_dates)
 
             if day_shift_h > 0:
                 shift_hours_str = f"{shift_name} ({self._float_to_time(day_shift_h)})"
@@ -293,7 +300,10 @@ class BxiTimesheetDashboard(models.AbstractModel):
                 'prod_hours': prod_hours_str,
                 'shift_hours': shift_hours_str,
                 'prod_hours_raw': prod_h,
+                'shift_prod_hours': self._float_to_time(shift_prod_h),
+                'shift_prod_hours_raw': shift_prod_h,
                 'shift_hours_raw': day_shift_h,
+                'day_status': day_status,
                 'daily_total': self._float_to_time(daily_totals_raw[i]),
                 'leave': {
                     'id': leave_rec.id if leave_rec else False,
@@ -306,6 +316,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
         # Calculate totals
         total_prod_raw = sum(x['prod_hours_raw'] for x in dates_list)
         total_prod_str = self._float_to_time(total_prod_raw)
+
+        total_shift_prod_str = self._float_to_time(sum(x['shift_prod_hours_raw'] for x in dates_list))
 
         total_shift_raw = sum(x['shift_hours_raw'] for x in dates_list)
         total_shift_str = self._float_to_time(total_shift_raw)
@@ -366,6 +378,9 @@ class BxiTimesheetDashboard(models.AbstractModel):
                 ('date', '<=', end_date),
             ])
 
+            team_holiday_dates = self._get_public_holiday_dates(team_members, start_date, end_date, user_tz)
+            team_leave_dates = self._get_leave_dates(team_members, start_date, end_date)
+
             # Fetch ONLY approved timesheet lines — scoped to company
             domain = [
                 ('employee_id', 'in', team_members.ids),
@@ -391,6 +406,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
                 # Fetch checkin / checkout times for member
                 member_atts = all_attendances.filtered(lambda a: a.employee_id.id == member.id)
                 member_dt_logs = all_dt_logs.filtered(lambda l: l.employee_id.id == member.id)
+                total_member_prod = 0.0
+                total_member_shift_prod = 0.0
 
                 day_data = []
                 for idx, d_dict in enumerate(dates_list):
@@ -416,11 +433,22 @@ class BxiTimesheetDashboard(models.AbstractModel):
                             latest_att = max(atts_with_checkout, key=lambda a: a.check_out)
                             check_out_time = self._format_time_12h(latest_att.check_out, user_tz)
 
+                    day_dt_log = member_dt_logs.filtered(lambda l: l.date == d_val)[:1]
+                    member_prod = day_dt_log.productive_hours
+                    member_shift_prod = day_dt_log.shift_productive_hours
+                    total_member_prod += member_prod
+                    total_member_shift_prod += member_shift_prod
+
                     day_data.append({
                         'date_str': d_dict['date_str'],
                         'check_in': check_in_time or '-',
                         'check_out': check_out_time or '-',
                         'hours': day_hours_str[idx],
+                        'prod_hours': self._float_to_time(member_prod),
+                        'prod_hours_raw': member_prod,
+                        'shift_prod_hours': self._float_to_time(member_shift_prod),
+                        'shift_prod_hours_raw': member_shift_prod,
+                        'day_status': self._get_day_status(member, d_val, team_holiday_dates, team_leave_dates),
                         'leave': False,
                         'is_today': d_dict['is_today']
                     })
@@ -431,6 +459,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
                     'day_hours': day_hours_str,
                     'total_hours': total_hours_str,
                     'total_hours_raw': total_hours,
+                    'total_prod_hours': self._float_to_time(total_member_prod),
+                    'total_shift_prod_hours': self._float_to_time(total_member_shift_prod),
                     'day_data': day_data,
                 })
 
@@ -472,6 +502,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
             'approved_count': approved_count,
             'refused_count': refused_count,
             'total_prod_str': total_prod_str,
+            'total_shift_prod_str': total_shift_prod_str,
             'total_shift_str': total_shift_str,
         }
 
@@ -486,6 +517,68 @@ class BxiTimesheetDashboard(models.AbstractModel):
         if formatted.startswith('0'):
             formatted = formatted[1:]
         return formatted
+
+    def _get_public_holiday_dates(self, employees, start_date, end_date, tz):
+        """Public holidays (global time off of the working schedule) as {employee_id: {dates}}."""
+        result = {emp.id: set() for emp in employees}
+        if not employees:
+            return result
+        holidays = self.env['resource.calendar.leaves'].sudo().search([
+            ('resource_id', '=', False),
+            ('company_id', 'in', employees.company_id.ids + [False]),
+            ('date_from', '<', datetime.combine(end_date + timedelta(days=2), datetime.min.time())),
+            ('date_to', '>', datetime.combine(start_date - timedelta(days=1), datetime.min.time())),
+        ])
+        for emp in employees:
+            calendar = emp.resource_calendar_id
+            emp_tz = pytz.timezone(calendar.tz) if calendar and calendar.tz else tz
+            for holiday in holidays:
+                if holiday.calendar_id and holiday.calendar_id != calendar:
+                    continue
+                if holiday.company_id and holiday.company_id != emp.company_id:
+                    continue
+                day = pytz.utc.localize(holiday.date_from).astimezone(emp_tz).date()
+                last_day = pytz.utc.localize(holiday.date_to).astimezone(emp_tz).date()
+                while day <= last_day:
+                    if start_date <= day <= end_date:
+                        result[emp.id].add(day)
+                    day += timedelta(days=1)
+        return result
+
+    def _get_leave_dates(self, employees, start_date, end_date):
+        """Time off days (not refused, cancelled or draft) as {employee_id: {dates}}."""
+        result = {emp.id: set() for emp in employees}
+        if not employees or 'hr.leave' not in self.env:
+            return result
+        leaves = self.env['hr.leave'].sudo().search([
+            ('employee_id', 'in', employees.ids),
+            ('request_date_from', '<=', end_date),
+            ('request_date_to', '>=', start_date),
+            ('state', 'not in', ('draft', 'cancel', 'refuse')),
+        ])
+        for leave in leaves:
+            day = max(leave.request_date_from, start_date)
+            while day <= min(leave.request_date_to, end_date):
+                result[leave.employee_id.id].add(day)
+                day += timedelta(days=1)
+        return result
+
+    def _get_day_status(self, employee, day, holiday_dates, leave_dates):
+        """'ph' or 'leave' on a working day of the employee, else False."""
+        if not employee or not employee.resource_calendar_id:
+            return False
+        day_atts = employee.resource_calendar_id.attendance_ids.filtered(
+            lambda a: a.dayofweek == str(day.weekday()) and a._is_work_period())
+        if 'date_from' in day_atts._fields:
+            day_atts = day_atts.filtered(
+                lambda a: (not a.date_from or a.date_from <= day) and (not a.date_to or a.date_to >= day))
+        if not day_atts:
+            return False
+        if day in holiday_dates.get(employee.id, ()):
+            return 'ph'
+        if day in leave_dates.get(employee.id, ()):
+            return 'leave'
+        return False
 
     def _get_current_week_start(self):
         """Find the preceding Sunday."""

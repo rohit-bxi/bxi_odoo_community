@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_payslip_form_deputation" model="ir.ui.view">
+        <field name="name">hr.payslip.form.deputation</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="om_hr_payroll.view_hr_payslip_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Deputation Corrections" name="deputation_corrections"
+                      invisible="not dep_retro_line_ids">
+                    <field name="dep_retro_line_ids">
+                        <list>
+                            <field name="source_payslip_id"/>
+                            <field name="days"/>
+                            <field name="amount" sum="Total"/>
+                            <field name="basic_amount"/>
+                            <field name="tds_amount" sum="Total"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

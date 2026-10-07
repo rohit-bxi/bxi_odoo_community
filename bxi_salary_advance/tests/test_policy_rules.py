@@ -34,7 +34,8 @@ class TestSalaryAdvancePolicyRules(SalaryAdvanceCommon):
         """Recovered by the payroll that pays the arrears, not the month after disbursement."""
         advance = self._disburse(self._approve(self._new_advance(category='non_processing', amount=20000)))
         self.assertEqual(advance.recovery_start, month_start(self.today))
-        self.assertEqual(advance.installment_ids.mapped('due_date'), [month_start(self.today)])
+        self.assertEqual(advance.installment_ids.mapped('due_date'),
+                         [month_start(self.today, months) for months in (0, 1, 2)])
 
     def test_category_one_skips_confirmed_payroll_month(self):
         self._done_payslip(self.employee, self.today, net=0.0)
@@ -62,25 +63,15 @@ class TestSalaryAdvancePolicyRules(SalaryAdvanceCommon):
         advance.action_submit()
         self.assertEqual(advance.state, 'submitted')
 
-    def test_service_waived_for_joining_and_transfer(self):
+    def test_service_required_for_joining_and_transfer(self):
+        """The one-year minimum applies to every Category I reason as well."""
         newcomer = self._newcomer()
-        for reason in ('joining', 'transfer'):
+        for reason in ('joining', 'transfer', 'other'):
             advance = self._new_advance(
                 category='non_processing', amount=1000, employee=newcomer, nonprocessing_reason=reason)
-            advance.action_submit()
-            self.assertEqual(advance.state, 'submitted')
-            advance.action_cancel()
-        other = self._new_advance(
-            category='non_processing', amount=1000, employee=newcomer, nonprocessing_reason='other')
-        with self.assertRaisesRegex(UserError, '6 months'):
-            other.action_submit()
-
-    def test_service_required_when_configured(self):
-        self.env['ir.config_parameter'].sudo().set_param('bxi_salary_advance.nonprocessing_require_service', True)
-        advance = self._new_advance(
-            category='non_processing', amount=1000, employee=self._newcomer(), nonprocessing_reason='joining')
-        with self.assertRaisesRegex(UserError, '6 months'):
-            advance.action_submit()
+            with self.assertRaisesRegex(UserError, '12 months'):
+                advance.action_submit()
+            advance.unlink()
 
     # ── Full-time employees ──────────────────────────────────────────────
     def test_full_time_employees_only(self):

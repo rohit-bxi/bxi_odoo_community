@@ -23,8 +23,8 @@ def make_pdf(text='Test document'):
 class SalaryAdvanceTestMixin:
     """An India company, an employee with a Reporting Manager and the policy defaults.
 
-    The employee's monthly gross is 80,000 (basic 40,000 + HRA 16,000 + allowance 24,000),
-    so the 75% limit is 60,000."""
+    The employee's monthly gross is 120,000 (basic 60,000 + HRA 24,000 + allowance 36,000),
+    so the 50% limit is 60,000."""
 
     @classmethod
     def _setup_salary_advance_data(cls):
@@ -33,11 +33,10 @@ class SalaryAdvanceTestMixin:
         cls.company.country_id = cls.env.ref('base.in')
         set_param = cls.env['ir.config_parameter'].sudo().set_param
         for key, value in {
-            'limit_percent': 75, 'salary_basis': 'gross', 'min_service_months': 6,
-            'emergency_installments': 3, 'housing_tenancies': '6,12', 'housing_limit_percent': 0,
+            'limit_percent': 50, 'salary_basis': 'gross', 'min_service_months': 12,
             'request_form_optional': False, 'hr_sla_days': 7, 'rm_reminder_days': 2,
             'perquisite_threshold': 20000, 'eligible_employee_types': 'employee,worker',
-            'outstanding_scope': 'all', 'nonprocessing_require_service': False,
+            'outstanding_scope': 'all',
         }.items():
             set_param(f'bxi_salary_advance.{key}', value)
         cls.company.write({
@@ -63,9 +62,10 @@ class SalaryAdvanceTestMixin:
         cls.vendor = cls.env['res.partner'].create({'name': 'Housing Partner Ltd'})
 
     @classmethod
-    def _create_employee(cls, name, parent=None, joined=None, basic=40000, hra=16000, allowance=24000):
+    def _create_employee(cls, name, parent=None, joined=None, basic=60000, hra=24000, allowance=36000,
+                         groups='base.group_user'):
         login = 'sa_test_' + name.lower().replace(' ', '_')
-        user = new_test_user(cls.env, login=login, groups='base.group_user',
+        user = new_test_user(cls.env, login=login, groups=groups,
                              email=f"{login}@example.com", name=name)
         employee = cls.env['hr.employee'].create({
             'name': name,

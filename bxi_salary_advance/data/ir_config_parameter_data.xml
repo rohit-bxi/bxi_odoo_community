@@ -3,7 +3,7 @@
 <odoo noupdate="1">
     <record id="param_limit_percent" model="ir.config_parameter">
         <field name="key">bxi_salary_advance.limit_percent</field>
-        <field name="value">75</field>
+        <field name="value">50</field>
     </record>
     <record id="param_salary_basis" model="ir.config_parameter">
         <field name="key">bxi_salary_advance.salary_basis</field>
@@ -11,15 +11,7 @@
     </record>
     <record id="param_min_service_months" model="ir.config_parameter">
         <field name="key">bxi_salary_advance.min_service_months</field>
-        <field name="value">6</field>
-    </record>
-    <record id="param_emergency_installments" model="ir.config_parameter">
-        <field name="key">bxi_salary_advance.emergency_installments</field>
-        <field name="value">3</field>
-    </record>
-    <record id="param_housing_tenancies" model="ir.config_parameter">
-        <field name="key">bxi_salary_advance.housing_tenancies</field>
-        <field name="value">6,12</field>
+        <field name="value">12</field>
     </record>
     <record id="param_hr_sla_days" model="ir.config_parameter">
         <field name="key">bxi_salary_advance.hr_sla_days</field>

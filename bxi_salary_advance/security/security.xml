@@ -7,8 +7,8 @@
         <field name="category_id" ref="base.module_category_human_resources"/>
     </record>
 
-    <!-- Every employee applies and Reporting Managers approve their team's requests,
-         so neither needs a dedicated group. -->
+    <!-- No Salary Advance access: an employee creates and sees only their own advances;
+         a Reporting Manager also sees and approves the team's requests (record rules below). -->
     <record id="group_salary_advance_finance" model="res.groups">
         <field name="name">Finance</field>
         <field name="sequence">10</field>
@@ -40,14 +40,22 @@
 
     <!-- ── Record rules ──────────────────────────────────────────────── -->
     <record id="bxi_salary_advance_rule_own" model="ir.rule">
-        <field name="name">Salary Advance: own, team and exceptions to approve</field>
+        <field name="name">Salary Advance: own (create, read, write, delete)</field>
         <field name="model_id" ref="model_bxi_salary_advance"/>
-        <field name="domain_force">['|', '|', '|',
-            ('employee_id.user_id', '=', user.id),
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(6, 0, [ref('base.group_user')])]"/>
+    </record>
+
+    <record id="bxi_salary_advance_rule_team" model="ir.rule">
+        <field name="name">Salary Advance: team and exceptions to approve (read, write)</field>
+        <field name="model_id" ref="model_bxi_salary_advance"/>
+        <field name="domain_force">['|', '|',
             ('employee_id.parent_id.user_id', '=', user.id),
             ('manager_id.user_id', '=', user.id),
             ('exception_approver_id', '=', user.id)]</field>
         <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
     </record>
 
     <record id="bxi_salary_advance_rule_all" model="ir.rule">
@@ -58,9 +66,16 @@
     </record>
 
     <record id="bxi_salary_advance_installment_rule_own" model="ir.rule">
-        <field name="name">Salary Advance EMI: own and team</field>
+        <field name="name">Salary Advance EMI: own</field>
         <field name="model_id" ref="model_bxi_salary_advance_installment"/>
-        <field name="domain_force">['|', ('employee_id.user_id', '=', user.id), ('advance_id.manager_id.user_id', '=', user.id)]</field>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(6, 0, [ref('base.group_user')])]"/>
+    </record>
+
+    <record id="bxi_salary_advance_installment_rule_team" model="ir.rule">
+        <field name="name">Salary Advance EMI: team</field>
+        <field name="model_id" ref="model_bxi_salary_advance_installment"/>
+        <field name="domain_force">[('advance_id.manager_id.user_id', '=', user.id)]</field>
         <field name="groups" eval="[(4, ref('base.group_user'))]"/>
     </record>
 

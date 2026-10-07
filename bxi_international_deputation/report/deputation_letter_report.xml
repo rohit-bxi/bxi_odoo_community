@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- Full-width page: the layout draws its own header and footer bands. -->
+    <record id="paperformat_deputation_letter" model="report.paperformat">
+        <field name="name">Deputation Letter A4</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">0</field>
+        <field name="margin_bottom">0</field>
+        <field name="margin_left">0</field>
+        <field name="margin_right">0</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">90</field>
+    </record>
+
     <record id="action_report_deputation_letter" model="ir.actions.report">
         <field name="name">Deputation Commencement Letter</field>
         <field name="model">bxi.deputation</field>
@@ -8,61 +23,328 @@
         <field name="report_name">bxi_international_deputation.report_deputation_letter</field>
         <field name="report_file">bxi_international_deputation.report_deputation_letter</field>
         <field name="print_report_name">'Deputation Letter - %s' % (object.name)</field>
+        <field name="paperformat_id" ref="paperformat_deputation_letter"/>
         <field name="binding_model_id" ref="model_bxi_deputation"/>
         <field name="binding_type">report</field>
     </record>
 
+    <!-- Header and footer are part of the page body, so they print with every
+         wkhtmltopdf build (the unpatched-Qt build ignores Odoo's separate
+         header/footer pages). The logo sits on the navy band: it is drawn in
+         light colours that do not show on white. -->
     <template id="report_deputation_letter_document">
-        <t t-call="web.external_layout">
-            <t t-set="o" t-value="o.with_context(lang=o.employee_id.lang or o.env.lang)"/>
-            <t t-set="approaches" t-value="dict(o._fields['salary_approach'].selection)"/>
-            <div class="page">
-                <h4 class="text-center mb-4">Deputation Commencement Letter</h4>
-                <p>Ref: <span t-field="o.name"/><br/>Date: <span t-out="context_timestamp(datetime.datetime.now()).strftime('%d %B %Y')"/></p>
-                <p>
-                    To,<br/>
-                    <strong t-field="o.employee_id.name"/><br/>
-                    <t t-if="o.employee_id.employee_code">Employee Code: <span t-field="o.employee_id.employee_code"/><br/></t>
-                    <t t-if="o.employee_id.job_title"><span t-field="o.employee_id.job_title"/><br/></t>
-                </p>
-                <p><strong>Subject: Commencement of International Deputation to <span t-field="o.host_country_id.name"/></strong></p>
-                <p>
-                    Further to your long-term deputation to <span t-field="o.host_country_id.name"/><t t-if="o.host_city">
-                    (<span t-field="o.host_city"/>)</t><t t-if="o.client_name"> for <span t-field="o.client_name"/></t>,
-                    your payroll is transferred to the host country in line with the BXI Tech International Deputation -
-                    Salary Processing Policy. <span t-field="o.host_country_id.name"/> follows the
-                    <strong t-out="approaches.get(o.salary_approach)"/> approach for salary processing.
-                </p>
-                <table class="table table-sm table-bordered mt-3">
-                    <tbody>
-                        <tr><td class="w-50">Date of arrival in <span t-field="o.host_country_id.name"/></td><td><span t-field="o.arrival_date"/></td></tr>
-                        <tr><td>Last day on the home country payroll</td><td><span t-field="o.home_last_date"/></td></tr>
-                        <tr><td><strong>Date of commencement of deputation (host payroll start)</strong></td><td><strong t-field="o.host_start_date"/></td></tr>
+        <t t-set="o" t-value="o.with_context(lang=o.employee_id.lang or o.env.lang)"/>
+        <t t-set="company" t-value="o.company_id or res_company"/>
+        <t t-set="partner" t-value="company.partner_id"/>
+        <t t-set="employee" t-value="o.employee_id"/>
+        <t t-set="approaches" t-value="dict(o._fields['salary_approach'].selection)"/>
+        <t t-set="long_date" t-value="lambda d: d and d.strftime('%A, %d %B %Y') or '-'"/>
+        <t t-set="short_date" t-value="lambda d: d and d.strftime('%d %b %Y') or '-'"/>
+        <t t-set="weekday" t-value="lambda d: d and d.strftime('%A') or ''"/>
+        <t t-set="steps" t-value="[s for s in [
+            ('Last day on home payroll', short_date(o.home_last_date), weekday(o.home_last_date), False),
+            ('Arrival in %s' % o.host_country_id.name, short_date(o.arrival_date), weekday(o.arrival_date), False),
+            ('Gap day(s)', '%s day(s)' % o.outbound_gap_days, 'Paid as ex-gratia', False) if o.outbound_gap_days else None,
+            ('Host payroll starts', short_date(o.host_start_date), weekday(o.host_start_date), True),
+        ] if s]"/>
+        <t t-set="step_count" t-value="len(steps)"/>
+
+        <div class="article o_bxi_dep_letter" t-att-data-oe-model="o._name" t-att-data-oe-id="o.id"
+             t-att-data-oe-lang="o.env.context.get('lang')">
+            <style>
+                .o_bxi_dep_letter { font-family: 'Lato', 'Helvetica Neue', Arial, sans-serif; color: #1f2937;
+                    font-size: 16px; line-height: 1.55; }
+                .o_bxi_dep_letter table { border-collapse: collapse; width: 100%; }
+                .o_bxi_dep_letter .dl-print { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .o_bxi_dep_letter .dl-page { position: relative; box-sizing: border-box; min-height: 1450px;
+                    padding-bottom: 110px; }
+
+                /* Header */
+                .o_bxi_dep_letter .dl-header { background: #0b2a6f; padding: 22px 70px; }
+                .o_bxi_dep_letter .dl-header td { vertical-align: middle; }
+                .o_bxi_dep_letter .dl-logo img { max-height: 92px; max-width: 260px; }
+                .o_bxi_dep_letter .dl-logo-text { font-size: 30px; font-weight: bold; color: #ffffff; }
+                .o_bxi_dep_letter .dl-company { text-align: right; font-size: 13px; color: #c9d4ee; line-height: 1.6; }
+                .o_bxi_dep_letter .dl-company b { display: block; font-size: 18px; color: #ffffff; letter-spacing: 0.5px; }
+                .o_bxi_dep_letter .dl-accent { height: 6px; background: #f58220; }
+
+                .o_bxi_dep_letter .dl-body { padding: 26px 70px 0 70px; }
+
+                /* Title and reference */
+                .o_bxi_dep_letter .dl-title td { vertical-align: bottom; }
+                .o_bxi_dep_letter .dl-kicker { font-size: 12px; font-weight: bold; letter-spacing: 2px;
+                    text-transform: uppercase; color: #f58220; }
+                .o_bxi_dep_letter .dl-title h1 { font-size: 30px; color: #0b2a6f; margin: 2px 0 0 0;
+                    font-weight: bold; line-height: 1.2; }
+                .o_bxi_dep_letter .dl-ref { text-align: right; }
+                .o_bxi_dep_letter .dl-ref-box { display: inline-block; border: 1px solid #d5dbe5; border-radius: 8px;
+                    padding: 8px 16px; background: #f5f7fb; font-size: 13px; color: #4b5563; text-align: left;
+                    line-height: 1.7; }
+                .o_bxi_dep_letter .dl-ref-box b { color: #111827; font-size: 14px; }
+
+                /* Addressee */
+                .o_bxi_dep_letter .dl-to { margin-top: 22px; }
+                .o_bxi_dep_letter .dl-to td { vertical-align: top; }
+                .o_bxi_dep_letter .dl-label { font-size: 11px; font-weight: bold; letter-spacing: 1.5px;
+                    text-transform: uppercase; color: #6b7280; margin-bottom: 2px; }
+                .o_bxi_dep_letter .dl-name { font-size: 19px; font-weight: bold; color: #0b2a6f; }
+                .o_bxi_dep_letter .dl-sub { font-size: 14px; color: #4b5563; }
+                .o_bxi_dep_letter .dl-chip { display: inline-block; background: #eef2fa; color: #0b2a6f; border-radius: 12px;
+                    padding: 2px 12px; font-size: 13px; font-weight: bold; }
+
+                .o_bxi_dep_letter .dl-subject { margin: 20px 0 12px 0; padding: 9px 16px; border-left: 5px solid #f58220;
+                    background: #fff7ef; font-weight: bold; color: #111827; }
+                .o_bxi_dep_letter p { margin: 0 0 12px 0; text-align: justify; }
+
+                /* Commencement highlight */
+                .o_bxi_dep_letter .dl-hero { margin-top: 18px; background: #0b2a6f; border-radius: 10px; color: #ffffff; }
+                .o_bxi_dep_letter .dl-hero td { vertical-align: middle; padding: 20px 26px; }
+                .o_bxi_dep_letter .dl-hero .dl-label { color: #f9b77a; }
+                .o_bxi_dep_letter .dl-hero-date { font-size: 26px; font-weight: bold; line-height: 1.25; }
+                .o_bxi_dep_letter .dl-hero-sub { font-size: 14px; color: #c9d4ee; }
+                .o_bxi_dep_letter .dl-hero-side { text-align: right; border-left: 1px solid #2d4f97; width: 36%; }
+                .o_bxi_dep_letter .dl-pill { display: inline-block; background: #f58220; color: #ffffff; border-radius: 14px;
+                    padding: 3px 14px; font-size: 13px; font-weight: bold; margin-top: 6px; }
+
+                /* Timeline */
+                .o_bxi_dep_letter .dl-timeline { position: relative; margin-top: 26px; }
+                .o_bxi_dep_letter .dl-line { position: absolute; top: 17px; height: 3px; background: #d5dbe5; }
+                .o_bxi_dep_letter .dl-timeline td { text-align: center; vertical-align: top; padding: 0 6px; }
+                .o_bxi_dep_letter .dl-dot { position: relative; width: 36px; height: 36px; line-height: 36px; margin: 0 auto 8px auto;
+                    border-radius: 18px; background: #ffffff; border: 3px solid #0b2a6f; color: #0b2a6f; font-weight: bold;
+                    font-size: 15px; box-sizing: border-box; line-height: 30px; }
+                .o_bxi_dep_letter .dl-dot.dl-final { background: #f58220; border-color: #f58220; color: #ffffff; }
+                .o_bxi_dep_letter .dl-step { font-size: 12px; font-weight: bold; letter-spacing: 0.8px;
+                    text-transform: uppercase; color: #6b7280; }
+                .o_bxi_dep_letter .dl-step-date { font-size: 16px; font-weight: bold; color: #111827; }
+                .o_bxi_dep_letter .dl-step-sub { font-size: 13px; color: #6b7280; }
+
+                /* Details */
+                .o_bxi_dep_letter h2.dl-section { font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px;
+                    color: #0b2a6f; border-bottom: 2px solid #0b2a6f; padding-bottom: 5px; margin: 24px 0 10px 0;
+                    font-weight: bold; }
+                .o_bxi_dep_letter table.dl-grid td { border: 1px solid #d5dbe5; padding: 9px 14px; vertical-align: top; }
+                .o_bxi_dep_letter table.dl-grid td.dl-key { background: #f3f5f9; color: #374151; font-weight: bold; width: 30%; }
+                .o_bxi_dep_letter tr.dl-highlight td { background: #fff4ea; font-weight: bold; color: #0b2a6f; }
+                .o_bxi_dep_letter tr.dl-highlight td.dl-key { background: #fde3cc; }
+                .o_bxi_dep_letter .dl-note { border-left: 5px solid #0b2a6f; background: #f5f7fb; padding: 14px 20px;
+                    margin-top: 18px; font-size: 15px; }
+                .o_bxi_dep_letter .dl-note p:last-child { margin-bottom: 0; }
+
+                /* Signature */
+                .o_bxi_dep_letter .dl-sign { margin-top: 26px; }
+                .o_bxi_dep_letter .dl-sign td { vertical-align: bottom; }
+                .o_bxi_dep_letter .dl-sign-line { border-top: 1.5px solid #374151; width: 72%; padding-top: 6px;
+                    font-size: 15px; font-weight: bold; color: #374151; margin-top: 52px; }
+                .o_bxi_dep_letter .dl-sign-line span { display: block; font-size: 13px; font-weight: normal; color: #6b7280; }
+
+                /* Footer */
+                .o_bxi_dep_letter .dl-footer { position: absolute; left: 0; right: 0; bottom: 0; }
+                .o_bxi_dep_letter .dl-footer-band { background: #0b2a6f; color: #ffffff; padding: 16px 70px;
+                    font-size: 12px; line-height: 1.6; }
+                .o_bxi_dep_letter .dl-footer-band td { vertical-align: middle; color: #ffffff; }
+                .o_bxi_dep_letter .dl-footer-band b { font-size: 14px; }
+                .o_bxi_dep_letter .dl-footer-band img { max-height: 52px; max-width: 150px; }
+            </style>
+
+            <div class="dl-page">
+                <!-- Header band: logo and company details -->
+                <div class="dl-header dl-print">
+                    <table>
+                        <tr>
+                            <td class="dl-logo" style="width: 45%;">
+                                <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" alt="Logo"/>
+                                <span t-else="" class="dl-logo-text" t-esc="company.name"/>
+                            </td>
+                            <td class="dl-company">
+                                <b t-esc="company.name"/>
+                                <t t-esc="', '.join(filter(None, [partner.street, partner.street2]))"/><br/>
+                                <t t-esc="', '.join(filter(None, [partner.city, partner.state_id.name, partner.zip, partner.country_id.name]))"/>
+                                <t t-if="company.email or company.phone">
+                                    <br/><t t-esc="' | '.join(filter(None, [company.email, company.phone]))"/>
+                                </t>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="dl-accent dl-print"/>
+
+                <div class="dl-body">
+                    <!-- Title and reference -->
+                    <table class="dl-title">
+                        <tr>
+                            <td>
+                                <div class="dl-kicker">International Deputation</div>
+                                <h1>Deputation Commencement Letter</h1>
+                            </td>
+                            <td class="dl-ref">
+                                <div class="dl-ref-box dl-print">
+                                    Reference: <b t-esc="o.name"/><br/>
+                                    Date: <b t-esc="context_timestamp(datetime.datetime.now()).strftime('%d %b %Y')"/>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Addressee and deputation -->
+                    <table class="dl-to">
+                        <tr>
+                            <td style="width: 55%;">
+                                <div class="dl-label">To</div>
+                                <div class="dl-name" t-esc="employee.name"/>
+                                <div class="dl-sub">
+                                    <t t-esc="' | '.join(filter(None, [employee.job_title or employee.job_id.name, employee.department_id.name]))"/>
+                                </div>
+                                <div t-if="employee.employee_code" style="margin-top: 6px;">
+                                    <span class="dl-chip dl-print">Employee Code: <t t-esc="employee.employee_code"/></span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="dl-label">Deputed To</div>
+                                <div class="dl-name">
+                                    <t t-esc="o.host_country_id.name"/><t t-if="o.host_city">, <t t-esc="o.host_city"/></t>
+                                </div>
+                                <div class="dl-sub" t-if="o.project_id or o.client_name">Client / Project: <t t-esc="o.project_id.name or o.client_name"/></div>
+                                <div class="dl-sub" t-if="o.host_company_id">Host entity: <t t-esc="o.host_company_id.name"/></div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div class="dl-subject dl-print">
+                        Subject: Commencement of International Deputation to <t t-esc="o.host_country_id.name"/>
+                    </div>
+
+                    <p>Dear <t t-esc="employee.name"/>,</p>
+                    <p>
+                        Further to your long-term deputation to <t t-esc="o.host_country_id.name"/><t t-if="o.project_id or o.client_name">
+                        for <t t-esc="o.project_id.name or o.client_name"/></t>, your payroll is transferred to the host country in line with
+                        the <t t-esc="company.name"/> International Deputation - Salary Processing Policy.
+                        <t t-esc="o.host_country_id.name"/> follows the
+                        <b t-esc="approaches.get(o.salary_approach)"/> approach for salary processing.
+                    </p>
+
+                    <!-- Commencement highlight -->
+                    <table class="dl-hero dl-print">
+                        <tr>
+                            <td>
+                                <div class="dl-label">Deputation commences on</div>
+                                <div class="dl-hero-date" t-esc="long_date(o.host_start_date)"/>
+                                <div class="dl-hero-sub">First day on the <t t-esc="o.host_country_id.name"/> payroll</div>
+                            </td>
+                            <td class="dl-hero-side">
+                                <div class="dl-label">Salary approach</div>
+                                <div style="font-size: 18px; font-weight: bold;" t-esc="approaches.get(o.salary_approach)"/>
+                                <div class="dl-pill dl-print" t-if="o.outbound_gap_days">
+                                    <t t-esc="o.outbound_gap_days"/> gap day(s)
+                                </div>
+                                <div class="dl-pill dl-print" t-else="">No gap days</div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Timeline of the payroll transfer -->
+                    <div class="dl-timeline">
+                        <div class="dl-line dl-print"
+                             t-attf-style="left: #{50.0 / step_count}%; right: #{50.0 / step_count}%;"/>
+                        <table>
+                            <tr>
+                                <t t-foreach="steps" t-as="step">
+                                    <td t-attf-style="width: #{100.0 / step_count}%;">
+                                        <div t-attf-class="dl-dot dl-print #{'dl-final' if step[3] else ''}" t-esc="step_index + 1"/>
+                                        <div class="dl-step" t-esc="step[0]"/>
+                                        <div class="dl-step-date" t-esc="step[1]"/>
+                                        <div class="dl-step-sub" t-esc="step[2]"/>
+                                    </td>
+                                </t>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <h2 class="dl-section">Payroll Transfer Details</h2>
+                    <table class="dl-grid">
+                        <tr>
+                            <td class="dl-key dl-print">Home payroll paid up to</td>
+                            <td><t t-esc="long_date(o.home_last_date)"/> (<t t-esc="o.company_id.country_id.name or 'home country'"/>)</td>
+                        </tr>
+                        <tr class="dl-highlight">
+                            <td class="dl-key dl-print">Host payroll from</td>
+                            <td class="dl-print"><t t-esc="long_date(o.host_start_date)"/> (<t t-esc="o.host_country_id.name"/>)</td>
+                        </tr>
                         <t t-if="o.outbound_gap_days">
-                            <tr><td>Gap day(s) between the two payrolls</td><td><span t-field="o.outbound_gap_dates"/></td></tr>
-                            <tr><td>One-time ex-gratia for gap day(s) (Annual Gross / <span t-out="'%g' % o.annual_divisor"/> x <span t-field="o.outbound_gap_days"/>)</td>
-                                <td><span t-field="o.outbound_gap_amount"/>, paid with your first host country payroll</td></tr>
+                            <tr class="dl-highlight">
+                                <td class="dl-key dl-print">One-time ex-gratia</td>
+                                <td class="dl-print">
+                                    <span t-field="o.outbound_gap_amount"/> for <t t-esc="o.outbound_gap_dates"/>
+                                    <div style="font-weight: normal; font-size: 14px; color: #4b5563;">
+                                        Annual Gross / <t t-esc="'%g' % o.annual_divisor"/> x <t t-esc="o.outbound_gap_days"/> day(s),
+                                        paid with your first host country payroll
+                                    </div>
+                                </td>
+                            </tr>
                         </t>
-                    </tbody>
-                </table>
-                <p t-if="o.salary_approach == 'calendar'">
-                    Under the Calendar Days approach, your host country salary is processed from your date of arrival.
-                </p>
-                <p t-else="">
-                    Under the Working Days approach, your deputation commences on the first host working day on or after
-                    your arrival. Any weekend or public holiday between the two payrolls is paid by the host country as a
-                    one-time ex-gratia.
-                </p>
-                <p>
-                    On completion of the deputation, your last working day in the host country will be the basis of your
-                    host country final settlement.
-                </p>
-                <p class="mt-5">
-                    For BXI Technology LLP<br/><br/><br/>
-                    HR - Employee Services
-                </p>
+                    </table>
+
+                    <div class="dl-note dl-print">
+                        <p t-if="o.salary_approach == 'calendar'">
+                            Under the <b>Calendar Days</b> approach, your host country salary is processed from your
+                            date of arrival, and your home country salary is paid up to the day before.
+                        </p>
+                        <p t-else="">
+                            Under the <b>Working Days</b> approach, your deputation commences on the first host working day
+                            on or after your arrival. Any weekend or public holiday between the two payrolls is paid by the
+                            host country as a one-time ex-gratia (Annual Gross Salary / <t t-esc="'%g' % o.annual_divisor"/>
+                            per day).
+                        </p>
+                        <p>
+                            On completion of the deputation, your last working day in the host country will be the basis of
+                            your host country final settlement.
+                        </p>
+                    </div>
+
+                    <!-- Signature -->
+                    <table class="dl-sign">
+                        <tr>
+                            <td style="width: 55%;">
+                                <div>For <b t-esc="company.name"/></div>
+                                <div class="dl-sign-line">
+                                    Authorised Signatory
+                                    <span>HR - Employee Services</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div>Acknowledged by</div>
+                                <div class="dl-sign-line">
+                                    <t t-esc="employee.name"/>
+                                    <span>Signature and date</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Footer band: company details and logo -->
+                <div class="dl-footer">
+                    <div class="dl-footer-band dl-print">
+                        <table>
+                            <tr>
+                                <td style="width: 46%;">
+                                    <b t-esc="company.name"/><br/>
+                                    <t t-esc="', '.join(filter(None, [partner.street, partner.street2, partner.city, partner.state_id.name, partner.zip]))"/>
+                                </td>
+                                <td style="width: 34%;">
+                                    <t t-if="company.company_registry">CIN: <t t-esc="company.company_registry"/><br/></t>
+                                    <t t-if="company.email">Email: <t t-esc="company.email"/><br/></t>
+                                    <t t-if="company.website"><t t-esc="company.website"/></t>
+                                </td>
+                                <td style="width: 20%; text-align: right;">
+                                    <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" alt="Logo"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
             </div>
-        </t>
+        </div>
     </template>
 
     <template id="report_deputation_letter">

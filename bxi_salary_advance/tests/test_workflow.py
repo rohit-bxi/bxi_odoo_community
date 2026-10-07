@@ -12,35 +12,63 @@ from .common import SalaryAdvanceCommon
 @tagged('post_install', '-at_install')
 class TestSalaryAdvanceEligibility(SalaryAdvanceCommon):
 
-    def test_limit_is_75_percent_of_monthly_gross(self):
-        advance = self._new_advance().with_user(self.hr_user)
-        self.assertEqual(advance.monthly_salary, 80000)
-        self.assertEqual(advance.max_eligible, 60000)
+    def test_limit_is_50_percent_of_monthly_gross(self):
+        for category in ('non_processing', 'emergency', 'housing'):
+            advance = self._new_advance(category=category).with_user(self.hr_user)
+            self.assertEqual(advance.monthly_salary, 120000)
+            self.assertEqual(advance.max_eligible, 60000, category)
 
     def test_limit_on_basic_salary(self):
         self.env['ir.config_parameter'].sudo().set_param('bxi_salary_advance.salary_basis', 'basic')
         advance = self._new_advance(amount=30000).with_user(self.hr_user)
-        self.assertEqual(advance.monthly_salary, 40000)
+        self.assertEqual(advance.monthly_salary, 60000)
         self.assertEqual(advance.max_eligible, 30000)
 
-    def test_amount_above_limit_is_refused(self):
+    def test_amount_at_limit_needs_no_exception(self):
+        advance = self._approve(self._new_advance(amount=60000))
+        self.assertEqual(advance.state, 'approved')
+
+    def test_amount_above_limit_needs_exception(self):
         advance = self._new_advance(amount=60000.01)
-        with self.assertRaisesRegex(UserError, '75%'):
-            advance.action_submit()
-        self._new_advance(amount=60000).action_submit()
+        advance.action_submit()
+        advance.with_user(self.manager.user_id).action_rm_approve()
+        advance.with_user(self.hr_user).action_hr_approve()
+        self.assertEqual(advance.state, 'exception_review')
+        self.assertEqual(advance.exception_approver_id, self.hr_head.user_id)
+        self.assertIn('50%', advance.exception_reason)
+        advance.with_user(self.hr_head.user_id).action_exception_approve()
+        self.assertEqual(advance.state, 'approved')
+        self.assertEqual(advance.amount_approved, 60000.01)
+
+    def test_hr_reducing_to_limit_needs_no_exception(self):
+        advance = self._new_advance(amount=70000)
+        advance.action_submit()
+        advance.with_user(self.manager.user_id).action_rm_approve()
+        advance.with_user(self.hr_user).amount_approved = 60000
+        advance.with_user(self.hr_user).action_hr_approve()
+        self.assertEqual(advance.state, 'approved')
 
     def test_minimum_service(self):
         newcomer = self._create_employee(
-            'Newcomer', parent=self.manager, joined=fields.Date.today() - relativedelta(months=5))
-        for category, vals in (('emergency', {}), ('non_processing', {'nonprocessing_reason': 'other'})):
+            'Newcomer', parent=self.manager, joined=fields.Date.today() - relativedelta(months=11))
+        for category, vals in (
+            ('emergency', {}),
+            ('housing', {}),
+            ('non_processing', {'nonprocessing_reason': 'joining'}),
+            ('non_processing', {'nonprocessing_reason': 'transfer'}),
+            ('non_processing', {'nonprocessing_reason': 'other'}),
+        ):
             advance = self._new_advance(category=category, amount=1000, employee=newcomer, **vals)
-            with self.assertRaisesRegex(UserError, '6 months'):
+            with self.assertRaisesRegex(UserError, '12 months'):
                 advance.action_submit()
             advance.unlink()
-        # The policy sets no service minimum for housing advances.
-        housing = self._new_advance(category='housing', amount=50000, employee=newcomer)
-        housing.action_submit()
-        self.assertEqual(housing.state, 'submitted')
+
+    def test_one_full_year_of_service_is_eligible(self):
+        employee = self._create_employee(
+            'One Year', parent=self.manager, joined=fields.Date.today() - relativedelta(years=1))
+        advance = self._new_advance(category='housing', amount=1000, employee=employee)
+        advance.action_submit()
+        self.assertEqual(advance.state, 'submitted')
 
     def test_category_one_only_in_india(self):
         self.company.country_id = self.env.ref('base.us')
@@ -157,14 +185,18 @@ class TestSalaryAdvanceWorkflow(SalaryAdvanceCommon):
         self.assertEqual(advance.state, 'cancelled')
         advance.unlink()
 
-    def test_category_one_is_recovered_at_once(self):
+    def test_every_category_is_recovered_in_three_emis(self):
+        for category in ('non_processing', 'emergency', 'housing'):
+            self.assertEqual(self._new_advance(category=category).installment_count, 3, category)
+
+    def test_category_one_other_emi_count_needs_exception(self):
         advance = self._new_advance(category='non_processing', amount=60000)
-        self.assertEqual(advance.installment_count, 1)
         advance.action_submit()
         advance.with_user(self.manager.user_id).action_rm_approve()
-        advance.with_user(self.hr_user).installment_count = 2
-        with self.assertRaisesRegex(UserError, 'no exceptions'):
-            advance.with_user(self.hr_user).action_hr_approve()
+        advance.with_user(self.hr_user).installment_count = 1
+        advance.with_user(self.hr_user).action_hr_approve()
+        self.assertEqual(advance.state, 'exception_review')
+        self.assertIn('1 EMIs instead of the standard 3', advance.exception_reason)
 
     def test_exception_goes_to_lob_hr_head(self):
         advance = self._new_advance()
@@ -187,16 +219,17 @@ class TestSalaryAdvanceWorkflow(SalaryAdvanceCommon):
         advance.action_submit()
         advance.with_user(self.manager.user_id).action_rm_approve()
         advance.with_user(self.hr_user).vendor_partner_id = self.vendor
+        advance.with_user(self.hr_user).installment_count = 9
         with self.assertRaisesRegex(UserError, 'Geo HR Head'):
             advance.with_user(self.hr_user).action_hr_approve()
         self.company.sa_geo_hr_head_id = self.manager.user_id
         advance.with_user(self.hr_user).action_hr_approve()
         self.assertEqual(advance.state, 'exception_review')
         self.assertEqual(advance.exception_approver_id, self.manager.user_id)
-        self.assertIn('9 months', advance.exception_reason)
+        self.assertIn('9 EMIs', advance.exception_reason)
 
     def test_housing_needs_vendor_and_signed_undertaking(self):
-        advance = self._new_advance(category='housing', amount=90000)
+        advance = self._new_advance(category='housing', amount=60000)
         advance.action_submit()
         advance.with_user(self.manager.user_id).action_rm_approve()
         with self.assertRaisesRegex(UserError, 'third-party vendor'):
@@ -204,7 +237,7 @@ class TestSalaryAdvanceWorkflow(SalaryAdvanceCommon):
         advance.with_user(self.hr_user).vendor_partner_id = self.vendor
         advance.with_user(self.hr_user).action_hr_approve()
         self.assertEqual(advance.state, 'approved')
-        self.assertEqual(advance.installment_count, 12)
+        self.assertEqual(advance.installment_count, 3)
         self.assertTrue(advance.sign_request_id)
         self.assertEqual(advance.sign_request_id.reference_doc, advance)
         self.assertTrue(advance._get_portal_sign_url())
@@ -214,18 +247,17 @@ class TestSalaryAdvanceWorkflow(SalaryAdvanceCommon):
         advance.sudo()._on_undertaking_signed()
         self._disburse(advance, create_entry=False)
         self.assertEqual(advance.state, 'disbursed')
-        self.assertEqual(len(advance.installment_ids), 12)
-        self.assertEqual(advance.installment_ids[:1].amount, 7500)
+        self.assertEqual(len(advance.installment_ids), 3)
+        self.assertEqual(advance.installment_ids[:1].amount, 20000)
 
-    def test_housing_limit_needs_exception(self):
-        self.env['ir.config_parameter'].sudo().set_param('bxi_salary_advance.housing_limit_percent', 100)
+    def test_housing_above_limit_needs_exception(self):
         advance = self._new_advance(category='housing', amount=90000)
         advance.action_submit()
         advance.with_user(self.manager.user_id).action_rm_approve()
         advance.with_user(self.hr_user).vendor_partner_id = self.vendor
         advance.with_user(self.hr_user).action_hr_approve()
         self.assertEqual(advance.state, 'exception_review')
-        self.assertIn('housing limit', advance.exception_reason)
+        self.assertIn('50%', advance.exception_reason)
 
     def test_only_finance_disburses(self):
         advance = self._approve(self._new_advance())

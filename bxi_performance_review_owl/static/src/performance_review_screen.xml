@@ -5,9 +5,9 @@
             <div class="bxi-pr-toolbar">
                 <div class="bxi-pr-breadcrumb">
                     <span class="bxi-pr-breadcrumb-link">Performance Reviews</span>
-                    <span class="bxi-pr-breadcrumb-separator">/</span>
+                    <!-- <span class="bxi-pr-breadcrumb-separator">/</span> -->
                     <span t-if="state.review">
-                        <t t-esc="state.review.name"/> - <t t-esc="getQuarter()"/> - <t t-esc="state.review.year"/>
+                        <!-- <t t-esc="state.review.name"/> - <t t-esc="getQuarter()"/> - <t t-esc="state.review.year"/> -->
                     </span>
                     <span t-else="">Performance Review</span>
                 </div>
@@ -47,8 +47,10 @@
                             <div t-else="" class="bxi-pr-company-logo-placeholder">LOGO</div>
                         </div>
                         <div class="bxi-pr-title">
-                            <span>Performance Review</span>
-                            <span class="bxi-pr-title-period"><t t-esc="getQuarter()"/> - <t t-esc="state.review.year"/></span>
+                            <span>Performance Review </span>
+                            <span>
+                                <t t-esc="state.review.template_id ? state.review.template_id[1] : 'Performance Review'"/>
+                            </span>
                         </div>
                         <div class="bxi-pr-status"><t t-esc="getStatusLabel()"/></div>
                     </div>
@@ -63,7 +65,7 @@
                             <div class="bxi-pr-value-box"><t t-esc="state.review.employee_email || '-'"/></div>
                         </div>
                         <div class="bxi-pr-detail">
-                            <label>Manager Mail</label>
+                            <label>Manager`s Email</label>
                             <div class="bxi-pr-value-box"><t t-esc="state.review.manager_email || '-'"/></div>
                         </div>
                     </div>
@@ -132,25 +134,97 @@
                             <div t-else="" class="bxi-pr-empty-question">No appraisee questions configured.</div>
                         </div>
 
-                        <div t-if="canSeeManagerQuestions()" class="bxi-pr-section-title">Manager / RM Questions</div>
-                        <div t-if="canSeeManagerQuestions()" class="bxi-pr-question-header">
-                            <div>Question</div>
-                            <div>Manager / RM Answer</div>
+                        <!-- ========================================================= -->
+            <!-- MANAGER / RM QUESTIONS                                   -->
+            <!-- ========================================================= -->
+
+            <div t-if="canSeeManagerQuestions()"
+                class="bxi-pr-section-title">
+                Manager / RM Questions
+            </div>
+
+            <div t-if="canSeeManagerQuestions()"
+                class="bxi-pr-question-header">
+
+                <div>Question</div>
+                <div>Manager / RM Answer</div>
+                <div>Manager / RM Rating</div>
+
+            </div>
+
+            <div t-if="canSeeManagerQuestions()"
+                class="bxi-pr-questions-list">
+
+                <t t-if="state.managerQuestions.length">
+
+                    <t t-foreach="state.managerQuestions"
+                    t-as="item"
+                    t-key="item.id">
+
+                        <div class="bxi-pr-question-card">
+
+                            <!-- Question Number -->
+                            <div class="bxi-pr-question-number">
+                                <t t-esc="item.sequence"/>
+                            </div>
+
+                            <!-- Question + Answer -->
+                            <div class="bxi-pr-question-content">
+
+                                <div class="bxi-pr-question-text">
+                                    <t t-esc="item.question"/>
+                                </div>
+
+                                <!-- Answer -->
+                                <div class="bxi-pr-question-answer"
+                                    t-if="item.response_type === 'answer' || item.response_type === 'both'">
+
+                                    <t t-esc="item.answer || '-'"/>
+
+                                </div>
+
+                                <div class="bxi-pr-question-answer"
+                                    t-if="item.response_type === 'rating'">
+
+                                    -
+
+                                </div>
+
+                            </div>
+
+                            <!-- Manager Rating -->
+                            <div class="bxi-pr-question-rating"
+                                t-if="item.response_type === 'rating' || item.response_type === 'both'">
+
+                                <div class="bxi-pr-stars">
+                                    <t t-esc="getManagerStarDisplay(item)"/>
+                                </div>
+
+                                <div class="bxi-pr-rating-text">
+                                    <t t-esc="getManagerRatingText(item)"/>
+                                </div>
+
+                            </div>
+
+                            <div class="bxi-pr-question-rating"
+                                t-if="item.response_type === 'answer'">
+
+                                -
+
+                            </div>
+
                         </div>
-                        <div t-if="canSeeManagerQuestions()" class="bxi-pr-questions-list">
-                            <t t-if="state.managerQuestions.length">
-                                <t t-foreach="state.managerQuestions" t-as="item" t-key="item.id">
-                                    <div class="bxi-pr-question-card">
-                                        <div class="bxi-pr-question-number"><t t-esc="item.sequence"/></div>
-                                        <div class="bxi-pr-question-content">
-                                            <div class="bxi-pr-question-text"><t t-esc="item.question"/></div>
-                                            <div class="bxi-pr-question-answer"><t t-esc="item.answer || '-'"/></div>
-                                        </div>
-                                    </div>
-                                </t>
-                            </t>
-                            <div t-else="" class="bxi-pr-empty-question">No manager questions configured.</div>
-                        </div>
+
+                    </t>
+
+                </t>
+
+                <div t-else=""
+                    class="bxi-pr-empty-question">
+                    No manager questions configured.
+                </div>
+
+                </div>
 
                         <div class="bxi-pr-section-title">Overall</div>
                         <div class="bxi-pr-overall-grid">

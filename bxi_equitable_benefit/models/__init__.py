@@ -1,3 +1,4 @@
+from . import eb_notify
 from . import eb_work_pattern
 from . import eb_rate
 from . import eb_eligibility
@@ -8,4 +9,5 @@ from . import hr_leave_type
 from . import hr_employee
 from . import hr_payslip
 from . import employee_resignation
+from . import res_company
 from . import res_config_settings

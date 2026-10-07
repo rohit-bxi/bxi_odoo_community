@@ -10,7 +10,7 @@
                      groups="bxi_salary_advance.group_salary_advance_admin">
                     <block title="Eligibility and Limits" name="sa_limits">
                         <setting id="sa_limit_percent" string="Advance Limit"
-                                 help="Maximum advance for Categories I and II, as a percentage of the monthly salary.">
+                                 help="Maximum advance for every category, as a percentage of the monthly salary. Higher amounts need an exception approval.">
                             <field name="sa_limit_percent"/>
                         </setting>
                         <setting id="sa_salary_basis" string="Monthly Salary"
@@ -25,21 +25,13 @@
                                  help="The policy states 'no other outstanding advance' for emergency advances only.">
                             <field name="sa_outstanding_scope"/>
                         </setting>
-                        <setting id="sa_nonprocessing_require_service"
-                                 help="By default the minimum service is waived for Category I requests caused by joining or transfer formalities.">
-                            <field name="sa_nonprocessing_require_service"/>
-                        </setting>
                         <setting id="sa_policy_id" string="Policy Document"
                                  help="Linked on the employee portal; when it requires acknowledgement, employees must acknowledge the current version before submitting.">
                             <field name="sa_policy_id" options="{'no_create': True}"/>
                         </setting>
                         <setting id="sa_min_service_months" string="Minimum Service"
-                                 help="Months of continuous service required for Category II, and for Category I except joining or transfer delays.">
+                                 help="Months of continuous service required for every category.">
                             <field name="sa_min_service_months"/>
-                        </setting>
-                        <setting id="sa_housing_limit_percent" string="Housing Limit"
-                                 help="Housing advances above this percentage of the monthly salary need an exception approval. 0 = no limit.">
-                            <field name="sa_housing_limit_percent"/>
                         </setting>
                         <setting id="sa_request_form_optional"
                                  help="Allow submitting without uploading the signed Advance Request Form.">
@@ -52,14 +44,6 @@
                         </setting>
                     </block>
                     <block title="Recovery" name="sa_recovery">
-                        <setting id="sa_emergency_installments" string="Emergency EMIs"
-                                 help="Number of interest-free EMIs for Category II advances.">
-                            <field name="sa_emergency_installments"/>
-                        </setting>
-                        <setting id="sa_housing_tenancies" string="Housing Tenancies"
-                                 help="Tenancy durations (months, comma-separated) recovered without an exception.">
-                            <field name="sa_housing_tenancies"/>
-                        </setting>
                         <setting id="sa_perquisite_threshold" string="Perquisite Threshold"
                                  help="Flag advances when the employee's outstanding interest-free advances exceed this amount.">
                             <field name="sa_perquisite_threshold"/>

@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="bxi_antitrust_compliance.ComplianceDashboard">
+        <div class="o_action o_compliance_dashboard h-100 overflow-auto">
+            <div class="o_cd_container">
+
+                <!-- Header -->
+                <div class="o_cd_header">
+                    <div>
+                        <h1 class="o_cd_title">Compliance Dashboard</h1>
+                        <div class="o_cd_subtitle">Antitrust and corporate culture policy: live overview</div>
+                    </div>
+                    <div class="o_cd_toolbar">
+                        <span class="o_cd_updated" t-if="state.data">
+                            <i class="fa fa-clock-o me-1"/>Updated <t t-esc="refreshedLabel"/>
+                        </span>
+                        <select class="form-select form-select-sm o_cd_period" t-on-change="onPeriodChange"
+                                aria-label="Period">
+                            <option value="3" t-att-selected="state.months === 3">Last 3 months</option>
+                            <option value="6" t-att-selected="state.months === 6">Last 6 months</option>
+                            <option value="12" t-att-selected="state.months === 12">Last 12 months</option>
+                        </select>
+                        <button class="btn btn-sm btn-secondary" t-on-click="() => this.load()" title="Refresh"
+                                t-att-disabled="state.loading">
+                            <i class="fa fa-refresh" t-att-class="{'fa-spin': state.loading}"/>
+                        </button>
+                    </div>
+                </div>
+
+                <div t-if="!state.data" class="o_cd_loading">
+                    <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
+                </div>
+                <t t-else="">
+                    <t t-set="data" t-value="state.data"/>
+
+                    <!-- Attention banner -->
+                    <div t-attf-class="o_cd_banner o_cd_tone_{{ data.attention ? (data.urgent ? 'danger' : 'warning') : 'success' }}">
+                        <i t-attf-class="fa {{ data.attention ? 'fa-bell' : 'fa-check-circle' }} o_cd_banner_icon"/>
+                        <div class="flex-grow-1">
+                            <t t-if="data.attention">
+                                <strong><t t-esc="data.attention"/> item<t t-if="data.attention !== 1">s</t> need your attention</strong>
+                                <span t-if="data.urgent" class="ms-2"><t t-esc="data.urgent"/> urgent or overdue</span>
+                            </t>
+                            <strong t-else="">All clear: nothing is waiting for the compliance team.</strong>
+                        </div>
+                    </div>
+
+                    <!-- KPI cards -->
+                    <div class="o_cd_kpis">
+                        <t t-foreach="data.kpis" t-as="kpi" t-key="kpi.key">
+                            <div t-attf-class="o_cd_card o_cd_kpi o_cd_tone_{{ kpi.tone }}" role="button" tabindex="0"
+                                 t-on-click="() => this.openKpi(kpi.key)"
+                                 t-on-keydown="(ev) => this.onKeyOpen(ev, () => this.openKpi(kpi.key))">
+                                <div class="o_cd_kpi_head">
+                                    <span class="o_cd_kpi_icon"><i t-attf-class="fa {{ kpi.icon }}"/></span>
+                                    <span class="o_cd_kpi_title" t-esc="kpi.title"/>
+                                    <i class="fa fa-angle-right o_cd_kpi_go"/>
+                                </div>
+                                <div class="o_cd_kpi_body">
+                                    <t t-if="kpi.is_rate">
+                                        <svg class="o_cd_ring" viewBox="0 0 84 84" aria-hidden="true">
+                                            <circle class="o_cd_ring_track" cx="42" cy="42" r="36"/>
+                                            <circle class="o_cd_ring_value" cx="42" cy="42" r="36"
+                                                    t-att-stroke-dasharray="ringLength"
+                                                    t-att-stroke-dashoffset="ringOffset(kpi.value)"/>
+                                        </svg>
+                                    </t>
+                                    <div>
+                                        <div class="o_cd_kpi_value" t-esc="formatValue(kpi)"/>
+                                        <div class="o_cd_kpi_caption" t-esc="kpi.caption"/>
+                                    </div>
+                                </div>
+                                <div class="o_cd_chips">
+                                    <t t-foreach="kpi.chips" t-as="chip" t-key="chip.key">
+                                        <button t-attf-class="o_cd_chip o_cd_tone_{{ chip.tone }}"
+                                                t-on-click.stop="() => this.openKpi(chip.key)">
+                                            <strong t-esc="chip.value"/> <t t-esc="chip.label"/>
+                                        </button>
+                                    </t>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+
+                    <div class="o_cd_grid">
+                        <!-- Activity trend -->
+                        <div class="o_cd_card o_cd_panel o_cd_span_2">
+                            <div class="o_cd_panel_head">
+                                <div>
+                                    <h3>Activity</h3>
+                                    <span class="o_cd_muted"><t t-esc="trendTotal"/> new records over the period. Click a bar to open them.</span>
+                                </div>
+                                <div class="o_cd_legend">
+                                    <t t-foreach="data.trend.series" t-as="series" t-key="series.key">
+                                        <button t-attf-class="o_cd_legend_item {{ state.hidden[series.key] ? 'o_cd_off' : '' }}"
+                                                t-on-click="() => this.toggleSeries(series.key)">
+                                            <span class="o_cd_swatch" t-attf-style="background: {{ series.colour }}"/>
+                                            <t t-esc="series.label"/>
+                                        </button>
+                                    </t>
+                                </div>
+                            </div>
+                            <div class="o_cd_chart">
+                                <t t-foreach="data.trend.months" t-as="month" t-key="month.start">
+                                    <div class="o_cd_chart_group">
+                                        <div class="o_cd_chart_bars">
+                                            <t t-foreach="visibleSeries" t-as="series" t-key="series.key">
+                                                <t t-set="value" t-value="series.values[month_index]"/>
+                                                <div class="o_cd_bar_slot">
+                                                    <span class="o_cd_bar_value" t-if="value" t-esc="value"/>
+                                                    <div class="o_cd_bar" role="button"
+                                                         t-attf-style="height: {{ barHeight(value) }}; background: {{ series.colour }}"
+                                                         t-att-title="series.label + ': ' + value"
+                                                         t-on-click="() => series.values[month_index] ? this.openTrend(series.key, month.start) : null"/>
+                                                </div>
+                                            </t>
+                                        </div>
+                                        <div class="o_cd_chart_label" t-esc="month.label"/>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <!-- Acknowledgement per policy -->
+                        <div class="o_cd_card o_cd_panel">
+                            <div class="o_cd_panel_head">
+                                <div>
+                                    <h3>Acknowledgement by Policy</h3>
+                                    <span class="o_cd_muted">Lowest completion first</span>
+                                </div>
+                            </div>
+                            <div t-if="!data.policies.length" class="o_cd_empty">
+                                <i class="fa fa-file-text-o"/> No policy requires acknowledgement yet.
+                            </div>
+                            <t t-foreach="data.policies" t-as="policy" t-key="policy.id">
+                                <div class="o_cd_policy" role="button" tabindex="0"
+                                     t-on-click="() => this.openPolicy(policy.id)"
+                                     t-on-keydown="(ev) => this.onKeyOpen(ev, () => this.openPolicy(policy.id))">
+                                    <div class="o_cd_policy_row">
+                                        <span class="o_cd_policy_name" t-esc="policy.name"/>
+                                        <span t-attf-class="o_cd_policy_rate text-{{ rateTone(policy.rate) }}"><t t-esc="policy.rate"/>%</span>
+                                    </div>
+                                    <div class="o_cd_progress">
+                                        <div t-attf-class="o_cd_progress_bar bg-{{ rateTone(policy.rate) }}"
+                                             t-attf-style="width: {{ policy.rate }}%"/>
+                                    </div>
+                                    <div class="o_cd_policy_meta">
+                                        <t t-esc="policy.done"/> / <t t-esc="policy.total"/> acknowledged
+                                        <button t-if="policy.overdue" class="o_cd_chip o_cd_tone_danger ms-2"
+                                                t-on-click.stop="() => this.openPolicy(policy.id, 'overdue')">
+                                            <strong t-esc="policy.overdue"/> overdue
+                                        </button>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+
+                        <!-- Worklist -->
+                        <div class="o_cd_card o_cd_panel o_cd_span_2">
+                            <div class="o_cd_panel_head">
+                                <div>
+                                    <h3>Needs Your Attention</h3>
+                                    <span class="o_cd_muted">Urgent items first, then the oldest</span>
+                                </div>
+                            </div>
+                            <div t-if="!data.worklist.length" class="o_cd_empty">
+                                <i class="fa fa-check-circle text-success"/> Nothing is waiting. Well done.
+                            </div>
+                            <table t-else="" class="table table-hover o_cd_table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Reference</th>
+                                        <th>Subject</th>
+                                        <th>Employee</th>
+                                        <th class="text-end">Waiting</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="data.worklist" t-as="item" t-key="item.model + item.id">
+                                        <tr role="button" t-on-click="() => this.openRecord(item)">
+                                            <td>
+                                                <span t-attf-class="o_cd_badge {{ item.priority === 'high' ? 'o_cd_tone_danger' : 'o_cd_tone_info' }}">
+                                                    <i t-if="item.priority === 'high'" class="fa fa-exclamation me-1"/>
+                                                    <t t-esc="item.kind"/>
+                                                </span>
+                                            </td>
+                                            <td class="fw-semibold" t-esc="item.reference"/>
+                                            <td class="o_cd_ellipsis" t-esc="item.title" t-att-title="item.title"/>
+                                            <td t-esc="item.employee"/>
+                                            <td t-attf-class="text-end {{ item.age > 7 ? 'text-danger fw-semibold' : '' }}"
+                                                t-esc="ageLabel(item.age)"/>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Case outcomes -->
+                        <div class="o_cd_card o_cd_panel">
+                            <div class="o_cd_panel_head">
+                                <div>
+                                    <h3>Closed Case Outcomes</h3>
+                                    <span class="o_cd_muted">Last <t t-esc="data.months"/> months</span>
+                                </div>
+                            </div>
+                            <div t-if="!data.outcomes.length" class="o_cd_empty">
+                                <i class="fa fa-gavel"/> No case closed over the period.
+                            </div>
+                            <t t-foreach="data.outcomes" t-as="outcome" t-key="outcome.key">
+                                <div class="o_cd_outcome">
+                                    <div class="o_cd_policy_row">
+                                        <span t-esc="outcome.label"/>
+                                        <strong t-esc="outcome.count"/>
+                                    </div>
+                                    <div class="o_cd_progress">
+                                        <div t-attf-class="o_cd_progress_bar {{ ['disciplinary', 'legal_action'].includes(outcome.key) ? 'bg-danger' : 'bg-primary' }}"
+                                             t-attf-style="width: {{ 100 * outcome.count / outcomeMax }}%"/>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+
+</templates>

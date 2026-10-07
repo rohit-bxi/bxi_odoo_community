@@ -15,6 +15,7 @@
                 <field name="deployment"/>
                 <field name="client_name" optional="show"/>
                 <field name="rate_percent"/>
+                <field name="component_a_missing" optional="hide" groups="hr.group_hr_user,bxi_equitable_benefit.group_eb_revenue_assurance,bxi_equitable_benefit.group_eb_finance"/>
                 <field name="state" widget="badge" decoration-info="state == 'submitted'"
                        decoration-success="state == 'approved'" decoration-danger="state == 'rejected'"/>
             </list>
@@ -38,6 +39,12 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
                 </header>
                 <sheet>
+                    <field name="component_a_missing" invisible="1" groups="hr.group_hr_user,bxi_equitable_benefit.group_eb_revenue_assurance,bxi_equitable_benefit.group_eb_finance"/>
+                    <div class="alert alert-warning" role="alert" groups="hr.group_hr_user,bxi_equitable_benefit.group_eb_revenue_assurance,bxi_equitable_benefit.group_eb_finance"
+                         invisible="not component_a_missing or state in ('rejected', 'cancelled')">
+                        The employee's contract has no Annualized Component A for this period, so it would pay
+                        nothing. Set it on the contract before the payout is computed.
+                    </div>
                     <div class="oe_title">
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
@@ -90,6 +97,9 @@
                 <filter name="my" string="My Assignments" domain="[('employee_id.user_id', '=', uid)]"/>
                 <filter name="to_approve" string="To Approve" domain="[('state', '=', 'submitted')]"/>
                 <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <separator/>
+                <filter name="component_a_missing" string="Component A Missing"
+                        domain="[('component_a_missing', '=', True)]" groups="hr.group_hr_user,bxi_equitable_benefit.group_eb_revenue_assurance,bxi_equitable_benefit.group_eb_finance"/>
                 <group>
                     <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
                     <filter name="group_pattern" string="Work Pattern" context="{'group_by': 'work_pattern_id'}"/>

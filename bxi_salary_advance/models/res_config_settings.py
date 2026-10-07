@@ -6,26 +6,16 @@ class ResConfigSettings(models.TransientModel):
 
     # ── Policy limits (all companies) ────────────────────────────────────
     sa_limit_percent = fields.Float(
-        string='Advance Limit (% of Monthly Salary)', default=75,
-        config_parameter='bxi_salary_advance.limit_percent')
+        string='Advance Limit (% of Monthly Salary)', default=50,
+        config_parameter='bxi_salary_advance.limit_percent',
+        help="Higher amounts need an exception approval by the LoB or Geo HR Head.")
     sa_salary_basis = fields.Selection(
         [('gross', 'Monthly Gross (Basic + HRA + Flexible Allowance)'), ('basic', 'Basic Salary')],
         string='Monthly Salary Basis', default='gross',
         config_parameter='bxi_salary_advance.salary_basis')
     sa_min_service_months = fields.Integer(
-        string='Minimum Service (Months)', default=6,
+        string='Minimum Service (Months)', default=12,
         config_parameter='bxi_salary_advance.min_service_months')
-    sa_emergency_installments = fields.Integer(
-        string='Emergency EMIs', default=3,
-        config_parameter='bxi_salary_advance.emergency_installments')
-    sa_housing_tenancies = fields.Char(
-        string='Housing Tenancies (Months)', default='6,12',
-        config_parameter='bxi_salary_advance.housing_tenancies',
-        help="Comma-separated tenancy durations recovered without an exception.")
-    sa_housing_limit_percent = fields.Float(
-        string='Housing Limit (% of Monthly Salary)', default=0,
-        config_parameter='bxi_salary_advance.housing_limit_percent',
-        help="Housing advances above this percentage need an exception approval. 0 means no limit.")
     # Stored inverted: a boolean parameter defaulting to True cannot be switched off.
     sa_request_form_optional = fields.Boolean(
         string='Signed Request Form Optional',
@@ -48,12 +38,6 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='bxi_salary_advance.eligible_employee_types',
         help="Comma-separated employee types that count as full-time and may apply (employee, worker, "
              "student, trainee, contractor, freelance).")
-    # Stored inverted: a boolean parameter defaulting to True cannot be switched off.
-    sa_nonprocessing_require_service = fields.Boolean(
-        string='Minimum Service for Joining / Transfer Delays',
-        config_parameter='bxi_salary_advance.nonprocessing_require_service',
-        help="By default the minimum service is waived for Category I advances requested because of "
-             "incomplete joining or delayed transfer formalities.")
     sa_outstanding_scope = fields.Selection(
         [('all', 'Every category'), ('emergency', 'Emergency advances only')],
         string='Block When an Advance Is Outstanding', default='all',

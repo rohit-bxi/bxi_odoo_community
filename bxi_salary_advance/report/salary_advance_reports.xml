@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
+    <!-- Full-width page: the layout draws its own header and footer bands. -->
+    <record id="paperformat_salary_advance" model="report.paperformat">
+        <field name="name">Salary Advance A4</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">0</field>
+        <field name="margin_bottom">0</field>
+        <field name="margin_left">0</field>
+        <field name="margin_right">0</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">90</field>
+    </record>
+
     <record id="action_report_salary_advance_request" model="ir.actions.report">
         <field name="name">Advance Request Form</field>
         <field name="model">bxi.salary.advance</field>
@@ -8,6 +23,7 @@
         <field name="report_name">bxi_salary_advance.report_salary_advance_request</field>
         <field name="report_file">bxi_salary_advance.report_salary_advance_request</field>
         <field name="print_report_name">'%s - Advance Request Form' % object.name.replace('/', '-')</field>
+        <field name="paperformat_id" ref="paperformat_salary_advance"/>
         <field name="binding_model_id" ref="model_bxi_salary_advance"/>
         <field name="binding_type">report</field>
     </record>
@@ -19,108 +35,322 @@
         <field name="report_name">bxi_salary_advance.report_loan_undertaking</field>
         <field name="report_file">bxi_salary_advance.report_loan_undertaking</field>
         <field name="print_report_name">'%s - Loan Undertaking' % object.name.replace('/', '-')</field>
+        <field name="paperformat_id" ref="paperformat_salary_advance"/>
     </record>
 
+    <!-- ── Branded layout ────────────────────────────────────────────────
+         Header and footer are part of the page body, so they print with every
+         wkhtmltopdf build (the unpatched-Qt build ignores Odoo's separate
+         header/footer pages). Expects ``doc``, ``report_title`` and
+         optionally ``report_subtitle``. -->
+    <template id="report_sa_layout" name="Salary Advance Report Layout">
+        <t t-set="company" t-value="doc.company_id or res_company"/>
+        <t t-set="partner" t-value="company.partner_id"/>
+        <div class="article o_bxi_sa_report" t-att-data-oe-model="doc._name" t-att-data-oe-id="doc.id"
+             t-att-data-oe-lang="doc.env.context.get('lang')">
+            <style>
+                .o_bxi_sa_report { font-family: 'Lato', 'Helvetica Neue', Arial, sans-serif; color: #1f2937;
+                    font-size: 17px; line-height: 1.5; }
+                .o_bxi_sa_report table { border-collapse: collapse; width: 100%; }
+                .o_bxi_sa_report .sa-page { position: relative; box-sizing: border-box; min-height: 1450px; padding-bottom: 120px; }
+                .o_bxi_sa_report .sa-header { padding: 36px 70px 24px 70px; }
+                .o_bxi_sa_report .sa-header td { vertical-align: middle; }
+                .o_bxi_sa_report .sa-logo img { max-height: 78px; max-width: 300px; }
+                .o_bxi_sa_report .sa-logo-text { font-size: 32px; font-weight: bold; color: #0b2a6f; }
+                .o_bxi_sa_report .sa-company { text-align: right; font-size: 14px; color: #4b5563; line-height: 1.55; }
+                .o_bxi_sa_report .sa-company b { font-size: 17px; color: #0b2a6f; }
+                .o_bxi_sa_report .sa-band { height: 8px; background: #0b2a6f;
+                    -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .o_bxi_sa_report .sa-band-accent { height: 4px; background: #f58220;
+                    -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .o_bxi_sa_report .sa-body { padding: 34px 70px 0 70px; }
+                .o_bxi_sa_report .sa-title td { vertical-align: bottom; }
+                .o_bxi_sa_report .sa-title h1 { font-size: 32px; color: #0b2a6f; margin: 0; font-weight: bold;
+                    line-height: 1.2; }
+                .o_bxi_sa_report .sa-title .sa-subtitle { font-size: 16px; color: #6b7280; margin-top: 4px; }
+                .o_bxi_sa_report .sa-ref { text-align: right; }
+                .o_bxi_sa_report .sa-ref-box { display: inline-block; border: 1px solid #d5dbe5; border-radius: 8px;
+                    padding: 9px 16px; background: #f5f7fb; font-size: 14px; color: #4b5563; text-align: left;
+                    line-height: 1.6; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .o_bxi_sa_report .sa-ref-box b { color: #111827; font-size: 15px; }
+                .o_bxi_sa_report h2.sa-section { font-size: 15px; text-transform: uppercase; letter-spacing: 1.5px;
+                    color: #0b2a6f; border-bottom: 2px solid #0b2a6f; padding-bottom: 6px; margin: 34px 0 12px 0;
+                    font-weight: bold; }
+                .o_bxi_sa_report table.sa-grid td { border: 1px solid #d5dbe5; padding: 11px 14px; vertical-align: top; }
+                .o_bxi_sa_report table.sa-grid td.sa-label { background: #f3f5f9; color: #374151; font-weight: bold;
+                    width: 22%; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .o_bxi_sa_report table.sa-grid.sa-wide td.sa-label { width: 32%; }
+                .o_bxi_sa_report tr.sa-highlight td { background: #fff4ea; font-size: 20px; font-weight: bold;
+                    color: #0b2a6f; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .o_bxi_sa_report tr.sa-highlight td.sa-label { background: #fde3cc; font-size: 17px; }
+                .o_bxi_sa_report .sa-muted { color: #9ca3af; }
+                .o_bxi_sa_report .sa-note { border-left: 5px solid #0b2a6f; background: #f5f7fb; padding: 16px 22px;
+                    text-align: justify; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .o_bxi_sa_report .sa-note ol { margin: 0; padding-left: 24px; }
+                .o_bxi_sa_report .sa-note li { margin-bottom: 8px; }
+                .o_bxi_sa_report .sa-sign td { width: 50%; vertical-align: bottom; padding: 0; }
+                .o_bxi_sa_report .sa-sign-line { border-top: 1.5px solid #374151; width: 78%; padding-top: 7px;
+                    font-size: 15px; font-weight: bold; color: #374151; }
+                .o_bxi_sa_report .sa-sign-line span { display: block; font-size: 14px; font-weight: normal; color: #6b7280; }
+                .o_bxi_sa_report .sa-footer { position: absolute; left: 0; right: 0; bottom: 0; }
+                .o_bxi_sa_report .sa-footer-band { background: #0b2a6f; color: #ffffff; padding: 18px 70px;
+                    font-size: 13px; line-height: 1.6; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .o_bxi_sa_report .sa-footer-band td { vertical-align: middle; color: #ffffff; }
+                .o_bxi_sa_report .sa-footer-band b { font-size: 15px; }
+                .o_bxi_sa_report .sa-footer-icon { display: inline-block; background: #ffffff; border-radius: 8px;
+                    padding: 6px 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .o_bxi_sa_report .sa-footer-icon img { max-height: 40px; max-width: 150px; display: block; }
+            </style>
+            <div class="sa-page">
+                <!-- Header: logo and company details -->
+                <div class="sa-header">
+                    <table>
+                        <tr>
+                            <td class="sa-logo" style="width: 50%;">
+                                <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" alt="Logo"/>
+                                <span t-else="" class="sa-logo-text" t-esc="company.name"/>
+                            </td>
+                            <td class="sa-company">
+                                <b t-esc="company.name"/><br/>
+                                <t t-esc="', '.join(filter(None, [partner.street, partner.street2]))"/><br/>
+                                <t t-esc="', '.join(filter(None, [partner.city, partner.state_id.name, partner.zip, partner.country_id.name]))"/>
+                                <t t-if="company.email or company.phone">
+                                    <br/><t t-esc="' | '.join(filter(None, [company.email, company.phone]))"/>
+                                </t>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="sa-band"/>
+                <div class="sa-band-accent"/>
+
+                <div class="sa-body">
+                    <table class="sa-title">
+                        <tr>
+                            <td>
+                                <h1 t-esc="report_title"/>
+                                <div t-if="report_subtitle" class="sa-subtitle" t-esc="report_subtitle"/>
+                            </td>
+                            <td class="sa-ref">
+                                <div class="sa-ref-box">
+                                    Reference: <b t-esc="doc.name"/><br/>
+                                    Date: <b t-esc="context_timestamp(doc.submitted_date or doc.create_date).strftime('%d %b %Y')"/>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                    <t t-out="0"/>
+                </div>
+
+                <!-- Footer: company details and logo icon -->
+                <div class="sa-footer">
+                    <div class="sa-footer-band">
+                        <table>
+                            <tr>
+                                <td style="width: 46%;">
+                                    <b t-esc="company.name"/><br/>
+                                    <t t-esc="', '.join(filter(None, [partner.street, partner.street2, partner.city, partner.state_id.name, partner.zip]))"/>
+                                </td>
+                                <td style="width: 32%;">
+                                    <t t-if="company.company_registry">CIN: <t t-esc="company.company_registry"/><br/></t>
+                                    <t t-if="company.email">Email: <t t-esc="company.email"/><br/></t>
+                                    <t t-if="company.website"><t t-esc="company.website"/></t>
+                                </td>
+                                <td style="width: 22%; text-align: right;">
+                                    <div t-if="company.logo" class="sa-footer-icon">
+                                        <img t-att-src="image_data_uri(company.logo)" alt="Logo"/>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- ── Advance Request Form ──────────────────────────────────────── -->
     <template id="report_salary_advance_request">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
                 <t t-set="doc" t-value="doc.sudo()"/>
-                <t t-call="web.external_layout">
-                    <div class="page">
-                        <h3 class="text-center mb-4">Salary Advance Request Form</h3>
-                        <table class="table table-sm table-bordered">
-                            <tr><th style="width: 35%">Reference</th><td t-esc="doc.name"/></tr>
-                            <tr><th>Employee</th><td t-esc="doc.employee_id.name"/></tr>
-                            <tr><th>Employee Code</th><td t-esc="doc.employee_id.employee_code or ''"/></tr>
-                            <tr><th>Department</th><td t-esc="doc.department_id.name or ''"/></tr>
-                            <tr><th>Reporting Manager</th><td t-esc="(doc.manager_id or doc.employee_id.parent_id).name or ''"/></tr>
-                            <tr><th>Date of Joining</th><td t-esc="doc.employee_id._sa_get_service_start() or ''"/></tr>
-                            <tr><th>Category</th><td t-esc="doc._category_label()"/></tr>
-                            <tr t-if="doc.category == 'non_processing'">
-                                <th>Reason Salary Was Not Processed</th>
-                                <td><span t-field="doc.nonprocessing_reason"/></td>
-                            </tr>
-                            <tr t-if="doc.category == 'emergency'">
-                                <th>Emergency</th>
-                                <td><span t-field="doc.emergency_type"/></td>
-                            </tr>
-                            <tr t-if="doc.category == 'housing'">
-                                <th>Tenancy</th>
-                                <td><t t-esc="doc.tenancy_months"/> months</td>
-                            </tr>
-                            <tr><th>Details</th><td t-esc="doc.reason or ''"/></tr>
-                            <tr><th>Amount Requested</th><td><span t-field="doc.amount_requested"/></td></tr>
-                            <tr>
-                                <th>Recovery</th>
-                                <td>
-                                    <t t-esc="doc.installment_count"/> interest-free EMI(s) of about
-                                    <span t-field="doc.installment_amount"/>, starting the month after disbursement.
-                                </td>
-                            </tr>
-                        </table>
+                <t t-set="report_title">Salary Advance Request Form</t>
+                <t t-set="report_subtitle" t-value="doc._category_label()"/>
+                <t t-call="bxi_salary_advance.report_sa_layout">
+                    <t t-set="employee" t-value="doc.employee_id"/>
+                    <t t-set="joined" t-value="employee._sa_get_service_start()"/>
 
-                        <h5 class="mt-4">Declaration</h5>
-                        <p>
-                            I request a salary advance under the Salary Advance Policy of BXITech. I confirm that I
-                            am not serving my notice period and that the information above is true. I authorise
-                            BXITech to recover the advance from my salary as stated above and, if I leave the
-                            company or am transferred before it is fully recovered, to recover the outstanding
-                            balance in my Full &amp; Final Settlement. Statutory deductions and taxes, if any, are
-                            borne by me.
-                        </p>
+                    <h2 class="sa-section">Employee Details</h2>
+                    <table class="sa-grid">
+                        <tr>
+                            <td class="sa-label">Employee</td>
+                            <td t-esc="employee.name"/>
+                            <td class="sa-label">Employee Code</td>
+                            <td><t t-if="employee.employee_code" t-esc="employee.employee_code"/><span t-else="" class="sa-muted">-</span></td>
+                        </tr>
+                        <tr>
+                            <td class="sa-label">Department</td>
+                            <td><t t-if="doc.department_id" t-esc="doc.department_id.name"/><span t-else="" class="sa-muted">-</span></td>
+                            <td class="sa-label">Date of Joining</td>
+                            <td><t t-if="joined" t-esc="joined.strftime('%d %b %Y')"/><span t-else="" class="sa-muted">-</span></td>
+                        </tr>
+                        <tr>
+                            <td class="sa-label">Reporting Manager</td>
+                            <td colspan="3">
+                                <t t-set="manager" t-value="doc.manager_id or employee.parent_id"/>
+                                <t t-if="manager" t-esc="manager.name"/><span t-else="" class="sa-muted">-</span>
+                            </td>
+                        </tr>
+                    </table>
 
-                        <div class="row mt-5">
-                            <div class="col-6">
-                                <p>______________________________</p>
-                                <p>Employee signature</p>
-                            </div>
-                            <div class="col-6">
-                                <p>______________________________</p>
-                                <p>Date</p>
-                            </div>
-                        </div>
+                    <h2 class="sa-section">Advance Details</h2>
+                    <table class="sa-grid sa-wide">
+                        <tr><td class="sa-label">Category</td><td t-esc="doc._category_label()"/></tr>
+                        <tr t-if="doc.category == 'non_processing'">
+                            <td class="sa-label">Reason Salary Was Not Processed</td>
+                            <td><span t-field="doc.nonprocessing_reason"/></td>
+                        </tr>
+                        <tr t-if="doc.category == 'emergency'">
+                            <td class="sa-label">Emergency</td>
+                            <td><span t-field="doc.emergency_type"/></td>
+                        </tr>
+                        <tr t-if="doc.category == 'housing'">
+                            <td class="sa-label">Tenancy</td>
+                            <td><t t-esc="doc.tenancy_months"/> months</td>
+                        </tr>
+                        <tr>
+                            <td class="sa-label">Details</td>
+                            <td><t t-if="doc.reason" t-esc="doc.reason"/><span t-else="" class="sa-muted">-</span></td>
+                        </tr>
+                        <tr class="sa-highlight">
+                            <td class="sa-label">Amount Requested</td>
+                            <td><span t-field="doc.amount_requested"/></td>
+                        </tr>
+                        <tr>
+                            <td class="sa-label">Recovery</td>
+                            <td>
+                                <t t-esc="doc.installment_count"/> interest-free EMI(s) of about
+                                <span t-field="doc.installment_amount"/>,
+                                <t t-if="doc.category == 'non_processing'">starting with the next payroll.</t>
+                                <t t-else="">starting the month after disbursement.</t>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <h2 class="sa-section">Declaration</h2>
+                    <div class="sa-note">
+                        I request a salary advance under the Salary Advance Policy of
+                        <t t-esc="doc.company_id.name"/>. I confirm that I am not serving my notice period and that the
+                        information above is true. I authorise <t t-esc="doc.company_id.name"/> to recover the advance
+                        from my salary as stated above and, if I leave the company or am transferred before it is fully
+                        recovered, to recover the outstanding balance in my Full &amp; Final Settlement. Statutory
+                        deductions and taxes, if any, are borne by me.
                     </div>
+
+                    <table class="sa-sign" style="margin-top: 110px;">
+                        <tr>
+                            <td>
+                                <div class="sa-sign-line">
+                                    Employee Signature
+                                    <span t-esc="employee.name"/>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="sa-sign-line" style="margin-left: auto;">
+                                    Date
+                                    <span>DD / MM / YYYY</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
                 </t>
             </t>
         </t>
     </template>
 
+    <!-- ── Loan Undertaking ───────────────────────────────────────────
+         The e-sign fields are placed on the last page at fixed positions
+         (salary_advance.action_send_undertaking): signature at 8-38% across and
+         78-84% down, date at 60-80% across and 80-83% down. The signature block
+         below is pinned to that area. -->
     <template id="report_loan_undertaking">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
                 <t t-set="doc" t-value="doc.sudo()"/>
-                <t t-call="web.external_layout">
-                    <div class="page">
-                        <h3 class="text-center mb-4">Loan Undertaking - Housing Deposit / Rent Advance</h3>
-                        <p>
-                            I, <b t-esc="doc.employee_id.name"/>
-                            <t t-if="doc.employee_id.employee_code">(employee code <t t-esc="doc.employee_id.employee_code"/>)</t>,
-                            acknowledge the housing advance <b t-esc="doc.name"/> of
+                <t t-set="report_title">Loan Undertaking</t>
+                <t t-set="report_subtitle">Housing Deposit / Rent Advance</t>
+                <t t-call="bxi_salary_advance.report_sa_layout">
+                    <t t-set="employee" t-value="doc.employee_id"/>
+                    <t t-set="company_name" t-value="doc.company_id.name"/>
+
+                    <h2 class="sa-section">Advance Summary</h2>
+                    <table class="sa-grid">
+                        <tr>
+                            <td class="sa-label">Employee</td>
+                            <td t-esc="employee.name"/>
+                            <td class="sa-label">Employee Code</td>
+                            <td><t t-if="employee.employee_code" t-esc="employee.employee_code"/><span t-else="" class="sa-muted">-</span></td>
+                        </tr>
+                        <tr>
+                            <td class="sa-label">Vendor</td>
+                            <td colspan="3"><t t-esc="doc.vendor_partner_id.name or 'The third-party vendor'"/></td>
+                        </tr>
+                        <tr class="sa-highlight">
+                            <td class="sa-label">Amount Approved</td>
+                            <td><span t-field="doc.amount_approved"/></td>
+                            <td class="sa-label">Recovery</td>
+                            <td style="font-size: 16px;">
+                                <t t-esc="doc.installment_count"/> EMI(s) of about <span t-field="doc.installment_amount"/>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <h2 class="sa-section">Undertaking</h2>
+                    <div class="sa-note">
+                        <p style="margin-top: 0;">
+                            I, <b t-esc="employee.name"/>, acknowledge the housing advance <b t-esc="doc.name"/> of
                             <b><span t-field="doc.amount_approved"/></b>, routed through
-                            <b t-esc="doc.vendor_partner_id.name or 'the third-party vendor'"/>.
+                            <b t-esc="doc.vendor_partner_id.name or 'the third-party vendor'"/>, and undertake that:
                         </p>
                         <ol>
                             <li>
-                                I undertake to repay the advance within the agreed timelines, in
+                                I will repay the advance within the agreed timelines, in
                                 <t t-esc="doc.installment_count"/> interest-free monthly instalments of about
-                                <span t-field="doc.installment_amount"/>, aligned with my rental agreement.
+                                <span t-field="doc.installment_amount"/>.
                             </li>
                             <li>
-                                I authorise BXITech to deduct the instalments from my salary and to pay them to the
-                                third-party vendor.
+                                I authorise <t t-esc="company_name"/> to deduct the instalments from my salary and to
+                                pay them to the third-party vendor.
                             </li>
                             <li>
                                 If I leave India because of a transfer or resignation, or return to my base location,
                                 the outstanding amount will be recovered in full in my Full &amp; Final Settlement.
                             </li>
                             <li>
-                                If the amount is not repaid, BXITech may recover it from my salary at my new location.
+                                If the amount is not repaid, <t t-esc="company_name"/> may recover it from my salary at
+                                my new location.
                             </li>
                             <li>Statutory deductions and taxes on the advance, if any, are borne by me.</li>
                         </ol>
-                        <div style="margin-top: 180px;">
-                            <p>Employee signature and date</p>
-                        </div>
+                    </div>
+
+                    <!-- Signature area pinned to the e-sign field positions. -->
+                    <div style="position: absolute; left: 0; right: 0; top: 84.3%; padding: 0 70px;">
+                        <table class="sa-sign">
+                            <tr>
+                                <td>
+                                    <div class="sa-sign-line" style="width: 60%;">
+                                        Employee Signature
+                                        <span t-esc="employee.name"/>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="sa-sign-line" style="width: 48%; margin-left: 20%;">
+                                        Date
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
                     </div>
                 </t>
             </t>

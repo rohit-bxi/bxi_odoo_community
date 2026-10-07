@@ -2,7 +2,7 @@
 {
     'name': 'BXI Equitable Benefit',
     'category': 'Human Resources',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'sequence': 1,
     'author': 'BXI Technologies',
     'website': 'https://bxitech.com/',
@@ -13,7 +13,9 @@
         - Employee deployment periods (work category, pattern, onsite/offshore) with approval
         - Eligibility checks: disciplinary action, performance rating, unauthorized absence
         - Pro-rata computation for pattern changes, long unpaid leave and separation (FNF)
-        - Validation by Revenue Assurance, approval by Finance, payout through payroll
+        - Validation by Revenue Assurance, approval by Finance, payout through payroll with TDS
+        - Attendance based unauthorized absence and work pattern compliance checks
+        - Full & Final Settlement on resignation or departure, including an unpaid earlier year
     """,
     'depends': [
         'hr',
@@ -29,7 +31,9 @@
         'data/ir_sequence_data.xml',
         'data/ir_config_parameter_data.xml',
         'data/work_pattern_data.xml',
+        'data/rate_matrix_update.xml',
         'data/salary_rule_data.xml',
+        'data/ir_cron_data.xml',
         'report/payout_statement_report.xml',
         'wizard/generate_payout_wizard_views.xml',
         'views/work_pattern_views.xml',

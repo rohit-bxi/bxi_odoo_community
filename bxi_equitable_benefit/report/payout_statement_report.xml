@@ -19,16 +19,16 @@
                         <h3 class="text-center">Equitable Benefit Statement</h3>
                         <table class="table table-sm table-borderless mt-3">
                             <tr>
-                                <td><strong>Employee</strong></td><td t-field="o.employee_id"/>
-                                <td><strong>Reference</strong></td><td t-field="o.name"/>
+                                <td><strong>Employee</strong></td><td><span t-field="o.employee_id"/></td>
+                                <td><strong>Reference</strong></td><td><span t-field="o.name"/></td>
                             </tr>
                             <tr>
-                                <td><strong>Department</strong></td><td t-field="o.department_id"/>
-                                <td><strong>Financial Year</strong></td><td t-field="o.fy_name"/>
+                                <td><strong>Department</strong></td><td><span t-field="o.department_id"/></td>
+                                <td><strong>Financial Year</strong></td><td><span t-field="o.fy_name"/></td>
                             </tr>
                             <tr>
-                                <td><strong>Payout Type</strong></td><td t-field="o.payout_type"/>
-                                <td><strong>Eligibility Period End</strong></td><td t-field="o.period_end"/>
+                                <td><strong>Payout Type</strong></td><td><span t-field="o.payout_type"/></td>
+                                <td><strong>Eligibility Period End</strong></td><td><span t-field="o.period_end"/></td>
                             </tr>
                         </table>
 
@@ -46,11 +46,11 @@
                             <tbody>
                                 <tr t-foreach="o.line_ids" t-as="line">
                                     <td><span t-field="line.date_from"/> - <span t-field="line.date_to"/></td>
-                                    <td t-field="line.work_pattern_id"/>
+                                    <td><span t-field="line.work_pattern_id"/></td>
                                     <td class="text-end"><t t-esc="'%.4f' % line.fraction"/></td>
-                                    <td class="text-end" t-field="line.component_a"/>
+                                    <td class="text-end"><span t-field="line.component_a"/></td>
                                     <td class="text-end"><t t-esc="'%.2f' % line.rate_percent"/>%</td>
-                                    <td class="text-end" t-field="line.amount"/>
+                                    <td class="text-end"><span t-field="line.amount"/></td>
                                 </tr>
                             </tbody>
                         </table>

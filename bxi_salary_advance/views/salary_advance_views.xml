@@ -90,7 +90,7 @@
                             <field name="emergency_type" readonly="state != 'draft'"
                                    invisible="category != 'emergency'" required="category == 'emergency'"/>
                             <field name="tenancy_months" readonly="state != 'draft'"
-                                   invisible="category != 'housing'" required="category == 'housing'"/>
+                                   invisible="category != 'housing'"/>
                             <field name="amount_requested" readonly="state != 'draft'"/>
                             <field name="reason" readonly="state != 'draft'" placeholder="Describe the situation"/>
                         </group>
@@ -109,7 +109,7 @@
                                    groups="bxi_salary_advance.group_salary_advance_hr,bxi_salary_advance.group_salary_advance_finance"/>
                             <field name="amount_approved" readonly="state != 'hr_review'"
                                    invisible="state in ('draft', 'submitted')"/>
-                            <field name="installment_count" readonly="state != 'hr_review' or category == 'non_processing'"/>
+                            <field name="installment_count" readonly="state != 'hr_review'"/>
                             <field name="installment_amount"/>
                             <field name="vendor_partner_id" invisible="category != 'housing'"
                                    readonly="state not in ('hr_review', 'exception_review', 'approved')"
@@ -244,8 +244,8 @@
             <p class="o_view_nocontent_smiling_face">Request a salary advance</p>
             <p>
                 Category I: salary not processed in the last payroll. Category II: emergencies.
-                Category III: housing deposit or rent. Up to 75% of the monthly salary, recovered in
-                interest-free EMIs.
+                Category III: housing deposit or rent. Up to 50% of the monthly salary, recovered in
+                3 interest-free EMIs.
             </p>
         </field>
     </record>
