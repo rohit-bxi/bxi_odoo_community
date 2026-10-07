@@ -181,10 +181,10 @@
                         <!-- Appraisee Questions -->
                         <!-- ================================================= -->
                         <page string="Appraisee Questions(Self)">
-                            <field name="appraisee_question_ids" readonly="1">
+                            <field name="appraisee_question_ids">
                                 <list>
-                                    <field name="sequence" readonly="1"/>
-                                    <field name="question" readonly="1"/>
+                                    <field name="sequence" />
+                                    <field name="question" />
                                     <field name="response_type" readonly="1"/>
                                     <!-- <field name="rating_scale" readonly="1"/> -->
                                     <field name="answer" invisible="response_type == 'rating'"/>
@@ -217,8 +217,8 @@
                         <!-- ================================================= -->
                         <page string="Successor">
                             <group>
-                                <field name="successor_1" readonly="1"/>
-                                <field name="successor_2" readonly="1"/>
+                                <field name="successor_1" />
+                                <field name="successor_2" />
                             </group>
                         </page>
 
@@ -227,7 +227,7 @@
                         <!-- ================================================= -->
                         <page string="Overall Remarks">
                             <group>
-                                <field name="appraisee_remarks" readonly="1"/>
+                                <field name="appraisee_remarks"/>
                                 <field name="manager_remarks" readonly="not can_edit_manager"/>
                                 <field name="calibration" readonly="1"/>
                                 <field name="reviewer_remarks" readonly="1"/>
@@ -258,7 +258,7 @@
                         />
                     </group>
                     <group string="Important Note">
-                        <field name="note"/>
+                        <field name="note" readonly="1"/>
                     </group>
                     <chatter/>
                 </sheet>
