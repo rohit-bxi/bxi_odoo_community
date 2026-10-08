@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_inherit_gift" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.gift</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='internal_notes']" position="before">
+                <page string="Gift Policy" name="gift_policy" groups="bxi_gift_entertainment.group_gift_lso,bxi_gift_entertainment.group_gift_finance">
+                    <group>
+                        <group>
+                            <field name="gift_government_official"/>
+                            <field name="gift_in_tender"/>
+                        </group>
+                        <group>
+                            <field name="gift_blacklisted"/>
+                            <field name="gift_blacklist_reason" invisible="not gift_blacklisted"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

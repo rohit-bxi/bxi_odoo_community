@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_expense_view_form_inherit_gift" model="ir.ui.view">
+        <field name="name">hr.expense.form.inherit.gift</field>
+        <field name="model">hr.expense</field>
+        <field name="inherit_id" ref="hr_expense.hr_expense_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <field name="gift_expense_type" invisible="1"/>
+                <field name="employee_country_code" invisible="1"/>
+                <group string="Gift and Entertainment Policy" invisible="not gift_expense_type and employee_country_code != 'MX'">
+                    <group>
+                        <field name="gift_request_id" invisible="gift_expense_type not in ('gift', 'entertainment')" readonly="not is_editable"/>
+                        <field name="donation_id" invisible="gift_expense_type != 'donation'" readonly="not is_editable"/>
+                        <field name="gift_receipt_id" invisible="gift_expense_type != 'gift_return'" readonly="not is_editable"/>
+                        <field name="includes_alcohol" invisible="gift_expense_type != 'entertainment'" readonly="not is_editable"/>
+                        <field name="alcohol_approved_by_id" invisible="not includes_alcohol"/>
+                        <field name="mx_fiscal_folio" invisible="employee_country_code != 'MX'" readonly="not is_editable"/>
+                    </group>
+                    <group invisible="gift_expense_type != 'entertainment'">
+                        <field name="ent_client_name" readonly="not is_editable"/>
+                        <field name="ent_date" readonly="not is_editable"/>
+                        <field name="ent_attendee_count" readonly="not is_editable"/>
+                        <field name="ent_attendees" readonly="not is_editable"/>
+                        <field name="ent_reason" readonly="not is_editable"/>
+                    </group>
+                    <field name="gift_certification" invisible="not gift_expense_type" readonly="not is_editable"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="product_product_expense_form_inherit_gift" model="ir.ui.view">
+        <field name="name">product.product.expense.form.inherit.gift</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="hr_expense.product_product_expense_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group>
+                    <field name="gift_expense_type"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

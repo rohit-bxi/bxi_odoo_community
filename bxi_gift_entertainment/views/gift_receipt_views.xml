@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bxi_gift_receipt_list" model="ir.ui.view">
+        <field name="name">bxi.gift.receipt.list</field>
+        <field name="model">bxi.gift.receipt</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="state == 'to_return'" decoration-muted="state == 'cancelled'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="partner_id"/>
+                <field name="item_type_id"/>
+                <field name="received_date"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount" sum="Total"/>
+                <field name="outcome"/>
+                <field name="return_due_date" optional="show"/>
+                <field name="state" widget="badge" decoration-success="state in ('approved', 'returned', 'declared')" decoration-danger="state == 'to_return'" decoration-info="state == 'submitted'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_gift_receipt_form" model="ir.ui.view">
+        <field name="name">bxi.gift.receipt.form</field>
+        <field name="model">bxi.gift.receipt</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" string="Declare" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object" class="btn-primary" invisible="not can_approve"/>
+                    <button name="action_reject" string="Must Be Returned" type="object" invisible="not can_approve"/>
+                    <button name="action_require_return" string="Require Return" type="object" invisible="state not in ('submitted', 'approved', 'declared')" groups="bxi_gift_entertainment.group_gift_lso"/>
+                    <button name="action_lso_review" string="LSO Review Complete" type="object"
+                            class="btn-primary"
+                            invisible="state != 'declared' or lso_review_state == 'reviewed'"
+                            groups="bxi_gift_entertainment.group_gift_lso"/>
+                    <button name="action_print_return_letter" string="Print Return Letter" type="object" invisible="state not in ('to_return', 'returned')"/>
+                    <button name="action_mark_returned" string="Mark as Returned" type="object" class="btn-primary" invisible="state != 'to_return'"/>
+                    <button name="action_cancel" string="Cancel" type="object" invisible="state not in ('draft', 'submitted')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,declared,approved,to_return,returned"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <div class="alert alert-warning" role="alert" invisible="not policy_warning">
+                        <field name="policy_warning" class="d-block" style="white-space: pre-line;"/>
+                    </div>
+                    <div class="alert alert-info" role="alert" invisible="not current_approval_line_id">
+                        Waiting for: <field name="current_approval_line_id" class="d-inline" options="{'no_open': True}"/>
+                    </div>
+                    <group>
+                        <group string="Recipient">
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                            <field name="department_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="zone_id" readonly="1"/>
+                        </group>
+                        <group string="Gift">
+                            <field name="partner_id" readonly="state != 'draft'"/>
+                            <field name="item_type_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="received_date" readonly="state != 'draft'"/>
+                            <label for="amount" string="Estimated Value"/>
+                            <div class="o_row">
+                                <field name="amount" readonly="state != 'draft'"/>
+                                <field name="currency_id" readonly="state != 'draft'" options="{'no_create': True}" groups="base.group_multi_currency"/>
+                            </div>
+                            <field name="value_unknown" readonly="state != 'draft'"/>
+                            <field name="giver_year_total" invisible="state == 'draft'"/>
+                            <field name="outcome" invisible="not outcome"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Circumstances">
+                            <field name="supplier_in_tender" readonly="state != 'draft'"/>
+                            <field name="solicited" readonly="state != 'draft'"/>
+                            <field name="refusal_unacceptable" readonly="state != 'draft'"/>
+                        </group>
+                        <group string="Return" invisible="state not in ('to_return', 'returned')">
+                            <field name="return_due_date"/>
+                            <field name="return_expense_id" readonly="state != 'to_return'"/>
+                            <field name="return_reference" readonly="state != 'to_return'"/>
+                            <field name="returned_date" invisible="not returned_date"/>
+                            <field name="edgefi_reference" invisible="state not in ('declared','approved','to_return','returned')"/>
+                            <field name="lso_review_state" invisible="outcome != 'declare'"/>
+                        </group>
+                    </group>
+                    <group string="Description">
+                        <field name="description" nolabel="1" colspan="2" readonly="state != 'draft'"/>
+                    </group>
+                    <notebook>
+                        <page string="Approvals" name="approvals">
+                            <group>
+                                <field name="threshold_id" options="{'no_open': True}" groups="bxi_gift_entertainment.group_gift_lso"/>
+                                <field name="threshold_amount" invisible="not threshold_amount"/>
+                                <field name="threshold_currency_id" invisible="not threshold_amount"/>
+                                <field name="due_diligence_id" invisible="not due_diligence_id" groups="bxi_gift_entertainment.group_gift_lso,bxi_gift_entertainment.group_gift_ethics_committee,bxi_gift_entertainment.group_gift_md,bxi_gift_entertainment.group_gift_ceo,bxi_gift_entertainment.group_gift_cfo,bxi_gift_entertainment.group_gift_board"/>
+                                <field name="submitted_date"/>
+                            </group>
+                            <field name="approval_line_ids" readonly="1">
+                                <list>
+                                    <field name="sequence" column_invisible="1"/>
+                                    <field name="name"/>
+                                    <field name="user_ids" widget="many2many_tags"/>
+                                    <field name="required_votes"/>
+                                    <field name="approved_user_ids" widget="many2many_tags"/>
+                                    <field name="state" widget="badge" decoration-success="state == 'approved'" decoration-info="state == 'pending'" decoration-danger="state == 'rejected'"/>
+                                    <field name="date_done"/>
+                                    <field name="comment"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_gift_receipt_pivot" model="ir.ui.view">
+        <field name="name">bxi.gift.receipt.pivot</field>
+        <field name="model">bxi.gift.receipt</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="partner_id" type="row"/>
+                <field name="state" type="col"/>
+                <field name="amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_bxi_gift_receipt_search" model="ir.ui.view">
+        <field name="name">bxi.gift.receipt.search</field>
+        <field name="model">bxi.gift.receipt</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="partner_id"/>
+                <filter name="to_return" string="To Return" domain="[('state', '=', 'to_return')]"/>
+                <filter name="my" string="Mine" domain="[('employee_user_id', '=', uid)]"/>
+                <filter name="to_approve" string="To Approve" domain="[('can_approve', '=', True)]"/>
+                <separator/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="submitted" string="Waiting Approval" domain="[('state', '=', 'submitted')]"/>
+                <filter name="declared" string="Declared / LSO Review" domain="[('state', '=', 'declared')]"/>
+                <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <group>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_bxi_gift_receipt_my" model="ir.actions.act_window">
+        <field name="name">My Receipts of Gift</field>
+        <field name="res_model">bxi.gift.receipt</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="domain">[('employee_user_id', '=', uid)]</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Declare gifts, meals or entertainment received from Third Parties.</p></field>
+    </record>
+    <record id="action_bxi_gift_receipt" model="ir.actions.act_window">
+        <field name="name">Receipts of Gift</field>
+        <field name="res_model">bxi.gift.receipt</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Declare gifts, meals or entertainment received from Third Parties.</p></field>
+    </record>
+</odoo>

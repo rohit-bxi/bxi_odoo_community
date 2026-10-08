@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_bxi_gift_request" model="ir.sequence">
+        <field name="name">Gift Request</field>
+        <field name="code">bxi.gift.request</field>
+        <field name="prefix">GR/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_bxi_gift_receipt" model="ir.sequence">
+        <field name="name">Receipt of Gift</field>
+        <field name="code">bxi.gift.receipt</field>
+        <field name="prefix">GRC/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_bxi_gift_donation" model="ir.sequence">
+        <field name="name">Donation</field>
+        <field name="code">bxi.gift.donation</field>
+        <field name="prefix">DON/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_bxi_gift_sponsorship" model="ir.sequence">
+        <field name="name">Sponsorship</field>
+        <field name="code">bxi.gift.sponsorship</field>
+        <field name="prefix">SPN/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_bxi_gift_due_diligence" model="ir.sequence">
+        <field name="name">Due Diligence</field>
+        <field name="code">bxi.gift.due.diligence</field>
+        <field name="prefix">DD/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_bxi_gift_extortion" model="ir.sequence">
+        <field name="name">Extortion Report</field>
+        <field name="code">bxi.gift.extortion</field>
+        <field name="prefix">EXT/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_bxi_gift_violation" model="ir.sequence">
+        <field name="name">Gift Policy Violation</field>
+        <field name="code">bxi.gift.violation</field>
+        <field name="prefix">VIO/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

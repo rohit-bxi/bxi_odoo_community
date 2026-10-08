@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="zone_give_in" model="bxi.gift.zone">
+        <field name="name">India</field>
+        <field name="code">GIVE_IN</field>
+        <field name="purpose">giving</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="zone_give_global" model="bxi.gift.zone">
+        <field name="name">All Countries Except India</field>
+        <field name="code">GIVE_GLOBAL</field>
+        <field name="purpose">giving</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="zone_recv_aae" model="bxi.gift.zone">
+        <field name="name">Americas, ANZ and Europe</field>
+        <field name="code">RECV_AAE</field>
+        <field name="purpose">receiving</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="zone_recv_row" model="bxi.gift.zone">
+        <field name="name">Other Countries (incl. India)</field>
+        <field name="code">RECV_ROW</field>
+        <field name="purpose">receiving</field>
+        <field name="sequence">20</field>
+    </record>
+    <function model="bxi.gift.zone" name="_seed_countries" eval="['GIVE_IN', ['IN']]"/>
+    <function model="bxi.gift.zone" name="_seed_countries" eval="['RECV_AAE', ['US', 'CA', 'MX', 'GT', 'BZ', 'SV', 'HN', 'NI', 'CR', 'PA', 'CU', 'DO', 'HT', 'JM', 'TT', 'BS', 'BB', 'AG', 'DM', 'GD', 'KN', 'LC', 'VC', 'PR', 'AR', 'BO', 'BR', 'CL', 'CO', 'EC', 'GY', 'PY', 'PE', 'SR', 'UY', 'VE', 'AU', 'NZ', 'AL', 'AD', 'AT', 'BY', 'BE', 'BA', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IS', 'IE', 'IT', 'LV', 'LI', 'LT', 'LU', 'MT', 'MD', 'MC', 'ME', 'NL', 'MK', 'NO', 'PL', 'PT', 'RO', 'SM', 'RS', 'SK', 'SI', 'ES', 'SE', 'CH', 'UA', 'GB', 'VA']]"/>
+</odoo>

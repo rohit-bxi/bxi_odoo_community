@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="item_branded" model="bxi.gift.item.type">
+        <field name="name">BXI-Branded / Promotional Item</field>
+        <field name="sequence">10</field>
+        <field name="prohibited" eval="False"/>
+        <field name="prohibited_reason"></field>
+        <field name="is_alcohol" eval="False"/>
+    </record>
+    <record id="item_meal" model="bxi.gift.item.type">
+        <field name="name">Meal</field>
+        <field name="sequence">20</field>
+        <field name="prohibited" eval="False"/>
+        <field name="prohibited_reason"></field>
+        <field name="is_alcohol" eval="False"/>
+    </record>
+    <record id="item_entertainment" model="bxi.gift.item.type">
+        <field name="name">Entertainment / Event Tickets</field>
+        <field name="sequence">30</field>
+        <field name="prohibited" eval="False"/>
+        <field name="prohibited_reason"></field>
+        <field name="is_alcohol" eval="False"/>
+    </record>
+    <record id="item_travel" model="bxi.gift.item.type">
+        <field name="name">Business Travel</field>
+        <field name="sequence">40</field>
+        <field name="prohibited" eval="False"/>
+        <field name="prohibited_reason"></field>
+        <field name="is_alcohol" eval="False"/>
+    </record>
+    <record id="item_alcohol" model="bxi.gift.item.type">
+        <field name="name">Alcohol (Client Entertainment)</field>
+        <field name="sequence">50</field>
+        <field name="prohibited" eval="False"/>
+        <field name="prohibited_reason"></field>
+        <field name="is_alcohol" eval="True"/>
+    </record>
+    <record id="item_prize" model="bxi.gift.item.type">
+        <field name="name">Prize / Award / Raffle Item</field>
+        <field name="sequence">60</field>
+        <field name="prohibited" eval="False"/>
+        <field name="prohibited_reason"></field>
+        <field name="is_alcohol" eval="False"/>
+    </record>
+    <record id="item_souvenir" model="bxi.gift.item.type">
+        <field name="name">Souvenir / Local Craft</field>
+        <field name="sequence">70</field>
+        <field name="prohibited" eval="False"/>
+        <field name="prohibited_reason"></field>
+        <field name="is_alcohol" eval="False"/>
+    </record>
+    <record id="item_voucher" model="bxi.gift.item.type">
+        <field name="name">Gift Voucher / Gift Card</field>
+        <field name="sequence">80</field>
+        <field name="prohibited" eval="True"/>
+        <field name="prohibited_reason">Giving or accepting gift vouchers or cards is strictly prohibited.</field>
+        <field name="is_alcohol" eval="False"/>
+    </record>
+    <record id="item_cash" model="bxi.gift.item.type">
+        <field name="name">Cash or Cash Equivalent</field>
+        <field name="sequence">90</field>
+        <field name="prohibited" eval="True"/>
+        <field name="prohibited_reason">Cash of any kind, including cash equivalents, is prohibited.</field>
+        <field name="is_alcohol" eval="False"/>
+    </record>
+    <record id="item_jewellery" model="bxi.gift.item.type">
+        <field name="name">Jewellery / Watch</field>
+        <field name="sequence">100</field>
+        <field name="prohibited" eval="True"/>
+        <field name="prohibited_reason">Personal luxury gifts are prohibited.</field>
+        <field name="is_alcohol" eval="False"/>
+    </record>
+    <record id="item_clothes" model="bxi.gift.item.type">
+        <field name="name">Clothes</field>
+        <field name="sequence">110</field>
+        <field name="prohibited" eval="True"/>
+        <field name="prohibited_reason">Personal gifts such as clothes are prohibited.</field>
+        <field name="is_alcohol" eval="False"/>
+    </record>
+    <record id="item_electronics" model="bxi.gift.item.type">
+        <field name="name">Phone / Tablet / Personal Electronics</field>
+        <field name="sequence">120</field>
+        <field name="prohibited" eval="True"/>
+        <field name="prohibited_reason">Personal luxury gifts are prohibited.</field>
+        <field name="is_alcohol" eval="False"/>
+    </record>
+    <record id="item_leisure" model="bxi.gift.item.type">
+        <field name="name">Leisure Trip / Side Trip</field>
+        <field name="sequence">130</field>
+        <field name="prohibited" eval="True"/>
+        <field name="prohibited_reason">Travel for leisure or side trips with business trips is prohibited.</field>
+        <field name="is_alcohol" eval="False"/>
+    </record>
+    <record id="item_personal_service" model="bxi.gift.item.type">
+        <field name="name">Personal Service (e.g. massage)</field>
+        <field name="sequence">140</field>
+        <field name="prohibited" eval="True"/>
+        <field name="prohibited_reason">Personal services are prohibited.</field>
+        <field name="is_alcohol" eval="False"/>
+    </record>
+    <record id="item_adult" model="bxi.gift.item.type">
+        <field name="name">Adult Entertainment / Gambling</field>
+        <field name="sequence">150</field>
+        <field name="prohibited" eval="True"/>
+        <field name="prohibited_reason">Adult entertainment and gambling are prohibited.</field>
+        <field name="is_alcohol" eval="False"/>
+    </record>
+    <record id="item_facilitating" model="bxi.gift.item.type">
+        <field name="name">Facilitating Payment</field>
+        <field name="sequence">160</field>
+        <field name="prohibited" eval="True"/>
+        <field name="prohibited_reason">Facilitating payments are strictly prohibited; contact the LSO team.</field>
+        <field name="is_alcohol" eval="False"/>
+    </record>
+</odoo>

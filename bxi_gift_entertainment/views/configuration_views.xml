@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bxi_gift_zone_list" model="ir.ui.view">
+        <field name="name">bxi.gift.zone.list</field>
+        <field name="model">bxi.gift.zone</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="purpose"/>
+                <field name="country_ids" widget="many2many_tags"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_bxi_gift_zone" model="ir.actions.act_window">
+        <field name="name">Regions</field>
+        <field name="res_model">bxi.gift.zone</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <record id="view_bxi_gift_item_type_list" model="ir.ui.view">
+        <field name="name">bxi.gift.item.type.list</field>
+        <field name="model">bxi.gift.item.type</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" decoration-danger="prohibited">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="prohibited"/>
+                <field name="prohibited_reason"/>
+                <field name="is_alcohol"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_bxi_gift_item_type" model="ir.actions.act_window">
+        <field name="name">Item Types</field>
+        <field name="res_model">bxi.gift.item.type</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <record id="view_bxi_gift_threshold_list" model="ir.ui.view">
+        <field name="name">bxi.gift.threshold.list</field>
+        <field name="model">bxi.gift.threshold</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="outcome == 'prohibited'">
+                <field name="category"/>
+                <field name="zone_id"/>
+                <field name="currency_id"/>
+                <field name="amount_from"/>
+                <field name="amount_to"/>
+                <field name="outcome"/>
+                <field name="step_ids" widget="many2many_tags" string="Approval Steps" options="{'no_open': True}"/>
+                <field name="date_from" optional="hide"/>
+                <field name="date_to" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_bxi_gift_threshold_form" model="ir.ui.view">
+        <field name="name">bxi.gift.threshold.form</field>
+        <field name="model">bxi.gift.threshold</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="category"/>
+                            <field name="zone_id"/>
+                            <field name="currency_id"/>
+                            <field name="amount_from"/>
+                            <field name="amount_to"/>
+                        </group>
+                        <group>
+                            <field name="outcome"/>
+                            <field name="notify_lso"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="note"/>
+                        </group>
+                    </group>
+                    <field name="step_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="approver_type"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_bxi_gift_threshold_search" model="ir.ui.view">
+        <field name="name">bxi.gift.threshold.search</field>
+        <field name="model">bxi.gift.threshold</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="category"/>
+                <field name="zone_id"/>
+                <group>
+                    <filter name="group_category" string="Category" context="{'group_by': 'category'}"/>
+                    <filter name="group_zone" string="Region" context="{'group_by': 'zone_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_bxi_gift_threshold" model="ir.actions.act_window">
+        <field name="name">Approval Matrix</field>
+        <field name="res_model">bxi.gift.threshold</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_group_category': 1}</field>
+    </record>
+
+    <record id="view_bxi_gift_dd_question_list" model="ir.ui.view">
+        <field name="name">bxi.gift.dd.question.list</field>
+        <field name="model">bxi.gift.dd.question</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="guidance" optional="show"/>
+                <field name="scope"/>
+                <field name="risk_answer"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_bxi_gift_dd_question" model="ir.actions.act_window">
+        <field name="name">Due Diligence Questions</field>
+        <field name="res_model">bxi.gift.dd.question</field>
+        <field name="view_mode">list</field>
+    </record>
+</odoo>

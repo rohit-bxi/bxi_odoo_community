@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_gift" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.gift</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Gift and Entertainment" string="Gift and Entertainment" name="bxi_gift_entertainment"
+                     groups="bxi_gift_entertainment.group_gift_admin">
+                    <block title="Approvers" name="gift_approvers">
+                        <setting string="Band Order" help="Role bands from the most junior to the most senior, comma separated.">
+                            <field name="gift_band_order"/>
+                        </setting>
+                        <setting string="Skip-Level Approver Minimum Band" help="Minimum band of the reporting manager's reporting manager.">
+                            <field name="gift_min_skip_manager_band"/>
+                        </setting>
+                        <setting string="Ethics Committee Quorum" help="Approvals needed from the five members.">
+                            <field name="gift_committee_quorum"/>
+                        </setting>
+                        <setting string="LSO Mailbox">
+                            <field name="gift_lso_email"/>
+                        </setting>
+                    </block>
+                    <block title="Limits" name="gift_limits">
+                        <setting string="Seasonal Gift Limit (USD)">
+                            <field name="gift_seasonal_limit_usd"/>
+                        </setting>
+                        <setting string="Single Donation Limit (USD)">
+                            <field name="gift_donation_single_limit_usd"/>
+                        </setting>
+                        <setting string="Donation Due Diligence Above (USD)">
+                            <field name="gift_donation_due_diligence_above"/>
+                        </setting>
+                        <setting string="Donations Paid Directly Above (USD)" help="0: every donation is paid by BXI through EdgeFi.">
+                            <field name="gift_donation_direct_pay_above"/>
+                        </setting>
+                        <setting string="Donation Claim Window (Days)">
+                            <field name="gift_donation_claim_days"/>
+                        </setting>
+                        <setting string="Days to Return a Gift">
+                            <field name="gift_return_due_days"/>
+                        </setting>
+                        <setting string="Approval Reminder After (Days)">
+                            <field name="gift_approval_reminder_days"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_bxi_gift_settings" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'bxi_gift_entertainment', 'bin_size': False}</field>
+    </record>
+</odoo>

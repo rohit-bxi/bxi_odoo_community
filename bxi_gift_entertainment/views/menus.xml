@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_gift_root" name="Gifts &amp; Entertainment" parent="hr.menu_hr_root" sequence="93"/>
+
+    <menuitem id="menu_gift_my" name="My Declarations" parent="menu_gift_root" sequence="10"/>
+    <menuitem id="menu_gift_my_requests" name="Gift / Entertainment Requests" parent="menu_gift_my" action="action_bxi_gift_request_my" sequence="10"/>
+    <menuitem id="menu_gift_my_receipts" name="Gifts Received" parent="menu_gift_my" action="action_bxi_gift_receipt_my" sequence="20"/>
+    <menuitem id="menu_gift_my_donations" name="Donations" parent="menu_gift_my" action="action_bxi_gift_donation_my" sequence="30"/>
+    <menuitem id="menu_gift_my_sponsorships" name="Sponsorships" parent="menu_gift_my" action="action_bxi_gift_sponsorship_my" sequence="40"/>
+    <menuitem id="menu_gift_my_extortion" name="Extortion Demands" parent="menu_gift_my" action="action_bxi_gift_extortion" sequence="50"/>
+    <menuitem id="menu_gift_report_concern" name="Report a Concern" parent="menu_gift_my" action="action_bxi_gift_violation_report_wizard" sequence="60"/>
+
+    <menuitem id="menu_gift_to_approve" name="To Approve" parent="menu_gift_root" action="action_bxi_gift_approval_line_mine" sequence="20"/>
+
+    <menuitem id="menu_gift_oversight" name="Oversight" parent="menu_gift_root" sequence="30"
+              groups="bxi_gift_entertainment.group_gift_lso,bxi_gift_entertainment.group_gift_finance,bxi_gift_entertainment.group_gift_ethics_committee"/>
+    <menuitem id="menu_gift_all_requests" name="Gift / Entertainment Register" parent="menu_gift_oversight" action="action_bxi_gift_request" sequence="10"/>
+    <menuitem id="menu_gift_all_receipts" name="Gifts Received Register" parent="menu_gift_oversight" action="action_bxi_gift_receipt" sequence="20"/>
+    <menuitem id="menu_gift_all_donations" name="Donations" parent="menu_gift_oversight" action="action_bxi_gift_donation" sequence="30"/>
+    <menuitem id="menu_gift_all_sponsorships" name="Sponsorships" parent="menu_gift_oversight" action="action_bxi_gift_sponsorship" sequence="40"/>
+    <menuitem id="menu_gift_due_diligence" name="Due Diligence" parent="menu_gift_oversight" action="action_bxi_gift_due_diligence" sequence="50"
+              groups="bxi_gift_entertainment.group_gift_lso,bxi_gift_entertainment.group_gift_ethics_committee"/>
+    <menuitem id="menu_gift_violations" name="Violations" parent="menu_gift_oversight" action="action_bxi_gift_violation" sequence="60"
+              groups="bxi_gift_entertainment.group_gift_lso,bxi_gift_entertainment.group_gift_ethics_committee"/>
+
+    <menuitem id="menu_gift_config" name="Gifts &amp; Entertainment" parent="hr.menu_human_resources_configuration"
+              sequence="33" groups="bxi_gift_entertainment.group_gift_admin"/>
+    <menuitem id="menu_gift_thresholds" name="Approval Matrix" parent="menu_gift_config" action="action_bxi_gift_threshold" sequence="10"/>
+    <menuitem id="menu_gift_zones" name="Regions" parent="menu_gift_config" action="action_bxi_gift_zone" sequence="20"/>
+    <menuitem id="menu_gift_item_types" name="Item Types" parent="menu_gift_config" action="action_bxi_gift_item_type" sequence="30"/>
+    <menuitem id="menu_gift_dd_questions" name="Due Diligence Questions" parent="menu_gift_config" action="action_bxi_gift_dd_question" sequence="40"/>
+    <menuitem id="menu_gift_settings" name="Settings" parent="menu_gift_config" action="action_bxi_gift_settings" sequence="50"/>
+</odoo>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="param_band_order" model="ir.config_parameter">
+        <field name="key">bxi_gift_entertainment.band_order</field>
+        <field name="value">E1,E2,E3,E4,E5,E6,E7,E8</field>
+    </record>
+    <record id="param_min_skip_manager_band" model="ir.config_parameter">
+        <field name="key">bxi_gift_entertainment.min_skip_manager_band</field>
+        <field name="value">E3</field>
+    </record>
+    <record id="param_lso_email" model="ir.config_parameter">
+        <field name="key">bxi_gift_entertainment.lso_email</field>
+        <field name="value">LSO@bxiventures.com</field>
+    </record>
+    <record id="param_committee_quorum" model="ir.config_parameter">
+        <field name="key">bxi_gift_entertainment.committee_quorum</field>
+        <field name="value">3</field>
+    </record>
+    <record id="param_seasonal_limit_usd" model="ir.config_parameter">
+        <field name="key">bxi_gift_entertainment.seasonal_limit_usd</field>
+        <field name="value">250</field>
+    </record>
+    <record id="param_donation_single_limit_usd" model="ir.config_parameter">
+        <field name="key">bxi_gift_entertainment.donation_single_limit_usd</field>
+        <field name="value">50000</field>
+    </record>
+    <record id="param_donation_due_diligence_above" model="ir.config_parameter">
+        <field name="key">bxi_gift_entertainment.donation_due_diligence_above</field>
+        <field name="value">25</field>
+    </record>
+    <record id="param_donation_direct_pay_above" model="ir.config_parameter">
+        <field name="key">bxi_gift_entertainment.donation_direct_pay_above</field>
+        <field name="value">3000</field>
+    </record>
+    <record id="param_donation_claim_days"  model="ir.config_parameter">
+        <field name="key">bxi_gift_entertainment.donation_claim_days</field>
+        <field name="value">45</field>
+    </record>
+    <record id="param_return_due_days" model="ir.config_parameter">
+        <field name="key">bxi_gift_entertainment.return_due_days</field>
+        <field name="value">15</field>
+    </record>
+    <record id="param_approval_reminder_days" model="ir.config_parameter">
+        <field name="key">bxi_gift_entertainment.approval_reminder_days</field>
+        <field name="value">3</field>
+    </record>
+</odoo>
