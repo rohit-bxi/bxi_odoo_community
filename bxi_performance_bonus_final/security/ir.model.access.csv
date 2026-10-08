@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_performance_bonus_plan_hr,performance.bonus.plan HR,model_performance_bonus_plan,bxi_performance_bonus_final.group_performance_bonus_manager,1,1,1,1
+access_performance_bonus_rating_rule_hr,performance.bonus.rating.rule HR,model_performance_bonus_rating_rule,bxi_performance_bonus_final.group_performance_bonus_manager,1,1,1,1
+access_performance_bonus_cycle_hr,performance.bonus.cycle HR,model_performance_bonus_cycle,bxi_performance_bonus_final.group_performance_bonus_user,1,1,1,1
+access_performance_bonus_line_hr,performance.bonus.line HR,model_performance_bonus_line,bxi_performance_bonus_final.group_performance_bonus_user,1,1,1,1
