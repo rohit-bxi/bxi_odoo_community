@@ -81,10 +81,11 @@ class TestEquitableBenefit(TransactionCase):
         day = date(2025, 6, 1)
         self.assertEqual(Rate._find_rate(self.pattern_hybrid, 'non_client', 'onsite', day, company).rate_percent, 0)
         self.assertEqual(Rate._find_rate(self.pattern_5, 'client', 'offshore', day, company).rate_percent, 5)
-        self.assertFalse(Rate._find_rate(self.pattern_5, 'client', 'onsite', day, company))
+        # Combinations the matrix leaves out are Not Applicable: a 0% row, so the pattern can still be recorded.
+        self.assertEqual(Rate._find_rate(self.pattern_5, 'client', 'onsite', day, company).rate_percent, 0)
         self.assertEqual(Rate._find_rate(self.pattern_6, 'non_client', 'onsite', day, company).rate_percent, 9.6)
         self.assertEqual(Rate._find_rate(self.pattern_odd, 'client', 'onsite', day, company).rate_percent, 11)
-        self.assertFalse(Rate._find_rate(self.pattern_odd, 'non_client', 'onsite', day, company))
+        self.assertEqual(Rate._find_rate(self.pattern_odd, 'non_client', 'onsite', day, company).rate_percent, 0)
 
     def test_specific_rate_wins(self):
         self.env['bxi.eb.rate'].create({
@@ -104,9 +105,10 @@ class TestEquitableBenefit(TransactionCase):
     # Assignments
     # ------------------------------------------------------------------
     def test_submit_without_rate(self):
+        pattern = self.env['bxi.eb.work.pattern'].create({'name': '4 Days Work from Office', 'code': 'WFO4'})
         assignment = self.env['bxi.eb.assignment'].create({
-            'employee_id': self.employee.id, 'date_from': self.fy_start, 'work_pattern_id': self.pattern_odd.id,
-            'work_category': 'non_client', 'deployment': 'onsite'})
+            'employee_id': self.employee.id, 'date_from': self.fy_start, 'work_pattern_id': pattern.id,
+            'work_category': 'client', 'deployment': 'onsite', 'justification': 'Client SOW'})
         with self.assertRaises(UserError):
             assignment.action_submit()
 
@@ -125,18 +127,18 @@ class TestEquitableBenefit(TransactionCase):
     def test_employee_cannot_approve_or_edit(self):
         assignment = self.env['bxi.eb.assignment'].with_user(self.employee_user).create({
             'employee_id': self.employee.id, 'date_from': self.fy_start, 'work_pattern_id': self.pattern_6.id,
-            'work_category': 'non_client', 'deployment': 'onsite'})
+            'work_category': 'non_client', 'deployment': 'onsite', 'justification': 'Release support weekends'})
         assignment.action_submit()
         with self.assertRaises(UserError):
             assignment.action_approve()
         with self.assertRaises(UserError):
-            assignment.write({'client_name': 'Other'})
+            assignment.write({'justification': 'Other'})
 
     def test_employee_cannot_self_approve(self):
         Assignment = self.env['bxi.eb.assignment'].with_user(self.employee_user)
         vals = {
             'employee_id': self.employee.id, 'date_from': self.fy_start, 'work_pattern_id': self.pattern_6.id,
-            'work_category': 'non_client', 'deployment': 'onsite'}
+            'work_category': 'non_client', 'deployment': 'onsite', 'justification': 'Release support weekends'}
         with self.assertRaises(UserError):
             Assignment.create(dict(vals, state='approved'))
         with self.assertRaises(UserError):
@@ -689,3 +691,38 @@ class TestEquitableBenefit(TransactionCase):
         payout = form.record
         with self.assertRaises(ValidationError):
             payout.period_end = date(2025, 6, 30)
+
+    # ------------------------------------------------------------------
+    # Odd shift compliance
+    # ------------------------------------------------------------------
+    def _calendars(self):
+        Calendar = self.env['resource.calendar']
+        return Calendar.create({'name': 'EB Day Shift'}), Calendar.create({'name': 'EB Night Shift', 'eb_is_odd_shift': True})
+
+    def test_odd_shift_not_checked_until_configured(self):
+        self.env['resource.calendar'].search([]).eb_is_odd_shift = False
+        self._assignment(self.pattern_odd, self.fy_start)
+        payout = self._payout()
+        self.assertFalse(payout.line_ids.shift_checked)
+        self.assertAlmostEqual(payout.amount_final, 66000)
+
+    def test_odd_shift_worked_on_odd_schedule(self):
+        _day, night = self._calendars()
+        self.employee.resource_calendar_id = night
+        self._assignment(self.pattern_odd, self.fy_start)
+        payout = self._payout()
+        self.assertTrue(payout.line_ids.shift_checked)
+        self.assertEqual(payout.line_ids.odd_shift_percent, 100)
+        self.assertNotIn('odd shift working schedule', payout.warning_note or '')
+
+    def test_odd_shift_worked_on_day_schedule_flagged(self):
+        day, _night = self._calendars()
+        self.employee.resource_calendar_id = day
+        self._assignment(self.pattern_odd, self.fy_start)
+        payout = self._payout()
+        self.assertEqual(payout.line_ids.odd_shift_percent, 0)
+        self.assertIn('odd shift working schedule', payout.warning_note)
+        # A warning for review, never a block.
+        self.assertTrue(payout.is_eligible)
+        self.assertAlmostEqual(payout.amount_final, 66000)
+

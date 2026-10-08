@@ -40,7 +40,8 @@ class ResConfigSettings(models.TransientModel):
     eb_min_pattern_compliance = fields.Float(
         string='Minimum Pattern Compliance (%)',
         help="Flag payouts whose office attendance is below this share of the days the work pattern "
-             "expects. 0 disables the check. It never blocks the payout.",
+             "expects, or whose odd shift pattern was worked on an odd shift working schedule for less than this "
+             "share of the days. 0 disables the check. It never blocks the payout.",
         config_parameter='bxi_equitable_benefit.min_pattern_compliance')
     eb_payout_tds = fields.Selection(
         [('incremental', 'Deduct tax at the marginal slab'), ('none', 'No separate deduction')],

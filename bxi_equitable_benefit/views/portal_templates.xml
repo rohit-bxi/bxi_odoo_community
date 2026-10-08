@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="portal_my_home_equitable_benefit" inherit_id="portal.portal_my_home"
+              name="Portal Home - Equitable Benefit">
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
+            <t t-if="not request.env.user.sudo().vender_custmer_access">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon" t-value="'/bxi_equitable_benefit/static/src/img/equitable-benefit-icon.svg'"/>
+                    <t t-set="title">Equitable Benefit</t>
+                    <t t-set="text">Declare your work pattern and see your annual benefit</t>
+                    <t t-set="url" t-value="'/my/equitable-benefit'"/>
+                    <t t-set="config_card" t-value="True"/>
+                </t>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="portal_equitable_benefit_policy_note" name="Equitable Benefit Policy Summary">
+        <div class="alert alert-light border small">
+            <b>Equitable Benefit Policy.</b> Employees whose work pattern is required by a client, a project or a
+            business objective (six-day weeks, odd hour, day or week shifts) receive a yearly benefit, a percentage
+            of their Annualized Component A as defined in the offer letter. It is paid through payroll after the
+            close of the financial year, pro-rata to the time spent in each work pattern, and pro-rata in the Full
+            &amp; Final Settlement on separation. You are eligible with no active disciplinary action, a performance
+            rating of Meets Expectations or above, no extended unauthorized absence, and a work pattern supported
+            by a documented client or project requirement. Long unpaid leave reduces the benefit proportionally.
+            Hybrid work (3 days from office, 2 from home) is not covered.
+            <t t-if="rates">
+                <table class="table table-sm table-borderless mb-0 mt-2 w-auto">
+                    <thead>
+                        <tr><th>Work Pattern</th><th>Work Category</th><th>Deployment</th><th class="text-end">Benefit</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="rates" t-as="rate">
+                            <td t-esc="rate.work_pattern_id.name"/>
+                            <td t-esc="label(rate, 'work_category')"/>
+                            <td t-esc="label(rate, 'deployment')"/>
+                            <td class="text-end">
+                                <t t-if="rate.rate_percent"><t t-esc="'%g' % rate.rate_percent"/>%</t>
+                                <span t-else="" class="text-muted">Not Applicable</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </t>
+        </div>
+    </template>
+
+    <template id="portal_equitable_benefit_state_badge" name="Equitable Benefit State Badge">
+        <t t-set="badge_class" t-value="{
+            'draft': 'text-bg-light', 'submitted': 'text-bg-info', 'approved': 'text-bg-success',
+            'paid': 'text-bg-success', 'rejected': 'text-bg-danger', 'cancelled': 'text-bg-secondary',
+        }.get(record.state, 'text-bg-secondary')"/>
+        <span t-attf-class="badge #{badge_class}" t-esc="label(record, 'state')"/>
+    </template>
+
+    <template id="portal_my_equitable_benefit" name="My Equitable Benefit">
+        <t t-call="portal.portal_layout">
+            <div class="d-flex flex-wrap align-items-center gap-2 my-3">
+                <h3 class="mb-0 me-auto">Equitable Benefit</h3>
+                <a t-if="employee" href="/my/equitable-benefit/pattern/new" class="btn btn-primary">+ Declare Work Pattern</a>
+            </div>
+            <div t-if="not employee" class="alert alert-warning">No employee record is linked to your user.</div>
+            <div t-if="submitted" class="alert alert-success">Your work pattern has been submitted to Revenue Assurance for review.</div>
+            <div t-if="withdrawn" class="alert alert-success">Your work pattern has been withdrawn.</div>
+            <div t-if="error" class="alert alert-danger" t-esc="error"/>
+            <t t-call="bxi_equitable_benefit.portal_equitable_benefit_policy_note"/>
+
+            <t t-if="employee">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Current Work Pattern</h5>
+                        <t t-if="current">
+                            <b t-esc="current.work_pattern_id.name"/> -
+                            <t t-esc="label(current, 'work_category')"/>, <t t-esc="label(current, 'deployment')"/>,
+                            since <span t-field="current.date_from"/>.
+                            <t t-if="current.rate_percent">Benefit: <b><t t-esc="'%g' % current.rate_percent"/>%</b> of Annualized Component A.</t>
+                            <t t-else="">This work pattern carries no benefit.</t>
+                        </t>
+                        <span t-else="" class="text-muted">No approved work pattern. Declare yours if your schedule is
+                            required by a client, a project or a business objective.</span>
+                    </div>
+                </div>
+
+                <h5>My Work Patterns</h5>
+                <p t-if="not assignments" class="text-muted">You have not declared a work pattern yet.</p>
+                <div t-if="assignments" class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Reference</th>
+                                <th>Period</th>
+                                <th>Work Pattern</th>
+                                <th>Category</th>
+                                <th>Deployment</th>
+                                <th>Project</th>
+                                <th class="text-end">Rate</th>
+                                <th>Status</th>
+                                <th/>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="assignments" t-as="record">
+                                <td t-esc="record.name"/>
+                                <td>
+                                    <span t-field="record.date_from"/> -
+                                    <span t-if="record.date_to" t-field="record.date_to"/><t t-else="">ongoing</t>
+                                </td>
+                                <td t-esc="record.work_pattern_id.name"/>
+                                <td t-esc="label(record, 'work_category')"/>
+                                <td t-esc="label(record, 'deployment')"/>
+                                <td t-esc="', '.join(record.project_ids.mapped('name'))"/>
+                                <td class="text-end"><t t-esc="'%g' % record.rate_percent"/>%</td>
+                                <td>
+                                    <t t-call="bxi_equitable_benefit.portal_equitable_benefit_state_badge"/>
+                                    <div t-if="record.state == 'rejected' and record.rejection_reason"
+                                         class="small text-danger" t-esc="record.rejection_reason"/>
+                                </td>
+                                <td class="text-end">
+                                    <form t-if="record.state in withdrawable_states" method="post"
+                                          t-attf-action="/my/equitable-benefit/pattern/#{record.id}/withdraw">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary">Withdraw</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5 class="mt-4">My Payouts</h5>
+                <p t-if="not payouts" class="text-muted">No payout has been approved yet. Payouts are computed after the
+                    close of each financial year.</p>
+                <div t-if="payouts" class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Financial Year</th>
+                                <th>Type</th>
+                                <th>Period</th>
+                                <th class="text-end">Amount</th>
+                                <th>Status</th>
+                                <th/>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="payouts" t-as="record">
+                                <td t-esc="record.fy_name"/>
+                                <td t-esc="label(record, 'payout_type')"/>
+                                <td><span t-field="record.fy_start"/> - <span t-field="record.period_end"/></td>
+                                <td class="text-end"><span t-field="record.amount_final"/></td>
+                                <td>
+                                    <t t-call="bxi_equitable_benefit.portal_equitable_benefit_state_badge"/>
+                                    <div t-if="not record.is_eligible and record.ineligibility_reason"
+                                         class="small text-danger" t-esc="record.ineligibility_reason"/>
+                                </td>
+                                <td class="text-end">
+                                    <a t-attf-href="/my/equitable-benefit/payout/#{record.id}/statement"
+                                       class="btn btn-sm btn-outline-primary">Statement</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <template id="portal_equitable_benefit_form" name="Declare Work Pattern">
+        <t t-call="portal.portal_layout">
+            <div class="my-3">
+                <a href="/my/equitable-benefit">&#8592; Equitable Benefit</a>
+                <h3 class="mt-2">Declare Work Pattern</h3>
+            </div>
+            <div t-if="not employee" class="alert alert-warning">No employee record is linked to your user.</div>
+            <div t-if="error" class="alert alert-danger" t-esc="error"/>
+            <t t-call="bxi_equitable_benefit.portal_equitable_benefit_policy_note"/>
+
+            <form t-if="employee" id="eb_pattern_form" method="post" action="/my/equitable-benefit/pattern/new"
+                  enctype="multipart/form-data" class="row g-3">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <div class="col-md-6">
+                    <label class="form-label" for="eb_pattern">Work Pattern</label>
+                    <select id="eb_pattern" name="work_pattern_id" class="form-select" required="required">
+                        <option value="">Select...</option>
+                        <t t-foreach="patterns" t-as="pattern">
+                            <option t-att-value="pattern.id" t-att-selected="str(pattern.id) == post.get('work_pattern_id')"
+                                    t-esc="pattern.name"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="eb_category">Work Category</label>
+                    <select id="eb_category" name="work_category" class="form-select" required="required">
+                        <t t-foreach="categories" t-as="category">
+                            <option t-att-value="category[0]" t-att-selected="category[0] == post.get('work_category', 'client')"
+                                    t-esc="category[1]"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="eb_deployment">Deployment</label>
+                    <select id="eb_deployment" name="deployment" class="form-select" required="required">
+                        <t t-foreach="deployments" t-as="deployment">
+                            <option t-att-value="deployment[0]" t-att-selected="deployment[0] == post.get('deployment', 'offshore')"
+                                    t-esc="deployment[1]"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="eb_date_from">From</label>
+                    <input id="eb_date_from" type="date" name="date_from" class="form-control" required="required"
+                           t-att-value="post.get('date_from')"/>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="eb_date_to">To <small class="text-muted">(empty while ongoing)</small></label>
+                    <input id="eb_date_to" type="date" name="date_to" class="form-control" t-att-value="post.get('date_to')"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="eb_projects">Project / Business Objective</label>
+                    <select id="eb_projects" name="project_ids" class="form-select" multiple="multiple" size="4">
+                        <t t-foreach="projects" t-as="project">
+                            <option t-att-value="project.id" t-att-selected="project.id in selected_projects"
+                                    t-esc="project.display_name"/>
+                        </t>
+                    </select>
+                    <small class="text-muted">The projects you work on. Not listed? Describe it below.</small>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="eb_justification">Client / Project Requirement</label>
+                    <textarea id="eb_justification" name="justification" class="form-control" rows="3"
+                              placeholder="Why the client, the project or the business objective requires this schedule"
+                              t-out="post.get('justification') or ''"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="eb_documents">Requirement Documents</label>
+                    <input id="eb_documents" type="file" name="documents" class="form-control" multiple="multiple"/>
+                    <small class="text-muted">E.g. the client email, SOW or roster requiring the schedule.</small>
+                </div>
+
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Submit for Review</button>
+                    <a href="/my/equitable-benefit" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </t>
+    </template>
+
+</odoo>
