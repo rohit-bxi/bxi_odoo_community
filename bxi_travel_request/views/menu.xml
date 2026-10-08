@@ -1,30 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem id="menu_travel_root" name="Travel Request" sequence="10"
-        web_icon="bxi_travel_request,static/description/icon.png"/>
 
-    <menuitem
-        id="menu_travel_request"
-        name="Travel Requests"
-        parent="menu_travel_root"
-        action="action_travel_request"
-        sequence="20"  
-    />
+    <!-- ========================================================= -->
+    <!-- Actions                                                    -->
+    <!-- ========================================================= -->
+
+    <!-- Employee: My Travel Requests -->
+    <record id="action_my_travel_request" model="ir.actions.act_window">
+        <field name="name">My Travel Requests</field>
+        <field name="res_model">travel.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="bxi_travel_request.view_travel_request_search"/>
+        <field name="domain">[('employee_id.user_id', '=', uid)]</field>
+    </record>
+
+    <!-- HR: All Travel Requests -->
+    <record id="action_all_travel_request" model="ir.actions.act_window">
+        <field name="name">All Travel Requests</field>
+        <field name="res_model">travel.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="bxi_travel_request.view_travel_request_search"/>
+    </record>
+
+
+    <!-- ========================================================= -->
+    <!-- Menus                                                      -->
+    <!-- ========================================================= -->
+
+    <!-- Main Travel Request Menu -->
+    <menuitem id="menu_travel_root"
+              name="Travel Request"
+              sequence="10"
+              groups="base.group_user"
+              web_icon="bxi_travel_request,static/description/icon.png"/>
+
+    <!-- Employee Menu -->
+    <menuitem id="menu_my_travel_request"
+              name="My Travel Requests"
+              parent="menu_travel_root"
+              action="action_my_travel_request"
+              sequence="10"
+              groups="base.group_user"/>
+
+    <!-- HR Menu -->
+    <menuitem id="menu_all_travel_request"
+              name="All Travel Requests"
+              parent="menu_travel_root"
+              action="action_all_travel_request"
+              sequence="20"
+              groups="bxi_travel_request.group_travel_hr"/>
+
+
+    <!-- ========================================================= -->
+    <!-- Portal                                                      -->
+    <!-- ========================================================= -->
+
     <template id="travel_request_link"
-        inherit_id="portal.portal_my_home"
-        name="Portal Home - Travel Request">
+              inherit_id="portal.portal_my_home"
+              name="Portal Home - Travel Request">
+
         <xpath expr="//div[@id='portal_common_category']/t[1]" position="after">
-            <t
-                t-if="(request.env.user.has_group('base.group_portal') or request.env.user.has_group('base.group_user')) 
-         and not request.env.user.sudo().vender_custmer_access">
+
+            <t t-if="(request.env.user.has_group('base.group_portal')
+                     or request.env.user.has_group('base.group_user'))
+                     and not request.env.user.sudo().vender_custmer_access">
+
                 <t t-call="portal.portal_docs_entry">
-                    <t t-set="icon" t-value="'/bxi_travel_request/static/src/img/icon-travel-services.svg'"/>
+
+                    <t t-set="icon"
+                       t-value="'/bxi_travel_request/static/src/img/icon-travel-services.svg'"/>
+
                     <t t-set="title">Submit Travel Request</t>
-                    <t t-set="text">View and update your Travel Request</t>
-                    <t t-set="url" t-value="'/my/travel-request'" />
-                    <t t-set="config_card" t-value="True" />
+
+                    <t t-set="text">
+                        View and update your Travel Request
+                    </t>
+
+                    <t t-set="url"
+                       t-value="'/my/travel-request'"/>
+
+                    <t t-set="config_card"
+                       t-value="True"/>
+
                 </t>
+
             </t>
+
         </xpath>
+
     </template>
+
 </odoo>

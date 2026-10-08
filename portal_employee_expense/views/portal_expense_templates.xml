@@ -62,6 +62,9 @@
                                     </td>
                                     <td>
                                         <span t-if="exp.state == 'draft'" class="badge bg-secondary">Draft</span>
+                                        <span t-elif="exp.state == 'hr_approval'" class="badge bg-warning">
+                                            HR Approval
+                                        </span>
                                         <span t-elif="exp.state == 'finance_approval'" class="badge bg-info">Finance Approval</span>
                                         <span t-elif="exp.state == 'approved'" class="badge bg-primary">Approved</span>
                                         <span t-elif="exp.state == 'posted'" class="badge bg-primary">Posted</span>

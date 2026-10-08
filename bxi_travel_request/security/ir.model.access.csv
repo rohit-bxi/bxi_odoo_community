@@ -1,3 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_travel_request_user,travel.request user,model_travel_request,base.group_user,1,1,1,1
+access_travel_request_hr,travel.request HR,model_travel_request,bxi_travel_request.group_travel_hr,1,1,1,1
 access_travel_request_expense_line_user,travel.request.expense.line user,model_travel_request_expense_line,base.group_user,1,1,1,1
+access_travel_request_expense_line_hr,travel.request.expense.line HR,model_travel_request_expense_line,bxi_travel_request.group_travel_hr,1,1,1,1
