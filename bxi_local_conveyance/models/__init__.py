@@ -1,6 +1,7 @@
 from . import conveyance_travel_plan
 from . import conveyance_office_assignment
 from . import conveyance_approval_line
+from . import conveyance_transfer
 from . import product_template
 from . import res_company
 from . import res_config_settings

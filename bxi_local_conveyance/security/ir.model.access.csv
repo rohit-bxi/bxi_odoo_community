@@ -6,3 +6,5 @@ access_bxi_conveyance_office_assignment_hr,bxi.conveyance.office.assignment.hr,m
 access_bxi_conveyance_approval_line_user,bxi.conveyance.approval.line.user,model_bxi_conveyance_approval_line,base.group_user,1,0,0,0
 access_bxi_conveyance_approval_line_hr,bxi.conveyance.approval.line.hr,model_bxi_conveyance_approval_line,group_conveyance_hr,1,1,1,1
 access_bxi_conveyance_refuse_wizard_user,bxi.conveyance.refuse.wizard.user,model_bxi_conveyance_refuse_wizard,base.group_user,1,1,1,0
+access_bxi_conveyance_transfer_user,bxi.conveyance.transfer.user,model_bxi_conveyance_transfer,base.group_user,1,0,0,0
+access_bxi_conveyance_transfer_hr,bxi.conveyance.transfer.hr,model_bxi_conveyance_transfer,group_conveyance_hr,1,1,1,1

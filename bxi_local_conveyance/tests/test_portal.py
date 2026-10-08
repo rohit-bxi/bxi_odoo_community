@@ -72,3 +72,21 @@ class TestConveyancePortal(ConveyanceTestMixin, HttpCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('attach the bill', response.text)
         self.assertFalse(self._claims(self.employee))
+
+    def test_submit_transfer_drive(self):
+        self._login(self.employee)
+        self.assertNotIn(self.product_transfer_4w.name, self.url_open('/my/conveyance/new').text)
+        transfer = self.env['bxi.conveyance.transfer'].create({
+            'employee_id': self.employee.id, 'from_city': 'Delhi', 'to_city': 'Jaipur',
+            'transfer_date': self.workday, 'vehicle_option': 'drive',
+        })
+        self.assertIn(self.product_transfer_4w.name, self.url_open('/my/conveyance/new').text)
+        response = self._post({
+            'product_id': str(self.product_transfer_4w.id), 'date': str(self.workday),
+            'transfer_id': str(transfer.id), 'distance': '280',
+        })
+        self.assertEqual(response.status_code, 303)
+        claim = self._claims(self.employee)
+        self.assertEqual(claim.conveyance_transfer_id, transfer)
+        self.assertEqual(claim.total_amount, 1400.0)
+        self.assertEqual(claim.state, 'conveyance_approval')

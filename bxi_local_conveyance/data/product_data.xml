@@ -81,4 +81,32 @@
         <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
     </record>
 
+    <!-- Table A: driving the own vehicle to the city of a domestic transfer, instead of its movement under the
+         Domestic Transfer Policy. -->
+    <record id="product_conveyance_transfer_2w" model="product.product">
+        <field name="name">Domestic Transfer - Drive, Two-Wheeler (per km)</field>
+        <field name="description">Own two-wheeler driven to the city of a domestic transfer, reimbursed per km (Table A).</field>
+        <field name="standard_price">2.50</field>
+        <field name="type">service</field>
+        <field name="default_code">LC-TR-2W</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="conveyance_kind">transfer_2w</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
+    </record>
+
+    <record id="product_conveyance_transfer_4w" model="product.product">
+        <field name="name">Domestic Transfer - Drive, Four-Wheeler (per km)</field>
+        <field name="description">Own four-wheeler driven to the city of a domestic transfer, reimbursed per km (Table A).</field>
+        <field name="standard_price">5.00</field>
+        <field name="type">service</field>
+        <field name="default_code">LC-TR-4W</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="conveyance_kind">transfer_4w</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="True"/>
+        <field name="categ_id" eval="ref('product.product_category_expenses', raise_if_not_found=False)"/>
+    </record>
+
 </odoo>

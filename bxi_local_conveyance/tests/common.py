@@ -55,9 +55,11 @@ class ConveyanceTestMixin:
         cls.product_taxi = cls.env.ref('bxi_local_conveyance.product_conveyance_taxi')
         cls.product_parking = cls.env.ref('bxi_local_conveyance.product_conveyance_parking')
         cls.product_food = cls.env.ref('bxi_local_conveyance.product_food_sales')
+        cls.product_transfer_2w = cls.env.ref('bxi_local_conveyance.product_conveyance_transfer_2w')
+        cls.product_transfer_4w = cls.env.ref('bxi_local_conveyance.product_conveyance_transfer_4w')
         # Table A rates, whatever the database says.
-        cls.product_2w.standard_price = 2.5
-        cls.product_4w.standard_price = 5.0
+        cls.product_2w.standard_price = cls.product_transfer_2w.standard_price = 2.5
+        cls.product_4w.standard_price = cls.product_transfer_4w.standard_price = 5.0
 
     @classmethod
     def _last_day(cls, condition):
@@ -80,6 +82,13 @@ class ConveyanceTestMixin:
             'work_email': f"{login}@example.com",
             'resource_calendar_id': cls.calendar.id,
             'tz': 'Asia/Kolkata',
+        })
+
+    @classmethod
+    def _office(cls, name, street=None):
+        address = cls.env['res.partner'].create({'name': name, 'street': street or f"{name} Street"})
+        return cls.env['hr.work.location'].create({
+            'name': name, 'location_type': 'office', 'address_id': address.id,
         })
 
     def _receipt(self, expense, content=None):
@@ -107,13 +116,13 @@ class ConveyanceTestMixin:
                 'conveyance_purpose': 'client_visit', 'conveyance_from': 'Saket office',
                 'conveyance_to': 'Client, Gurugram', 'conveyance_within_city': True,
             })
-        if kind in ('vehicle_2w', 'vehicle_4w'):
+        if kind in ('vehicle_2w', 'vehicle_4w', 'transfer_2w', 'transfer_4w'):
             values['conveyance_distance'] = 10
         else:
             values['total_amount_currency'] = 300
         values.update(vals)
         expense = self.env['hr.expense'].with_user(employee.user_id).create(values)
-        if receipt and kind not in ('vehicle_2w', 'vehicle_4w'):
+        if receipt and kind not in ('vehicle_2w', 'vehicle_4w', 'transfer_2w', 'transfer_4w'):
             self._receipt(expense.sudo())
         return expense
 

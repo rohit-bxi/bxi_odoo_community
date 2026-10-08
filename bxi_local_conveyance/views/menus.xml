@@ -8,6 +8,8 @@
               action="action_conveyance_all" sequence="20" groups="group_conveyance_hr"/>
     <menuitem id="menu_conveyance_office_assignment" name="Other Office Assignments" parent="menu_conveyance_root"
               action="action_bxi_conveyance_office_assignment" sequence="30" groups="group_conveyance_hr"/>
+    <menuitem id="menu_conveyance_transfer" name="Domestic Transfers" parent="menu_conveyance_root"
+              action="action_bxi_conveyance_transfer" sequence="40" groups="group_conveyance_hr"/>
 
     <menuitem id="menu_conveyance_analysis" name="Local Conveyance" parent="hr_expense.menu_hr_expense_reports"
               action="action_conveyance_analysis" sequence="30" groups="group_conveyance_hr"/>
@@ -18,4 +20,6 @@
               action="action_bxi_conveyance_settings" sequence="10"/>
     <menuitem id="menu_conveyance_travel_plans" name="Travel Plans" parent="menu_conveyance_config"
               action="action_bxi_conveyance_travel_plan" sequence="20"/>
+    <menuitem id="menu_conveyance_employee_without_band" name="Employees Without Band" parent="menu_conveyance_config"
+              action="action_conveyance_employee_without_band" sequence="30" groups="hr.group_hr_user"/>
 </odoo>

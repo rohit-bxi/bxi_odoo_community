@@ -63,6 +63,34 @@ class TestPolicyRules(ConveyanceCommon):
         assignment.date_from = self.workday - timedelta(days=20)
         self._submit(self._claim(self.product_2w))
 
+    def test_regular_office_set_on_create(self):
+        office = self._office('Saket Office')
+        employee = self.env['hr.employee'].create({'name': 'Newcomer', 'work_location_id': office.id})
+        self.assertEqual(employee.conveyance_regular_location_id, office)
+
+    def test_other_office_assignment_follows_work_location(self):
+        Assignment = self.env['bxi.conveyance.office.assignment']
+        regular, other = self._office('Saket Office'), self._office('Noida Office')
+        self.employee.write({'work_location_id': regular.id, 'conveyance_regular_location_id': regular.id})
+        self.assertFalse(Assignment.search([('employee_id', '=', self.employee.id)]))
+
+        self.employee.work_location_id = other
+        assignment = Assignment.search([('employee_id', '=', self.employee.id)])
+        self.assertEqual(assignment.work_location_id, other)
+        self.assertEqual(assignment.date_from, self.today)
+        self.assertFalse(assignment.date_to)
+
+        # Back to the regular office: the assignment ends.
+        self.employee.work_location_id = regular
+        self.assertTrue(assignment.date_to)
+        self.assertEqual(Assignment.search_count([('employee_id', '=', self.employee.id)]), 1)
+
+    def test_permanent_transfer_starts_no_assignment(self):
+        regular, other = self._office('Saket Office'), self._office('Noida Office')
+        self.employee.write({'work_location_id': regular.id, 'conveyance_regular_location_id': regular.id})
+        self.employee.write({'work_location_id': other.id, 'conveyance_regular_location_id': other.id})
+        self.assertFalse(self.env['bxi.conveyance.office.assignment'].search([('employee_id', '=', self.employee.id)]))
+
     # ── Clause 5: weekends and holidays ──────────────────────────────────
     def test_weekend_refused(self):
         with self.assertRaisesRegex(UserError, 'weekend or holiday'):
@@ -110,6 +138,23 @@ class TestPolicyRules(ConveyanceCommon):
                                      conveyance_airport_leg='to_airport'))
         self._submit(self._claim(self.product_4w, conveyance_purpose='airport', conveyance_airport_leg='from_airport'))
 
+    def test_commute_sent_to_hr(self):
+        office = self._office('Saket Office', street='Saket District Centre')
+        self.employee.write({'work_location_id': office.id, 'private_street': '12 MG Road'})
+        for start, end in (('12 MG Road, Gurugram', 'Saket Office'), ('Saket District Centre', 'Home')):
+            claim = self._submit(self._claim(self.product_2w, conveyance_from=start, conveyance_to=end))
+            self.assertIn('commuting', claim.conveyance_policy_note)
+            self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm', 'hr'])
+        claim = self._submit(self._claim(self.product_2w, conveyance_from='Saket Office',
+                                         conveyance_to='Client, Gurugram'))
+        self.assertFalse(claim.conveyance_policy_note)
+        self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm'])
+        # The residence is the start of a trip to the airport.
+        claim = self._submit(self._claim(self.product_4w, conveyance_purpose='airport',
+                                         conveyance_airport_leg='to_airport', conveyance_from='Home',
+                                         conveyance_to='Saket Office'))
+        self.assertFalse(claim.conveyance_policy_note)
+
     # ── Travel plan table ────────────────────────────────────────────────
     def test_auto_outside_emergency_for_tp3_only(self):
         with self.assertRaisesRegex(UserError, 'emergency'):
@@ -150,6 +195,15 @@ class TestPolicyRules(ConveyanceCommon):
         self._submit(self._claim(self.product_taxi, conveyance_bill_number='INV-42'))
         with self.assertRaisesRegex(UserError, 'already been claimed'):
             self._submit(self._claim(self.product_taxi, conveyance_bill_number='inv-42 '))
+
+    def test_flexi_fuel_vehicle_sent_to_hr(self):
+        self.employee.conveyance_flexi_fuel = True
+        claim = self._submit(self._claim(self.product_2w))
+        self.assertIn('flexi basket', claim.conveyance_policy_note)
+        self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm', 'hr'])
+        # Only personal vehicles run on fuel.
+        taxi = self._submit(self._claim(self.product_taxi))
+        self.assertEqual(taxi.conveyance_approval_line_ids.mapped('role'), ['rm'])
 
     # ── Clause 6: parking and toll ───────────────────────────────────────
     def test_parking_with_a_trip(self):

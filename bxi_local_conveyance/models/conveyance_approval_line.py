@@ -1,6 +1,7 @@
 from odoo import fields, models
 
 HR_GROUP = 'bxi_local_conveyance.group_conveyance_hr'
+ADMIN_GROUP = 'bxi_local_conveyance.group_conveyance_admin'
 
 
 class BxiConveyanceApprovalLine(models.Model):
