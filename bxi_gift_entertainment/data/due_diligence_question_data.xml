@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="dd_question_01" model="bxi.gift.dd.question">
+        <field name="sequence">10</field>
+        <field name="scope">all</field>
+        <field name="risk_answer">yes</field>
+        <field name="name">Is the counterparty, or any of its directors, officers or beneficial owners, a Government Official, a state-owned or state-controlled entity, a political party or a candidate for office?</field>
+        <field name="guidance">Government Officials include family members, employees of public international organizations and staff of state-owned media.</field>
+    </record>
+    <record id="dd_question_02" model="bxi.gift.dd.question">
+        <field name="sequence">20</field>
+        <field name="scope">all</field>
+        <field name="risk_answer">yes</field>
+        <field name="name">Is a family member of a Government Official, or of a decision maker at a customer or supplier, connected to the counterparty or the recipient?</field>
+    </record>
+    <record id="dd_question_03" model="bxi.gift.dd.question">
+        <field name="sequence">30</field>
+        <field name="scope">all</field>
+        <field name="risk_answer">yes</field>
+        <field name="name">Is BXI currently bidding for, negotiating or renewing a contract, licence, permit, certificate or approval in which the counterparty (or a related party) can influence the decision?</field>
+        <field name="guidance">Includes tenders, RFPs, audits, regulatory approvals and disputes.</field>
+    </record>
+    <record id="dd_question_04" model="bxi.gift.dd.question">
+        <field name="sequence">40</field>
+        <field name="scope">all</field>
+        <field name="risk_answer">yes</field>
+        <field name="name">Did the counterparty or recipient ask for this, or suggest its amount, timing, recipient or method of payment?</field>
+        <field name="guidance">Unsolicited and transparent is expected; requests are a red flag.</field>
+    </record>
+    <record id="dd_question_05" model="bxi.gift.dd.question">
+        <field name="sequence">50</field>
+        <field name="scope">all</field>
+        <field name="risk_answer">yes</field>
+        <field name="name">Would the payment be made in cash or a cash equivalent, to a personal account, to an intermediary, or to an account in a country other than where the counterparty is registered?</field>
+    </record>
+    <record id="dd_question_06" model="bxi.gift.dd.question">
+        <field name="sequence">60</field>
+        <field name="scope">all</field>
+        <field name="risk_answer">yes</field>
+        <field name="name">Has adverse media, sanctions or watch-list screening found any bribery, corruption, fraud, money laundering or regulatory enforcement history?</field>
+        <field name="guidance">Record the screening source and date in the comment.</field>
+    </record>
+    <record id="dd_question_07" model="bxi.gift.dd.question">
+        <field name="sequence">70</field>
+        <field name="scope">all</field>
+        <field name="risk_answer">yes</field>
+        <field name="name">Does any BXI employee, or a family member of one, hold a position, an interest or a benefit in the counterparty (conflict of interest)?</field>
+    </record>
+    <record id="dd_question_08" model="bxi.gift.dd.question">
+        <field name="sequence">80</field>
+        <field name="scope">all</field>
+        <field name="risk_answer">no</field>
+        <field name="name">Is the value reasonable, proportionate and consistent with market practice and with BXI's previous dealings with this counterparty?</field>
+    </record>
+    <record id="dd_question_09" model="bxi.gift.dd.question">
+        <field name="sequence">90</field>
+        <field name="scope">all</field>
+        <field name="risk_answer">no</field>
+        <field name="name">Is the business purpose documented, related to BXI's legitimate business goals and free of any intention to influence a decision?</field>
+    </record>
+    <record id="dd_question_10" model="bxi.gift.dd.question">
+        <field name="sequence">100</field>
+        <field name="scope">donation</field>
+        <field name="risk_answer">no</field>
+        <field name="name">Is the beneficiary legally registered as a non-profit / charitable organization, with its registration and tax-exemption documents verified?</field>
+        <field name="guidance">Attach the registration certificate and tax-exemption proof.</field>
+    </record>
+    <record id="dd_question_11" model="bxi.gift.dd.question">
+        <field name="sequence">110</field>
+        <field name="scope">donation</field>
+        <field name="risk_answer">no</field>
+        <field name="name">Have the beneficiary's latest audited accounts or annual report been reviewed, and is the use of funds consistent with the stated charitable / CSR purpose?</field>
+    </record>
+    <record id="dd_question_12" model="bxi.gift.dd.question">
+        <field name="sequence">120</field>
+        <field name="scope">donation</field>
+        <field name="risk_answer">no</field>
+        <field name="name">Will the beneficiary issue a written acknowledgement / receipt and allow BXI to verify how the funds are used?</field>
+    </record>
+    <record id="dd_question_13" model="bxi.gift.dd.question">
+        <field name="sequence">130</field>
+        <field name="scope">donation</field>
+        <field name="risk_answer">yes</field>
+        <field name="name">Is the donation linked, directly or indirectly, to a customer, supplier or Government Official who could benefit BXI's business?</field>
+        <field name="guidance">Contributions to a customer employee's charity of choice need particular care.</field>
+    </record>
+    <record id="dd_question_14" model="bxi.gift.dd.question">
+        <field name="sequence">140</field>
+        <field name="scope">sponsorship</field>
+        <field name="risk_answer">no</field>
+        <field name="name">Is there a written agreement stating the value of the sponsorship and the benefits BXI receives (signage, booth, speaking slot, etc.)?</field>
+    </record>
+    <record id="dd_question_15" model="bxi.gift.dd.question">
+        <field name="sequence">150</field>
+        <field name="scope">sponsorship</field>
+        <field name="risk_answer">yes</field>
+        <field name="name">Will Government Officials (including employees of state-owned media) attend or benefit from the event?</field>
+        <field name="guidance">If yes, the Government Official rules apply to any gift or entertainment offered to them.</field>
+    </record>
+    <record id="dd_question_16" model="bxi.gift.dd.question">
+        <field name="sequence">160</field>
+        <field name="scope">sponsorship</field>
+        <field name="risk_answer">no</field>
+        <field name="name">For solicited sponsorship: is the event a charitable / CSR activity, a college symposium or a technical event undertaken by BXI or with a non-profit organization?</field>
+    </record>
+</odoo>

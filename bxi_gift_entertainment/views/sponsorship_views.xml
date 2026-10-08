@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bxi_gift_sponsorship_list" model="ir.ui.view">
+        <field name="name">bxi.gift.sponsorship.list</field>
+        <field name="model">bxi.gift.sponsorship</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state in ('rejected', 'cancelled')">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="direction"/>
+                <field name="sponsorship_type"/>
+                <field name="event_name"/>
+                <field name="partner_id"/>
+                <field name="event_date"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount" sum="Total"/>
+                <field name="state" widget="badge" decoration-success="state == 'approved'" decoration-info="state == 'submitted'" decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_gift_sponsorship_form" model="ir.ui.view">
+        <field name="name">bxi.gift.sponsorship.form</field>
+        <field name="model">bxi.gift.sponsorship</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" string="Submit" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object" class="btn-primary" invisible="not can_approve"/>
+                    <button name="action_reject" string="Reject" type="object" invisible="not can_approve"/>
+                    <button name="action_cancel" string="Cancel" type="object" invisible="state not in ('draft', 'submitted', 'approved')"/>
+                    <button name="action_reset_draft" string="Reset to Draft" type="object" invisible="state not in ('rejected', 'cancelled')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <div class="alert alert-warning" role="alert" invisible="not policy_warning">
+                        <field name="policy_warning" class="d-block" style="white-space: pre-line;"/>
+                    </div>
+                    <div class="alert alert-info" role="alert" invisible="not current_approval_line_id">
+                        Waiting for: <field name="current_approval_line_id" class="d-inline" options="{'no_open': True}"/>
+                    </div>
+                    <group>
+                        <group string="Requester">
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                            <field name="department_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="zone_id" readonly="1"/>
+                        </group>
+                        <group string="Sponsorship">
+                            <field name="direction" readonly="state != 'draft'"/>
+                            <field name="sponsorship_type" readonly="state != 'draft'"/>
+                            <field name="event_name" readonly="state != 'draft'"/>
+                            <field name="partner_id" readonly="state != 'draft'"/>
+                            <field name="event_date" readonly="state != 'draft'"/>
+                            <label for="amount"/>
+                            <div class="o_row">
+                                <field name="amount" readonly="state != 'draft'"/>
+                                <field name="currency_id" readonly="state != 'draft'" options="{'no_create': True}" groups="base.group_multi_currency"/>
+                            </div>
+                            <field name="government_attendees" readonly="state != 'draft'"/>
+                            <field name="edgefi_reference" invisible="state != 'approved'"/>
+                        </group>
+                    </group>
+                    <group string="Purpose">
+                        <field name="purpose" nolabel="1" colspan="2" readonly="state != 'draft'"/>
+                    </group>
+                    <notebook>
+                        <page string="Gifts to Attendees" name="recipients">
+                            <field name="recipient_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="email"/>
+                                    <field name="organization"/>
+                                    <field name="reason"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="value"/>
+                                    <field name="is_government_official"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Agreement" name="agreement">
+                            <field name="agreement_attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
+                        </page>
+                        <page string="Approvals" name="approvals">
+                            <group>
+                                <field name="threshold_id" options="{'no_open': True}" groups="bxi_gift_entertainment.group_gift_lso"/>
+                                <field name="threshold_amount" invisible="not threshold_amount"/>
+                                <field name="threshold_currency_id" invisible="not threshold_amount"/>
+                                <field name="due_diligence_id" invisible="not due_diligence_id" groups="bxi_gift_entertainment.group_gift_lso,bxi_gift_entertainment.group_gift_ethics_committee,bxi_gift_entertainment.group_gift_md,bxi_gift_entertainment.group_gift_ceo,bxi_gift_entertainment.group_gift_cfo,bxi_gift_entertainment.group_gift_board"/>
+                                <field name="submitted_date"/>
+                            </group>
+                            <field name="approval_line_ids" readonly="1">
+                                <list>
+                                    <field name="sequence" column_invisible="1"/>
+                                    <field name="name"/>
+                                    <field name="user_ids" widget="many2many_tags"/>
+                                    <field name="required_votes"/>
+                                    <field name="approved_user_ids" widget="many2many_tags"/>
+                                    <field name="state" widget="badge" decoration-success="state == 'approved'" decoration-info="state == 'pending'" decoration-danger="state == 'rejected'"/>
+                                    <field name="date_done"/>
+                                    <field name="comment"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_bxi_gift_sponsorship_search" model="ir.ui.view">
+        <field name="name">bxi.gift.sponsorship.search</field>
+        <field name="model">bxi.gift.sponsorship</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="partner_id"/>
+                <field name="event_name"/>
+                <filter name="my" string="Mine" domain="[('employee_user_id', '=', uid)]"/>
+                <filter name="to_approve" string="To Approve" domain="[('can_approve', '=', True)]"/>
+                <separator/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="submitted" string="Waiting Approval" domain="[('state', '=', 'submitted')]"/>
+                <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <group>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_bxi_gift_sponsorship_my" model="ir.actions.act_window">
+        <field name="name">My Sponsorships</field>
+        <field name="res_model">bxi.gift.sponsorship</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('employee_user_id', '=', uid)]</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Sponsorships given by BXI or solicited from Third Parties.</p></field>
+    </record>
+    <record id="action_bxi_gift_sponsorship" model="ir.actions.act_window">
+        <field name="name">Sponsorships</field>
+        <field name="res_model">bxi.gift.sponsorship</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Sponsorships given by BXI or solicited from Third Parties.</p></field>
+    </record>
+</odoo>

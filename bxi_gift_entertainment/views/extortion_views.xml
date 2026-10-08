@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bxi_gift_extortion_list" model="ir.ui.view">
+        <field name="name">bxi.gift.extortion.list</field>
+        <field name="model">bxi.gift.extortion</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="late_report">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="threat_type"/>
+                <field name="demand_datetime"/>
+                <field name="reported_datetime"/>
+                <field name="late_report"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_gift_extortion_form" model="ir.ui.view">
+        <field name="name">bxi.gift.extortion.form</field>
+        <field name="model">bxi.gift.extortion</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_report" string="Report" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve_payment" string="Approve Payment" type="object" class="btn-primary" invisible="state != 'reported' or not payment_requested" groups="bxi_gift_entertainment.group_gift_etc"/>
+                    <button name="action_refuse_payment" string="Refuse Payment" type="object" invisible="state != 'reported'" groups="bxi_gift_entertainment.group_gift_etc"/>
+                    <button name="action_mark_paid" string="Record Payment" type="object" invisible="state != 'payment_approved'"/>
+                    <button name="action_close" string="Close" type="object" invisible="state in ('draft', 'closed')" groups="bxi_gift_entertainment.group_gift_lso"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,reported,closed"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        Report any extortion demand to your L1 Head / MD immediately, and within one business day at the
+                        latest. A payment may only be made after approval by E&amp;TC / the Office of the General Counsel.
+                    </div>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                            <field name="threat_type" readonly="state != 'draft'"/>
+                            <field name="demanded_by" readonly="state != 'draft'"/>
+                            <field name="demand_datetime" readonly="state != 'draft'"/>
+                            <field name="reported_to_id" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="report_deadline"/>
+                            <field name="reported_datetime"/>
+                            <field name="late_report"/>
+                            <field name="impossibility_reason" invisible="not late_report and state != 'draft'"/>
+                        </group>
+                    </group>
+                    <field name="description" placeholder="What was demanded, by whom and the threat..." readonly="state != 'draft'"/>
+                    <group string="Payment">
+                        <group>
+                            <field name="payment_requested" readonly="state != 'draft'"/>
+                            <field name="payment_amount" invisible="not payment_requested" readonly="state not in ('draft', 'payment_approved')"/>
+                            <field name="currency_id" invisible="not payment_requested" groups="base.group_multi_currency"/>
+                        </group>
+                        <group>
+                            <field name="decision_user_id" invisible="not decision_user_id"/>
+                            <field name="decision_date" invisible="not decision_user_id"/>
+                            <field name="payment_reference" invisible="state not in ('payment_approved', 'paid', 'closed')"/>
+                            <field name="accounting_reference" invisible="state not in ('payment_approved', 'paid', 'closed')"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_bxi_gift_extortion" model="ir.actions.act_window">
+        <field name="name">Extortion Reports</field>
+        <field name="res_model">bxi.gift.extortion</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

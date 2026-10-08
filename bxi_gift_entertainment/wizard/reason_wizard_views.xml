@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bxi_gift_reason_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.gift.reason.wizard.form</field>
+        <field name="model">bxi.gift.reason.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <field name="reason" placeholder="Reason, quoted to the requester..."/>
+                <footer>
+                    <button name="action_confirm" string="Confirm" type="object" class="btn-primary"/>
+                    <button string="Discard" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_gift_violation_report_wizard_form" model="ir.ui.view">
+        <field name="name">bxi.gift.violation.report.wizard.form</field>
+        <field name="model">bxi.gift.violation.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Report a Concern">
+                <p class="text-muted">
+                    Report a gift received or offered in breach of the policy, a solicitation, a facilitating payment
+                    or suspected bribery. Retaliation against anyone reporting in good faith is prohibited.
+                    An anonymous report keeps no record of who sent it.
+                </p>
+                <group>
+                    <field name="violation_type"/>
+                    <field name="subject_employee_id"/>
+                    <field name="subject_partner_id"/>
+                    <field name="anonymous"/>
+                </group>
+                <field name="description" placeholder="What happened, when, who was involved..."/>
+                <footer>
+                    <button name="action_report" string="Report" type="object" class="btn-primary"/>
+                    <button string="Discard" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_bxi_gift_violation_report_wizard" model="ir.actions.act_window">
+        <field name="name">Report a Concern</field>
+        <field name="res_model">bxi.gift.violation.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

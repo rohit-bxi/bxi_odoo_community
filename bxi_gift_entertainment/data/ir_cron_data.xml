@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="ir_cron_gift_approval_reminder" model="ir.cron">
+        <field name="name">Gift Policy: Approval Reminders</field>
+        <field name="model_id" ref="model_bxi_gift_request"/>
+        <field name="state">code</field>
+        <field name="code">for name in ('bxi.gift.request', 'bxi.gift.receipt', 'bxi.gift.donation', 'bxi.gift.sponsorship'):
+    env[name]._cron_gift_approval_reminder()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+    <record id="ir_cron_gift_overdue_returns" model="ir.cron">
+        <field name="name">Gift Policy: Overdue Gift Returns</field>
+        <field name="model_id" ref="model_bxi_gift_receipt"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_overdue_returns()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+    <record id="ir_cron_gift_unreported_extortion" model="ir.cron">
+        <field name="name">Gift Policy: Unreported Extortion Demands</field>
+        <field name="model_id" ref="model_bxi_gift_extortion"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_unreported_demands()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="active" eval="True"/>
+    </record>
+    <record id="ir_cron_gift_annual_review" model="ir.cron">
+        <field name="name">Gift Policy: Annual Policy Review</field>
+        <field name="model_id" ref="model_bxi_gift_threshold"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_annual_policy_review()</field>
+        <field name="interval_number">12</field>
+        <field name="interval_type">months</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>
