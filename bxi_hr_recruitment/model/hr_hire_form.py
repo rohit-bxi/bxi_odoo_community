@@ -177,6 +177,7 @@ class HrHire(models.Model):
         readonly=True,
         copy=False,
     )
+
     def _generate_offer_letter_id(self):
         self.ensure_one()
 
@@ -223,15 +224,15 @@ class HrHire(models.Model):
     # ---------------------------------------------------------
     def action_generate_offer_letter(self):
         self.ensure_one()
-        for rec in self:
-            if not rec.offer_letter_id:
-                rec.offer_letter_id = rec._generate_offer_letter_id()
+        if not self.offer_letter_id:
+            self._generate_offer_letter_id()
 
         if not self.partner_name:
             raise UserError("Please enter Full Name.")
 
-        report = self.env.ref('bxi_hr_recruitment.action_report_offer_letter')
-
+        report = self.env.ref(
+            'bxi_hr_recruitment.action_report_offer_letter'
+        )
         pdf_content, _ = report._render_qweb_pdf(
             'bxi_hr_recruitment.action_report_offer_letter',
             res_ids=[self.id]
