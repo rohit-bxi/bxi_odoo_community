@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- =========================================================
-         Record Rule using Employee Hierarchy
-    ========================================================== -->
+    <!-- HR Group -->
+    <record id="group_travel_hr" model="res.groups">
+        <field name="name">Travel Request HR</field>
+    </record>
 
+    <!-- Normal Users -->
     <record id="travel_request_user_rule" model="ir.rule">
         <field name="name">Travel Request Hierarchy Access</field>
         <field name="model_id" ref="model_travel_request"/>
@@ -16,6 +18,15 @@
             ]
         </field>
         <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!-- HR Full Access -->
+    <record id="travel_request_hr_rule" model="ir.rule">
+        <field name="name">Travel Request HR Full Access</field>
+        <field name="model_id" ref="model_travel_request"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups"
+               eval="[(4, ref('bxi_travel_request.group_travel_hr'))]"/>
     </record>
 
 </odoo>

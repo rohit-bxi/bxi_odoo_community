@@ -1,6 +1,9 @@
 from odoo import models, fields, api
 from datetime import date as py_date
 from odoo.exceptions import UserError
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class HrExpense(models.Model):
@@ -33,9 +36,10 @@ class HrExpense(models.Model):
 
     state = fields.Selection(
         selection_add=[
+            ('hr_approval', 'Hr Approval'),
             ('finance_approval', 'Finance Approval'),
         ],
-        ondelete={'finance_approval': 'set default'},
+        ondelete={'hr_approval': 'set default','finance_approval': 'set default'},
         string="Status",
         compute=None,
         store=True, readonly=True,
@@ -92,16 +96,25 @@ class HrExpense(models.Model):
                 raise UserError("Only draft expenses can be submitted.")
             if not rec.product_id:
                 raise UserError("You cannot submit an expense without a category.")
-            rec.write({'state': 'finance_approval'})
+            rec.write({
+                'state': 'hr_approval'
+            })
 
     def action_hr_approve(self):
-        print("pass")
+        for rec in self:
+            if rec.state != 'hr_approval':
+                raise UserError("Expense must be in HR Approval state.")
+            rec.write({
+                'state': 'finance_approval'
+            })
 
     def action_finance_approved(self):
         for rec in self:
             if rec.state != 'finance_approval':
                 raise UserError("Expense must be in Finance Approval state.")
-            rec.state = 'approved'
+            rec.write({
+                'state': 'approved'
+            })
 
     def action_refuse(self):
         for rec in self:
@@ -119,13 +132,27 @@ class HrExpense(models.Model):
     def _send_state_email(self):
         for rec in self:
             template = False
-            if rec.state == 'finance_approval':
-                template = self.env.ref('portal_employee_expense.email_template_finance', raise_if_not_found=False)
-            elif rec.state == 'approved':
-                template = self.env.ref('portal_employee_expense.email_template_expense_approved', raise_if_not_found=False)
-            elif rec.state == 'refused':
-                template = self.env.ref('portal_employee_expense.email_template_expense_refused', raise_if_not_found=False)
 
+            if rec.state == 'hr_approval':
+                template = self.env.ref(
+                    'portal_employee_expense.email_template_hr',
+                    raise_if_not_found=False
+                )
+            elif rec.state == 'finance_approval':
+                template = self.env.ref(
+                    'portal_employee_expense.email_template_finance',
+                    raise_if_not_found=False
+                )
+            elif rec.state == 'approved':
+                template = self.env.ref(
+                    'portal_employee_expense.email_template_expense_approved',
+                    raise_if_not_found=False
+                )
+            elif rec.state == 'refused':
+                template = self.env.ref(
+                    'portal_employee_expense.email_template_expense_refused',
+                    raise_if_not_found=False
+                )
             if template:
                 email_values = {}
                 attachments = self.env['ir.attachment'].sudo().search([
@@ -133,11 +160,18 @@ class HrExpense(models.Model):
                     ('res_id', '=', rec.id)
                 ])
                 if attachments:
-                    email_values['attachment_ids'] = [(6, 0, attachments.ids)]
+                    email_values['attachment_ids'] = [
+                        (6, 0, attachments.ids)
+                    ]
                 try:
-                    template.send_mail(rec.id, force_send=False, email_values=email_values if email_values else None)
+                    template.send_mail(
+                        rec.id,
+                        force_send=False,
+                        email_values=email_values or None
+                    )
                 except Exception as e:
-                    import logging
-                    logging.getLogger(__name__).warning("Failed to send expense email for %s: %s", rec.id, e)
-
-
+                    _logger.warning(
+                        "Failed to send expense email for %s: %s",
+                        rec.id,
+                        e
+                    )
