@@ -234,7 +234,7 @@
                             Skill Category*
                         </td>
                         <td style="width: 25%; padding: 6px;">
-                            <!-- <t t-esc="o.skill_category or 'Engineering'" /> -->
+                            <t t-esc="o.emp_skill_category" />
                         </td>
                     </tr>
 
@@ -243,14 +243,14 @@
                             Entity / Department
                         </td>
                         <td style="padding: 6px;">
-                            Information Technology(department_id)
+                            <t t-esc="o.department_id.name or ''" />
                         </td> 
 
                         <td style="padding: 6px; font-weight: bold;">
                             Category
                         </td>
                         <td style="padding: 6px;">
-                            Practice
+                            <t t-esc="o.emp_category or ''" />
                         </td>
                     </tr>
 
@@ -706,13 +706,13 @@
                     (Medical Insurance, Term Life Insurance, Personal Accident Insurance).
                 </p>
                 <ul style="margin-left:25px; padding-left:20px; line-height:1.8;">
-                    <strong>Medical Insurance:</strong> <li>Enrollment in the Company’s Group Health
+                    <strong>Medical Insurance:</strong> <li>Enrollment in the Company&amp; Group Health
                         Medical Insurance policy is compulsory for all employees not covered under
                         the ESI Act, 1948. 
                         <li>Coverage shall commence only upon successful
                         completion of the probation period, unless expressly
                             approved in writing by the Company, and shall automatically cease on the
-                        employee’s last working day. 
+                        employee&amp; last working day. 
                         </li>
                         <li>No claims for hospitalization or
                         medical expenses incurred after cessation of employment shall be admissible.
@@ -768,7 +768,7 @@
                     subject to change as per amendment
                     in act.
                 </p>
-                <p>Gratuity: As per statutory requirements, it is employer’s statutory liability to
+                <p>Gratuity: As per statutory requirements, it is employer&amp; statutory liability to
                     pay 15 days’ Basic salary (15/26 of
                     a monthly Basic) for every completed year of service to each of his employees on
                     their exit, for any reason after</p>
@@ -777,7 +777,7 @@
 
             <!-- ===================== PAGE 9 ===================== -->
             <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
 
                 <p>
                     <strong>ANNEXURE III</strong>
@@ -837,7 +837,7 @@
                     Further, the aforesaid requirement of 90 days’ notice may be extended, if
                     mutually agreed by you and the Company </p>
                 <p>On termination of your employment for any reason, you shall comply with the
-                    Company’s termination procedures, sign
+                    Company&amp; termination procedures, sign
                     all documents and return all Company property. The Company will not be bound to
                     pay the dues, if any, till you have
                     completed all the separation procedur</p>
@@ -860,7 +860,7 @@
             </div>
             <!-- ===================== PAGE 10 ===================== -->
             <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
 
                 
                 <p>
@@ -963,7 +963,7 @@
             </div>            
             <!-- ===================== PAGE 13 ===================== -->
             <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
 
                 <h5>15. DATA PROTECTION</h5>
 
@@ -1048,7 +1048,7 @@
                         Company policies.
                         • Upon termination, whether voluntary or involuntary, all benefits and
                         allowances shall automatically cease
-                        on the employee’s last working day. No claims for medical, insurance, or
+                        on the employee&amp; last working day. No claims for medical, insurance, or
                         other benefits shall be
                         admissible after cessation of employment.</ul>
                     <ul>Any fraudulent or unauthorized claims made prior to or after termination
@@ -1058,7 +1058,7 @@
                         any amounts due to the employee
                         against liabilities arising from misconduct, fraud, or breach of
                         obligations.
-                        • Termination of employment shall not affect the Company’s right to pursue
+                        • Termination of employment shall not affect the Company&amp; right to pursue
                         civil or criminal remedies
                         available under law.</ul>
                 </p>
@@ -1066,7 +1066,7 @@
             </div>
             <!-- ===================== PAGE 14 ===================== -->
             <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
 
                 <!-- ANNEXURE TITLE -->
                 <h3 style="text-align:center; margin-top:20px;">Annexure IV</h3>
@@ -1192,7 +1192,7 @@
             </div>
             <!-- ===================== PAGE 16 ===================== -->
             <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
                 <!-- TOP NOTE -->
                 <p>
                     Additional document can be requested to clear background verification
@@ -1331,7 +1331,7 @@
             </div>
             <!-- ===================== PAGE 17 ===================== -->
             <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
 
                 <!-- ANNEXURE V -->
                 <h3 style="text-align:center; margin-top:30px;">
@@ -1636,7 +1636,7 @@
             </div>
             <!-- ===================== PAGE 21 ===================== -->
             <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
                 
                 <p>
                     <strong>3. Returning Company Documents</strong>

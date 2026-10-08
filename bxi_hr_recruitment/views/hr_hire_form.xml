@@ -72,6 +72,9 @@
 
                     <group string="Employee Info" col="2">
                         <field name="band"/>
+                        <field name="department_id"/>
+                        <field name="emp_skill_category"/>
+                        <field name="emp_category"/>
                     </group>
 
                     <group string="Monthly Components" col="2">

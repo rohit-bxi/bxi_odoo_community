@@ -9,5 +9,13 @@
             <field name="number_increment">1</field>
             <field name="company_id" eval="False"/>
         </record>
+        <record id="seq_offer_letter_document" model="ir.sequence">
+            <field name="name">Offer Letter Document ID</field>
+            <field name="code">hr.applicant.offer.letter</field>
+            <field name="prefix">66c277d4-e4a-42fb-8a41-10488f7d59b</field>
+            <field name="padding">3</field>
+            <field name="number_next">103</field>
+            <field name="number_increment">1</field>
+        </record>
     </data>
 </odoo>
