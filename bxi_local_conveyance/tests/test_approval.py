@@ -1,7 +1,7 @@
 from datetime import timedelta
 
-from odoo.exceptions import UserError
-from odoo.tests import tagged
+from odoo.exceptions import AccessError, UserError
+from odoo.tests import Form, new_test_user, tagged
 
 from .common import ConveyanceCommon
 
@@ -22,6 +22,19 @@ class TestApproval(ConveyanceCommon):
     def test_auto_above_threshold_rm_and_hr(self):
         claim = self._submit(self._claim(self.product_auto, employee=self.junior, total_amount_currency=1000.01))
         self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm', 'hr'])
+
+    def test_auto_threshold_for_the_day(self):
+        first = self._submit(self._claim(self.product_auto, employee=self.junior, total_amount_currency=600))
+        self.assertEqual(first.conveyance_approval_line_ids.mapped('role'), ['rm'])
+        # Splitting the day into several claims does not avoid the HR approval.
+        second = self._submit(self._claim(self.product_auto, employee=self.junior, total_amount_currency=600))
+        self.assertEqual(second.conveyance_approval_line_ids.mapped('role'), ['rm', 'hr'])
+        self.assertIn('total', second.conveyance_policy_note)
+        # Another day starts again.
+        other_day = self._last_day(lambda day: day.weekday() < 5 and day < self.workday)
+        third = self._submit(self._claim(self.product_auto, employee=self.junior, total_amount_currency=600,
+                                         date=other_day))
+        self.assertEqual(third.conveyance_approval_line_ids.mapped('role'), ['rm'])
 
     def test_taxi_above_threshold_rm_only(self):
         # The threshold is the auto-rickshaw rule.
@@ -91,3 +104,34 @@ class TestApproval(ConveyanceCommon):
         claim = self._claim(self.product_2w, date=self.today - timedelta(days=40))
         self.env['hr.expense']._cron_conveyance_claim_reminder()
         self.assertTrue(claim.sudo().activity_ids.filtered(lambda act: act.user_id == self.employee.user_id))
+
+    def test_admin_approves_on_behalf(self):
+        admin = new_test_user(self.env, login='lc_test_admin', name='Conveyance Admin',
+                              groups='base.group_user,bxi_local_conveyance.group_conveyance_admin')
+        claim = self._submit(self._claim(self.product_auto, employee=self.junior, total_amount_currency=1500))
+        self.assertFalse(claim.with_user(admin).conveyance_can_approve)
+        claim.with_user(admin).action_conveyance_approve_on_behalf()
+        rm_line, hr_line = claim.conveyance_approval_line_ids
+        self.assertEqual(rm_line.state, 'approved')
+        self.assertEqual(rm_line.done_by_user_id, admin)
+        self.assertIn('on behalf of Manager', rm_line.comment)
+        self.assertEqual(claim.state, 'conveyance_approval')
+        claim.with_user(admin).action_conveyance_approve_on_behalf()
+        self.assertIn('on behalf of HR', hr_line.comment)
+        self.assertEqual(claim.state, 'finance_approval')
+        self.assertEqual(claim.conveyance_status, 'finance_approval')
+
+    def test_approve_on_behalf_restricted(self):
+        claim = self._submit(self._claim(self.product_2w))
+        with self.assertRaises(AccessError):
+            claim.with_user(self.hr_user).action_conveyance_approve_on_behalf()
+        # Not even an administrator approves their own claim.
+        self.employee.user_id.group_ids |= self.env.ref('bxi_local_conveyance.group_conveyance_admin')
+        with self.assertRaisesRegex(UserError, 'own claim'):
+            claim.with_user(self.employee.user_id).action_conveyance_approve_on_behalf()
+
+    def test_form_shows_conveyance_status(self):
+        claim = self._submit(self._claim(self.product_2w))
+        self.assertEqual(claim.conveyance_status, 'conveyance_approval')
+        with Form(claim.sudo()) as form:
+            self.assertEqual(form.conveyance_status, 'conveyance_approval')

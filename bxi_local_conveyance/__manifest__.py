@@ -2,7 +2,7 @@
 {
     'name': 'BXI Local Conveyance',
     'category': 'Human Resources',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.1.0',
     'sequence': 1,
     'author': 'BXI Technologies',
     'website': 'https://bxitech.com/',
@@ -12,12 +12,14 @@
         - Travel plans by band: TP1 (E6 and above) and TP2 (E3 to E5) by taxi, TP3 (up to E2) by auto or taxi
         - Personal vehicle at the Table A rates: 2-Wheeler 2.50 and 4-Wheeler 5.00 per km, whatever the travel plan
         - Auto-rickshaw at actuals in an emergency (no inter-office cab and no personal transport)
-        - Auto-rickshaw claims: Reporting Manager approval, plus HR above Rs. 1,000; bills required
+        - Auto-rickshaw claims: Reporting Manager approval, plus HR above Rs. 1,000 for the day; bills required
         - Parking and toll at actuals with receipts, along with a conveyance claim, approved by HR
         - Residence to airport one way at the per-km rates
         - Claims within 45 days, not on weekends or holidays, not beyond two months at another local office
-        - No intercity travel, commute or travel between company facilities
-        - The same bill cannot be claimed twice (flexi basket)
+        - Other office assignments start when the work location moves away from the regular office
+        - No intercity travel, commute (residence to workplace trips go to HR) or travel between company facilities
+        - The same bill cannot be claimed twice; vehicle claims of employees with fuel in the flexi basket go to HR
+        - Domestic transfer: drive the own vehicle to the new city at Table A rates or move it, not both, one vehicle
         - Food for the Sales Team: Rs. 1,000 per day with the bill, the excess is borne by the employee
     """,
     'depends': [
@@ -42,6 +44,7 @@
         'views/hr_expense_views.xml',
         'views/conveyance_travel_plan_views.xml',
         'views/conveyance_office_assignment_views.xml',
+        'views/conveyance_transfer_views.xml',
         'views/hr_employee_views.xml',
         'views/hr_department_views.xml',
         'views/res_config_settings_views.xml',

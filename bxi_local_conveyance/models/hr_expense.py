@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, time
 
 import pytz
@@ -6,8 +7,8 @@ from dateutil.relativedelta import relativedelta
 from odoo import Command, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
-from .conveyance_approval_line import HR_GROUP
-from .product_template import BILL_KINDS, TRAVEL_KINDS, VEHICLE_KINDS
+from .conveyance_approval_line import ADMIN_GROUP, HR_GROUP
+from .product_template import BILL_KINDS, PER_KM_KINDS, TRANSFER_KINDS, TRAVEL_KINDS, VEHICLE_KINDS
 
 PARAM_PREFIX = 'bxi_local_conveyance.'
 PARAM_DEFAULTS = {
@@ -23,8 +24,30 @@ _LOCKED_FIELDS = {
     'total_amount', 'total_amount_currency', 'price_unit', 'quantity', 'product_id', 'employee_id',
     'currency_id', 'date', 'conveyance_purpose', 'conveyance_from', 'conveyance_to', 'conveyance_distance',
     'conveyance_airport_leg', 'conveyance_is_emergency', 'conveyance_reason', 'conveyance_within_city',
-    'conveyance_parent_id', 'conveyance_bill_number', 'conveyance_bill_amount',
+    'conveyance_parent_id', 'conveyance_bill_number', 'conveyance_bill_amount', 'conveyance_transfer_id',
 }
+
+# The status of a conveyance claim in the order it goes through them (the order of `state` puts the approval
+# states added by modules after Posted and Refused).
+CONVEYANCE_STATUS = [
+    ('draft', 'Draft'),
+    ('submitted', 'Submitted'),
+    ('conveyance_approval', 'Conveyance Approval'),
+    ('finance_approval', 'Finance Approval'),
+    ('approved', 'Approved'),
+    ('posted', 'Posted'),
+    ('in_payment', 'In Payment'),
+    ('paid', 'Paid'),
+    ('refused', 'Refused'),
+]
+
+# Words that name the residence in a From or To of a trip.
+_HOME_WORDS = ('home', 'residence')
+
+
+def _normalize_place(text):
+    """Lower case words separated by single spaces, padded so that whole words can be matched."""
+    return f" {re.sub(r'[^a-z0-9]+', ' ', (text or '').lower()).strip()} "
 
 
 class HrExpense(models.Model):
@@ -72,6 +95,10 @@ class HrExpense(models.Model):
     conveyance_bill_amount = fields.Monetary(
         string='Bill Amount', currency_field='company_currency_id', copy=False,
         help="Amount of the food bill. What exceeds the daily limit is borne by the employee.")
+    conveyance_transfer_id = fields.Many2one(
+        'bxi.conveyance.transfer', string='Domestic Transfer', index='btree_not_null', ondelete='restrict',
+        copy=False, domain="[('employee_id', '=', employee_id)]",
+        help="The domestic transfer the own vehicle was driven to the new city for.")
     conveyance_travel_plan_id = fields.Many2one(
         'bxi.conveyance.travel.plan', string='Travel Plan', readonly=True, copy=False)
     conveyance_rate = fields.Float(
@@ -82,6 +109,7 @@ class HrExpense(models.Model):
     conveyance_refuse_reason = fields.Text(string='Refusal Reason', readonly=True, copy=False)
     conveyance_approval_line_ids = fields.One2many(
         'bxi.conveyance.approval.line', 'expense_id', string='Conveyance Approvals', copy=False)
+    conveyance_status = fields.Selection(CONVEYANCE_STATUS, string='Conveyance Status', compute='_compute_conveyance_status')
     conveyance_can_approve = fields.Boolean(
         string='Conveyance to Approve', compute='_compute_conveyance_can_approve',
         search='_search_conveyance_can_approve')
@@ -102,7 +130,7 @@ class HrExpense(models.Model):
     @api.depends('conveyance_kind', 'price_unit')
     def _compute_conveyance_rate(self):
         for expense in self:
-            expense.conveyance_rate = expense.price_unit if expense.conveyance_kind in VEHICLE_KINDS else 0.0
+            expense.conveyance_rate = expense.price_unit if expense.conveyance_kind in PER_KM_KINDS else 0.0
 
     @api.depends('date', 'conveyance_kind')
     def _compute_conveyance_deadline(self):
@@ -110,6 +138,11 @@ class HrExpense(models.Model):
         for expense in self:
             expense.conveyance_deadline = (
                 expense.date + relativedelta(days=days) if expense.date and expense.conveyance_kind else False)
+
+    @api.depends('state')
+    def _compute_conveyance_status(self):
+        for expense in self:
+            expense.conveyance_status = expense.state
 
     @api.depends_context('uid')
     @api.depends('state', 'conveyance_approval_line_ids.state')
@@ -142,12 +175,12 @@ class HrExpense(models.Model):
     # ── CRUD ─────────────────────────────────────────────────────────────
     @api.onchange('conveyance_distance', 'product_id')
     def _onchange_conveyance_distance(self):
-        if self.conveyance_kind in VEHICLE_KINDS and self.conveyance_distance:
+        if self.conveyance_kind in PER_KM_KINDS and self.conveyance_distance:
             self.quantity = self.conveyance_distance
 
     def _sync_conveyance_quantity(self):
         """Personal vehicles are reimbursed per km: the quantity is the distance."""
-        for expense in self.filtered(lambda exp: exp.conveyance_kind in VEHICLE_KINDS and exp.conveyance_distance):
+        for expense in self.filtered(lambda exp: exp.conveyance_kind in PER_KM_KINDS and exp.conveyance_distance):
             if expense.quantity != expense.conveyance_distance:
                 expense.quantity = expense.conveyance_distance
 
@@ -226,7 +259,8 @@ class HrExpense(models.Model):
                 claim=self.name, days=claim_days, date=self.date))
 
         # Clause 8: coverage ends after two months at another local office.
-        assignment = self.env['bxi.conveyance.office.assignment']._get_uncovered(employee, self.date)
+        assignment = (kind not in TRANSFER_KINDS
+                      and self.env['bxi.conveyance.office.assignment']._get_uncovered(employee, self.date))
         if assignment:
             raise UserError(_(
                 "%(claim)s: working from %(office)s since %(date)s, conveyance was covered until %(end)s only.",
@@ -248,6 +282,8 @@ class HrExpense(models.Model):
             self._check_conveyance_parking()
         elif kind == 'food':
             self._check_conveyance_food()
+        elif kind in TRANSFER_KINDS:
+            self._check_conveyance_transfer()
 
         if kind != 'food' and self.company_currency_id.compare_amounts(self.total_amount, 0) <= 0:
             raise UserError(_("%(claim)s: the amount must be greater than zero.", claim=self.name))
@@ -269,6 +305,16 @@ class HrExpense(models.Model):
                 "processed through HR and Finance with a travel request.", claim=self.name))
         if kind in VEHICLE_KINDS and self.conveyance_distance <= 0:
             raise UserError(_("%(claim)s: enter the distance travelled in km.", claim=self.name))
+
+        # Exceptions: travel between residence and workplace is not covered.
+        if self.conveyance_purpose != 'airport' and self._is_conveyance_commute():
+            notes.append(_(
+                "From and To look like the residence and the workplace of the employee: commuting is not covered."))
+
+        # Clause 3: fuel paid through the flexi basket is not claimed again.
+        if kind in VEHICLE_KINDS and self.employee_id.sudo().conveyance_flexi_fuel:
+            notes.append(_(
+                "The employee's fuel is reimbursed through the flexi basket: check this trip is not claimed there."))
 
         # Clause 5: no transportation on weekends or holidays.
         if self._is_conveyance_non_working_day():
@@ -348,6 +394,50 @@ class HrExpense(models.Model):
         if parent.state == 'refused':
             raise UserError(_("%(claim)s: the related conveyance claim was refused.", claim=self.name))
 
+    def _is_conveyance_commute(self):
+        """Whether the trip goes from the residence of the employee to their workplace, or back."""
+        self.ensure_one()
+        employee = self.employee_id.sudo()
+        offices = (employee.work_location_id | employee.conveyance_regular_location_id).filtered(
+            lambda location: location.location_type != 'home')
+        home = [employee.private_street, *_HOME_WORDS]
+        work = offices.mapped('name') + offices.address_id.mapped('street') + [employee.address_id.street]
+        home, work = (
+            [marker for marker in map(_normalize_place, markers) if len(marker.strip()) >= 4]
+            for markers in (home, work))
+
+        def is_at(place, markers):
+            return any(marker in _normalize_place(place) for marker in markers)
+
+        start, end = self.conveyance_from, self.conveyance_to
+        return (is_at(start, home) and is_at(end, work)) or (is_at(start, work) and is_at(end, home))
+
+    def _check_conveyance_transfer(self):
+        """Table A: driving to the city of a domestic transfer, unless the vehicle is moved under the Domestic
+        Transfer Policy, for one vehicle only."""
+        self.ensure_one()
+        _ = self.env._
+        transfer = self.sudo().conveyance_transfer_id
+        if not transfer:
+            raise UserError(_("%(claim)s: select the domestic transfer you drove to the new city for.", claim=self.name))
+        if transfer.employee_id != self.employee_id:
+            raise UserError(_("%(claim)s: the domestic transfer is not the employee's.", claim=self.name))
+        if transfer.vehicle_option != 'drive':
+            raise UserError(_(
+                "%(claim)s: the movement of your vehicle is reimbursed under the Domestic Transfer Policy for "
+                "%(transfer)s. Driving it to the new city cannot be claimed as well.",
+                claim=self.name, transfer=transfer.display_name))
+        if self.conveyance_distance <= 0:
+            raise UserError(_("%(claim)s: enter the distance driven in km.", claim=self.name))
+        if transfer.claim_ids.filtered(lambda exp: exp != self and exp.state not in ('draft', 'refused')):
+            raise UserError(_(
+                "%(claim)s: a vehicle has already been claimed for %(transfer)s (one vehicle only).",
+                claim=self.name, transfer=transfer.display_name))
+        self.sudo().write({
+            'conveyance_from': self.conveyance_from or transfer.from_city,
+            'conveyance_to': self.conveyance_to or transfer.to_city,
+        })
+
     def _check_conveyance_food(self):
         """Food Policy: Sales Team only, at most the daily limit per employee; the excess is the employee's."""
         self.ensure_one()
@@ -383,16 +473,35 @@ class HrExpense(models.Model):
             return [self.env._(
                 "Food bill of %(bill)s capped at %(amount)s (daily limit); the excess is borne by the employee.",
                 bill=currency.format(self.conveyance_bill_amount), amount=currency.format(self.total_amount))]
-        return []
-
-    def _needs_conveyance_hr_approval(self):
-        """Auto-rickshaw above the threshold and parking and toll are approved by HR too."""
-        self.ensure_one()
-        if self.conveyance_kind == 'parking_toll':
-            return True
         if self.conveyance_kind == 'auto':
             threshold = self._get_conveyance_param('auto_hr_threshold')
-            return self.company_currency_id.compare_amounts(self.total_amount, threshold) > 0
+            day_total = self._get_conveyance_auto_day_total()
+            if (currency.compare_amounts(day_total, threshold) > 0
+                    and currency.compare_amounts(self.total_amount, threshold) <= 0):
+                return [self.env._(
+                    "Auto-rickshaw claims of %(date)s total %(total)s, above %(threshold)s: approved by HR too.",
+                    date=self.date, total=currency.format(day_total), threshold=currency.format(threshold))]
+        return []
+
+    def _get_conveyance_auto_day_total(self):
+        """The auto-rickshaw claims of the employee for the day, this one included."""
+        self.ensure_one()
+        others = self.sudo().search([
+            ('id', '!=', self.id), ('employee_id', '=', self.employee_id.id), ('date', '=', self.date),
+            ('conveyance_kind', '=', 'auto'), ('state', 'not in', ('draft', 'refused')),
+        ])
+        return self.total_amount + sum(others.mapped('total_amount'))
+
+    def _needs_conveyance_hr_approval(self):
+        """Auto-rickshaw above the threshold for the day, parking and toll, and domestic transfers (processed
+        through HR and Finance) are approved by HR too."""
+        self.ensure_one()
+        if self.conveyance_kind == 'parking_toll' or self.conveyance_kind in TRANSFER_KINDS:
+            return True
+        if self.conveyance_kind == 'auto':
+            # Splitting the auto-rickshaw of a day into several claims does not avoid the HR approval.
+            threshold = self._get_conveyance_param('auto_hr_threshold')
+            return self.company_currency_id.compare_amounts(self._get_conveyance_auto_day_total(), threshold) > 0
         return False
 
     def _prepare_conveyance_approval_lines(self, needs_hr):
@@ -456,15 +565,43 @@ class HrExpense(models.Model):
         for expense in self:
             if not expense.conveyance_can_approve:
                 raise UserError(self.env._("You are not allowed to approve %(claim)s.", claim=expense.name))
-            line = expense._get_current_conveyance_line()
-            line.sudo().write({'state': 'approved', 'date': fields.Datetime.now(), 'done_by_user_id': self.env.user.id})
-            expense._close_conveyance_activities(self.env._("Approved"))
-            if expense._get_current_conveyance_line():
-                expense._notify_conveyance_approver()
-            else:
-                # Approvers may not have access to the employee's expenses.
-                expense.sudo().write({'state': 'finance_approval'})
+            expense._approve_conveyance_line(expense._get_current_conveyance_line())
         return True
+
+    def action_conveyance_approve_on_behalf(self):
+        """A conveyance administrator approves the current step for its approver, e.g. a Reporting Manager on
+        leave or without a user account."""
+        _ = self.env._
+        user = self.env.user
+        if not self.env.su and not user.has_group(ADMIN_GROUP):
+            raise AccessError(_("Only Local Conveyance Administrators can approve on behalf of an approver."))
+        for expense in self:
+            line = expense._get_current_conveyance_line()
+            if expense.state != 'conveyance_approval' or not line:
+                raise UserError(_("%(claim)s is not waiting for a conveyance approval.", claim=expense.name))
+            if expense.sudo().employee_id.user_id == user:
+                raise UserError(_("You cannot approve your own claim %(claim)s.", claim=expense.name))
+            approver = line.approver_user_id.name or dict(
+                line._fields['role']._description_selection(self.env))[line.role]
+            expense._approve_conveyance_line(line, comment=_(
+                "Approved by %(user)s on behalf of %(approver)s.", user=user.name, approver=approver))
+        return True
+
+    def _approve_conveyance_line(self, line, comment=False):
+        """Approve a step; once the last one is approved the claim goes to Finance."""
+        self.ensure_one()
+        line.sudo().write({
+            'state': 'approved', 'date': fields.Datetime.now(), 'done_by_user_id': self.env.user.id,
+            'comment': comment,
+        })
+        self._close_conveyance_activities(comment or self.env._("Approved"))
+        if comment:
+            self.sudo().message_post(body=comment)
+        if self._get_current_conveyance_line():
+            self._notify_conveyance_approver()
+        else:
+            # Approvers may not have access to the employee's expenses.
+            self.sudo().write({'state': 'finance_approval'})
 
     def action_conveyance_refuse(self):
         for expense in self:

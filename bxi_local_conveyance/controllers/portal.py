@@ -6,7 +6,7 @@ from odoo import fields, http
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.http import request
 
-from odoo.addons.bxi_local_conveyance.models.product_template import TRAVEL_KINDS, VEHICLE_KINDS
+from odoo.addons.bxi_local_conveyance.models.product_template import PER_KM_KINDS, TRANSFER_KINDS, TRAVEL_KINDS
 
 
 class ConveyancePortal(http.Controller):
@@ -23,6 +23,8 @@ class ConveyancePortal(http.Controller):
         domain = [('can_be_expensed', '=', True), ('conveyance_kind', '!=', False)]
         if not employee.is_sales_team:
             domain.append(('conveyance_kind', '!=', 'food'))
+        if not self._get_transfers(employee):
+            domain.append(('conveyance_kind', 'not in', TRANSFER_KINDS))
         return request.env['product.product'].sudo().search(domain, order='default_code, id')
 
     def _get_trip_claims(self, employee):
@@ -35,6 +37,10 @@ class ConveyancePortal(http.Controller):
             ('date', '>=', since), ('state', '!=', 'refused'),
         ], order='date desc, id desc')
 
+    def _get_transfers(self, employee):
+        """The domestic transfers the employee can claim driving their vehicle to the new city for."""
+        return request.env['bxi.conveyance.transfer'].sudo()._get_claimable(employee)
+
     def _selection(self, field_name):
         field = request.env['hr.expense']._fields[field_name]
         return field._description_selection(request.env)
@@ -45,6 +51,7 @@ class ConveyancePortal(http.Controller):
             'employee': employee,
             'products': self._get_products(employee) if employee else request.env['product.product'],
             'trip_claims': self._get_trip_claims(employee) if employee else Expense,
+            'transfers': self._get_transfers(employee) if employee else request.env['bxi.conveyance.transfer'],
             'purposes': self._selection('conveyance_purpose'),
             'airport_legs': self._selection('conveyance_airport_leg'),
             'travel_plan': employee.conveyance_travel_plan_id if employee else False,
@@ -98,7 +105,16 @@ class ConveyancePortal(http.Controller):
         elif kind == 'parking_toll':
             parent = request.env['hr.expense'].sudo().browse(int(post.get('parent_id') or 0))
             vals['conveyance_parent_id'] = parent.id if parent in self._get_trip_claims(employee) else False
-        if kind in VEHICLE_KINDS:
+        elif kind in TRANSFER_KINDS:
+            transfer = request.env['bxi.conveyance.transfer'].sudo().browse(int(post.get('transfer_id') or 0))
+            transfer = transfer if transfer in self._get_transfers(employee) else transfer.browse()
+            vals.update({
+                'conveyance_transfer_id': transfer.id,
+                'conveyance_distance': distance,
+                'conveyance_from': transfer.from_city,
+                'conveyance_to': transfer.to_city,
+            })
+        if kind in PER_KM_KINDS:
             vals['quantity'] = distance
         else:
             vals['total_amount_currency'] = amount
