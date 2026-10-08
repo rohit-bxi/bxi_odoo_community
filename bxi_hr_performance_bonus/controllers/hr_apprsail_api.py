@@ -269,7 +269,7 @@ class EmployeeAppraisalAPI(http.Controller):
             values,
         )
     
-    @http.route('/api/employee/appraisal/letter_types', type='json', auth='public', methods=['POST'], csrf=False)
+    @http.route('/api/employee/appraisal/letter_types', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
     def get_available_letter_types(self, **kwargs):
         email = kwargs.get('employee_email')
         if not email:
