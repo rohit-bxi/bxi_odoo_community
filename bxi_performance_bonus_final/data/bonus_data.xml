@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="performance_bonus_plan_yepb" model="performance.bonus.plan">
+        <field name="name">India YEPB / PB - E0 to E3</field>
+        <field name="bonus_type">yepb</field>
+        <field name="applicable_grades">E0,E1,E2,E3</field>
+        <field name="target_bonus_percentage">0.0</field>
+        <field name="company_performance_factor">1.0</field>
+        <field name="include_lwp_adjustment">True</field>
+        <field name="rating_aggregation">manual</field>
+        <field name="notes">Configure approved target bonus percentages and rating payout factors. The supplied policy does not specify numeric rating payout percentages or a quarterly-to-annual aggregation formula.</field>
+    </record>
+
+    <record id="performance_bonus_plan_ogpb" model="performance.bonus.plan">
+        <field name="name">OGPB - Europe / APAC / ROW - E0 to E3</field>
+        <field name="bonus_type">ogpb</field>
+        <field name="applicable_grades">E0,E1,E2,E3</field>
+        <field name="target_bonus_percentage">0.0</field>
+        <field name="company_performance_factor">1.0</field>
+        <field name="include_lwp_adjustment">True</field>
+        <field name="rating_aggregation">manual</field>
+    </record>
+
+    <record id="performance_bonus_plan_ogsm" model="performance.bonus.plan">
+        <field name="name">OGSM Linked - Americas / Canada - E0 to E3</field>
+        <field name="bonus_type">ogsm</field>
+        <field name="applicable_grades">E0,E1,E2,E3</field>
+        <field name="target_bonus_percentage">0.0</field>
+        <field name="company_performance_factor">1.0</field>
+        <field name="include_lwp_adjustment">True</field>
+        <field name="rating_aggregation">manual</field>
+    </record>
+</odoo>

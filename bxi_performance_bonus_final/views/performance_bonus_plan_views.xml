@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_performance_bonus_plan_list" model="ir.ui.view">
+        <field name="name">performance.bonus.plan.list</field>
+        <field name="model">performance.bonus.plan</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence"/>
+                <field name="name"/>
+                <field name="bonus_type"/>
+                <field name="applicable_grades"/>
+                <field name="target_bonus_percentage"/>
+                <field name="company_performance_factor"/>
+                <field name="rating_aggregation"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_performance_bonus_plan_form" model="ir.ui.view">
+        <field name="name">performance.bonus.plan.form</field>
+        <field name="model">performance.bonus.plan</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="bonus_type"/>
+                            <field name="applicable_grades"/>
+                            <field name="target_bonus_percentage"/>
+                        </group>
+                        <group>
+                            <field name="company_performance_factor"/>
+                            <field name="include_lwp_adjustment"/>
+                            <field name="rating_aggregation"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Rating Payout Rules">
+                            <field name="rating_rule_ids">
+                                <list editable="bottom">
+                                    <field name="sequence"/>
+                                    <field name="name"/>
+                                    <field name="min_rating"/>
+                                    <field name="max_rating"/>
+                                    <field name="payout_factor"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>
