@@ -195,7 +195,7 @@ class BxiShiftException(models.Model):
                 ("employee_id", "=", self.employee_id.id),
                 ("category", "in", GAP_CATEGORIES[self._get_gap_type()]),
                 ("date_from", "=", self.date_from),
-                ("state", "in", ("manager_approval", "approved")),
+                ("state", "in", ("manager_approval", "hr_approval", "approved")),
             ],
             limit=1,
         )
@@ -737,7 +737,7 @@ class BxiShiftException(models.Model):
                 [
                     ("employee_id", "in", list(gaps)),
                     ("is_regularization", "=", True),
-                    ("state", "=", "manager_approval"),
+                    ("state", "in", ("manager_approval", "hr_approval")),
                     ("date_from", ">=", date_from),
                     ("date_from", "<=", date_to),
                 ]

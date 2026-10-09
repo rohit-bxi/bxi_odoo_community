@@ -15,6 +15,7 @@
                         invisible="state != 'draft'"
                     />
                     <field name="is_request_manager" invisible="1"/>
+                    <field name="can_hr_approve" invisible="1"/>
                     <field name="is_regularization" invisible="1"/>
                     <button
                         name="action_manager_approve"
@@ -24,11 +25,18 @@
                         invisible="state != 'manager_approval' or not is_request_manager"
                     />
                     <button
+                        name="action_hr_approve"
+                        type="object"
+                        string="Approve (HR)"
+                        class="btn-success"
+                        invisible="state != 'hr_approval' or not can_hr_approve"
+                    />
+                    <button
                         name="action_refuse"
                         type="object"
                         string="Refuse"
                         class="btn-danger"
-                        invisible="state not in ('manager_approval', 'approved') or not is_request_manager"
+                        invisible="not (state in ('manager_approval', 'approved') and is_request_manager or state == 'hr_approval' and can_hr_approve)"
                     />
                     <button
                         name="action_set_draft"
@@ -41,6 +49,13 @@
                         name="state"
                         widget="statusbar"
                         statusbar_visible="draft,manager_approval,approved,refused"
+                        invisible="is_regularization"
+                    />
+                    <field
+                        name="state"
+                        widget="statusbar"
+                        statusbar_visible="draft,manager_approval,hr_approval,approved,refused"
+                        invisible="not is_regularization"
                     />
                 </header>
                 <sheet>
@@ -257,6 +272,39 @@
 
                     </group>
 
+                    <separator
+                        string="HR Approval"
+                        invisible="not is_regularization or state in ('draft', 'manager_approval')"
+                    />
+
+                    <group invisible="not is_regularization or state in ('draft', 'manager_approval')">
+
+                        <group>
+
+                            <field
+                                name="hr_approved_by"
+                                readonly="1"
+                            />
+
+                            <field
+                                name="hr_approved_date"
+                                readonly="1"
+                            />
+
+                        </group>
+
+                        <group>
+
+                            <field
+                                name="hr_remark"
+                                placeholder="HR comments..."
+                                readonly="state != 'hr_approval' or not can_hr_approve"
+                            />
+
+                        </group>
+
+                    </group>
+
                 </sheet>
 
                 <chatter/>
@@ -280,7 +328,7 @@
                 string="Exception Working Requests"
                 decoration-success="state == 'approved'"
                 decoration-danger="state == 'refused'"
-                decoration-warning="state == 'manager_approval'"
+                decoration-warning="state in ('manager_approval', 'hr_approval')"
                 decoration-muted="state == 'cancelled'"
             >
 
@@ -375,6 +423,11 @@
                     string="Manager Approval"
                     name="manager_approval"
                     domain="[('state', '=', 'manager_approval')]"
+                />
+                <filter
+                    string="HR Approval"
+                    name="hr_approval"
+                    domain="[('state', '=', 'hr_approval')]"
                 />
                 <filter
                     string="Approved"

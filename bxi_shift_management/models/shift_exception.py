@@ -61,6 +61,16 @@ class BxiShiftException(models.Model):
                 record.manager_id.user_id == current_user
             )
 
+    can_hr_approve = fields.Boolean(
+        string="Can HR Approve",
+        compute="_compute_can_hr_approve",
+    )
+
+    def _compute_can_hr_approve(self):
+        is_hr = self.env.user.has_group("bxi_shift_management.group_shift_hr")
+        for record in self:
+            record.can_hr_approve = is_hr
+
     company_id = fields.Many2one(
         "res.company",
         string="Company",
@@ -284,6 +294,8 @@ class BxiShiftException(models.Model):
         [
             ("draft", "Draft"),
             ("manager_approval", "Manager Approval"),
+            # Second level, regularization categories only.
+            ("hr_approval", "HR Approval"),
             ("approved", "Approved"),
             ("refused", "Refused"),
             ("cancelled", "Cancelled"),
@@ -311,6 +323,26 @@ class BxiShiftException(models.Model):
 
     manager_approved_date = fields.Datetime(
         string="Manager Approved On",
+        readonly=True,
+        copy=False,
+        tracking=True,
+    )
+
+    hr_remark = fields.Text(
+        string="HR Remark",
+        tracking=True,
+    )
+
+    hr_approved_by = fields.Many2one(
+        "hr.employee",
+        string="HR Approved By",
+        readonly=True,
+        copy=False,
+        tracking=True,
+    )
+
+    hr_approved_date = fields.Datetime(
+        string="HR Approved On",
         readonly=True,
         copy=False,
         tracking=True,
@@ -746,16 +778,7 @@ class BxiShiftException(models.Model):
             # ---------------------------------------------------------
             # Backend View Request URL
             # ---------------------------------------------------------
-            base_url = self.env["ir.config_parameter"].sudo().get_param(
-                "web.base.url"
-            )
-
-            view_request_url = (
-                f"{base_url}/web#"
-                f"id={record.id}"
-                f"&model=bxi.shift.exception"
-                f"&view_type=form"
-            )
+            view_request_url = record._get_view_request_url()
 
             # ---------------------------------------------------------
             # Mode Label
@@ -813,6 +836,18 @@ class BxiShiftException(models.Model):
                     )
 
         return True
+
+    def _get_view_request_url(self):
+        self.ensure_one()
+        base_url = self.env["ir.config_parameter"].sudo().get_param(
+            "web.base.url"
+        )
+        return (
+            f"{base_url}/web#"
+            f"id={self.id}"
+            f"&model=bxi.shift.exception"
+            f"&view_type=form"
+        )
 
     def _get_category_label(self):
         self.ensure_one()
@@ -976,12 +1011,26 @@ class BxiShiftException(models.Model):
                     )
 
             if record.is_regularization:
+                # Reporting Manager approved: HR gives the final approval,
+                # the attendance is corrected only then.
                 record._check_regularization_payroll()
-                record._apply_regularization()
-            else:
-                # Validate again before approval.
-                record._validate_wfh_policy()
-                record._snapshot_original_weekday_locations()
+                record.write(
+                    {
+                        "state": "hr_approval",
+                        "manager_approved_by": (
+                            current_employee.id
+                            if current_employee
+                            else False
+                        ),
+                        "manager_approved_date": fields.Datetime.now(),
+                    }
+                )
+                record._send_hr_approval_mail()
+                continue
+
+            # Validate again before approval.
+            record._validate_wfh_policy()
+            record._snapshot_original_weekday_locations()
 
             # -------------------------------------------------------------
             # Do NOT change the employee weekly fields at approval time.
@@ -1011,46 +1060,156 @@ class BxiShiftException(models.Model):
                 }
             )
 
-            # Also after the cutoff: the LOP goes once all gaps are approved.
-            if record.is_regularization:
-                record._cancel_lop_if_regularized()
-
-            # -------------------------------------------------------------
-            # Notify employee
-            # -------------------------------------------------------------
-
-            employee_email = (
-                record.employee_id.user_id.email
-                if record.employee_id.user_id
-                else record.employee_id.work_email
-            )
-
-            if employee_email:
-
-                try:
-
-                    subject, body = record._get_employee_decision_mail(
-                        _("Approved"), _("approved")
-                    )
-
-                    self.env["mail.mail"].sudo().create(
-                        {
-                            "subject": subject,
-                            "body_html": body,
-                            "email_from": "hrsupport@bxitech.com",
-                            "email_to": employee_email,
-                            "auto_delete": True,
-                        }
-                    ).send()
-
-                except Exception:
-                    _logger.exception(
-                        "Failed to send employee approval "
-                        "email for %s",
-                        record.name,
-                    )
+            record._send_employee_decision_mail(_("Approved"), _("approved"))
 
         return True
+
+    # -------------------------------------------------------------------------
+    # HR APPROVAL (Attendance Regularization / Missing Timesheet / Late Checkout)
+    # -------------------------------------------------------------------------
+
+    def action_hr_approve(self):
+
+        current_employee = self.env["hr.employee"].search(
+            [
+                ("user_id", "=", self.env.user.id),
+            ],
+            limit=1,
+        )
+
+        for record in self:
+
+            if record.state != "hr_approval":
+                raise UserError(
+                    _(
+                        "Only requests in HR Approval "
+                        "state can be approved by HR."
+                    )
+                )
+
+            if not record.can_hr_approve:
+                raise UserError(
+                    _("Only HR users can approve at this stage.")
+                )
+
+            record._check_regularization_payroll()
+            record._apply_regularization()
+
+            record.write(
+                {
+                    "state": "approved",
+                    "hr_approved_by": (
+                        current_employee.id
+                        if current_employee
+                        else False
+                    ),
+                    "hr_approved_date": fields.Datetime.now(),
+                }
+            )
+
+            # Also after the cutoff: the LOP goes once all gaps are approved.
+            record._cancel_lop_if_regularized()
+
+            record._send_employee_decision_mail(_("Approved"), _("approved"))
+
+        return True
+
+    def _send_hr_approval_mail(self):
+        """Tell HR that the Reporting Manager approved the request."""
+        self.ensure_one()
+        record = self
+        subject = _(
+            "%(category)s Request Awaiting HR Approval: %(name)s"
+        ) % {
+            "category": record._get_category_label(),
+            "name": record.name,
+        }
+        body = _(
+            "<p>Dear HR,</p>"
+
+            "<p>"
+            "The <strong>%(category)s</strong> request of "
+            "<strong>%(employee)s</strong> has been approved by the "
+            "reporting manager <strong>%(manager)s</strong> and is "
+            "awaiting your approval."
+            "</p>"
+
+            "<p>"
+            "<strong>Exception Date:</strong> %(date)s<br/>"
+            "%(times)s"
+            "<strong>Reason:</strong> %(reason)s"
+            "</p>"
+
+            "<p style='margin-top:20px;'>"
+            "<a href='%(url)s' "
+            "style='background-color:#875A7B;"
+            "color:white;"
+            "padding:10px 18px;"
+            "text-decoration:none;"
+            "border-radius:5px;"
+            "display:inline-block;'>"
+            "View Request"
+            "</a>"
+            "</p>"
+
+            "<p>"
+            "Regards,<br/>"
+            "HR Support"
+            "</p>"
+        ) % {
+            "category": record._get_category_label(),
+            "employee": record.employee_id.name,
+            "manager": self.env.user.name,
+            "date": record.date_from or "",
+            "times": record._get_regularization_times_html(),
+            "reason": record.reason or "",
+            "url": record._get_view_request_url(),
+        }
+        try:
+            self.env["mail.mail"].sudo().create(
+                {
+                    "subject": subject,
+                    "body_html": body,
+                    "email_from": "hrsupport@bxitech.com",
+                    "email_to": "hrsupport@bxitech.com",
+                    "auto_delete": True,
+                }
+            ).send()
+        except Exception:
+            _logger.exception(
+                "Failed to send HR approval email for %s",
+                record.name,
+            )
+
+    def _send_employee_decision_mail(self, title, decision):
+        self.ensure_one()
+        record = self
+        employee_email = (
+            record.employee_id.user_id.email
+            if record.employee_id.user_id
+            else record.employee_id.work_email
+        )
+
+        if not employee_email:
+            return
+
+        try:
+            subject, body = record._get_employee_decision_mail(title, decision)
+            self.env["mail.mail"].sudo().create(
+                {
+                    "subject": subject,
+                    "body_html": body,
+                    "email_from": "hrsupport@bxitech.com",
+                    "email_to": employee_email,
+                    "auto_delete": True,
+                }
+            ).send()
+        except Exception:
+            _logger.exception(
+                "Failed to send employee %s email for %s",
+                decision,
+                record.name,
+            )
 
     def _get_employee_decision_mail(self, title, decision):
         """(subject, body) of the approval/refusal mail to the employee."""
@@ -1160,9 +1319,15 @@ class BxiShiftException(models.Model):
 
             if record.state not in (
                 "manager_approval",
+                "hr_approval",
                 "draft",
             ):
                 continue
+
+            if record.state == "hr_approval" and not record.can_hr_approve:
+                raise UserError(
+                    _("Only HR users can refuse at this stage.")
+                )
 
             # -------------------------------------------------------------
             # Change state to refused
@@ -1173,39 +1338,7 @@ class BxiShiftException(models.Model):
             if record.is_regularization:
                 record._apply_regularization_lop_if_closed()
 
-            # -------------------------------------------------------------
-            # Notify employee by email
-            # -------------------------------------------------------------
-            employee_email = (
-                record.employee_id.user_id.email
-                if record.employee_id.user_id
-                else record.employee_id.work_email
-            )
-
-            if employee_email:
-
-                try:
-
-                    subject, body = record._get_employee_decision_mail(
-                        _("Refused"), _("refused")
-                    )
-
-                    self.env["mail.mail"].sudo().create(
-                        {
-                            "subject": subject,
-                            "body_html": body,
-                            "email_from": "hrsupport@bxitech.com",
-                            "email_to": employee_email,
-                            "auto_delete": True,
-                        }
-                    ).send()
-
-                except Exception:
-                    _logger.exception(
-                        "Failed to send employee refusal "
-                        "email for %s",
-                        record.name,
-                    )
+            record._send_employee_decision_mail(_("Refused"), _("refused"))
 
         return True
 
@@ -1222,6 +1355,8 @@ class BxiShiftException(models.Model):
 
             record.manager_approved_by = False
             record.manager_approved_date = False
+            record.hr_approved_by = False
+            record.hr_approved_date = False
 
             if record.is_regularization:
                 if was_approved:
