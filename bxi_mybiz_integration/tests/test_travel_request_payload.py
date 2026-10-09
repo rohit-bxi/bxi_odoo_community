@@ -186,3 +186,85 @@ class TestMybizPayload(TransactionCase):
         # Should be a no-op and must not raise, since myBiz publishes no status endpoint.
         self.request._sync_mybiz_status()
         self.assertEqual(self.request.mybiz_service_id, 'SVC-1')
+
+
+@tagged('post_install', '-at_install')
+class TestMybizPushWithoutServices(TransactionCase):
+    """myBiz only books flights and hotels; other trips must not be pushed."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.india = cls.env.ref('base.in')
+        cls.employee = cls.env['hr.employee'].create({
+            'name': 'Bus Traveller',
+            'work_email': 'bus.traveller@example.com',
+        })
+        cls.env['bxi.mybiz.config'].create({
+            'name': 'No Services Config',
+            'partner_api_key': 'KEY',
+            'client_code': 'CODE',
+        })
+
+    def _bus_request(self, **overrides):
+        vals = {
+            'employee_id': self.employee.id,
+            'travel_purpose': 'Meeting with OEM',
+            'from_city': 'Jaipur',
+            'to_city': 'Noida',
+            'from_country': self.india.id,
+            'to_country': self.india.id,
+            'departure_date': '2030-10-01',
+            'return_date': '2030-10-01',
+            'mode_of_travel': 'bus',
+            'state': 'mybiz_pending',
+        }
+        vals.update(overrides)
+        return self.env['travel.request'].create(vals)
+
+    @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
+    def test_bus_only_request_is_approved_without_calling_mybiz(self, mock_post):
+        request = self._bus_request()
+        self.env['travel.request.option'].create({
+            'travel_request_id': request.id,
+            'option_type': 'bus',
+        })
+
+        request._push_to_mybiz()
+
+        mock_post.assert_not_called()
+        self.assertEqual(request.state, 'approved')
+        self.assertEqual(request.mybiz_status, 'not_pushed')
+        self.assertTrue(any(
+            'Not sent to MakeMyTrip myBiz' in (msg.body or '') for msg in request.message_ids))
+
+    @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
+    def test_retry_of_failed_bus_request_approves_it(self, mock_post):
+        request = self._bus_request(
+            mybiz_status='failed', mybiz_error='No serivces present in request')
+
+        request.action_retry_mybiz_push()
+
+        mock_post.assert_not_called()
+        self.assertEqual(request.state, 'approved')
+        self.assertEqual(request.mybiz_status, 'not_pushed')
+        self.assertFalse(request.mybiz_error)
+
+    @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
+    def test_bus_request_with_hotel_is_still_pushed(self, mock_post):
+        mock_post.return_value.raise_for_status.return_value = None
+        mock_post.return_value.json.return_value = {'status': 'success'}
+        request = self._bus_request(
+            hotel_required=True,
+            hotel_city='Noida',
+            hotel_checkin='2030-10-01',
+            hotel_checkout='2030-10-02',
+        )
+
+        request._push_to_mybiz()
+
+        mock_post.assert_called_once()
+        services = mock_post.call_args.kwargs['json']['services']
+        self.assertEqual(list(services), ['HOTEL'])
+        self.assertEqual(request.state, 'mybiz_pending')
+        self.assertEqual(request.mybiz_status, 'pending')

@@ -125,6 +125,17 @@ class TravelRequest(models.Model):
             } for _i in range(max(opt.rooms or 1, 1))],
         }
 
+    def _has_mybiz_services(self):
+        """True when the request has something myBiz can book (a flight or a
+        hotel). Mirrors the service selection in _build_mybiz_payload without
+        creating its auto-generated options."""
+        self.ensure_one()
+        return bool(
+            self.travel_option_ids.filtered(lambda o: o.option_type in ('flight', 'hotel'))
+            or self.mode_of_travel == 'flight'
+            or self.hotel_required
+        )
+
     def _build_mybiz_payload(self):
         """Build the JSON payload for the myBiz Travel Request API (real contract)."""
         self.ensure_one()
@@ -206,6 +217,23 @@ class TravelRequest(models.Model):
         POST /corporate/v1/create/partner/travel-request
         """
         self.ensure_one()
+        if not self._has_mybiz_services():
+            # myBiz only books flights and hotels and rejects a request with no
+            # services, so bus/train/cab-only trips are approved and booked offline.
+            self.write({
+                'state': 'approved',
+                'mybiz_status': 'not_pushed',
+                'mybiz_error': False,
+            })
+            self.message_post(
+                body=_('ℹ️ Not sent to MakeMyTrip myBiz: myBiz only books flights and hotels, '
+                       'and this request has neither. The request is approved — please '
+                       'arrange this travel outside myBiz.'),
+                subtype_xmlid='mail.mt_note',
+            )
+            _logger.info('myBiz push skipped for %s: no flight or hotel to book', self.name)
+            return
+
         # sudo: any HR approver must be able to trigger the push even if they
         # don't personally have access to the myBiz Configuration model.
         config = self.env['bxi.mybiz.config'].sudo().get_active_config(self.company_id.id)
