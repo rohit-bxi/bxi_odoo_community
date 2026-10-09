@@ -3,6 +3,7 @@ import calendar
 import datetime
 from unittest.mock import MagicMock, patch
 
+from odoo import fields
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.bxi_mybiz_integration.models.travel_request import _epoch_ms
@@ -267,4 +268,92 @@ class TestMybizPushWithoutServices(TransactionCase):
         services = mock_post.call_args.kwargs['json']['services']
         self.assertEqual(list(services), ['HOTEL'])
         self.assertEqual(request.state, 'mybiz_pending')
+        self.assertEqual(request.mybiz_status, 'pending')
+
+
+@tagged('post_install', '-at_install')
+class TestMybizPushPastDates(TransactionCase):
+    """myBiz rejects any date that is not after the current time."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.india = cls.env.ref('base.in')
+        cls.employee = cls.env['hr.employee'].create({
+            'name': 'Date Traveller',
+            'work_email': 'date.traveller@example.com',
+        })
+        cls.env['bxi.mybiz.config'].create({
+            'name': 'Past Dates Config',
+            'partner_api_key': 'KEY',
+            'client_code': 'CODE',
+        })
+        cls.today = fields.Date.today()
+        cls.past = cls.today - datetime.timedelta(days=30)
+        cls.future = cls.today + datetime.timedelta(days=30)
+
+    def _flight_request(self, departure, **overrides):
+        vals = {
+            'employee_id': self.employee.id,
+            'travel_purpose': 'Meeting with OEM',
+            'from_city': 'Jaipur',
+            'to_city': 'Delhi',
+            'from_country': self.india.id,
+            'to_country': self.india.id,
+            'departure_date': departure,
+            'return_date': departure,
+            'mode_of_travel': 'flight',
+            'state': 'mybiz_pending',
+        }
+        vals.update(overrides)
+        return self.env['travel.request'].create(vals)
+
+    @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
+    def test_past_flight_date_is_not_pushed(self, mock_post):
+        request = self._flight_request(self.past)
+
+        request._push_to_mybiz()
+
+        mock_post.assert_not_called()
+        self.assertEqual(request.state, 'mybiz_pending')
+        self.assertEqual(request.mybiz_status, 'failed')
+        self.assertIn(
+            f'flight departure {self.past.strftime("%d %b %Y")}', request.mybiz_error)
+
+    @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
+    def test_trip_dated_today_is_not_pushed(self, mock_post):
+        # Date-only values go out as midnight UTC, which has already passed.
+        request = self._flight_request(self.today)
+
+        request._push_to_mybiz()
+
+        mock_post.assert_not_called()
+        self.assertEqual(request.mybiz_status, 'failed')
+
+    @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
+    def test_past_hotel_checkin_blocks_push_with_future_flight(self, mock_post):
+        request = self._flight_request(
+            self.future,
+            return_date=self.future + datetime.timedelta(days=2),
+            hotel_required=True,
+            hotel_city='Delhi',
+            hotel_checkin=self.past,
+            hotel_checkout=self.future,
+        )
+
+        request._push_to_mybiz()
+
+        mock_post.assert_not_called()
+        self.assertIn('hotel check-in', request.mybiz_error)
+        self.assertNotIn('flight', request.mybiz_error)
+
+    @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
+    def test_future_dates_are_pushed(self, mock_post):
+        mock_post.return_value.raise_for_status.return_value = None
+        mock_post.return_value.json.return_value = {'status': 'success'}
+        request = self._flight_request(self.future)
+
+        request._push_to_mybiz()
+
+        mock_post.assert_called_once()
         self.assertEqual(request.mybiz_status, 'pending')

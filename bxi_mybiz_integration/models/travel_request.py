@@ -21,6 +21,14 @@ TRAVEL_CLASS_MAP = {
     'business': 'BUSINESS',
     'first': 'BUSINESS',  # myBiz has no FIRST class — map to nearest supported tier
 }
+# Epoch-ms date keys in a myBiz service entry (or its journeyDetails), with a
+# readable label for error messages.
+MYBIZ_DATE_LABELS = {
+    'departureDate': 'departure',
+    'arrivalDate': 'arrival',
+    'checkin': 'check-in',
+    'checkout': 'check-out',
+}
 
 
 def _epoch_ms(value):
@@ -136,6 +144,25 @@ class TravelRequest(models.Model):
             or self.hotel_required
         )
 
+    def _mybiz_past_dates(self, payload):
+        """Describe each date in the payload that is not after now, e.g.
+        'flight departure 16 Sep 2026'. Date-only values are sent as midnight
+        UTC, so a trip dated today is already in the past."""
+        now_ms = _epoch_ms(fields.Datetime.now())
+        past = []
+        for service_type, entries in payload['services'].items():
+            for entry in entries:
+                for item in [entry] + entry.get('journeyDetails', []):
+                    for key, label in MYBIZ_DATE_LABELS.items():
+                        value = item.get(key)
+                        if value is not None and value <= now_ms:
+                            day = datetime.datetime.fromtimestamp(
+                                value / 1000, datetime.timezone.utc)
+                            past.append(f'{service_type.lower()} {label} '
+                                        f'{day.strftime("%d %b %Y")}')
+                            break  # later dates of the same leg/stay add nothing
+        return list(dict.fromkeys(past))
+
     def _build_mybiz_payload(self):
         """Build the JSON payload for the myBiz Travel Request API (real contract)."""
         self.ensure_one()
@@ -250,6 +277,21 @@ class TravelRequest(models.Model):
             return
 
         payload = self._build_mybiz_payload()
+        past_dates = self._mybiz_past_dates(payload)
+        if past_dates:
+            # myBiz rejects these with "provided date must be greater than the
+            # current system date", so fail here with a message HR can act on.
+            err = _(
+                'MakeMyTrip only accepts dates after the current time, but this request '
+                'has: %s. Update the travel or segment dates and retry, or cancel the request.'
+            ) % ', '.join(past_dates)
+            self.write({'mybiz_status': 'failed', 'mybiz_error': err,
+                        'mybiz_sync_date': fields.Datetime.now()})
+            self.message_post(body=_('❌ myBiz Push Failed: %s') % err,
+                              subtype_xmlid='mail.mt_note')
+            _logger.warning('myBiz push blocked for %s: past dates %s', self.name, past_dates)
+            return
+
         url = config._get_endpoint('travel_request_endpoint')
         headers = config._get_auth_headers()
 
