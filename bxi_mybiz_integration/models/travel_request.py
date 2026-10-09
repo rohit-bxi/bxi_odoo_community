@@ -402,6 +402,7 @@ class TravelRequest(models.Model):
             if all(o.mybiz_status == 'cancelled' for o in rec.travel_option_ids.filtered(
                     lambda o: o.mybiz_ref)):
                 rec.write({'mybiz_status': 'cancelled', 'state': 'cancelled'})
+        return True
 
     def _sync_mybiz_status(self):
         """

@@ -244,7 +244,8 @@ class TestMybizPushWithoutServices(TransactionCase):
         request = self._bus_request(
             mybiz_status='failed', mybiz_error='No serivces present in request')
 
-        request.action_retry_mybiz_push()
+        # Buttons return True so they can also be called over RPC.
+        self.assertIs(request.action_retry_mybiz_push(), True)
 
         mock_post.assert_not_called()
         self.assertEqual(request.state, 'approved')

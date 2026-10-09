@@ -434,6 +434,7 @@ class TravelRequest(models.Model):
                 note=_('Travel request %s from %s is awaiting your approval.') % (
                     rec.name, rec.employee_id.name),
             )
+        return True
 
     def manager_action_approve(self):
         """Manager approves — moves to HR approval."""
@@ -445,12 +446,14 @@ class TravelRequest(models.Model):
                 'manager_approved_by': self.env.user.employee_id.id,
                 'manager_approved_date': fields.Datetime.now(),
             })
+        return True
 
     def manager_action_refuse(self):
         """Manager refuses — moves back to draft."""
         for rec in self:
             rec.write({'state': 'cancelled'})
             rec.message_post(body=_('Travel request refused by manager %s.') % self.env.user.name)
+        return True
 
     def hr_action_approve(self):
         """HR approves — pushes to myBiz."""
@@ -464,12 +467,14 @@ class TravelRequest(models.Model):
             })
             # Push to myBiz after HR approval
             rec._push_to_mybiz()
+        return True
 
     def hr_action_refuse(self):
         """HR refuses — cancels the request."""
         for rec in self:
             rec.write({'state': 'cancelled'})
             rec.message_post(body=_('Travel request refused by HR %s.') % self.env.user.name)
+        return True
 
     def action_cancel(self):
         """Cancel the travel request."""
@@ -479,6 +484,7 @@ class TravelRequest(models.Model):
                     'Approved and booked requests cannot be directly cancelled. '
                     'Please contact HR.'))
             rec.write({'state': 'cancelled'})
+        return True
 
     def action_reset_to_draft(self):
         """Reset to draft — admin only."""
@@ -495,6 +501,7 @@ class TravelRequest(models.Model):
             'mybiz_status': 'not_pushed',
             'mybiz_error': False,
         })
+        return True
 
     # ──────────────────────────────────────────────────────────────
     # myBiz API Integration
@@ -742,11 +749,13 @@ class TravelRequest(models.Model):
             if rec.state == 'cancelled' and rec.mybiz_status == 'failed':
                 rec.write({'state': 'mybiz_pending', 'mybiz_status': 'not_pushed'})
             rec._push_to_mybiz()
+        return True
 
     def action_sync_mybiz_status(self):
         """Poll myBiz for the latest booking status."""
         for rec in self:
             rec._sync_mybiz_status()
+        return True
 
     def _sync_mybiz_status(self):
         """Fetch and update booking status from myBiz."""
