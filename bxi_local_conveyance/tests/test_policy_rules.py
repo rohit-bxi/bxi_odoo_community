@@ -105,11 +105,11 @@ class TestPolicyRules(ConveyanceCommon):
         with self.assertRaisesRegex(UserError, 'weekend or holiday'):
             self._submit(self._claim(self.product_2w))
 
-    def test_weekend_flagged_for_hr(self):
+    def test_weekend_flagged_for_review(self):
         self.env['ir.config_parameter'].sudo().set_param('bxi_local_conveyance.non_working_day_mode', 'flag')
         claim = self._submit(self._claim(self.product_2w, date=self.weekend_day))
         self.assertIn('weekend', claim.conveyance_policy_note)
-        self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm', 'hr'])
+        self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm', 'finance', 'hr'])
 
     # ── Clauses 2, 4, 7 and exceptions ───────────────────────────────────
     def test_travel_within_city_only(self):
@@ -138,17 +138,17 @@ class TestPolicyRules(ConveyanceCommon):
                                      conveyance_airport_leg='to_airport'))
         self._submit(self._claim(self.product_4w, conveyance_purpose='airport', conveyance_airport_leg='from_airport'))
 
-    def test_commute_sent_to_hr(self):
+    def test_commute_flagged_for_review(self):
         office = self._office('Saket Office', street='Saket District Centre')
         self.employee.write({'work_location_id': office.id, 'private_street': '12 MG Road'})
         for start, end in (('12 MG Road, Gurugram', 'Saket Office'), ('Saket District Centre', 'Home')):
             claim = self._submit(self._claim(self.product_2w, conveyance_from=start, conveyance_to=end))
             self.assertIn('commuting', claim.conveyance_policy_note)
-            self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm', 'hr'])
+            self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm', 'finance', 'hr'])
         claim = self._submit(self._claim(self.product_2w, conveyance_from='Saket Office',
                                          conveyance_to='Client, Gurugram'))
         self.assertFalse(claim.conveyance_policy_note)
-        self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm'])
+        self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm', 'finance', 'hr'])
         # The residence is the start of a trip to the airport.
         claim = self._submit(self._claim(self.product_4w, conveyance_purpose='airport',
                                          conveyance_airport_leg='to_airport', conveyance_from='Home',
@@ -196,14 +196,14 @@ class TestPolicyRules(ConveyanceCommon):
         with self.assertRaisesRegex(UserError, 'already been claimed'):
             self._submit(self._claim(self.product_taxi, conveyance_bill_number='inv-42 '))
 
-    def test_flexi_fuel_vehicle_sent_to_hr(self):
+    def test_flexi_fuel_vehicle_flagged_for_review(self):
         self.employee.conveyance_flexi_fuel = True
         claim = self._submit(self._claim(self.product_2w))
         self.assertIn('flexi basket', claim.conveyance_policy_note)
-        self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm', 'hr'])
+        self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm', 'finance', 'hr'])
         # Only personal vehicles run on fuel.
         taxi = self._submit(self._claim(self.product_taxi))
-        self.assertEqual(taxi.conveyance_approval_line_ids.mapped('role'), ['rm'])
+        self.assertFalse(taxi.conveyance_policy_note)
 
     # ── Clause 6: parking and toll ───────────────────────────────────────
     def test_parking_with_a_trip(self):
@@ -215,7 +215,7 @@ class TestPolicyRules(ConveyanceCommon):
             self._submit(parking)
         (parking | trip).with_user(self.employee.user_id).action_submit()
         self.assertEqual(parking.state, 'conveyance_approval')
-        self.assertEqual(parking.conveyance_approval_line_ids.mapped('role'), ['rm', 'hr'])
+        self.assertEqual(parking.conveyance_approval_line_ids.mapped('role'), ['rm', 'finance', 'hr'])
 
     def test_parking_of_another_day_refused(self):
         trip = self._submit(self._claim(self.product_4w))
@@ -234,8 +234,8 @@ class TestPolicyRules(ConveyanceCommon):
         self.assertEqual(claim.total_amount, 1000)
         self.assertEqual(claim.conveyance_bill_amount, 1200)
         self.assertIn('borne by the employee', claim.conveyance_policy_note)
-        # A capped claim needs no HR review.
-        self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm'])
+        # Every claim is approved by the Reporting Manager, Finance and HR.
+        self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm', 'finance', 'hr'])
         with self.assertRaisesRegex(UserError, 'already been claimed'):
             self._submit(self._claim(self.product_food, employee=self.salesman, total_amount_currency=100))
 

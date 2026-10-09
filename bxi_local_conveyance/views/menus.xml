@@ -5,14 +5,16 @@
     <menuitem id="menu_conveyance_to_approve" name="To Approve" parent="menu_conveyance_root"
               action="action_conveyance_to_approve" sequence="10"/>
     <menuitem id="menu_conveyance_all" name="All Claims" parent="menu_conveyance_root"
-              action="action_conveyance_all" sequence="20" groups="group_conveyance_hr"/>
+              action="action_conveyance_all" sequence="20"
+              groups="group_conveyance_hr,group_conveyance_finance"/>
     <menuitem id="menu_conveyance_office_assignment" name="Other Office Assignments" parent="menu_conveyance_root"
               action="action_bxi_conveyance_office_assignment" sequence="30" groups="group_conveyance_hr"/>
     <menuitem id="menu_conveyance_transfer" name="Domestic Transfers" parent="menu_conveyance_root"
               action="action_bxi_conveyance_transfer" sequence="40" groups="group_conveyance_hr"/>
 
     <menuitem id="menu_conveyance_analysis" name="Local Conveyance" parent="hr_expense.menu_hr_expense_reports"
-              action="action_conveyance_analysis" sequence="30" groups="group_conveyance_hr"/>
+              action="action_conveyance_analysis" sequence="30"
+              groups="group_conveyance_hr,group_conveyance_finance"/>
 
     <menuitem id="menu_conveyance_config" name="Local Conveyance" parent="hr_expense.menu_hr_expense_configuration"
               sequence="30" groups="group_conveyance_admin"/>

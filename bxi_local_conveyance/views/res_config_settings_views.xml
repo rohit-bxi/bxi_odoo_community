@@ -43,12 +43,12 @@
                         </setting>
                     </block>
                     <block title="Approvals" name="lc_approvals">
-                        <setting id="lc_auto_hr_threshold" string="Auto-Rickshaw HR Approval"
-                                 help="Auto-rickshaw claims above this amount are approved by the Reporting Manager and HR.">
-                            <field name="lc_auto_hr_threshold"/>
+                        <setting id="conveyance_finance_user_id" string="Finance Responsible"
+                                 help="Approves conveyance claims as Finance, after the Reporting Manager. Empty: every Local Conveyance Finance Officer.">
+                            <field name="conveyance_finance_user_id" options="{'no_create': True}"/>
                         </setting>
                         <setting id="conveyance_hr_user_id" string="HR Responsible"
-                                 help="Approves conveyance claims as HR. Empty: every Local Conveyance HR Officer.">
+                                 help="Approves conveyance claims as HR, the last step after Finance. Empty: every Local Conveyance HR Officer.">
                             <field name="conveyance_hr_user_id" options="{'no_create': True}"/>
                         </setting>
                     </block>

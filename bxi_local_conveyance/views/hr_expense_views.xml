@@ -33,7 +33,7 @@
             </xpath>
             <xpath expr="//header/field[@name='state'][1]" position="after">
                 <field name="conveyance_status" widget="statusbar" invisible="not conveyance_kind"
-                       statusbar_visible="draft,conveyance_approval,finance_approval,approved,posted,paid"/>
+                       statusbar_visible="draft,rm_approval,finance_approval,hr_approval,approved,posted,paid"/>
             </xpath>
             <xpath expr="//sheet" position="before">
                 <div class="alert alert-warning mb-0" role="alert" invisible="not conveyance_policy_note">
@@ -84,7 +84,7 @@
                         <list>
                             <field name="sequence" column_invisible="1"/>
                             <field name="role"/>
-                            <field name="approver_user_id" widget="many2one_avatar_user" placeholder="Any HR Officer"/>
+                            <field name="approver_user_id" widget="many2one_avatar_user" placeholder="Any officer of the role"/>
                             <field name="state" widget="badge" decoration-success="state == 'approved'"
                                    decoration-danger="state == 'refused'" decoration-info="state == 'pending'"/>
                             <field name="done_by_user_id"/>
@@ -114,8 +114,11 @@
                 <field name="company_currency_id" column_invisible="1"/>
                 <field name="conveyance_submit_date" optional="hide"/>
                 <field name="conveyance_policy_note" optional="hide"/>
-                <field name="state" widget="badge" decoration-info="state in ('conveyance_approval', 'finance_approval')"
-                       decoration-success="state in ('approved', 'posted', 'paid')" decoration-danger="state == 'refused'"/>
+                <field name="state" column_invisible="1"/>
+                <field name="conveyance_status" string="Status" widget="badge"
+                       decoration-info="conveyance_status in ('conveyance_approval', 'rm_approval', 'finance_approval', 'hr_approval')"
+                       decoration-success="conveyance_status in ('approved', 'posted', 'paid')"
+                       decoration-danger="conveyance_status == 'refused'"/>
             </list>
         </field>
     </record>
@@ -132,7 +135,9 @@
                 <field name="conveyance_to"/>
                 <filter name="to_approve" string="To Approve" domain="[('conveyance_can_approve', '=', True)]"/>
                 <filter name="in_approval" string="In Approval" domain="[('state', '=', 'conveyance_approval')]"/>
-                <filter name="finance" string="Finance Approval" domain="[('state', '=', 'finance_approval')]"/>
+                <filter name="manager" string="Manager Approval" domain="[('conveyance_status', '=', 'rm_approval')]"/>
+                <filter name="finance" string="Finance Approval" domain="[('conveyance_status', '=', 'finance_approval')]"/>
+                <filter name="hr" string="HR Approval" domain="[('conveyance_status', '=', 'hr_approval')]"/>
                 <filter name="refused" string="Refused" domain="[('state', '=', 'refused')]"/>
                 <filter name="flagged" string="Policy Notes" domain="[('conveyance_policy_note', '!=', False)]"/>
                 <separator/>
@@ -141,7 +146,7 @@
                     <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
                     <filter name="group_kind" string="Conveyance Type" context="{'group_by': 'conveyance_kind'}"/>
                     <filter name="group_purpose" string="Purpose" context="{'group_by': 'conveyance_purpose'}"/>
-                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_state" string="Status" context="{'group_by': 'conveyance_status'}"/>
                     <filter name="group_month" string="Month" context="{'group_by': 'date:month'}"/>
                 </group>
             </search>

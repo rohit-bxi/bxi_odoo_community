@@ -14,7 +14,6 @@ PARAM_PREFIX = 'bxi_local_conveyance.'
 PARAM_DEFAULTS = {
     'claim_days': 45,
     'reminder_days': 7,
-    'auto_hr_threshold': 1000,
     'food_daily_limit': 1000,
     'non_working_day_mode': 'block',
 }
@@ -28,18 +27,25 @@ _LOCKED_FIELDS = {
 }
 
 # The status of a conveyance claim in the order it goes through them (the order of `state` puts the approval
-# states added by modules after Posted and Refused).
+# states added by modules after Posted and Refused). While `state` is Conveyance Approval, the status is the step
+# waiting for approval.
 CONVEYANCE_STATUS = [
     ('draft', 'Draft'),
     ('submitted', 'Submitted'),
     ('conveyance_approval', 'Conveyance Approval'),
+    ('rm_approval', 'Manager Approval'),
     ('finance_approval', 'Finance Approval'),
+    ('hr_approval', 'HR Approval'),
     ('approved', 'Approved'),
     ('posted', 'Posted'),
     ('in_payment', 'In Payment'),
     ('paid', 'Paid'),
     ('refused', 'Refused'),
 ]
+
+# The approval steps of a conveyance claim, in order: Reporting Manager, Finance, then HR.
+APPROVAL_ROLES = ('rm', 'finance', 'hr')
+ROLE_STATUS = {'rm': 'rm_approval', 'finance': 'finance_approval', 'hr': 'hr_approval'}
 
 # Words that name the residence in a From or To of a trip.
 _HOME_WORDS = ('home', 'residence')
@@ -109,7 +115,8 @@ class HrExpense(models.Model):
     conveyance_refuse_reason = fields.Text(string='Refusal Reason', readonly=True, copy=False)
     conveyance_approval_line_ids = fields.One2many(
         'bxi.conveyance.approval.line', 'expense_id', string='Conveyance Approvals', copy=False)
-    conveyance_status = fields.Selection(CONVEYANCE_STATUS, string='Conveyance Status', compute='_compute_conveyance_status')
+    conveyance_status = fields.Selection(
+        CONVEYANCE_STATUS, string='Conveyance Status', compute='_compute_conveyance_status', store=True)
     conveyance_can_approve = fields.Boolean(
         string='Conveyance to Approve', compute='_compute_conveyance_can_approve',
         search='_search_conveyance_can_approve')
@@ -139,10 +146,19 @@ class HrExpense(models.Model):
             expense.conveyance_deadline = (
                 expense.date + relativedelta(days=days) if expense.date and expense.conveyance_kind else False)
 
-    @api.depends('state')
+    @api.depends('conveyance_kind', 'state', 'conveyance_approval_line_ids.state',
+                 'conveyance_approval_line_ids.role')
     def _compute_conveyance_status(self):
+        statuses = dict(CONVEYANCE_STATUS)
         for expense in self:
-            expense.conveyance_status = expense.state
+            line = expense.state == 'conveyance_approval' and expense._get_current_conveyance_line()
+            if line:
+                expense.conveyance_status = ROLE_STATUS[line.role]
+            elif expense.conveyance_kind and expense.state in statuses:
+                expense.conveyance_status = expense.state
+            else:
+                # Other expenses can be in states of other modules (e.g. Certification Approval).
+                expense.conveyance_status = False
 
     @api.depends_context('uid')
     @api.depends('state', 'conveyance_approval_line_ids.state')
@@ -465,7 +481,7 @@ class HrExpense(models.Model):
         })
 
     def _get_conveyance_info_notes(self):
-        """Notes kept on the claim for information, which do not need HR to review it."""
+        """Notes kept on the claim for information."""
         self.ensure_one()
         currency = self.company_currency_id
         capped = currency.compare_amounts(self.conveyance_bill_amount, self.total_amount) > 0
@@ -473,39 +489,11 @@ class HrExpense(models.Model):
             return [self.env._(
                 "Food bill of %(bill)s capped at %(amount)s (daily limit); the excess is borne by the employee.",
                 bill=currency.format(self.conveyance_bill_amount), amount=currency.format(self.total_amount))]
-        if self.conveyance_kind == 'auto':
-            threshold = self._get_conveyance_param('auto_hr_threshold')
-            day_total = self._get_conveyance_auto_day_total()
-            if (currency.compare_amounts(day_total, threshold) > 0
-                    and currency.compare_amounts(self.total_amount, threshold) <= 0):
-                return [self.env._(
-                    "Auto-rickshaw claims of %(date)s total %(total)s, above %(threshold)s: approved by HR too.",
-                    date=self.date, total=currency.format(day_total), threshold=currency.format(threshold))]
         return []
 
-    def _get_conveyance_auto_day_total(self):
-        """The auto-rickshaw claims of the employee for the day, this one included."""
-        self.ensure_one()
-        others = self.sudo().search([
-            ('id', '!=', self.id), ('employee_id', '=', self.employee_id.id), ('date', '=', self.date),
-            ('conveyance_kind', '=', 'auto'), ('state', 'not in', ('draft', 'refused')),
-        ])
-        return self.total_amount + sum(others.mapped('total_amount'))
-
-    def _needs_conveyance_hr_approval(self):
-        """Auto-rickshaw above the threshold for the day, parking and toll, and domestic transfers (processed
-        through HR and Finance) are approved by HR too."""
-        self.ensure_one()
-        if self.conveyance_kind == 'parking_toll' or self.conveyance_kind in TRANSFER_KINDS:
-            return True
-        if self.conveyance_kind == 'auto':
-            # Splitting the auto-rickshaw of a day into several claims does not avoid the HR approval.
-            threshold = self._get_conveyance_param('auto_hr_threshold')
-            return self.company_currency_id.compare_amounts(self._get_conveyance_auto_day_total(), threshold) > 0
-        return False
-
-    def _prepare_conveyance_approval_lines(self, needs_hr):
-        """Reporting Manager, then HR when required."""
+    def _prepare_conveyance_approval_lines(self):
+        """Reporting Manager, then Finance, then HR. A user does not approve the same claim twice: a step whose
+        approver already approved an earlier step is left out."""
         self.ensure_one()
         employee = self.employee_id.sudo()
         manager_user = employee.parent_id.user_id
@@ -513,10 +501,19 @@ class HrExpense(models.Model):
             raise UserError(self.env._(
                 "%(employee)s has no Reporting Manager with a user account. Please contact HR.",
                 employee=employee.name))
-        lines = [{'role': 'rm', 'approver_user_id': manager_user.id, 'sequence': 1}]
-        hr_user = self.company_id.sudo().conveyance_hr_user_id
-        if needs_hr and hr_user != manager_user:
-            lines.append({'role': 'hr', 'approver_user_id': hr_user.id, 'sequence': 2})
+        company = self.company_id.sudo()
+        approvers = {
+            'rm': manager_user,
+            'finance': company.conveyance_finance_user_id,
+            'hr': company.conveyance_hr_user_id,
+        }
+        lines, seen = [], self.env['res.users']
+        for sequence, role in enumerate(APPROVAL_ROLES, start=1):
+            user = approvers[role]
+            if user and user in seen:
+                continue
+            seen |= user
+            lines.append({'role': role, 'approver_user_id': user.id, 'sequence': sequence})
         return lines
 
     # ── Workflow ─────────────────────────────────────────────────────────
@@ -543,10 +540,9 @@ class HrExpense(models.Model):
                     "%(claim)s: submit the related conveyance claim %(parent)s first, or together.",
                     claim=expense.name, parent=parent.name))
             expense._sync_conveyance_quantity()
-            review_notes = expense._check_conveyance_policy()
-            needs_hr = bool(review_notes) or expense._needs_conveyance_hr_approval()
-            notes = review_notes + expense._get_conveyance_info_notes()
-            lines = expense._prepare_conveyance_approval_lines(needs_hr)
+            # Every claim is approved by the Reporting Manager, Finance and HR: the review notes are for them.
+            notes = expense._check_conveyance_policy() + expense._get_conveyance_info_notes()
+            lines = expense._prepare_conveyance_approval_lines()
             sudo_expense = expense.sudo()
             sudo_expense.conveyance_approval_line_ids.unlink()
             sudo_expense.write({
@@ -588,7 +584,7 @@ class HrExpense(models.Model):
         return True
 
     def _approve_conveyance_line(self, line, comment=False):
-        """Approve a step; once the last one is approved the claim goes to Finance."""
+        """Approve a step; once the last one (HR) is approved the claim is approved."""
         self.ensure_one()
         line.sudo().write({
             'state': 'approved', 'date': fields.Datetime.now(), 'done_by_user_id': self.env.user.id,
@@ -601,7 +597,14 @@ class HrExpense(models.Model):
             self._notify_conveyance_approver()
         else:
             # Approvers may not have access to the employee's expenses.
-            self.sudo().write({'state': 'finance_approval'})
+            self.sudo().write({'state': 'approved'})
+
+    def action_finance_approved(self):
+        # Finance approves conveyance claims as a step of the conveyance approval, before HR.
+        if self.filtered('conveyance_kind'):
+            raise UserError(self.env._(
+                "Conveyance claims are approved by the Reporting Manager, Finance and HR from the Approve button."))
+        return super().action_finance_approved()
 
     def action_conveyance_refuse(self):
         for expense in self:
@@ -641,9 +644,7 @@ class HrExpense(models.Model):
         note = self.env._(
             "%(claim)s - %(amount)s on %(date)s", claim=expense.name,
             amount=expense.company_currency_id.format(expense.total_amount), date=expense.date)
-        users = line.approver_user_id or self.env.ref(HR_GROUP).sudo().all_user_ids.filtered(
-            lambda user: expense.company_id in user.company_ids and not user.share)
-        for user in users - expense.employee_id.user_id:
+        for user in line._get_candidate_users() - expense.employee_id.user_id:
             expense.activity_schedule('mail.mail_activity_data_todo', user_id=user.id, summary=summary, note=note)
 
     def _close_conveyance_activities(self, feedback):

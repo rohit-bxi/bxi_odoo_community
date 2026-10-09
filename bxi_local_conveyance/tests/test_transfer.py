@@ -16,14 +16,13 @@ class TestDomesticTransfer(ConveyanceCommon):
             'vehicle_option': option,
         })
 
-    def test_drive_paid_per_km_rm_and_hr(self):
+    def test_drive_paid_per_km(self):
         transfer = self._transfer()
         claim = self._submit(self._claim(self.product_transfer_4w, conveyance_transfer_id=transfer.id,
                                          conveyance_distance=280))
         self.assertEqual(claim.total_amount, 1400.0)
         self.assertEqual((claim.conveyance_from, claim.conveyance_to), ('Delhi', 'Jaipur'))
-        # Intercity: processed through HR (and then Finance).
-        self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm', 'hr'])
+        self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm', 'finance', 'hr'])
         self.assertEqual(transfer.claim_id, claim)
         self.assertFalse(self.env['bxi.conveyance.transfer']._get_claimable(self.employee))
 

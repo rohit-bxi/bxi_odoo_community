@@ -38,11 +38,12 @@
 
     <template id="portal_conveyance_state_badge" name="Conveyance State Badge">
         <t t-set="badge_class" t-value="{
-            'draft': 'text-bg-light', 'conveyance_approval': 'text-bg-info', 'finance_approval': 'text-bg-info',
+            'draft': 'text-bg-light', 'conveyance_approval': 'text-bg-info', 'rm_approval': 'text-bg-info',
+            'finance_approval': 'text-bg-info', 'hr_approval': 'text-bg-info',
             'approved': 'text-bg-primary', 'posted': 'text-bg-primary', 'in_payment': 'text-bg-warning',
             'paid': 'text-bg-success', 'refused': 'text-bg-danger',
-        }.get(record.state, 'text-bg-secondary')"/>
-        <span t-attf-class="badge #{badge_class}" t-esc="dict(record._fields['state']._description_selection(record.env)).get(record.state)"/>
+        }.get(record.conveyance_status, 'text-bg-secondary')"/>
+        <span t-attf-class="badge #{badge_class}" t-esc="dict(record._fields['conveyance_status']._description_selection(record.env)).get(record.conveyance_status)"/>
     </template>
 
     <template id="portal_my_conveyance" name="My Local Conveyance">
@@ -92,7 +93,6 @@
                                     <t t-set="line" t-value="record._get_current_conveyance_line()"/>
                                     <t t-if="line" t-esc="line.approver_user_id.name or dict(line._fields['role']._description_selection(line.env)).get(line.role)"/>
                                 </t>
-                                <t t-elif="record.state == 'finance_approval'">Finance</t>
                             </td>
                         </tr>
                     </tbody>
