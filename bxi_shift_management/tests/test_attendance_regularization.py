@@ -156,7 +156,9 @@ class TestAttendanceRegularization(TransactionCase):
         ])
 
     def _approve(self, request):
+        # Reporting Manager, then HR (the manager user is also HR Officer).
         request.with_user(self.manager_user).action_manager_approve()
+        request.with_user(self.manager_user).action_hr_approve()
 
     def _gaps(self, date_from=MONDAY, date_to=WEDNESDAY):
         return self.env['bxi.shift.exception']._get_regularization_gaps(
@@ -280,6 +282,69 @@ class TestAttendanceRegularization(TransactionCase):
     # ------------------------------------------------------------
     # Approval
     # ------------------------------------------------------------
+
+    def test_manager_approval_awaits_hr(self):
+        for category in ('attendance_regularization', 'missing_timesheet', 'late_checkout'):
+            with freeze_time(OPEN_CYCLE):
+                request = self._request(category=category)
+                request.action_submit()
+                request.with_user(self.manager_user).action_manager_approve()
+                self.assertEqual(request.state, 'hr_approval')
+                self.assertTrue(request.manager_approved_date)
+                # Not regularized until HR approves.
+                self.assertFalse(request.attendance_id)
+                self.assertEqual(self.missed.check_out, datetime(2026, 9, 21, 4, 0))
+                request.action_refuse()
+            self.assertEqual(request.state, 'refused')
+            self.assertFalse(self._lwp_leaves())
+
+    def test_hr_approval_regularizes_day(self):
+        with freeze_time(OPEN_CYCLE):
+            request = self._request(day=WEDNESDAY)
+            request.action_submit()
+            request.with_user(self.manager_user).action_manager_approve()
+            self.assertEqual(self._unregularized(), [MONDAY, WEDNESDAY])
+            request.with_user(self.manager_user).action_hr_approve()
+        self.assertEqual(request.state, 'approved')
+        self.assertEqual(request.hr_approved_by, self.manager)
+        self.assertTrue(request.hr_approved_date)
+        self.assertEqual(self._unregularized(), [MONDAY])
+
+    def test_hr_approval_requires_hr_officer(self):
+        user = self.env['res.users'].create({
+            'name': 'Regularization Plain User',
+            'login': 'regularization.plain',
+            'group_ids': [Command.set([
+                self.env.ref('bxi_shift_management.group_shift_user').id,
+            ])],
+        })
+        with freeze_time(OPEN_CYCLE):
+            request = self._request()
+            request.action_submit()
+            request.with_user(self.manager_user).action_manager_approve()
+            with self.assertRaises(UserError):
+                request.with_user(user).action_hr_approve()
+            with self.assertRaises(UserError):
+                request.with_user(user).action_refuse()
+        self.assertEqual(request.state, 'hr_approval')
+
+    def test_hr_approval_pending_blocks_duplicate(self):
+        with freeze_time(OPEN_CYCLE):
+            request = self._request()
+            request.action_submit()
+            request.with_user(self.manager_user).action_manager_approve()
+            with self.assertRaises(UserError):
+                self._request(category='late_checkout').action_submit()
+
+    def test_exception_category_has_no_hr_approval(self):
+        request = self._request(
+            category='exception', date_to=WEDNESDAY,
+            mode='office', to_location_id=self.office.id,
+        )
+        request.action_submit()
+        request.with_user(self.manager_user).action_manager_approve()
+        self.assertEqual(request.state, 'approved')
+        self.assertFalse(request.hr_approved_by)
 
     def test_approve_corrects_missed_attendance(self):
         with freeze_time(OPEN_CYCLE):
