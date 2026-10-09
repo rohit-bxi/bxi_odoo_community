@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        The real myBiz Travel Request API only publishes Create and Recall
+        endpoints — there is no status-polling endpoint. Disable the cron
+        inherited from bxi_travel_request instead of letting it hit a
+        non-existent URL every few hours.
+    -->
+    <record id="bxi_travel_request.ir_cron_sync_mybiz_status" model="ir.cron">
+        <field name="active">False</field>
+    </record>
+</odoo>

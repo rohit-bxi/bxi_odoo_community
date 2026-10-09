@@ -198,4 +198,55 @@
             </div>
         </field>
     </record>
+
+    <!-- Template: Travel Request Approved & Booked -->
+    <record id="email_template_approved" model="mail.template">
+        <field name="name">Travel Request - Approved &amp; Booked</field>
+        <field name="model_id" ref="model_travel_request"/>
+        <field name="subject">✅ Your Travel Request {{ object.name }} is Approved</field>
+        <field name="email_from">hrsupport@bxitech.com</field>
+        <field name="body_html" type="html">
+            <div style="font-family: Arial; font-size:14px; max-width:600px;">
+                <div style="background:#1a73e8; color:white; padding:20px; border-radius:8px 8px 0 0;">
+                    <h2 style="margin:0;">✅ Travel Request Approved</h2>
+                </div>
+                <div style="padding:24px; border:1px solid #e0e0e0; border-top:none; border-radius:0 0 8px 8px;">
+                    <p>Dear <b><t t-esc="object.employee_id.name"/></b>,</p>
+                    <p>Your travel request has been fully approved and submitted to MakeMyTrip myBiz for booking.</p>
+                    <table border="1" cellpadding="8" style="border-collapse: collapse; width:100%; margin-bottom:16px;">
+                        <tr style="background:#f5f5f5;">
+                            <th style="text-align:left;">Reference</th>
+                            <td><t t-esc="object.name"/></td>
+                        </tr>
+                        <tr>
+                            <th style="text-align:left;">Destination</th>
+                            <td><t t-esc="object.from_city"/> → <t t-esc="object.to_city"/></td>
+                        </tr>
+                        <tr style="background:#f5f5f5;">
+                            <th style="text-align:left;">Travel Dates</th>
+                            <td><t t-esc="object.departure_date"/> → <t t-esc="object.return_date or '—'"/></td>
+                        </tr>
+                        <tr>
+                            <th style="text-align:left;">myBiz Service ID</th>
+                            <td><t t-esc="object.mybiz_service_id or 'Pending'"/></td>
+                        </tr>
+                        <tr style="background:#f5f5f5;">
+                            <th style="text-align:left;">Booking Reference</th>
+                            <td><t t-esc="object.mybiz_booking_ref or 'Will be updated once booked'"/></td>
+                        </tr>
+                    </table>
+                    <p>The MakeMyTrip myBiz travel desk will process your booking shortly.
+                    You will receive booking confirmation details directly from myBiz.</p>
+                    <t t-set="url" t-value="'/web#id=%s&amp;model=travel.request&amp;view_type=form' % object.id"/>
+                    <a t-att-href="url"
+                       style="display:inline-block; padding:10px 20px; background:#1a73e8;
+                              color:white; font-weight:600; font-family:Arial, sans-serif;
+                              text-decoration:none; border-radius:6px;">
+                        View Travel Request
+                    </a>
+                </div>
+            </div>
+        </field>
+    </record>
+
 </odoo>
