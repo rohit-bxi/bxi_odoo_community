@@ -68,3 +68,28 @@ class TestMybizConfigIntegration(TransactionCase):
         mock_head.return_value = MagicMock(status_code=403)
         self.config.action_test_connection()
         self.assertIn('Partner API Key', self.config.last_test_status)
+
+    def test_auth_headers_override_python_requests_user_agent(self):
+        # myBiz's edge drops the default python-requests User-Agent.
+        headers = self.config._get_auth_headers()
+        self.assertIn('User-Agent', headers)
+        self.assertNotIn('python-requests', headers['User-Agent'])
+
+    def test_endpoint_field_may_hold_full_url(self):
+        self.config.write({
+            'base_url': 'https://corpcb.makemytrip.com/internal/corporate/v1',
+            'travel_request_endpoint':
+                'https://corpcb.makemytrip.com/corporate/v1/create/partner/travel-request',
+        })
+        url = self.config._get_endpoint('travel_request_endpoint')
+        self.assertEqual(
+            url, 'https://corpcb.makemytrip.com/corporate/v1/create/partner/travel-request')
+
+    @patch('odoo.addons.bxi_mybiz_integration.models.mybiz_config.requests.head')
+    def test_action_test_connection_405_is_success(self, mock_head):
+        # The create endpoint is POST-only, so HEAD reaching it returns 405.
+        mock_head.return_value = MagicMock(status_code=405)
+        result = self.config.action_test_connection()
+        self.assertEqual(result['params']['type'], 'success')
+        called_headers = mock_head.call_args.kwargs['headers']
+        self.assertIn('User-Agent', called_headers)

@@ -56,7 +56,19 @@ class BxiMyBizConfig(models.Model):
             'partner-apikey': self.partner_api_key,
             'client-code': self.client_code,
             'Content-Type': 'application/json',
+            # myBiz's Akamai edge silently drops requests with the default
+            # python-requests User-Agent (they hang until timeout).
+            'User-Agent': 'BXI-Odoo/19.0 bxi_mybiz_integration',
         }
+
+    def _get_endpoint(self, path_field='travel_request_endpoint'):
+        """Allow endpoint fields to hold a full URL, as myBiz documents them,
+        instead of only a path relative to base_url."""
+        self.ensure_one()
+        path = (getattr(self, path_field) or '').strip()
+        if path.lower().startswith(('http://', 'https://')):
+            return path
+        return super()._get_endpoint(path_field)
 
     def action_test_connection(self):
         """Test connectivity using the real create endpoint and headers."""
@@ -65,7 +77,10 @@ class BxiMyBizConfig(models.Model):
             headers = self._get_auth_headers()
             url = self._get_endpoint('travel_request_endpoint')
             resp = requests.head(url, headers=headers, timeout=10)
-            if resp.status_code in (200, 201, 204):
+            # The create endpoint is POST-only, so 405 to a HEAD means it was
+            # reached. myBiz validates the payload before the credentials, so
+            # those are only proven by the first real push.
+            if resp.status_code in (200, 201, 204, 405):
                 status = f'✅ Connection successful (HTTP {resp.status_code})'
                 msg_type = 'success'
             elif resp.status_code in (401, 403):
@@ -74,8 +89,8 @@ class BxiMyBizConfig(models.Model):
                     'check Partner API Key / Client Code'
                 )
                 msg_type = 'warning'
-            elif resp.status_code in (400, 404, 405):
-                status = f'ℹ️ Server reachable — HTTP {resp.status_code} (endpoint requires POST)'
+            elif resp.status_code in (400, 404):
+                status = f'ℹ️ Server reachable — HTTP {resp.status_code} (check the endpoint path)'
                 msg_type = 'info'
             else:
                 status = f'⚠️ Unexpected response: HTTP {resp.status_code}'
