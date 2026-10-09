@@ -462,11 +462,46 @@ class HrPayslip(models.Model):
                         "Headers : %s",
                         dict(response.headers),
                     )
+                    # Sandbox 404 bodies echo the forwarded request,
+                    # including the API key and HMAC headers.
                     _logger.error(
                         "Body : %s",
-                        response.text,
+                        re.sub(
+                            r"(?im)^((?:apikey|hmac)\s*:\s*).*$",
+                            r"\1***",
+                            (response.text or "").replace(api_key, "***"),
+                        ),
                     )
                     _logger.error("=" * 80)
+
+                    # The ICICI sandbox is a mock (virtualized) service that
+                    # only answers requests it has a responder configured
+                    # for; this is not fixable from our side.
+                    if "valid Message Responder" in (response.text or ""):
+                        request_type = re.search(
+                            r"REQUESTTYPE=(\w+)", response.text or ""
+                        )
+                        raise ValidationError(
+                            _(
+                                "ICICI sandbox has no mock responder "
+                                "configured for this request (HTTP %s, "
+                                "REQUESTTYPE=%s).\n\nThe request was "
+                                "received and decrypted by ICICI, but "
+                                "their sandbox is not set up to answer "
+                                "it. Please ask ICICI to enable this API "
+                                "for Aggregator ID %s / Corporate ID %s "
+                                "in the sandbox."
+                            )
+                            % (
+                                response.status_code,
+                                request_type.group(1)
+                                if request_type else _("unknown"),
+                                payload.get("AGGR_ID")
+                                or payload.get("AGGRID") or "",
+                                payload.get("CORP_ID")
+                                or payload.get("CORPID") or "",
+                            )
+                        )
 
                     try:
                         error_json = response.json()
