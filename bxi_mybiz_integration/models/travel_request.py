@@ -3,6 +3,7 @@ import calendar
 import datetime
 import json
 import logging
+import re
 
 import requests
 from odoo import fields, models, _
@@ -83,13 +84,13 @@ class TravelRequest(models.Model):
 
         journey = [{
             'from': {
-                'airportCode': opt.origin_code or self.from_city,
+                'airportCode': (opt.origin_code or self.from_city or '').strip().upper(),
                 'cityName': self.from_city,
                 'countryCode': origin_country.code or '',
                 'countryName': origin_country.name or '',
             },
             'to': {
-                'airportCode': opt.destination_code or self.to_city,
+                'airportCode': (opt.destination_code or self.to_city or '').strip().upper(),
                 'cityName': self.to_city,
                 'countryCode': dest_country.code or '',
                 'countryName': dest_country.name or '',
@@ -162,6 +163,31 @@ class TravelRequest(models.Model):
                                         f'{day.strftime("%d %b %Y")}')
                             break  # later dates of the same leg/stay add nothing
         return list(dict.fromkeys(past))
+
+    def _mybiz_invalid_airport_codes(self, payload):
+        """Describe each flight leg whose airport codes are not 3-letter IATA
+        codes, e.g. "'GHAZIABAD' → 'UDAIPUR'" when a segment was generated from
+        the From/To City fields."""
+        bad = []
+        for flight in payload['services'].get('FLIGHT', []):
+            for leg in flight.get('journeyDetails', []):
+                codes = (leg['from']['airportCode'], leg['to']['airportCode'])
+                if not all(re.fullmatch(r'[A-Z]{3}', code) for code in codes):
+                    bad.append(f"'{codes[0]}' → '{codes[1]}'")
+        return list(dict.fromkeys(bad))
+
+    def _mybiz_payload_problems(self, payload):
+        """Describe what myBiz would reject in the payload, or [] if nothing."""
+        problems = []
+        past_dates = self._mybiz_past_dates(payload)
+        if past_dates:
+            problems.append(_('MakeMyTrip only accepts dates after the current time (%s)')
+                            % ', '.join(past_dates))
+        bad_codes = self._mybiz_invalid_airport_codes(payload)
+        if bad_codes:
+            problems.append(_('flight segments need 3-letter IATA airport codes such as '
+                              'DEL or BOM (%s)') % ', '.join(bad_codes))
+        return problems
 
     def _build_mybiz_payload(self):
         """Build the JSON payload for the myBiz Travel Request API (real contract)."""
@@ -277,19 +303,20 @@ class TravelRequest(models.Model):
             return
 
         payload = self._build_mybiz_payload()
-        past_dates = self._mybiz_past_dates(payload)
-        if past_dates:
-            # myBiz rejects these with "provided date must be greater than the
-            # current system date", so fail here with a message HR can act on.
+        problems = self._mybiz_payload_problems(payload)
+        if problems:
+            # myBiz rejects these (past dates: "provided date must be greater than
+            # the current system date"; city names as airport codes: a generic
+            # UTPR error), so fail here with a message HR can act on.
             err = _(
-                'MakeMyTrip only accepts dates after the current time, but this request '
-                'has: %s. Update the travel or segment dates and retry, or cancel the request.'
-            ) % ', '.join(past_dates)
+                'Not sent to MakeMyTrip: %s. Correct the request or its Travel Segments '
+                '& Options and retry, or cancel the request.'
+            ) % '; '.join(problems)
             self.write({'mybiz_status': 'failed', 'mybiz_error': err,
                         'mybiz_sync_date': fields.Datetime.now()})
             self.message_post(body=_('❌ myBiz Push Failed: %s') % err,
                               subtype_xmlid='mail.mt_note')
-            _logger.warning('myBiz push blocked for %s: past dates %s', self.name, past_dates)
+            _logger.warning('myBiz push blocked for %s: %s', self.name, problems)
             return
 
         url = config._get_endpoint('travel_request_endpoint')

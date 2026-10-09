@@ -272,8 +272,8 @@ class TestMybizPushWithoutServices(TransactionCase):
 
 
 @tagged('post_install', '-at_install')
-class TestMybizPushPastDates(TransactionCase):
-    """myBiz rejects any date that is not after the current time."""
+class TestMybizPushValidation(TransactionCase):
+    """Payloads myBiz would reject (past dates, non-IATA airport codes) are not sent."""
 
     @classmethod
     def setUpClass(cls):
@@ -292,7 +292,9 @@ class TestMybizPushPastDates(TransactionCase):
         cls.past = cls.today - datetime.timedelta(days=30)
         cls.future = cls.today + datetime.timedelta(days=30)
 
-    def _flight_request(self, departure, **overrides):
+    def _flight_request(self, departure, codes=('JAI', 'DEL'), **overrides):
+        """Flight request with a JAI → DEL segment; codes=None leaves the segment
+        to be auto-generated from the From/To City fields."""
         vals = {
             'employee_id': self.employee.id,
             'travel_purpose': 'Meeting with OEM',
@@ -306,7 +308,38 @@ class TestMybizPushPastDates(TransactionCase):
             'state': 'mybiz_pending',
         }
         vals.update(overrides)
-        return self.env['travel.request'].create(vals)
+        request = self.env['travel.request'].create(vals)
+        if codes:
+            self.env['travel.request.option'].create({
+                'travel_request_id': request.id,
+                'option_type': 'flight',
+                'origin_code': codes[0],
+                'destination_code': codes[1],
+                'departure_datetime': datetime.datetime.combine(departure, datetime.time.min),
+            })
+        return request
+
+    @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
+    def test_city_names_as_airport_codes_are_not_pushed(self, mock_post):
+        request = self._flight_request(self.future, codes=None)
+
+        request._push_to_mybiz()
+
+        mock_post.assert_not_called()
+        self.assertEqual(request.mybiz_status, 'failed')
+        self.assertIn("'JAIPUR' → 'DELHI'", request.mybiz_error)
+
+    @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
+    def test_lowercase_airport_codes_are_sent_uppercase(self, mock_post):
+        mock_post.return_value.raise_for_status.return_value = None
+        mock_post.return_value.json.return_value = {'status': 'success'}
+        request = self._flight_request(self.future, codes=(' jai', 'del '))
+
+        request._push_to_mybiz()
+
+        mock_post.assert_called_once()
+        leg = mock_post.call_args.kwargs['json']['services']['FLIGHT'][0]['journeyDetails'][0]
+        self.assertEqual((leg['from']['airportCode'], leg['to']['airportCode']), ('JAI', 'DEL'))
 
     @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
     def test_past_flight_date_is_not_pushed(self, mock_post):
