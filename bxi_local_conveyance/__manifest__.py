@@ -2,18 +2,18 @@
 {
     'name': 'BXI Local Conveyance',
     'category': 'Human Resources',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'sequence': 1,
     'author': 'BXI Technologies',
     'website': 'https://bxitech.com/',
-    'summary': 'Local Conveyance Policy: travel plans, per-km rates, claim rules and RM/HR approval',
+    'summary': 'Local Conveyance Policy: travel plans, per-km rates, claim rules and RM/Finance/HR approval',
     'description': """
         Implements the BXI Tech Local Conveyance Policy (v1.2).
         - Travel plans by band: TP1 (E6 and above) and TP2 (E3 to E5) by taxi, TP3 (up to E2) by auto or taxi
         - Personal vehicle at the Table A rates: 2-Wheeler 2.50 and 4-Wheeler 5.00 per km, whatever the travel plan
         - Auto-rickshaw at actuals in an emergency (no inter-office cab and no personal transport)
-        - Auto-rickshaw claims: Reporting Manager approval, plus HR above Rs. 1,000 for the day; bills required
-        - Parking and toll at actuals with receipts, along with a conveyance claim, approved by HR
+        - Every claim is approved by the Reporting Manager, then Finance, then HR; auto-rickshaw needs bills
+        - Parking and toll at actuals with receipts, along with a conveyance claim
         - Residence to airport one way at the per-km rates
         - Claims within 45 days, not on weekends or holidays, not beyond two months at another local office
         - Other office assignments start when the work location moves away from the regular office

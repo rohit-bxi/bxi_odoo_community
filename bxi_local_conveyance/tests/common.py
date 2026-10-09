@@ -9,17 +9,17 @@ _receipt_counter = itertools.count()
 
 
 class ConveyanceTestMixin:
-    """A Reporting Manager with employees of each travel plan, an HR officer, and the policy defaults."""
+    """A Reporting Manager with employees of each travel plan, Finance and HR officers, and the policy defaults."""
 
     @classmethod
     def _setup_conveyance_data(cls):
         # The tests must not depend on the configuration of the database they run on.
         cls.company = cls.env.company
-        cls.company.conveyance_hr_user_id = False
+        cls.company.conveyance_hr_user_id = cls.company.conveyance_finance_user_id = False
         set_param = cls.env['ir.config_parameter'].sudo().set_param
         for key, value in {
-            'claim_days': 45, 'reminder_days': 7, 'office_coverage_months': 2, 'auto_hr_threshold': 1000,
-            'food_daily_limit': 1000, 'non_working_day_mode': 'block',
+            'claim_days': 45, 'reminder_days': 7, 'office_coverage_months': 2, 'food_daily_limit': 1000,
+            'non_working_day_mode': 'block',
         }.items():
             set_param(f'bxi_local_conveyance.{key}', value)
 
@@ -40,6 +40,9 @@ class ConveyanceTestMixin:
         cls.hr_user = new_test_user(
             cls.env, login='lc_test_hr', name='Conveyance HR',
             groups='base.group_user,bxi_local_conveyance.group_conveyance_hr')
+        cls.finance_user = new_test_user(
+            cls.env, login='lc_test_finance', name='Conveyance Finance',
+            groups='base.group_user,bxi_local_conveyance.group_conveyance_finance')
         cls.outsider = new_test_user(cls.env, login='lc_test_outsider', name='Outsider', groups='base.group_user')
         cls.department = cls.env['hr.department'].create({'name': 'Conveyance Engineering'})
         cls.sales = cls.env['hr.department'].create({'name': 'Conveyance Sales', 'is_sales_team': True})

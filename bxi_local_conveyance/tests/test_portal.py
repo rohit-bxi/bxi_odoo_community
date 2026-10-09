@@ -61,7 +61,7 @@ class TestConveyancePortal(ConveyanceTestMixin, HttpCase):
         claim = self._claims(self.junior)
         self.assertEqual(claim.total_amount, 1200)
         self.assertEqual(claim.nb_attachment, 1)
-        self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm', 'hr'])
+        self.assertEqual(claim.conveyance_approval_line_ids.mapped('role'), ['rm', 'finance', 'hr'])
 
     def test_policy_error_shown_and_nothing_saved(self):
         self._login(self.employee)
