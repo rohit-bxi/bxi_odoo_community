@@ -97,7 +97,7 @@ class HrExpense(models.Model):
             if not rec.product_id:
                 raise UserError("You cannot submit an expense without a category.")
             rec.write({
-                'state': 'hr_approval'
+                'state': 'finance_approval'
             })
 
     def action_hr_approve(self):
@@ -105,7 +105,7 @@ class HrExpense(models.Model):
             if rec.state != 'hr_approval':
                 raise UserError("Expense must be in HR Approval state.")
             rec.write({
-                'state': 'finance_approval'
+                'state': 'approved'
             })
 
     def action_finance_approved(self):
@@ -113,7 +113,7 @@ class HrExpense(models.Model):
             if rec.state != 'finance_approval':
                 raise UserError("Expense must be in Finance Approval state.")
             rec.write({
-                'state': 'approved'
+                'state': 'hr_approval'
             })
 
     def action_refuse(self):
