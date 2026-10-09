@@ -2,7 +2,7 @@
 {
     'name': 'Travel Request — MakeMyTrip myBiz Integration',
     'category': 'Human Resources',
-    'version': '19.0.2.0.0',
+    'version': '19.0.2.0.1',
     'summary': 'Manage employee travel requests with MakeMyTrip myBiz integration',
     'sequence': 1,
     'author': 'BXI',
