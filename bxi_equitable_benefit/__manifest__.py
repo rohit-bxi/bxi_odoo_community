@@ -2,7 +2,7 @@
 {
     'name': 'BXI Equitable Benefit',
     'category': 'Human Resources',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'sequence': 1,
     'author': 'BXI Technologies',
     'website': 'https://bxitech.com/',
@@ -17,16 +17,21 @@
         - Attendance based unauthorized absence and work pattern compliance checks
         - Full & Final Settlement on resignation or departure, including an unpaid earlier year
         - Performance rating and Annualized Component A taken from released appraisals
+        - Employee portal: declare a work pattern with its requirement documents, see payouts and statements
+        - Odd shift work patterns checked against working schedules flagged as odd shifts
     """,
     'depends': [
         'hr',
         'hr_holidays',
+        'portal',
+        'website',
         'mail',
         'project',
         'om_hr_payroll',
         'bxi_hr_employee',
         'employee_onboarding',
         'bxi_hr_performance_bonus',
+        'bxi_user_access',
     ],
     'data': [
         'security/security.xml',
@@ -48,8 +53,10 @@
         'views/hr_employee_views.xml',
         'views/hr_version_views.xml',
         'views/hr_leave_type_views.xml',
+        'views/resource_calendar_views.xml',
         'views/hr_employee_appraisal_views.xml',
         'views/res_config_settings_views.xml',
+        'views/portal_templates.xml',
         'views/menus.xml',
     ],
     'post_init_hook': '_post_init_hook',

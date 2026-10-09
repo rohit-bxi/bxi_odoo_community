@@ -119,6 +119,10 @@
                                     <field name="attended_days" optional="hide" invisible="not compliance_checked"/>
                                     <field name="compliance_percent" optional="show" invisible="not compliance_checked"
                                            groups="bxi_equitable_benefit.group_eb_revenue_assurance,bxi_equitable_benefit.group_eb_finance"/>
+                                    <field name="shift_checked" column_invisible="1"/>
+                                    <field name="odd_shift_days" optional="hide" invisible="not shift_checked"/>
+                                    <field name="odd_shift_percent" optional="show" invisible="not shift_checked"
+                                           groups="bxi_equitable_benefit.group_eb_revenue_assurance,bxi_equitable_benefit.group_eb_finance"/>
                                 </list>
                             </field>
                         </page>
