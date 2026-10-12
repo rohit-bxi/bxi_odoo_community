@@ -69,6 +69,14 @@ class TestMybizPayload(TransactionCase):
             'origin_country_id': cls.india.id,
             'destination_country_id': cls.india.id,
         })
+        cls.return_flight_option = cls.env['travel.request.option'].create({
+            'travel_request_id': cls.request.id,
+            'option_type': 'flight',
+            'origin_code': 'DEL',
+            'destination_code': 'BLR',
+            'departure_datetime': '2030-03-05 12:00:00',
+            'arrival_datetime': '2030-03-05 14:30:00',
+        })
         cls.hotel_option = cls.env['travel.request.option'].create({
             'travel_request_id': cls.request.id,
             'option_type': 'hotel',
@@ -102,11 +110,25 @@ class TestMybizPayload(TransactionCase):
         self.assertEqual(flight['tripType'], 'ROUND_TRIP')
         self.assertEqual(flight['travelClass'], 'BUSINESS')
         self.assertTrue(flight['serviceId'])
+        self.assertEqual(len(flight['journeyDetails']), 2)
         journey = flight['journeyDetails'][0]
         self.assertEqual(journey['from']['airportCode'], 'BLR')
         self.assertEqual(journey['from']['countryCode'], self.india.code)
         self.assertEqual(journey['to']['airportCode'], 'DEL')
         self.assertIsInstance(journey['departureDate'], int)
+
+    def test_round_trip_return_leg_flies_back(self):
+        payload = self.request._build_mybiz_payload()
+        leg = payload['services']['FLIGHT'][0]['journeyDetails'][1]
+        self.assertEqual((leg['from']['airportCode'], leg['to']['airportCode']), ('DEL', 'BLR'))
+        self.assertEqual((leg['from']['cityName'], leg['to']['cityName']), ('Delhi', 'Bengaluru'))
+        self.assertEqual(leg['to']['countryCode'], self.india.code)
+
+    def test_round_trip_legs_share_one_service_id(self):
+        payload = self.request._build_mybiz_payload()
+        service_id = payload['services']['FLIGHT'][0]['serviceId']
+        self.assertEqual(self.flight_option.mybiz_ref, service_id)
+        self.assertEqual(self.return_flight_option.mybiz_ref, service_id)
 
     def test_hotel_service_has_room_details_per_room(self):
         payload = self.request._build_mybiz_payload()
@@ -274,7 +296,8 @@ class TestMybizPushWithoutServices(TransactionCase):
 
 @tagged('post_install', '-at_install')
 class TestMybizPushValidation(TransactionCase):
-    """Payloads myBiz would reject (past dates, non-IATA airport codes) are not sent."""
+    """Payloads myBiz would reject (past dates, non-IATA airport codes, a round trip
+    without its return leg) are not sent."""
 
     @classmethod
     def setUpClass(cls):
@@ -306,6 +329,7 @@ class TestMybizPushValidation(TransactionCase):
             'departure_date': departure,
             'return_date': departure,
             'mode_of_travel': 'flight',
+            'trip_type': 'one_way',
             'state': 'mybiz_pending',
         }
         vals.update(overrides)
@@ -391,3 +415,71 @@ class TestMybizPushValidation(TransactionCase):
 
         mock_post.assert_called_once()
         self.assertEqual(request.mybiz_status, 'pending')
+
+    def _add_flight_leg(self, request, origin, destination, departure):
+        return self.env['travel.request.option'].create({
+            'travel_request_id': request.id,
+            'option_type': 'flight',
+            'origin_code': origin,
+            'destination_code': destination,
+            'departure_datetime': datetime.datetime.combine(departure, datetime.time(9, 0)),
+        })
+
+    @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
+    def test_round_trip_without_return_segment_is_not_pushed(self, mock_post):
+        # myBiz answered a ROUND_TRIP with a single leg with a generic UTPR error.
+        request = self._flight_request(self.future, trip_type='round_trip')
+
+        request._push_to_mybiz()
+
+        mock_post.assert_not_called()
+        self.assertEqual(request.mybiz_status, 'failed')
+        self.assertIn('a round trip needs two flight segments', request.mybiz_error)
+
+    @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
+    def test_round_trip_is_pushed_as_one_service_with_both_legs(self, mock_post):
+        mock_post.return_value.raise_for_status.return_value = None
+        mock_post.return_value.json.return_value = {'status': 'success'}
+        back = self.future + datetime.timedelta(days=2)
+        request = self._flight_request(
+            self.future, codes=None, trip_type='round_trip', return_date=back)
+        # Recorded return leg first: legs must still go out in travel order.
+        self._add_flight_leg(request, 'DEL', 'JAI', back)
+        self._add_flight_leg(request, 'JAI', 'DEL', self.future)
+
+        request._push_to_mybiz()
+
+        mock_post.assert_called_once()
+        flights = mock_post.call_args.kwargs['json']['services']['FLIGHT']
+        self.assertEqual(len(flights), 1)
+        self.assertEqual(flights[0]['tripType'], 'ROUND_TRIP')
+        legs = [(leg['from']['airportCode'], leg['to']['airportCode'])
+                for leg in flights[0]['journeyDetails']]
+        self.assertEqual(legs, [('JAI', 'DEL'), ('DEL', 'JAI')])
+        self.assertEqual(request.mybiz_status, 'pending')
+
+    def test_one_way_segments_are_separate_services_with_own_ids(self):
+        back = self.future + datetime.timedelta(days=2)
+        request = self._flight_request(
+            self.future, codes=None, trip_type='round_trip', return_date=back)
+        onward = self._add_flight_leg(request, 'JAI', 'DEL', self.future)
+        returning = self._add_flight_leg(request, 'DEL', 'JAI', back)
+        request._build_mybiz_payload()
+        self.assertEqual(onward.mybiz_ref, returning.mybiz_ref)
+
+        request.trip_type = 'one_way'
+        flights = request._build_mybiz_payload()['services']['FLIGHT']
+
+        self.assertEqual([flight['tripType'] for flight in flights], ['ONWARDS', 'ONWARDS'])
+        self.assertEqual([len(flight['journeyDetails']) for flight in flights], [1, 1])
+        self.assertNotEqual(flights[0]['serviceId'], flights[1]['serviceId'])
+
+    @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
+    def test_multi_city_with_one_segment_is_not_pushed(self, mock_post):
+        request = self._flight_request(self.future, trip_type='multi_city')
+
+        request._push_to_mybiz()
+
+        mock_post.assert_not_called()
+        self.assertIn('a multi-city trip needs a flight segment for each leg',
+                      request.mybiz_error)

@@ -87,7 +87,10 @@ class TravelRequestOption(models.Model):
         if str(resp_data.get('status', '')).lower() != 'success':
             raise UserError(_('myBiz recall failed: %s') % (resp_data.get('message') or resp_data))
 
-        self.write({'mybiz_status': 'cancelled'})
+        # The legs of a round trip or multi-city trip share one serviceId, so
+        # the recall cancels all of them.
+        self.travel_request_id.travel_option_ids.filtered(
+            lambda o: o.mybiz_ref == self.mybiz_ref).write({'mybiz_status': 'cancelled'})
         self.travel_request_id.message_post(
             body=_('🔁 myBiz service <b>%s</b> (%s) was recalled: %s') % (
                 self.mybiz_ref, self.option_type, resp_data.get(

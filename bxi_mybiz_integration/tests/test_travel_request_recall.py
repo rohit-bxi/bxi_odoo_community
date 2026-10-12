@@ -104,6 +104,29 @@ class TestMybizRecall(TransactionCase):
         self.assertEqual(self.request.mybiz_status, 'cancelled')
         self.assertEqual(self.request.state, 'cancelled')
 
+    @patch('odoo.addons.bxi_mybiz_integration.models.travel_request_option.requests.post')
+    def test_recall_all_sends_one_recall_per_shared_service_id(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {'status': 'success', 'message': 'OK'}
+        mock_post.return_value = mock_response
+        return_leg = self.env['travel.request.option'].create({
+            'travel_request_id': self.request.id,
+            'option_type': 'flight',
+            'origin_code': 'MAA',
+            'destination_code': 'PNQ',
+            'mybiz_ref': 'SVC-ABC',  # same round-trip service as self.option
+            'mybiz_status': 'confirmed',
+        })
+
+        self.request.state = 'mybiz_pending'
+        self.request.action_recall_all_mybiz_services()
+
+        mock_post.assert_called_once()
+        self.assertEqual(self.option.mybiz_status, 'cancelled')
+        self.assertEqual(return_leg.mybiz_status, 'cancelled')
+        self.assertEqual(self.request.state, 'cancelled')
+
     def test_ensure_service_id_is_idempotent(self):
         option = self.env['travel.request.option'].create({
             'travel_request_id': self.request.id,
