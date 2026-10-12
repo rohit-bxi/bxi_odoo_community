@@ -3,6 +3,21 @@
 <odoo>
 
     <template id="six8_life_science_layout">
+        <style>
+.footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    min-height: 70px;
+    z-index: 9999;
+}
+
+.page:last-child {
+    page-break-after: auto !important;
+}
+</style>
 
         <t t-set="company"
            t-value="o.template_company_id or res_company"/>
