@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="six8_life_science_layout">
+
+        <t t-set="company"
+           t-value="o.template_company_id or res_company"/>
+
+        <style>
+            /* PAGE */
+            @page {
+                margin: 0;
+            }
+
+            html, body {
+                margin: 0;
+                padding: 0;
+                font-family: Arial, sans-serif;
+                color: #16365f;
+            }
+
+            .six8-page {
+                position: relative;
+                min-height: 100%;
+                background: #ffffff;
+            }
+
+            /* HEADER */
+            .six8-header {
+                position: relative;
+                width: 100%;
+                height: 112px;
+                overflow: hidden;
+                background: #ffffff;
+                box-sizing: border-box;
+            }
+
+            .six8-header-shape {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 112px;
+            }
+
+            .six8-header-logo {
+                position: absolute;
+                top: 23px;
+                right: 28px;
+                width: 150px;
+                text-align: right;
+                z-index: 2;
+            }
+
+            .six8-header-logo img {
+                max-width: 150px;
+                max-height: 52px;
+                width: auto;
+                height: auto;
+            }
+
+            /* REPORT CONTENT */
+            .six8-content {
+                padding: 22px 32px 0 32px;
+                box-sizing: border-box;
+                color: #222222;
+                font-size: 11pt;
+                position: relative;
+                z-index: 1;
+            }
+
+            /* FOOTER */
+            .six8-footer {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                height: 112px;
+                background: #ffffff;
+                font-family: Arial, sans-serif;
+                box-sizing: border-box;
+                z-index: 10;
+            }
+
+            .six8-footer-table {
+                position: relative;
+                width: 100%;
+                height: 100px;
+                border-collapse: collapse;
+                table-layout: fixed;
+                z-index: 2;
+            }
+
+            .six8-footer-left {
+                width: 72%;
+                vertical-align: bottom;
+                padding: 0 0 10px 32px;
+                color: #16365f;
+                font-size: 9pt;
+                line-height: 14px;
+            }
+
+            .six8-footer-company {
+                color: #16365f;
+                font-size: 12pt;
+                line-height: 18px;
+                font-weight: bold;
+                margin-bottom: 2px;
+            }
+
+            .six8-footer-cin {
+                font-weight: bold;
+                margin-bottom: 6px;
+            }
+
+            .six8-footer-address-label {
+                font-weight: bold;
+            }
+
+            .six8-footer-right {
+                width: 28%;
+                vertical-align: bottom;
+                text-align: center;
+                padding: 0 15px 13px 0;
+            }
+
+            .six8-footer-right img {
+                max-width: 145px;
+                max-height: 45px;
+                width: auto;
+                height: auto;
+            }
+
+            .six8-footer-shape {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 45px;
+                z-index: 1;
+            }
+
+            /* Avoid splitting report content unnecessarily */
+            .six8-content table {
+                page-break-inside: auto;
+            }
+
+            .six8-content tr,
+            .six8-content img {
+                page-break-inside: avoid;
+            }
+        </style>
+
+        <div class="six8-page">
+
+            <!-- HEADER -->
+            <div class="header six8-header">
+
+                <svg class="six8-header-shape"
+                     xmlns="http://www.w3.org/2000/svg"
+                     viewBox="0 0 1000 130"
+                     preserveAspectRatio="none">
+
+                    <!-- Thin teal top border -->
+                    <path d="M0,0 L1000,0 L1000,4 L0,4 Z"
+                          fill="#147f91"/>
+
+                    <!-- Curved navy banner -->
+                    <path d="M0,4
+                             L1000,4
+                             L1000,18
+                             C760,22 520,30 300,53
+                             C175,66 75,92 0,115 Z"
+                          fill="#123f78"/>
+
+                    <!-- Subtle teal accent -->
+                    <path d="M0,111
+                             C120,82 245,58 385,43
+                             C250,62 120,92 0,120 Z"
+                          fill="#147f91"/>
+                </svg>
+
+                <div class="six8-header-logo">
+                    <t t-if="company.logo_web">
+                        <img t-att-src="image_data_uri(company.logo_web)"
+                             alt="SIX8 Life Science Logo"/>
+                    </t>
+                </div>
+
+            </div>
+
+            <!-- REPORT BODY -->
+            <div class="article six8-content"
+                 t-att-data-oe-model="o and o._name"
+                 t-att-data-oe-id="o and o.id">
+
+                <t t-out="0"/>
+
+            </div>
+
+            <!-- FOOTER: REPEATS ON REPORT PAGES -->
+            <div class="footer six8-footer">
+
+                <svg class="six8-footer-shape"
+                     xmlns="http://www.w3.org/2000/svg"
+                     viewBox="0 0 1000 55"
+                     preserveAspectRatio="none">
+
+                    <!-- Teal accent line -->
+                    <path d="M0,38
+                             C250,48 650,48 1000,17
+                             L1000,21
+                             C650,52 250,53 0,42 Z"
+                          fill="#147f91"/>
+
+                    <!-- Navy bottom banner -->
+                    <path d="M0,42
+                             C300,52 650,51 1000,21
+                             L1000,55 L0,55 Z"
+                          fill="#123f78"/>
+                </svg>
+
+                <table class="six8-footer-table">
+                    <tr>
+
+                        <!-- COMPANY DETAILS -->
+                        <td class="six8-footer-left">
+
+                            <div class="six8-footer-company">
+                                <t t-esc="company.name"/>
+                            </div>
+
+                            <div class="six8-footer-cin">
+                                Corporate Identification Number:
+                                <t t-esc="company.company_registry or 'ADA-9134'"/>
+                            </div>
+
+                            <div>
+                                <span class="six8-footer-address-label">
+                                    Registered Office:
+                                </span>
+                                <br/>
+
+                                <t t-if="company.street">
+                                    <t t-esc="company.street"/>,
+                                </t>
+
+                                <t t-if="company.street2">
+                                    <t t-esc="company.street2"/>,
+                                </t>
+
+                                <t t-if="company.city">
+                                    <t t-esc="company.city"/>,
+                                </t>
+
+                                <t t-if="company.state_id">
+                                    <t t-esc="company.state_id.name"/>,
+                                </t>
+
+                                <t t-if="company.zip">
+                                    <t t-esc="company.zip"/>
+                                </t>
+                            </div>
+
+                        </td>
+
+                        <!-- BOTTOM-RIGHT LOGO -->
+                        <td class="six8-footer-right">
+                            <t t-if="company.logo_web">
+                                <img t-att-src="image_data_uri(company.logo_web)"
+                                     alt="SIX8 Life Science Logo"/>
+                            </t>
+                        </td>
+
+                    </tr>
+                </table>
+
+            </div>
+
+        </div>
+
+    </template>
+</odoo>
