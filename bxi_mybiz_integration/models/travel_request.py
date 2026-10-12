@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 import re
+import uuid
 
 import requests
 from odoo import fields, models, _
@@ -73,43 +74,80 @@ class TravelRequest(models.Model):
             'isPrimaryPax': True,
         }]
 
-    def _build_mybiz_flight_service(self, opt):
-        """Build one FLIGHT service entry from a travel.request.option, or None."""
-        opt._ensure_mybiz_service_id()
+    def _build_mybiz_journey_leg(self, opt, is_return=False):
+        """Build one journeyDetails entry from a flight travel.request.option.
+        A round trip's return leg flies To City → From City, so the header
+        fallbacks are swapped for it."""
+        from_city, to_city = self.from_city, self.to_city
+        from_country, to_country = self.from_country, self.to_country
+        if is_return:
+            from_city, to_city = to_city, from_city
+            from_country, to_country = to_country, from_country
 
-        origin_country = opt.origin_country_id or self.from_country
-        dest_country = opt.destination_country_id or self.to_country
+        origin_country = opt.origin_country_id or from_country
+        dest_country = opt.destination_country_id or to_country
         departure = opt.departure_datetime
         arrival = opt.arrival_datetime or opt.departure_datetime
 
-        journey = [{
+        return {
             'from': {
-                'airportCode': (opt.origin_code or self.from_city or '').strip().upper(),
-                'cityName': self.from_city,
+                'airportCode': (opt.origin_code or from_city or '').strip().upper(),
+                'cityName': from_city,
                 'countryCode': origin_country.code or '',
                 'countryName': origin_country.name or '',
             },
             'to': {
-                'airportCode': (opt.destination_code or self.to_city or '').strip().upper(),
-                'cityName': self.to_city,
+                'airportCode': (opt.destination_code or to_city or '').strip().upper(),
+                'cityName': to_city,
                 'countryCode': dest_country.code or '',
                 'countryName': dest_country.name or '',
             },
             'departureDate': _epoch_ms(departure) or _epoch_ms(self.departure_date),
             'arrivalDate': _epoch_ms(arrival) or _epoch_ms(self.departure_date),
-        }]
+        }
 
+    def _mybiz_flight_groups(self, flight_opts):
+        """Split flight segments into myBiz FLIGHT services, each a recordset of
+        legs in travel order. myBiz takes a round trip or multi-city trip as one
+        service holding every leg; only a one-way trip sends each segment as its
+        own service."""
+        if self.trip_type == 'one_way':
+            return list(flight_opts)
+        return [flight_opts.sorted(
+            lambda o: (o.departure_datetime or datetime.datetime.max, o.sequence, o.id))]
+
+    def _mybiz_assign_flight_service_ids(self, groups):
+        """Give every leg of a FLIGHT service the same serviceId, so recalling
+        any of its segments recalls the whole service. The first leg's id is
+        kept so retries send a stable id, unless an earlier service in this
+        payload already uses it (the trip type was changed to one way)."""
+        used = set()
+        for legs in groups:
+            ref = legs[0].mybiz_ref
+            if not ref or ref in used:
+                ref = uuid.uuid4().hex
+            used.add(ref)
+            legs.filtered(lambda o: o.mybiz_ref != ref).mybiz_ref = ref
+
+    def _build_mybiz_flight_service(self, legs):
+        """Build one FLIGHT service entry from its flight travel.request.option
+        legs, in travel order."""
+        trip_type = TRIP_TYPE_MAP.get(self.trip_type or 'round_trip', 'ONWARDS')
         return {
-            'serviceId': opt.mybiz_ref,
-            'tripType': TRIP_TYPE_MAP.get(self.trip_type or 'round_trip', 'ONWARDS'),
+            'serviceId': legs[0].mybiz_ref,
+            'tripType': trip_type,
             'travelClass': TRAVEL_CLASS_MAP.get(
-                opt.travel_class or self.travel_class or 'economy', 'ECONOMY'),
+                legs[0].travel_class or self.travel_class or 'economy', 'ECONOMY'),
             'paxDetails': {
                 'adult': 1,
                 'child': {'count': 0, 'age': []},
                 'infant': 0,
             },
-            'journeyDetails': journey,
+            'journeyDetails': [
+                self._build_mybiz_journey_leg(
+                    opt, is_return=trip_type == 'ROUND_TRIP' and index == 1)
+                for index, opt in enumerate(legs)
+            ],
         }
 
     def _build_mybiz_hotel_service(self, opt):
@@ -176,6 +214,20 @@ class TravelRequest(models.Model):
                     bad.append(f"'{codes[0]}' → '{codes[1]}'")
         return list(dict.fromkeys(bad))
 
+    def _mybiz_trip_leg_problems(self, payload):
+        """Describe each FLIGHT service whose number of legs does not fit its
+        trip type, e.g. a round trip with no return flight segment."""
+        problems = []
+        for flight in payload['services'].get('FLIGHT', []):
+            legs = len(flight['journeyDetails'])
+            if flight['tripType'] == 'ROUND_TRIP' and legs != 2:
+                problems.append(_('a round trip needs two flight segments, onward and '
+                                  'return (found %s)') % legs)
+            elif flight['tripType'] == 'MULTICITY' and legs < 2:
+                problems.append(_('a multi-city trip needs a flight segment for each leg '
+                                  '(found %s)') % legs)
+        return problems
+
     def _mybiz_payload_problems(self, payload):
         """Describe what myBiz would reject in the payload, or [] if nothing."""
         problems = []
@@ -187,6 +239,7 @@ class TravelRequest(models.Model):
         if bad_codes:
             problems.append(_('flight segments need 3-letter IATA airport codes such as '
                               'DEL or BOM (%s)') % ', '.join(bad_codes))
+        problems += self._mybiz_trip_leg_problems(payload)
         return problems
 
     def _build_mybiz_payload(self):
@@ -210,7 +263,9 @@ class TravelRequest(models.Model):
                 'description': 'Auto-generated from header fields for myBiz push.',
             }])
         if flight_opts:
-            services['FLIGHT'] = [rec._build_mybiz_flight_service(opt) for opt in flight_opts]
+            groups = rec._mybiz_flight_groups(flight_opts)
+            rec._mybiz_assign_flight_service_ids(groups)
+            services['FLIGHT'] = [rec._build_mybiz_flight_service(legs) for legs in groups]
 
         hotel_opts = rec.travel_option_ids.filtered(lambda o: o.option_type == 'hotel')
         if not hotel_opts and rec.hotel_required:
@@ -306,8 +361,9 @@ class TravelRequest(models.Model):
         problems = self._mybiz_payload_problems(payload)
         if problems:
             # myBiz rejects these (past dates: "provided date must be greater than
-            # the current system date"; city names as airport codes: a generic
-            # UTPR error), so fail here with a message HR can act on.
+            # the current system date"; city names as airport codes and a round
+            # trip with a single leg: a generic UTPR error), so fail here with a
+            # message HR can act on.
             err = _(
                 'Not sent to MakeMyTrip: %s. Correct the request or its Travel Segments '
                 '& Options and retry, or cancel the request.'
@@ -398,7 +454,9 @@ class TravelRequest(models.Model):
             if not pushed_options:
                 raise UserError(_('No myBiz services have been pushed for this request yet.'))
             for opt in pushed_options:
-                opt._recall_mybiz_service()
+                # Skip legs already cancelled by recalling a leg of the same service.
+                if opt.mybiz_status != 'cancelled':
+                    opt._recall_mybiz_service()
             if all(o.mybiz_status == 'cancelled' for o in rec.travel_option_ids.filtered(
                     lambda o: o.mybiz_ref)):
                 rec.write({'mybiz_status': 'cancelled', 'state': 'cancelled'})

@@ -136,12 +136,19 @@ class TestTravelRequest(TransactionCase):
 
     def _submitted_request(self):
         record = self._create_travel_request()
-        self.env['travel.request.option'].create({
+        self.env['travel.request.option'].create([{
             'travel_request_id': record.id,
             'option_type': 'flight',
             'origin_code': 'BLR',
             'destination_code': 'HYD',
-        })
+            'departure_datetime': '2030-01-10 06:00:00',
+        }, {
+            'travel_request_id': record.id,
+            'option_type': 'flight',
+            'origin_code': 'HYD',
+            'destination_code': 'BLR',
+            'departure_datetime': '2030-01-12 18:00:00',
+        }])
         record.action_submit()
         return record
 
