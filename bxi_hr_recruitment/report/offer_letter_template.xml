@@ -34,6 +34,11 @@
                         <t t-call="bxi_hr_recruitment._report_offer_letter" />
                     </t>
                 </t>
+                <t t-elif="o.template_company_id and o.template_company_id.id == 10">
+                    <t t-call="custom_template.six8_life_science_layout">
+                        <t t-call="bxi_hr_recruitment._report_offer_letter" />
+                    </t>
+                </t>
 
                 <t t-else="">
                     <t t-call="custom_template.bxi_custom_layout">

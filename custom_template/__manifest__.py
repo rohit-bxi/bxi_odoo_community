@@ -15,6 +15,7 @@
         'report/report.xml',
         'report/report_nzero_one.xml',
         'report/report_bxi_foundation.xml',
+        'report/report_six8.xml',
 
     ],
     'installable': True,
