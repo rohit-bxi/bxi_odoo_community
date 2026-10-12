@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bxi_mybiz_airport_user,bxi.mybiz.airport user,model_bxi_mybiz_airport,base.group_user,1,0,0,0
+access_bxi_mybiz_airport_admin,bxi.mybiz.airport admin,model_bxi_mybiz_airport,bxi_travel_request.group_travel_admin,1,1,1,1
+access_bxi_mybiz_city_user,bxi.mybiz.city user,model_bxi_mybiz_city,base.group_user,1,0,0,0
+access_bxi_mybiz_city_admin,bxi.mybiz.city admin,model_bxi_mybiz_city,bxi_travel_request.group_travel_admin,1,1,1,1
+access_bxi_mybiz_airport_system,bxi.mybiz.airport system,model_bxi_mybiz_airport,base.group_system,1,1,1,1
+access_bxi_mybiz_city_system,bxi.mybiz.city system,model_bxi_mybiz_city,base.group_system,1,1,1,1

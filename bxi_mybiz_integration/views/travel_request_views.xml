@@ -42,6 +42,19 @@
                         confirm="Recall this service from myBiz?"/>
             </xpath>
 
+            <!-- Hotel segments: MakeMyTrip city whose code is sent as cityCode -->
+            <xpath expr="//field[@name='travel_option_ids']/list/field[@name='hotel_city']"
+                   position="after">
+                <field name="mybiz_city_id"
+                       optional="show"
+                       readonly="option_type != 'hotel'"
+                       options="{'no_create': True}"/>
+            </xpath>
+            <xpath expr="//field[@name='travel_option_ids']/form//field[@name='hotel_city']"
+                   position="after">
+                <field name="mybiz_city_id" options="{'no_create': True}"/>
+            </xpath>
+
         </field>
     </record>
 
