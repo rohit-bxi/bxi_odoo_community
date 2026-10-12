@@ -653,3 +653,308 @@ class AccountAnalyticLine(models.Model):
                 _logger.error("BXI Timesheet Cron: Failed to send consolidated email to %s: %s", manager_email, str(e))
 
         return True
+   
+    @api.model
+    def _cron_send_monthly_timesheet_compliance_email(self):
+        """
+        Runs on the 21st of each month.
+        Checks the previous calendar month for missing timesheets
+        and attendance. Approved leave dates are excluded.
+        This cron only sends notifications; it does not create LWP.
+        """
+        import logging
+        import html
+        import calendar
+        from datetime import date, timedelta
+
+        _logger = logging.getLogger(__name__)
+
+        today = fields.Date.today()
+
+        # Audit the previous calendar month.
+        first_day_current_month = today.replace(day=1)
+        period_end = first_day_current_month - timedelta(days=1)
+        period_start = period_end.replace(day=1)
+
+        # Prevent execution on any date other than the 21st.
+        # This also protects against someone running the cron manually.
+        if today.day != 21:
+            _logger.info(
+                "Monthly compliance email skipped: today is %s, not the 21st.",
+                today,
+            )
+            return True
+
+        # Monday-Friday, following the existing timesheet cron.
+        working_days = []
+        current_date = period_start
+
+        while current_date <= period_end:
+            if current_date.weekday() < 5:
+                working_days.append(current_date)
+            current_date += timedelta(days=1)
+
+        Employee = self.env["hr.employee"].sudo()
+        Timesheet = self.env["account.analytic.line"].sudo()
+        Attendance = self.env["hr.attendance"].sudo()
+        Leave = self.env["hr.leave"].sudo()
+        Mail = self.env["mail.mail"].sudo()
+
+        employees = Employee.search([("active", "=", True)])
+
+        period_label = period_start.strftime("%B %Y")
+        emails_sent = 0
+        employees_with_issues = 0
+
+        for employee in employees:
+            # Preserve the role-band exclusion in the existing cron.
+            try:
+                role_band = (
+                    int(employee.role_band)
+                    if employee.role_band
+                    else None
+                )
+            except (TypeError, ValueError):
+                role_band = None
+
+            if role_band is not None and role_band >= ROLE_BAND_THRESHOLD:
+                continue
+
+            email = (
+                employee.work_email
+                or employee.user_id.email
+                or employee.work_contact_id.email
+                if hasattr(employee, "work_contact_id")
+                else employee.work_email or employee.user_id.email
+            )
+
+            if not email:
+                _logger.warning(
+                    "Monthly compliance email skipped for employee %s: "
+                    "no work email configured.",
+                    employee.display_name,
+                )
+                continue
+
+            # Get approved leaves overlapping the month.
+            approved_leaves = Leave.search([
+                ("employee_id", "=", employee.id),
+                ("state", "=", "validate"),
+                ("request_date_from", "<=", period_end),
+                ("request_date_to", ">=", period_start),
+            ])
+
+            approved_leave_dates = set()
+            for leave in approved_leaves:
+                leave_start = leave.request_date_from or period_start
+                leave_end = leave.request_date_to or period_end
+
+                day = max(leave_start, period_start)
+                last_day = min(leave_end, period_end)
+
+                while day <= last_day:
+                    approved_leave_dates.add(day)
+                    day += timedelta(days=1)
+
+            # Load timesheets for the employee and audited month.
+            timesheets = Timesheet.search([
+                ("employee_id", "=", employee.id),
+                ("date", ">=", period_start),
+                ("date", "<=", period_end),
+                ("unit_amount", ">", 0),
+            ])
+            timesheet_dates = set(timesheets.mapped("date"))
+
+            # Load attendance records in the audited month.
+            # check_in is a UTC datetime in Odoo.
+            # This uses UTC calendar-day boundaries; if your employees
+            # work across time zones, adapt these boundaries to each
+            # employee's local timezone.
+            month_start_dt = fields.Datetime.to_datetime(period_start)
+            month_end_dt = fields.Datetime.to_datetime(
+                period_end + timedelta(days=1)
+            )
+
+            attendances = Attendance.search([
+                ("employee_id", "=", employee.id),
+                ("check_in", ">=", month_start_dt),
+                ("check_in", "<", month_end_dt),
+            ])
+
+            attendance_by_date = {}
+            for attendance in attendances:
+                attendance_day = fields.Datetime.to_datetime(
+                    attendance.check_in
+                ).date()
+                attendance_by_date.setdefault(attendance_day, []).append(
+                    attendance
+                )
+
+            issues = []
+
+            for work_date in working_days:
+                # Approved leave means this date is not checked.
+                if work_date in approved_leave_dates:
+                    continue
+
+                missing = []
+
+                # Check timesheet submission for the date.
+                if work_date not in timesheet_dates:
+                    missing.append("Missing timesheet")
+
+                # Check attendance and check-out.
+                day_attendances = attendance_by_date.get(work_date, [])
+
+                if not day_attendances:
+                    missing.append("Missing attendance check-in/check-out")
+                else:
+                    # Any open attendance record indicates a missing checkout.
+                    open_attendance = any(
+                        not attendance.check_out
+                        for attendance in day_attendances
+                    )
+
+                    if open_attendance:
+                        missing.append("Missing attendance check-out")
+
+                if missing:
+                    issues.append({
+                        "date": work_date.strftime("%d-%m-%Y"),
+                        "items": ", ".join(missing),
+                    })
+
+            if not issues:
+                continue
+
+            employees_with_issues += 1
+
+            # Build a safe HTML list of dates and issues.
+            issue_rows = "".join(
+                "<tr>"
+                "<td style='padding:8px;border:1px solid #ddd;'>%s</td>"
+                "<td style='padding:8px;border:1px solid #ddd;'>%s</td>"
+                "</tr>"
+                % (
+                    html.escape(item["date"]),
+                    html.escape(item["items"]),
+                )
+                for item in issues
+            )
+
+            employee_name = html.escape(employee.name or "Employee")
+            subject = (
+                "Auto LWP for Non-Compliance in Timesheet Management System and Attendance Records"
+            )
+
+            body_html = """
+                <div>
+                    <p>Dear %s,</p>
+
+                    <p>
+                        Our records show that your timesheet and/or
+                        attendance records were incomplete for the dates
+                        listed below during <strong>%s</strong>.
+                    </p>
+
+                    <table style="border-collapse:collapse;width:100%%;">
+                        <thead>
+                            <tr>
+                                <th style="padding:8px;border:1px solid #ddd;">
+                                    Date
+                                </th>
+                                <th style="padding:8px;border:1px solid #ddd;">
+                                    Missing Record
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>%s</tbody>
+                    </table>
+
+                    <p>
+                        Please apply for leave regularization for the
+                        affected date(s) if you were unable to complete
+                        your timesheet or attendance records for a genuine
+                        reason. If no regularization request is submitted,
+                        the applicable day may remain recorded as LWP
+                        according to company policy.
+                    </p>
+
+                    <p><strong>Terms:</strong></p>
+                    <ol>
+                        <li>
+                            Reversal of auto-LWP can be requested up to
+                            the 21st of each month.
+                        </li>
+                        <li>
+                            Reversals for LWP applied on or before the
+                            21st can be processed by RM and completed in
+                            the following month's payroll cycle.
+                        </li>
+                        <li>
+                            LWP regularization is available for one year
+                            only, and only for employees who have completed
+                            one year in the company.
+                        </li>
+                        <li>
+                            Reversals are processed on the 25th of each
+                            month. These terms are managed by the System
+                            Administrator.
+                        </li>
+                    </ol>
+
+                    <p>
+                        Regards,<br/>
+                        HR Team
+                    </p>
+                </div>
+            """ % (
+                employee_name,
+                html.escape(period_label),
+                issue_rows,
+            )
+            try:
+                sender_email = "hrsupport@bxitech.com"
+                manager_email = (
+                    employee.parent_id.work_email
+                    or employee.parent_id.user_id.email
+                    if employee.parent_id
+                    else False
+                )
+                recipient_emails = {
+                    email.strip()
+                    for email in [
+                        employee.work_email or employee.user_id.email,
+                        manager_email,
+                        sender_email,
+                    ]
+                    if email and email.strip()
+                }
+                mail = Mail.create({
+                    "subject": subject,
+                    "body_html": body_html,
+                    "email_from": sender_email,
+                    "email_to": ",".join(sorted(recipient_emails)),
+                    "auto_delete": False,
+                })
+                mail.send()
+                emails_sent += 1
+                _logger.info(
+                    "Monthly compliance email sent for employee %s. "
+                    "Recipients: %s",
+                    employee.display_name,
+                    ", ".join(sorted(recipient_emails)),
+                )
+            except Exception:
+                _logger.exception(
+                    "Failed to send monthly compliance email to employee %s.",
+                    employee.display_name,
+                )
+        _logger.info(
+            "Monthly compliance cron finished for %s. "
+            "Employees with issues: %s. Emails sent: %s.",
+            period_label,
+            employees_with_issues,
+            emails_sent,
+        )
+        return True
