@@ -25,7 +25,11 @@
         'bxi_travel_request',
     ],
     'data': [
+        'security/ir.model.access.csv',
+        'data/bxi.mybiz.airport.csv',
+        'data/bxi.mybiz.city.csv',
         'data/mybiz_cron_data.xml',
+        'views/mybiz_codes_views.xml',
         'views/mybiz_config_views.xml',
         'views/travel_request_views.xml',
         'views/mybiz_dashboard_views.xml',

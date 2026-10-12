@@ -28,6 +28,12 @@ class TravelRequestOption(models.Model):
         string='Destination Country',
         help='Country of the destination airport/city, used for the myBiz journey payload.',
     )
+    mybiz_city_id = fields.Many2one(
+        'bxi.mybiz.city',
+        string='MakeMyTrip City',
+        help='MakeMyTrip city whose code is sent for this hotel. Filled from the '
+             'Hotel City on push when that name matches exactly one city.',
+    )
 
     @api.onchange('travel_request_id')
     def _onchange_travel_request_id_mybiz(self):

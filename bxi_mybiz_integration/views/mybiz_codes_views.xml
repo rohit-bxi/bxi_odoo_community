@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         MakeMyTrip code lists: airports (flight airportCode) and cities
+         (hotel cityCode), loaded from MakeMyTrip's code workbook.
+    ═══════════════════════════════════════════════════════════════ -->
+    <record id="view_bxi_mybiz_airport_list" model="ir.ui.view">
+        <field name="name">bxi.mybiz.airport.list</field>
+        <field name="model">bxi.mybiz.airport</field>
+        <field name="arch" type="xml">
+            <list string="MakeMyTrip Airports">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="city"/>
+                <field name="country_name"/>
+                <field name="timezone" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_mybiz_airport_search" model="ir.ui.view">
+        <field name="name">bxi.mybiz.airport.search</field>
+        <field name="model">bxi.mybiz.airport</field>
+        <field name="arch" type="xml">
+            <search string="MakeMyTrip Airports">
+                <field name="code"/>
+                <field name="city"/>
+                <field name="name"/>
+                <field name="country_name"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bxi_mybiz_airport" model="ir.actions.act_window">
+        <field name="name">MakeMyTrip Airports</field>
+        <field name="res_model">bxi.mybiz.airport</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <record id="view_bxi_mybiz_city_list" model="ir.ui.view">
+        <field name="name">bxi.mybiz.city.list</field>
+        <field name="model">bxi.mybiz.city</field>
+        <field name="arch" type="xml">
+            <list string="MakeMyTrip Cities">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="state_name"/>
+                <field name="country_name"/>
+                <field name="state_code" optional="hide"/>
+                <field name="country_code" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_mybiz_city_search" model="ir.ui.view">
+        <field name="name">bxi.mybiz.city.search</field>
+        <field name="model">bxi.mybiz.city</field>
+        <field name="arch" type="xml">
+            <search string="MakeMyTrip Cities">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="state_name"/>
+                <field name="country_name"/>
+                <filter name="india" string="India" domain="[('country_code', '=', 'IN')]"/>
+                <group>
+                    <filter name="group_country" string="Country"
+                            context="{'group_by': 'country_name'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bxi_mybiz_city" model="ir.actions.act_window">
+        <field name="name">MakeMyTrip Cities</field>
+        <field name="res_model">bxi.mybiz.city</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'search_default_india': 1}</field>
+    </record>
+
+    <menuitem id="menu_bxi_mybiz_airport"
+              name="MakeMyTrip Airports"
+              parent="bxi_travel_request.menu_travel_config_root"
+              action="action_bxi_mybiz_airport"
+              sequence="20"/>
+
+    <menuitem id="menu_bxi_mybiz_city"
+              name="MakeMyTrip Cities"
+              parent="bxi_travel_request.menu_travel_config_root"
+              action="action_bxi_mybiz_city"
+              sequence="30"/>
+
+</odoo>

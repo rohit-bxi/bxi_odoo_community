@@ -121,7 +121,7 @@ class TestMybizPayload(TransactionCase):
         payload = self.request._build_mybiz_payload()
         leg = payload['services']['FLIGHT'][0]['journeyDetails'][1]
         self.assertEqual((leg['from']['airportCode'], leg['to']['airportCode']), ('DEL', 'BLR'))
-        self.assertEqual((leg['from']['cityName'], leg['to']['cityName']), ('Delhi', 'Bengaluru'))
+        self.assertEqual((leg['from']['cityName'], leg['to']['cityName']), ('New Delhi', 'Bengaluru'))
         self.assertEqual(leg['to']['countryCode'], self.india.code)
 
     def test_round_trip_legs_share_one_service_id(self):
@@ -137,6 +137,7 @@ class TestMybizPayload(TransactionCase):
         hotel = hotels[0]
         self.assertTrue(hotel['serviceId'])
         self.assertEqual(len(hotel['roomDetailsPaxWise']), 2)
+        self.assertEqual(hotel['cityCode'], 'CTDEL')
         self.assertIsInstance(hotel['checkin'], int)
         self.assertIsInstance(hotel['checkout'], int)
 
@@ -427,7 +428,6 @@ class TestMybizPushValidation(TransactionCase):
 
     @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
     def test_round_trip_without_return_segment_is_not_pushed(self, mock_post):
-        # myBiz answered a ROUND_TRIP with a single leg with a generic UTPR error.
         request = self._flight_request(self.future, trip_type='round_trip')
 
         request._push_to_mybiz()

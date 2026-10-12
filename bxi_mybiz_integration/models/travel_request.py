@@ -3,7 +3,6 @@ import calendar
 import datetime
 import json
 import logging
-import re
 import uuid
 
 import requests
@@ -88,17 +87,22 @@ class TravelRequest(models.Model):
         dest_country = opt.destination_country_id or to_country
         departure = opt.departure_datetime
         arrival = opt.arrival_datetime or opt.departure_datetime
+        origin_code = (opt.origin_code or from_city or '').strip().upper()
+        dest_code = (opt.destination_code or to_city or '').strip().upper()
+        # cityName is the airport's city in MakeMyTrip's list (DEL → New Delhi).
+        airport_city = {a.code: a.city for a in self.env['bxi.mybiz.airport'].search(
+            [('code', 'in', [origin_code, dest_code])])}
 
         return {
             'from': {
-                'airportCode': (opt.origin_code or from_city or '').strip().upper(),
-                'cityName': from_city,
+                'airportCode': origin_code,
+                'cityName': airport_city.get(origin_code) or from_city,
                 'countryCode': origin_country.code or '',
                 'countryName': origin_country.name or '',
             },
             'to': {
-                'airportCode': (opt.destination_code or to_city or '').strip().upper(),
-                'cityName': to_city,
+                'airportCode': dest_code,
+                'cityName': airport_city.get(dest_code) or to_city,
                 'countryCode': dest_country.code or '',
                 'countryName': dest_country.name or '',
             },
@@ -150,19 +154,33 @@ class TravelRequest(models.Model):
             ],
         }
 
+    def _mybiz_hotel_city(self, opt):
+        """MakeMyTrip city of a hotel segment: the one picked on the segment,
+        else the only city matching its Hotel City name, which is then saved on
+        the segment. Empty when the name is unknown or ambiguous."""
+        if not opt.mybiz_city_id:
+            city = self.env['bxi.mybiz.city']._match(
+                opt.hotel_city or self.hotel_city or self.to_city,
+                country=self.to_country, state=self.to_state)
+            if city:
+                opt.mybiz_city_id = city
+        return opt.mybiz_city_id
+
     def _build_mybiz_hotel_service(self, opt):
         """Build one HOTEL service entry from a travel.request.option, or None."""
         opt._ensure_mybiz_service_id()
         checkin = opt.checkin_date or self.departure_date
         checkout = opt.checkout_date or self.return_date or self.departure_date
         hotel_country = self.to_country
+        city = self._mybiz_hotel_city(opt)
 
         return {
             'serviceId': opt.mybiz_ref,
-            'cityCode': opt.hotel_city or self.hotel_city or self.to_city,
-            'cityName': opt.hotel_city or self.hotel_city or self.to_city,
-            'countryCode': hotel_country.code or '',
-            'countryName': hotel_country.name or '',
+            # MakeMyTrip city code (Noida → CTNOI); empty blocks the push.
+            'cityCode': city.code or '',
+            'cityName': city.name or opt.hotel_city or self.hotel_city or self.to_city,
+            'countryCode': city.country_code or hotel_country.code or '',
+            'countryName': city.country_name or hotel_country.name or '',
             'checkin': _epoch_ms(checkin),
             'checkout': _epoch_ms(checkout),
             'roomDetailsPaxWise': [{
@@ -203,16 +221,26 @@ class TravelRequest(models.Model):
         return list(dict.fromkeys(past))
 
     def _mybiz_invalid_airport_codes(self, payload):
-        """Describe each flight leg whose airport codes are not 3-letter IATA
-        codes, e.g. "'GHAZIABAD' → 'UDAIPUR'" when a segment was generated from
-        the From/To City fields."""
+        """Describe each flight leg with an airport code missing from MakeMyTrip's
+        airport list, e.g. "'GHAZIABAD' → 'UDAIPUR'" when a segment was generated
+        from the From/To City fields."""
+        legs = [leg for flight in payload['services'].get('FLIGHT', [])
+                for leg in flight.get('journeyDetails', [])]
+        codes = {leg[end]['airportCode'] for leg in legs for end in ('from', 'to')}
+        known = set(self.env['bxi.mybiz.airport'].search(
+            [('code', 'in', list(codes))]).mapped('code'))
         bad = []
-        for flight in payload['services'].get('FLIGHT', []):
-            for leg in flight.get('journeyDetails', []):
-                codes = (leg['from']['airportCode'], leg['to']['airportCode'])
-                if not all(re.fullmatch(r'[A-Z]{3}', code) for code in codes):
-                    bad.append(f"'{codes[0]}' → '{codes[1]}'")
+        for leg in legs:
+            pair = (leg['from']['airportCode'], leg['to']['airportCode'])
+            if not set(pair) <= known:
+                bad.append(f"'{pair[0]}' → '{pair[1]}'")
         return list(dict.fromkeys(bad))
+
+    def _mybiz_unknown_hotel_cities(self, payload):
+        """Hotel city names that have no MakeMyTrip city code."""
+        return list(dict.fromkeys(
+            f"'{hotel['cityName']}'" for hotel in payload['services'].get('HOTEL', [])
+            if not hotel['cityCode']))
 
     def _mybiz_trip_leg_problems(self, payload):
         """Describe each FLIGHT service whose number of legs does not fit its
@@ -237,8 +265,13 @@ class TravelRequest(models.Model):
                             % ', '.join(past_dates))
         bad_codes = self._mybiz_invalid_airport_codes(payload)
         if bad_codes:
-            problems.append(_('flight segments need 3-letter IATA airport codes such as '
-                              'DEL or BOM (%s)') % ', '.join(bad_codes))
+            problems.append(_('flight segments need airport codes from MakeMyTrip\'s airport '
+                              'list, such as DEL or BOM (%s)') % ', '.join(bad_codes))
+        unknown_cities = self._mybiz_unknown_hotel_cities(payload)
+        if unknown_cities:
+            problems.append(_('hotel segments need a MakeMyTrip City; pick it on the segment, '
+                              'as the Hotel City does not match exactly one MakeMyTrip city (%s)')
+                            % ', '.join(unknown_cities))
         problems += self._mybiz_trip_leg_problems(payload)
         return problems
 
@@ -361,9 +394,8 @@ class TravelRequest(models.Model):
         problems = self._mybiz_payload_problems(payload)
         if problems:
             # myBiz rejects these (past dates: "provided date must be greater than
-            # the current system date"; city names as airport codes and a round
-            # trip with a single leg: a generic UTPR error), so fail here with a
-            # message HR can act on.
+            # the current system date"; city names as airport codes: a generic
+            # UTPR error), so fail here with a message HR can act on.
             err = _(
                 'Not sent to MakeMyTrip: %s. Correct the request or its Travel Segments '
                 '& Options and retry, or cancel the request.'
