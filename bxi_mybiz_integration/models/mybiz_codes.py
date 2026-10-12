@@ -4,8 +4,8 @@ from odoo import api, fields, models
 
 class BxiMybizAirport(models.Model):
     """MakeMyTrip's airport list ("Flight (IATA)" sheet of the myBiz code
-    workbook). A flight leg's airportCode must be one of these codes, and its
-    cityName is the city given here (DEL → New Delhi)."""
+    workbook). A flight leg's airportCode must be one of these codes; its
+    cityName and cityCode are the city given here (DEL → New Delhi, CTDEL)."""
     _name = 'bxi.mybiz.airport'
     _description = 'MakeMyTrip Airport'
     _order = 'code'
@@ -16,6 +16,10 @@ class BxiMybizAirport(models.Model):
     city = fields.Char(string='City')
     country_name = fields.Char(string='Country')
     timezone = fields.Char(string='Time Zone')
+    city_code = fields.Char(
+        string='MakeMyTrip City Code',
+        help='MakeMyTrip code of the airport\'s city (DEL → CTDEL), sent as the '
+             'flight leg\'s cityCode.')
 
     _code_unique = models.Constraint('UNIQUE(code)', 'Airport codes must be unique.')
 

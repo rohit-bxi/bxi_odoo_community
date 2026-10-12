@@ -89,20 +89,24 @@ class TravelRequest(models.Model):
         arrival = opt.arrival_datetime or opt.departure_datetime
         origin_code = (opt.origin_code or from_city or '').strip().upper()
         dest_code = (opt.destination_code or to_city or '').strip().upper()
-        # cityName is the airport's city in MakeMyTrip's list (DEL → New Delhi).
-        airport_city = {a.code: a.city for a in self.env['bxi.mybiz.airport'].search(
+        # The city comes from MakeMyTrip's airport list (DEL → New Delhi, CTDEL).
+        airports = {a.code: a for a in self.env['bxi.mybiz.airport'].search(
             [('code', 'in', [origin_code, dest_code])])}
+        origin = airports.get(origin_code, self.env['bxi.mybiz.airport'])
+        dest = airports.get(dest_code, self.env['bxi.mybiz.airport'])
 
         return {
             'from': {
                 'airportCode': origin_code,
-                'cityName': airport_city.get(origin_code) or from_city,
+                'cityCode': origin.city_code or '',
+                'cityName': origin.city or from_city,
                 'countryCode': origin_country.code or '',
                 'countryName': origin_country.name or '',
             },
             'to': {
                 'airportCode': dest_code,
-                'cityName': airport_city.get(dest_code) or to_city,
+                'cityCode': dest.city_code or '',
+                'cityName': dest.city or to_city,
                 'countryCode': dest_country.code or '',
                 'countryName': dest_country.name or '',
             },
@@ -236,6 +240,14 @@ class TravelRequest(models.Model):
                 bad.append(f"'{pair[0]}' → '{pair[1]}'")
         return list(dict.fromkeys(bad))
 
+    def _mybiz_airports_without_city_code(self, payload):
+        """Listed airports of the flight legs that have no MakeMyTrip city code."""
+        ends = [leg[end] for flight in payload['services'].get('FLIGHT', [])
+                for leg in flight.get('journeyDetails', []) for end in ('from', 'to')]
+        codes = {end['airportCode'] for end in ends if not end['cityCode']}
+        return sorted(self.env['bxi.mybiz.airport'].search(
+            [('code', 'in', list(codes))]).mapped('code'))
+
     def _mybiz_unknown_hotel_cities(self, payload):
         """Hotel city names that have no MakeMyTrip city code."""
         return list(dict.fromkeys(
@@ -267,6 +279,10 @@ class TravelRequest(models.Model):
         if bad_codes:
             problems.append(_('flight segments need airport codes from MakeMyTrip\'s airport '
                               'list, such as DEL or BOM (%s)') % ', '.join(bad_codes))
+        no_city_code = self._mybiz_airports_without_city_code(payload)
+        if no_city_code:
+            problems.append(_('airports need a MakeMyTrip City Code, set under Travel → '
+                              'Configuration → MakeMyTrip Airports (%s)') % ', '.join(no_city_code))
         unknown_cities = self._mybiz_unknown_hotel_cities(payload)
         if unknown_cities:
             problems.append(_('hotel segments need a MakeMyTrip City; pick it on the segment, '
