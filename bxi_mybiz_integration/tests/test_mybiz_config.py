@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from unittest.mock import MagicMock, patch
 
+from urllib3.util import SKIP_HEADER
+
 from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
 
@@ -69,11 +71,11 @@ class TestMybizConfigIntegration(TransactionCase):
         self.config.action_test_connection()
         self.assertIn('Partner API Key', self.config.last_test_status)
 
-    def test_auth_headers_override_python_requests_user_agent(self):
-        # myBiz's edge drops the default python-requests User-Agent.
+    def test_auth_headers_send_no_user_agent(self):
+        # No User-Agent header is sent: the one python-requests adds by
+        # default (which myBiz's edge drops) is skipped.
         headers = self.config._get_auth_headers()
-        self.assertIn('User-Agent', headers)
-        self.assertNotIn('python-requests', headers['User-Agent'])
+        self.assertEqual(headers['User-Agent'], SKIP_HEADER)
 
     def test_endpoint_field_may_hold_full_url(self):
         self.config.write({
@@ -92,4 +94,4 @@ class TestMybizConfigIntegration(TransactionCase):
         result = self.config.action_test_connection()
         self.assertEqual(result['params']['type'], 'success')
         called_headers = mock_head.call_args.kwargs['headers']
-        self.assertIn('User-Agent', called_headers)
+        self.assertEqual(called_headers['User-Agent'], SKIP_HEADER)

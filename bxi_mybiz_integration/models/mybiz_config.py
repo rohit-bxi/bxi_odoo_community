@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import requests
+from urllib3.util import SKIP_HEADER
 
 from odoo import fields, models, _
 from odoo.exceptions import UserError
@@ -56,9 +57,10 @@ class BxiMyBizConfig(models.Model):
             'partner-apikey': self.partner_api_key,
             'client-code': self.client_code,
             'Content-Type': 'application/json',
-            # myBiz's Akamai edge silently drops requests with the default
-            # python-requests User-Agent (they hang until timeout).
-            'User-Agent': 'BXI-Odoo/19.0 bxi_mybiz_integration',
+            # No User-Agent header is sent. Left out of this dict, requests
+            # would add its own python-requests one, which myBiz's Akamai
+            # edge silently drops (requests hang until timeout).
+            'User-Agent': SKIP_HEADER,
         }
 
     def _get_endpoint(self, path_field='travel_request_endpoint'):
