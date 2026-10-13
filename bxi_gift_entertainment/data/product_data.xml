@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="product_expense_gift" model="product.product">
+        <field name="name">Business Gift</field>
+        <field name="type">service</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="standard_price">0</field>
+        <field name="gift_expense_type">gift</field>
+    </record>
+    <record id="product_expense_entertainment" model="product.product">
+        <field name="name">Client Entertainment</field>
+        <field name="type">service</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="standard_price">0</field>
+        <field name="gift_expense_type">entertainment</field>
+    </record>
+    <record id="product_expense_donation" model="product.product">
+        <field name="name">Donation</field>
+        <field name="type">service</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="standard_price">0</field>
+        <field name="gift_expense_type">donation</field>
+    </record>
+    <record id="product_expense_gift_return" model="product.product">
+        <field name="name">Gift Return Shipping</field>
+        <field name="type">service</field>
+        <field name="can_be_expensed" eval="True"/>
+        <field name="standard_price">0</field>
+        <field name="gift_expense_type">gift_return</field>
+    </record>
+</odoo>

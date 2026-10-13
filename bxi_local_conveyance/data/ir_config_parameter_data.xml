@@ -18,12 +18,6 @@
         <field name="value">2</field>
     </record>
 
-    <!-- Auto-rickshaw claims above Rs. 1,000 require RM and HR approval, under it RM approval only. -->
-    <record id="param_auto_hr_threshold" model="ir.config_parameter">
-        <field name="key">bxi_local_conveyance.auto_hr_threshold</field>
-        <field name="value">1000</field>
-    </record>
-
     <!-- Food Policy: Rs. 1,000 per day per employee. -->
     <record id="param_food_daily_limit" model="ir.config_parameter">
         <field name="key">bxi_local_conveyance.food_daily_limit</field>

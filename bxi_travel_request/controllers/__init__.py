@@ -1,1 +1,1 @@
-from . import bxi_travel_request
+from . import bxi_travel_request  # noqa: F401

@@ -10,6 +10,13 @@ from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
+# Single-day requests that regularize the attendance of the day.
+REGULARIZATION_CATEGORIES = (
+    "attendance_regularization",
+    "missing_timesheet",
+    "late_checkout",
+)
+
 
 class BxiShiftException(models.Model):
     _name = "bxi.shift.exception"
@@ -54,12 +61,99 @@ class BxiShiftException(models.Model):
                 record.manager_id.user_id == current_user
             )
 
+    can_hr_approve = fields.Boolean(
+        string="Can HR Approve",
+        compute="_compute_can_hr_approve",
+    )
+
+    def _compute_can_hr_approve(self):
+        is_hr = self.env.user.has_group("bxi_shift_management.group_shift_hr")
+        for record in self:
+            record.can_hr_approve = is_hr
+
     company_id = fields.Many2one(
         "res.company",
         string="Company",
         default=lambda self: self.env.company,
         tracking=True,
     )
+
+    category = fields.Selection(
+        [
+            ("exception", "Exception"),
+            ("missing_timesheet", "Missing Timesheet"),
+            ("late_checkout", "Late Checkout"),
+            ("attendance_regularization", "Attendance Regularization"),
+        ],
+        string="Category",
+        default="exception",
+        required=True,
+        tracking=True,
+    )
+
+    is_regularization = fields.Boolean(
+        string="Is Regularization",
+        compute="_compute_is_regularization",
+        store=True,
+    )
+
+    regularize_check_in = fields.Float(
+        string="Check-in Time",
+        tracking=True,
+        help="Actual check-in time of the exception date (local time).",
+    )
+
+    regularize_check_out = fields.Float(
+        string="Check-out Time",
+        tracking=True,
+        help="Actual check-out time of the exception date (local time).",
+    )
+
+    regularized_shift_hours = fields.Float(
+        string="Regularized Shift Hours",
+        digits=(10, 2),
+        readonly=True,
+        copy=False,
+        help=(
+            "Time between the regularized check-in and check-out within "
+            "the shift, lunch break included. Counted in the shift wise "
+            "production hours once approved."
+        ),
+    )
+
+    attendance_id = fields.Many2one(
+        "hr.attendance",
+        string="Regularized Attendance",
+        readonly=True,
+        copy=False,
+    )
+
+    attendance_created = fields.Boolean(
+        string="Attendance Created by Regularization",
+        readonly=True,
+        copy=False,
+    )
+
+    attendance_original_check_in = fields.Datetime(
+        string="Original Check-in",
+        readonly=True,
+        copy=False,
+        help="Check-in of the attendance before the regularization.",
+    )
+
+    attendance_original_check_out = fields.Datetime(
+        string="Original Check-out",
+        readonly=True,
+        copy=False,
+        help="Check-out of the attendance before the regularization.",
+    )
+
+    @api.depends("category")
+    def _compute_is_regularization(self):
+        for record in self:
+            record.is_regularization = (
+                record.category in REGULARIZATION_CATEGORIES
+            )
 
     date_from = fields.Date(
         string="From Date",
@@ -200,6 +294,8 @@ class BxiShiftException(models.Model):
         [
             ("draft", "Draft"),
             ("manager_approval", "Manager Approval"),
+            # Second level, regularization categories only.
+            ("hr_approval", "HR Approval"),
             ("approved", "Approved"),
             ("refused", "Refused"),
             ("cancelled", "Cancelled"),
@@ -232,6 +328,26 @@ class BxiShiftException(models.Model):
         tracking=True,
     )
 
+    hr_remark = fields.Text(
+        string="HR Remark",
+        tracking=True,
+    )
+
+    hr_approved_by = fields.Many2one(
+        "hr.employee",
+        string="HR Approved By",
+        readonly=True,
+        copy=False,
+        tracking=True,
+    )
+
+    hr_approved_date = fields.Datetime(
+        string="HR Approved On",
+        readonly=True,
+        copy=False,
+        tracking=True,
+    )
+
     original_weekday_locations = fields.Text(
         string="Original Weekday Locations",
         copy=False,
@@ -246,6 +362,32 @@ class BxiShiftException(models.Model):
             limit=1,
         )
         return employee.id or False
+
+    @api.onchange("category", "date_from")
+    def _onchange_regularization(self):
+        for record in self:
+            if record.category not in REGULARIZATION_CATEGORIES:
+                continue
+            record.date_to = record.date_from
+            record.update(record._get_regularization_cleared_values())
+            # Only the times of the category are entered.
+            if record.category != "attendance_regularization":
+                record.regularize_check_in = 0.0
+            if record.category == "missing_timesheet":
+                record.regularize_check_out = 0.0
+
+    @api.model
+    def _get_regularization_cleared_values(self):
+        """Exception-only values that a regularization request never has."""
+        return {
+            "mode": False,
+            "to_location_id": False,
+            "new_calendar_id": False,
+            "allowed_weekdays": False,
+            "compensation_date": False,
+            "compensation_date_2": False,
+            "compensation_date_3": False,
+        }
 
     @api.onchange("employee_id")
     def _onchange_employee_id(self):
@@ -288,9 +430,39 @@ class BxiShiftException(models.Model):
                         or self.env.company.id,
                     )
 
+            # A regularization is for the single Exception Date.
+            if vals.get("category") in REGULARIZATION_CATEGORIES:
+                vals["date_to"] = vals.get("date_from")
+                vals.update(self._get_regularization_cleared_values())
+
         records = super().create(vals_list)
 
         return records
+
+    def write(self, vals):
+        if "date_from" not in vals and "category" not in vals:
+            return super().write(vals)
+
+        regularizations = self.filtered(
+            lambda rec: vals.get("category", rec.category)
+            in REGULARIZATION_CATEGORIES
+        )
+
+        # date_to follows date_from in the same write, otherwise the
+        # date order constraint fails before it can be synced.
+        for record in regularizations:
+            record_vals = dict(
+                vals,
+                date_to=vals.get("date_from", record.date_from),
+            )
+            if "category" in vals:
+                record_vals.update(self._get_regularization_cleared_values())
+            super(BxiShiftException, record).write(record_vals)
+
+        others = self - regularizations
+        if others:
+            super(BxiShiftException, others).write(vals)
+        return True
 
     @api.constrains("date_from", "date_to")
     def _check_dates(self):
@@ -353,7 +525,7 @@ class BxiShiftException(models.Model):
 
         for record in self:
 
-            if record.mode != "home":
+            if record.mode != "home" or record.is_regularization:
                 continue
 
             # ---------------------------------------------------------
@@ -561,8 +733,11 @@ class BxiShiftException(models.Model):
             # ---------------------------------------------------------
             # Validate WFH / Exception Policy
             # ---------------------------------------------------------
-            record._validate_wfh_policy()
-            record._check_monthly_home_exception()
+            if record.is_regularization:
+                record._validate_regularization_submit()
+            else:
+                record._validate_wfh_policy()
+                record._check_monthly_home_exception()
 
             # ---------------------------------------------------------
             # Move to Manager Approval
@@ -603,16 +778,7 @@ class BxiShiftException(models.Model):
             # ---------------------------------------------------------
             # Backend View Request URL
             # ---------------------------------------------------------
-            base_url = self.env["ir.config_parameter"].sudo().get_param(
-                "web.base.url"
-            )
-
-            view_request_url = (
-                f"{base_url}/web#"
-                f"id={record.id}"
-                f"&model=bxi.shift.exception"
-                f"&view_type=form"
-            )
+            view_request_url = record._get_view_request_url()
 
             # ---------------------------------------------------------
             # Mode Label
@@ -634,53 +800,20 @@ class BxiShiftException(models.Model):
             # ---------------------------------------------------------
             # Email Body
             # ---------------------------------------------------------
-            body = _(
-                "<p>Dear Manager / HR,</p>"
-
-                "<p>"
-                "Employee <strong>%s</strong> has submitted an "
-                "Exception Working Request for your review."
-                "</p>"
-
-                "<p>"
-                "<strong>From Date:</strong> %s<br/>"
-                "<strong>To Date:</strong> %s<br/>"
-                "<strong>Mode:</strong> %s<br/>"
-                "<strong>Compensation Date(s):</strong> %s<br/>"
-                "<strong>Reason:</strong> %s"
-                "</p>"
-
-                "<p>"
-                "Please review the request and take the necessary action."
-                "</p>"
-
-                "<p style='margin-top:20px;'>"
-                "<a href='%s' "
-                "style='background-color:#875A7B;"
-                "color:white;"
-                "padding:10px 18px;"
-                "text-decoration:none;"
-                "border-radius:5px;"
-                "display:inline-block;'>"
-                "View Request"
-                "</a>"
-                "</p>"
-
-                "<p>"
-                "Regards,<br/>"
-                "HR Support"
-                "</p>"
-            ) % (
-                record.employee_id.name,
-                record.date_from or "",
-                record.date_to or "",
-                mode_label,
-                ", ".join(
-                    str(value) for value in record._get_compensation_dates()
-                ),
-                record.reason or "",
-                view_request_url,
-            )
+            if record.is_regularization:
+                subject = _(
+                    "%(category)s Request: %(name)s"
+                ) % {
+                    "category": record._get_category_label(),
+                    "name": record.name,
+                }
+                body = record._get_regularization_submit_body(
+                    view_request_url
+                )
+            else:
+                body = record._get_exception_submit_body(
+                    mode_label, view_request_url
+                )
 
             # ---------------------------------------------------------
             # Send Email
@@ -703,6 +836,136 @@ class BxiShiftException(models.Model):
                     )
 
         return True
+
+    def _get_view_request_url(self):
+        self.ensure_one()
+        base_url = self.env["ir.config_parameter"].sudo().get_param(
+            "web.base.url"
+        )
+        return (
+            f"{base_url}/web#"
+            f"id={self.id}"
+            f"&model=bxi.shift.exception"
+            f"&view_type=form"
+        )
+
+    def _get_category_label(self):
+        self.ensure_one()
+        return dict(
+            self._fields["category"]._description_selection(self.env)
+        ).get(self.category, "")
+
+    def _get_exception_submit_body(self, mode_label, view_request_url):
+        self.ensure_one()
+        record = self
+        return _(
+            "<p>Dear Manager / HR,</p>"
+
+            "<p>"
+            "Employee <strong>%s</strong> has submitted an "
+            "Exception Working Request for your review."
+            "</p>"
+
+            "<p>"
+            "<strong>From Date:</strong> %s<br/>"
+            "<strong>To Date:</strong> %s<br/>"
+            "<strong>Mode:</strong> %s<br/>"
+            "<strong>Compensation Date(s):</strong> %s<br/>"
+            "<strong>Reason:</strong> %s"
+            "</p>"
+
+            "<p>"
+            "Please review the request and take the necessary action."
+            "</p>"
+
+            "<p style='margin-top:20px;'>"
+            "<a href='%s' "
+            "style='background-color:#875A7B;"
+            "color:white;"
+            "padding:10px 18px;"
+            "text-decoration:none;"
+            "border-radius:5px;"
+            "display:inline-block;'>"
+            "View Request"
+            "</a>"
+            "</p>"
+
+            "<p>"
+            "Regards,<br/>"
+            "HR Support"
+            "</p>"
+        ) % (
+            record.employee_id.name,
+            record.date_from or "",
+            record.date_to or "",
+            mode_label,
+            ", ".join(
+                str(value) for value in record._get_compensation_dates()
+            ),
+            record.reason or "",
+            view_request_url,
+        )
+
+    def _get_regularization_times_html(self):
+        """Check-in/out lines of the times entered for the category."""
+        self.ensure_one()
+        lines = []
+        if self.category == "attendance_regularization":
+            lines.append(
+                _("<strong>Check-in Time:</strong> %s<br/>")
+                % self._float_to_time_str(self.regularize_check_in)
+            )
+        if self.category in ("attendance_regularization", "late_checkout"):
+            lines.append(
+                _("<strong>Check-out Time:</strong> %s<br/>")
+                % self._float_to_time_str(self.regularize_check_out)
+            )
+        return "".join(lines)
+
+    def _get_regularization_submit_body(self, view_request_url):
+        self.ensure_one()
+        return _(
+            "<p>Dear Manager / HR,</p>"
+
+            "<p>"
+            "Employee <strong>%(employee)s</strong> has submitted a "
+            "<strong>%(category)s</strong> request for your review."
+            "</p>"
+
+            "<p>"
+            "<strong>Exception Date:</strong> %(date)s<br/>"
+            "%(times)s"
+            "<strong>Reason:</strong> %(reason)s"
+            "</p>"
+
+            "<p>"
+            "Please review the request and take the necessary action."
+            "</p>"
+
+            "<p style='margin-top:20px;'>"
+            "<a href='%(url)s' "
+            "style='background-color:#875A7B;"
+            "color:white;"
+            "padding:10px 18px;"
+            "text-decoration:none;"
+            "border-radius:5px;"
+            "display:inline-block;'>"
+            "View Request"
+            "</a>"
+            "</p>"
+
+            "<p>"
+            "Regards,<br/>"
+            "HR Support"
+            "</p>"
+        ) % {
+            "employee": self.employee_id.name,
+            "category": self._get_category_label(),
+            "date": self.date_from or "",
+            "times": self._get_regularization_times_html(),
+            "reason": self.reason or "",
+            "url": view_request_url,
+        }
 
     # -------------------------------------------------------------------------
     # MANAGER APPROVAL
@@ -747,64 +1010,27 @@ class BxiShiftException(models.Model):
                         )
                     )
 
+            if record.is_regularization:
+                # Reporting Manager approved: HR gives the final approval,
+                # the attendance is corrected only then.
+                record._check_regularization_payroll()
+                record.write(
+                    {
+                        "state": "hr_approval",
+                        "manager_approved_by": (
+                            current_employee.id
+                            if current_employee
+                            else False
+                        ),
+                        "manager_approved_date": fields.Datetime.now(),
+                    }
+                )
+                record._send_hr_approval_mail()
+                continue
+
             # Validate again before approval.
             record._validate_wfh_policy()
-
-            # -------------------------------------------------------------
-            # Weekday field mapping
-            # -------------------------------------------------------------
-            weekday_field_map = {
-                0: "monday_location_id",
-                1: "tuesday_location_id",
-                2: "wednesday_location_id",
-                3: "thursday_location_id",
-                4: "friday_location_id",
-                5: "saturday_location_id",
-                6: "sunday_location_id",
-            }
-
-            emp = record.employee_id.sudo()
-
-            # -------------------------------------------------------------
-            # Capture the employee's ORIGINAL weekly locations.
-            #
-            # The cron uses this snapshot to restore the employee after the
-            # exception day is finished.  If this employee already has an
-            # exception with a saved snapshot, reuse that snapshot so a
-            # second request does not accidentally save an already-modified
-            # WFH location as the employee's "original" location.
-            # -------------------------------------------------------------
-            if not record.original_weekday_locations:
-                orig = {}
-
-                previous_exception = self.search(
-                    [
-                        ("id", "!=", record.id),
-                        ("employee_id", "=", emp.id),
-                        ("original_weekday_locations", "!=", False),
-                    ],
-                    order="id asc",
-                    limit=1,
-                )
-
-                if previous_exception and previous_exception.original_weekday_locations:
-                    try:
-                        orig = json.loads(
-                            previous_exception.original_weekday_locations
-                        )
-                    except (TypeError, ValueError):
-                        _logger.warning(
-                            "Invalid original_weekday_locations on %s",
-                            previous_exception.name,
-                        )
-
-                if not orig:
-                    for weekday, field_name in weekday_field_map.items():
-                        if field_name in emp._fields:
-                            value = emp[field_name]
-                            orig[field_name] = value.id if value else False
-
-                record.original_weekday_locations = json.dumps(orig)
+            record._snapshot_original_weekday_locations()
 
             # -------------------------------------------------------------
             # Do NOT change the employee weekly fields at approval time.
@@ -834,53 +1060,256 @@ class BxiShiftException(models.Model):
                 }
             )
 
-            # -------------------------------------------------------------
-            # Notify employee
-            # -------------------------------------------------------------
-
-            employee_email = (
-                record.employee_id.user_id.email
-                if record.employee_id.user_id
-                else record.employee_id.work_email
-            )
-
-            if employee_email:
-
-                try:
-
-                    subject = _(
-                        "Your Exception Working Request Approved: %s"
-                    ) % record.name
-
-                    body = _(
-                        "<p>Your exception working request from "
-                        "<strong>%s</strong> to <strong>%s</strong> "
-                        "has been approved by "
-                        "<strong>%s</strong>.</p>"
-                    ) % (
-                        record.date_from or "",
-                        record.date_to or "",
-                        self.env.user.name,
-                    )
-
-                    self.env["mail.mail"].sudo().create(
-                        {
-                            "subject": subject,
-                            "body_html": body,
-                            "email_from": "hrsupport@bxitech.com",
-                            "email_to": employee_email,
-                            "auto_delete": True,
-                        }
-                    ).send()
-
-                except Exception:
-                    _logger.exception(
-                        "Failed to send employee approval "
-                        "email for %s",
-                        record.name,
-                    )
+            record._send_employee_decision_mail(_("Approved"), _("approved"))
 
         return True
+
+    # -------------------------------------------------------------------------
+    # HR APPROVAL (Attendance Regularization / Missing Timesheet / Late Checkout)
+    # -------------------------------------------------------------------------
+
+    def action_hr_approve(self):
+
+        current_employee = self.env["hr.employee"].search(
+            [
+                ("user_id", "=", self.env.user.id),
+            ],
+            limit=1,
+        )
+
+        for record in self:
+
+            if record.state != "hr_approval":
+                raise UserError(
+                    _(
+                        "Only requests in HR Approval "
+                        "state can be approved by HR."
+                    )
+                )
+
+            if not record.can_hr_approve:
+                raise UserError(
+                    _("Only HR users can approve at this stage.")
+                )
+
+            record._check_regularization_payroll()
+            record._apply_regularization()
+
+            record.write(
+                {
+                    "state": "approved",
+                    "hr_approved_by": (
+                        current_employee.id
+                        if current_employee
+                        else False
+                    ),
+                    "hr_approved_date": fields.Datetime.now(),
+                }
+            )
+
+            # Also after the cutoff: the LOP goes once all gaps are approved.
+            record._cancel_lop_if_regularized()
+
+            record._send_employee_decision_mail(_("Approved"), _("approved"))
+
+        return True
+
+    def _send_hr_approval_mail(self):
+        """Tell HR that the Reporting Manager approved the request."""
+        self.ensure_one()
+        record = self
+        subject = _(
+            "%(category)s Request Awaiting HR Approval: %(name)s"
+        ) % {
+            "category": record._get_category_label(),
+            "name": record.name,
+        }
+        body = _(
+            "<p>Dear HR,</p>"
+
+            "<p>"
+            "The <strong>%(category)s</strong> request of "
+            "<strong>%(employee)s</strong> has been approved by the "
+            "reporting manager <strong>%(manager)s</strong> and is "
+            "awaiting your approval."
+            "</p>"
+
+            "<p>"
+            "<strong>Exception Date:</strong> %(date)s<br/>"
+            "%(times)s"
+            "<strong>Reason:</strong> %(reason)s"
+            "</p>"
+
+            "<p style='margin-top:20px;'>"
+            "<a href='%(url)s' "
+            "style='background-color:#875A7B;"
+            "color:white;"
+            "padding:10px 18px;"
+            "text-decoration:none;"
+            "border-radius:5px;"
+            "display:inline-block;'>"
+            "View Request"
+            "</a>"
+            "</p>"
+
+            "<p>"
+            "Regards,<br/>"
+            "HR Support"
+            "</p>"
+        ) % {
+            "category": record._get_category_label(),
+            "employee": record.employee_id.name,
+            "manager": self.env.user.name,
+            "date": record.date_from or "",
+            "times": record._get_regularization_times_html(),
+            "reason": record.reason or "",
+            "url": record._get_view_request_url(),
+        }
+        try:
+            self.env["mail.mail"].sudo().create(
+                {
+                    "subject": subject,
+                    "body_html": body,
+                    "email_from": "hrsupport@bxitech.com",
+                    "email_to": "hrsupport@bxitech.com",
+                    "auto_delete": True,
+                }
+            ).send()
+        except Exception:
+            _logger.exception(
+                "Failed to send HR approval email for %s",
+                record.name,
+            )
+
+    def _send_employee_decision_mail(self, title, decision):
+        self.ensure_one()
+        record = self
+        employee_email = (
+            record.employee_id.user_id.email
+            if record.employee_id.user_id
+            else record.employee_id.work_email
+        )
+
+        if not employee_email:
+            return
+
+        try:
+            subject, body = record._get_employee_decision_mail(title, decision)
+            self.env["mail.mail"].sudo().create(
+                {
+                    "subject": subject,
+                    "body_html": body,
+                    "email_from": "hrsupport@bxitech.com",
+                    "email_to": employee_email,
+                    "auto_delete": True,
+                }
+            ).send()
+        except Exception:
+            _logger.exception(
+                "Failed to send employee %s email for %s",
+                decision,
+                record.name,
+            )
+
+    def _get_employee_decision_mail(self, title, decision):
+        """(subject, body) of the approval/refusal mail to the employee."""
+        self.ensure_one()
+        if self.is_regularization:
+            subject = _("Your %(category)s Request %(title)s: %(name)s") % {
+                "category": self._get_category_label(),
+                "title": title,
+                "name": self.name,
+            }
+            body = _(
+                "<p>Your %(category)s request for "
+                "<strong>%(date)s</strong> has been %(decision)s by "
+                "<strong>%(user)s</strong>.</p>"
+            ) % {
+                "category": self._get_category_label().lower(),
+                "date": self.date_from or "",
+                "decision": decision,
+                "user": self.env.user.name,
+            }
+            return subject, body
+
+        subject = _("Your Exception Working Request %(title)s: %(name)s") % {
+            "title": title,
+            "name": self.name,
+        }
+        body = _(
+            "<p>Your exception working request from "
+            "<strong>%(date_from)s</strong> to <strong>%(date_to)s</strong> "
+            "has been %(decision)s by "
+            "<strong>%(user)s</strong>.</p>"
+        ) % {
+            "date_from": self.date_from or "",
+            "date_to": self.date_to or "",
+            "decision": decision,
+            "user": self.env.user.name,
+        }
+        return subject, body
+
+    def _snapshot_original_weekday_locations(self):
+        """Save the employee's weekly locations before the first exception,
+        so the daily cron can restore them after the exception days."""
+        self.ensure_one()
+        record = self
+
+        # -------------------------------------------------------------
+        # Weekday field mapping
+        # -------------------------------------------------------------
+        weekday_field_map = {
+            0: "monday_location_id",
+            1: "tuesday_location_id",
+            2: "wednesday_location_id",
+            3: "thursday_location_id",
+            4: "friday_location_id",
+            5: "saturday_location_id",
+            6: "sunday_location_id",
+        }
+
+        emp = record.employee_id.sudo()
+
+        # -------------------------------------------------------------
+        # Capture the employee's ORIGINAL weekly locations.
+        #
+        # The cron uses this snapshot to restore the employee after the
+        # exception day is finished.  If this employee already has an
+        # exception with a saved snapshot, reuse that snapshot so a
+        # second request does not accidentally save an already-modified
+        # WFH location as the employee's "original" location.
+        # -------------------------------------------------------------
+        if not record.original_weekday_locations:
+            orig = {}
+
+            previous_exception = self.search(
+                [
+                    ("id", "!=", record.id),
+                    ("employee_id", "=", emp.id),
+                    ("original_weekday_locations", "!=", False),
+                ],
+                order="id asc",
+                limit=1,
+            )
+
+            if previous_exception and previous_exception.original_weekday_locations:
+                try:
+                    orig = json.loads(
+                        previous_exception.original_weekday_locations
+                    )
+                except (TypeError, ValueError):
+                    _logger.warning(
+                        "Invalid original_weekday_locations on %s",
+                        previous_exception.name,
+                    )
+
+            if not orig:
+                for weekday, field_name in weekday_field_map.items():
+                    if field_name in emp._fields:
+                        value = emp[field_name]
+                        orig[field_name] = value.id if value else False
+
+            record.original_weekday_locations = json.dumps(orig)
 
     # -------------------------------------------------------------------------
     # REFUSE
@@ -890,59 +1319,26 @@ class BxiShiftException(models.Model):
 
             if record.state not in (
                 "manager_approval",
+                "hr_approval",
                 "draft",
             ):
                 continue
+
+            if record.state == "hr_approval" and not record.can_hr_approve:
+                raise UserError(
+                    _("Only HR users can refuse at this stage.")
+                )
 
             # -------------------------------------------------------------
             # Change state to refused
             # -------------------------------------------------------------
             record.state = "refused"
 
-            # -------------------------------------------------------------
-            # Notify employee by email
-            # -------------------------------------------------------------
-            employee_email = (
-                record.employee_id.user_id.email
-                if record.employee_id.user_id
-                else record.employee_id.work_email
-            )
+            # After the cutoff the day is no longer regularized: LOP.
+            if record.is_regularization:
+                record._apply_regularization_lop_if_closed()
 
-            if employee_email:
-
-                try:
-
-                    subject = _(
-                        "Your Exception Working Request Refused: %s"
-                    ) % record.name
-
-                    body = _(
-                        "<p>Your exception working request from "
-                        "<strong>%s</strong> to <strong>%s</strong> "
-                        "has been refused by "
-                        "<strong>%s</strong>.</p>"
-                    ) % (
-                        record.date_from or "",
-                        record.date_to or "",
-                        self.env.user.name,
-                    )
-
-                    self.env["mail.mail"].sudo().create(
-                        {
-                            "subject": subject,
-                            "body_html": body,
-                            "email_from": "hrsupport@bxitech.com",
-                            "email_to": employee_email,
-                            "auto_delete": True,
-                        }
-                    ).send()
-
-                except Exception:
-                    _logger.exception(
-                        "Failed to send employee refusal "
-                        "email for %s",
-                        record.name,
-                    )
+            record._send_employee_decision_mail(_("Refused"), _("refused"))
 
         return True
 
@@ -953,10 +1349,19 @@ class BxiShiftException(models.Model):
     def action_set_draft(self):
         for record in self:
 
+            was_approved = record.state == "approved"
+
             record.state = "draft"
 
             record.manager_approved_by = False
             record.manager_approved_date = False
+            record.hr_approved_by = False
+            record.hr_approved_date = False
+
+            if record.is_regularization:
+                if was_approved:
+                    record._revert_regularization()
+                record._apply_regularization_lop_if_closed()
 
         return True
 
@@ -1025,6 +1430,7 @@ class BxiShiftException(models.Model):
         # -------------------------------------------------------------
         exception_records = self.search(
             [
+                ("category", "=", "exception"),
                 ("employee_id", "!=", False),
                 ("original_weekday_locations", "!=", False),
             ]
@@ -1083,6 +1489,7 @@ class BxiShiftException(models.Model):
             # ---------------------------------------------------------
             approved_requests = self.search(
                 [
+                    ("category", "=", "exception"),
                     ("employee_id", "=", employee.id),
                     ("state", "=", "approved"),
                 ],
@@ -1222,7 +1629,7 @@ class BxiShiftException(models.Model):
         """
         for record in self:
             # Monthly restriction applies only to Home / WFH.
-            if record.mode != "home":
+            if record.mode != "home" or record.is_regularization:
                 continue
             if not record.employee_id:
                 continue

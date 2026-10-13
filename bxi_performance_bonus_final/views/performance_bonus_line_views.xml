@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_performance_bonus_line_list" model="ir.ui.view">
+        <field name="name">performance.bonus.line.list</field>
+        <field name="model">performance.bonus.line</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="employee_id"/>
+                <field name="final_calibration"/>
+                <field name="eligible"/>
+                <field name="eligibility_reason"/>
+                <field name="grade"/>
+                <field name="date_of_joining"/>
+                <field name="bonus_type"/>
+                <field name="cycle_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_performance_bonus_line_search" model="ir.ui.view">
+        <field name="name">performance.bonus.line.search</field>
+        <field name="model">performance.bonus.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="final_calibration"/>
+                <field name="grade"/>
+                <field name="cycle_id"/>
+
+                <filter
+                    name="eligible"
+                    string="Eligible"
+                    domain="[('eligible','=',True)]"
+                />
+
+                <filter
+                    name="not_eligible"
+                    string="Not Eligible"
+                    domain="[('eligible','=',False)]"
+                />
+
+                <filter
+                    name="with_rating"
+                    string="Rating Available"
+                    domain="[('final_calibration','!=',False)]"
+                />
+            </search>
+        </field>
+    </record>
+
+    <record id="view_performance_bonus_line_form" model="ir.ui.view">
+        <field name="name">performance.bonus.line.form</field>
+        <field name="model">performance.bonus.line</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="cycle_id"/>
+                            <field name="grade"/>
+                            <field name="date_of_joining"/>
+                            <field name="eligible"/>
+                            <field name="eligibility_reason"/>
+                        </group>
+                        <group>
+                            <field name="bonus_type"/>
+                            <field name="final_calibration"/>
+                            <field name="on_payroll_on_bonus_pay_date"/>
+                            <field name="target_bonus_percentage"/>
+                            <field name="annual_base_salary"/>
+                            <field name="calculated_bonus"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Quarterly Calibration">
+                            <group>
+                                <group>
+                                    <field name="q1_review_id"/>
+                                    <field name="q1_calibration"/>
+                                    <field name="q2_review_id"/>
+                                    <field name="q2_calibration"/>
+                                </group>
+                                <group>
+                                    <field name="q3_review_id"/>
+                                    <field name="q3_calibration"/>
+                                    <field name="q4_review_id"/>
+                                    <field name="q4_calibration"/>
+                                </group>
+                            </group>
+                            <div class="alert alert-info" role="alert">
+                                Quarterly ratings are read directly from bxi_performance_review_owl.
+                                The supplied policy does not define a quarterly-to-annual aggregation formula.
+                                Use the plan's approved aggregation rule or HR Final Rating.
+                            </div>
+                        </page>
+                        <page string="Calculation">
+                            <group>
+                                <field name="rating_payout_factor"/>
+                                <field name="payout_rule_name"/>
+                                <field name="company_performance_factor"/>
+                                <field name="lwp_days"/>
+                                <field name="lwp_factor"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

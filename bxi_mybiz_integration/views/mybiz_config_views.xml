@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         LIST VIEW — swap legacy Client ID / Org ID columns for the
+         fields the real myBiz API actually authenticates with.
+    ═══════════════════════════════════════════════════════════════ -->
+    <record id="view_mybiz_config_list_inherit" model="ir.ui.view">
+        <field name="name">bxi.mybiz.config.list.mybiz.integration</field>
+        <field name="model">bxi.mybiz.config</field>
+        <field name="inherit_id" ref="bxi_travel_request.view_mybiz_config_list"/>
+        <field name="arch" type="xml">
+            <field name="client_id" position="replace">
+                <field name="client_code"/>
+            </field>
+            <field name="org_id" position="replace"/>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         FORM VIEW — replace the credential fields and endpoint fields
+         with the real contract's partner-apikey / client-code headers
+         and the fixed create/recall paths.
+    ═══════════════════════════════════════════════════════════════ -->
+    <record id="view_mybiz_config_form_inherit" model="ir.ui.view">
+        <field name="name">bxi.mybiz.config.form.mybiz.integration</field>
+        <field name="model">bxi.mybiz.config</field>
+        <field name="inherit_id" ref="bxi_travel_request.view_mybiz_config_form"/>
+        <field name="arch" type="xml">
+            <field name="client_id" position="replace">
+                <field name="partner_api_key"
+                       password="True"
+                       placeholder="Partner API Key issued by the myBiz team"/>
+                <field name="client_code"
+                       placeholder="Client Code issued by the myBiz team"/>
+            </field>
+            <field name="org_id" position="replace"/>
+            <field name="api_key" position="replace"/>
+
+            <field name="base_url" position="attributes">
+                <attribute name="placeholder">https://mybiz.makemytrip.com</attribute>
+            </field>
+            <field name="travel_request_endpoint" position="attributes">
+                <attribute name="placeholder">/corporate/v1/create/partner/travel-request</attribute>
+            </field>
+            <field name="travel_request_endpoint" position="after">
+                <field name="travel_request_recall_endpoint"
+                       placeholder="/internal/corporate/v1/update/partner/travel-request"/>
+            </field>
+            <field name="fetch_status_endpoint" position="replace"/>
+
+            <xpath expr="//div[hasclass('alert-warning')]" position="after">
+                <div class="alert alert-secondary" role="alert">
+                    Authentication uses the <code>partner-apikey</code> and <code>client-code</code>
+                    HTTP headers, per the myBiz Corporate Travel Request API contract. IP whitelisting
+                    of this Odoo server's outbound IP is required before requests will succeed.
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

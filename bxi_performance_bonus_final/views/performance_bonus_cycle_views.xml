@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_performance_bonus_cycle_list" model="ir.ui.view">
+        <field name="name">performance.bonus.cycle.list</field>
+        <field name="model">performance.bonus.cycle</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="plan_id"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="bonus_pay_date"/>
+                <field name="state"/>
+                <field name="company_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_performance_bonus_cycle_form" model="ir.ui.view">
+        <field name="name">performance.bonus.cycle.form</field>
+        <field name="model">performance.bonus.cycle</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_generate_employees" string="Generate Employees"
+                            type="object" class="btn-primary"
+                            invisible="state not in ['draft','review']"/>
+                    <button name="action_refresh_ratings" string="Refresh Performance Ratings"
+                            type="object"
+                            invisible="state in ['paid','cancelled']"/>
+                    <button name="action_approve" string="Approve"
+                            type="object" class="btn-primary"
+                            invisible="state != 'review'"/>
+                    <button name="action_mark_paid" string="Mark Paid"
+                            type="object" invisible="state != 'approved'"/>
+                    <button name="action_cancel" string="Cancel"
+                            type="object" invisible="state in ['paid','cancelled']"/>
+                    <button name="action_reset_draft" string="Reset to Draft"
+                            type="object" invisible="state != 'cancelled'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,review,approved,paid"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="plan_id"/>
+                            <field name="company_id"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="bonus_pay_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Bonus Employees">
+                            <field name="line_ids" readonly="state in ['approved','paid','cancelled']">
+                                <list create="0" delete="0">
+                                    <field name="employee_id"/>
+                                    <field name="grade"/>
+                                    <field name="date_of_joining"/>
+                                    <field name="q1_calibration"/>
+                                    <field name="q2_calibration"/>
+                                    <field name="q3_calibration"/>
+                                    <field name="q4_calibration"/>
+                                    <field name="final_calibration"/>
+                                    <field name="eligible"/>
+                                    <field name="eligibility_reason"/>
+                                    <field name="on_payroll_on_bonus_pay_date"/>
+                                    <field name="calculated_bonus"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Client Action: myBiz Integration Dashboard -->
+    <record id="action_bxi_mybiz_dashboard" model="ir.actions.client">
+        <field name="name">myBiz Dashboard</field>
+        <field name="tag">bxi_mybiz_dashboard_tag</field>
+    </record>
+
+    <!-- Menu Item: placed first under the existing Travel root menu -->
+    <menuitem id="menu_bxi_mybiz_dashboard"
+              name="myBiz Dashboard"
+              parent="bxi_travel_request.menu_travel_root"
+              action="action_bxi_mybiz_dashboard"
+              sequence="1"
+              groups="bxi_travel_request.group_travel_user,bxi_travel_request.group_travel_manager,bxi_travel_request.group_travel_admin"/>
+</odoo>

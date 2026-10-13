@@ -13,7 +13,8 @@
                 <field name="work_category"/>
                 <field name="work_pattern_id"/>
                 <field name="deployment"/>
-                <field name="client_name" optional="show"/>
+                <field name="client_id" optional="show"/>
+                <field name="project_ids" widget="many2many_tags" optional="show"/>
                 <field name="rate_percent"/>
                 <field name="component_a_missing" optional="hide" groups="hr.group_hr_user,bxi_equitable_benefit.group_eb_revenue_assurance,bxi_equitable_benefit.group_eb_finance"/>
                 <field name="state" widget="badge" decoration-info="state == 'submitted'"
@@ -45,6 +46,11 @@
                         The employee's contract has no Annualized Component A for this period, so it would pay
                         nothing. Set it on the contract before the payout is computed.
                     </div>
+                    <div class="alert alert-info" role="alert"
+                         invisible="not work_pattern_id or not date_from or rate_percent or state in ('rejected', 'cancelled')">
+                        This work pattern is Not Applicable under the Equitable Benefit Policy: it is recorded
+                        but carries no benefit.
+                    </div>
                     <div class="oe_title">
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
@@ -69,8 +75,9 @@
                         </group>
                     </group>
                     <group string="Client / Project Requirement">
-                        <field name="client_name" readonly="state != 'draft'"/>
-                        <field name="project_reference" readonly="state != 'draft'"/>
+                        <field name="project_ids" widget="many2many_tags" readonly="state != 'draft'"
+                               options="{'no_create': True}"/>
+                        <field name="client_id" invisible="not project_ids"/>
                         <field name="justification" readonly="state != 'draft'"/>
                         <field name="requirement_attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
                     </group>
@@ -92,7 +99,8 @@
             <search>
                 <field name="name"/>
                 <field name="employee_id"/>
-                <field name="client_name"/>
+                <field name="client_id"/>
+                <field name="project_ids"/>
                 <field name="work_pattern_id"/>
                 <filter name="my" string="My Assignments" domain="[('employee_id.user_id', '=', uid)]"/>
                 <filter name="to_approve" string="To Approve" domain="[('state', '=', 'submitted')]"/>

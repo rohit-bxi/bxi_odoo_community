@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_gift_return_letter" model="ir.actions.report">
+        <field name="name">Gift Return Letter</field>
+        <field name="model">bxi.gift.receipt</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">bxi_gift_entertainment.report_gift_return_letter</field>
+        <field name="report_file">bxi_gift_entertainment.report_gift_return_letter</field>
+        <field name="print_report_name">'Gift Return - %s' % object.name</field>
+        <field name="binding_model_id" ref="model_bxi_gift_receipt"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_gift_return_letter">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <p t-out="context_timestamp(datetime.datetime.now()).strftime('%d %B %Y')"/>
+                        <p>
+                            <strong t-field="o.partner_id.name"/><br/>
+                            <span t-field="o.partner_id.contact_address"/>
+                        </p>
+                        <p>Ref: <span t-field="o.name"/></p>
+                        <p>Dear <span t-field="o.partner_id.name"/>,</p>
+                        <p>
+                            Thank you for your kind gesture and for the <span t-field="o.item_type_id.name"/>
+                            (<span t-field="o.description"/>) received on <span t-field="o.received_date"/>.
+                            We sincerely appreciate the thought behind it.
+                        </p>
+                        <p>
+                            BXI's Gift and Entertainment Policy, which applies to all of us, does not allow us to accept
+                            gifts of this nature or value from business partners, in order to avoid even the appearance
+                            of improper conduct. In accordance with the Policy (Receiving or Accepting Things of Value from
+                            a Third Party), we are therefore returning the gift to you with this letter.
+                        </p>
+                        <p>We hope you understand, and we look forward to continuing our relationship.</p>
+                        <p>Yours sincerely,</p>
+                        <p>
+                            <strong t-field="o.employee_id.name"/><br/>
+                            <span t-field="o.employee_id.job_title"/><br/>
+                            <span t-field="o.company_id.name"/>
+                        </p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

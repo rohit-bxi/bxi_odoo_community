@@ -302,4 +302,12 @@
     background-color: #e0d4f7 !important; /* Lavender */
     color: #4c1d95 !important;
 }
+.state-lop {
+    background-color: #f8b4b4 !important; /* Red */
+    color: #7f1d1d !important;
+}
+.state-absent {
+    background-color: #fde2e2 !important; /* Light Rose */
+    color: #9f1239 !important;
+}
 

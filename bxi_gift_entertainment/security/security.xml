@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record model="res.groups.privilege" id="res_groups_privilege_gift">
+        <field name="name">Gift and Entertainment</field>
+        <field name="sequence">26</field>
+        <field name="category_id" ref="base.module_category_human_resources"/>
+    </record>
+
+    <!-- Oversight functions -->
+    <record id="group_gift_lso" model="res.groups">
+        <field name="name">LSO Team</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="res_groups_privilege_gift"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="group_gift_ethics_committee" model="res.groups">
+        <field name="name">Ethics Committee</field>
+        <field name="sequence">20</field>
+        <field name="privilege_id" ref="res_groups_privilege_gift"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="group_gift_finance" model="res.groups">
+        <field name="name">Finance</field>
+        <field name="sequence">30</field>
+        <field name="privilege_id" ref="res_groups_privilege_gift"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="group_gift_etc" model="res.groups">
+        <field name="name">E&amp;TC / General Counsel</field>
+        <field name="sequence">40</field>
+        <field name="privilege_id" ref="res_groups_privilege_gift"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!-- Approval authorities above the L1-L4 Heads -->
+    <record id="group_gift_md" model="res.groups">
+        <field name="name">MD</field>
+        <field name="sequence">50</field>
+        <field name="privilege_id" ref="res_groups_privilege_gift"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="group_gift_ceo" model="res.groups">
+        <field name="name">CEO</field>
+        <field name="sequence">60</field>
+        <field name="privilege_id" ref="res_groups_privilege_gift"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="group_gift_cfo" model="res.groups">
+        <field name="name">CFO</field>
+        <field name="sequence">70</field>
+        <field name="privilege_id" ref="res_groups_privilege_gift"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="group_gift_board" model="res.groups">
+        <field name="name">Board</field>
+        <field name="sequence">80</field>
+        <field name="privilege_id" ref="res_groups_privilege_gift"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_gift_admin" model="res.groups">
+        <field name="name">Administrator</field>
+        <field name="sequence">90</field>
+        <field name="privilege_id" ref="res_groups_privilege_gift"/>
+        <field name="implied_ids" eval="[(4, ref('group_gift_lso')), (4, ref('group_gift_finance'))]"/>
+        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+    </record>
+
+    <!-- Employees see their own records and the records they have to approve -->
+    <record id="rule_gift_request_own" model="ir.rule">
+        <field name="name">Gift Request: own or to approve</field>
+        <field name="model_id" ref="model_bxi_gift_request"/>
+        <field name="domain_force">['|', ('employee_id.user_id', '=', user.id), ('approval_line_ids.user_ids', 'in', [user.id])]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="rule_gift_receipt_own" model="ir.rule">
+        <field name="name">Gift Receipt: own or to approve</field>
+        <field name="model_id" ref="model_bxi_gift_receipt"/>
+        <field name="domain_force">['|', ('employee_id.user_id', '=', user.id), ('approval_line_ids.user_ids', 'in', [user.id])]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="rule_gift_donation_own" model="ir.rule">
+        <field name="name">Donation: own or to approve</field>
+        <field name="model_id" ref="model_bxi_gift_donation"/>
+        <field name="domain_force">['|', ('employee_id.user_id', '=', user.id), ('approval_line_ids.user_ids', 'in', [user.id])]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="rule_gift_sponsorship_own" model="ir.rule">
+        <field name="name">Sponsorship: own or to approve</field>
+        <field name="model_id" ref="model_bxi_gift_sponsorship"/>
+        <field name="domain_force">['|', ('employee_id.user_id', '=', user.id), ('approval_line_ids.user_ids', 'in', [user.id])]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="rule_gift_extortion_own" model="ir.rule">
+        <field name="name">Extortion Report: own or to approve</field>
+        <field name="model_id" ref="model_bxi_gift_extortion"/>
+        <field name="domain_force">['|', ('employee_id.user_id', '=', user.id), ('reported_to_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="rule_gift_violation_own" model="ir.rule">
+        <field name="name">Violation: own named reports</field>
+        <field name="model_id" ref="model_bxi_gift_violation"/>
+        <field name="domain_force">[('reporter_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="rule_gift_approval_line_own" model="ir.rule">
+        <field name="name">Approval Line: own steps</field>
+        <field name="model_id" ref="model_bxi_gift_approval_line"/>
+        <field name="domain_force">['|', ('user_ids', 'in', [user.id]), ('requester_user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!-- Oversight: everything (violations only for LSO and the Ethics Committee) -->
+    <record id="rule_gift_request_all" model="ir.rule">
+        <field name="name">Gift Request: all</field>
+        <field name="model_id" ref="model_bxi_gift_request"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_gift_lso')), (4, ref('group_gift_finance')), (4, ref('group_gift_ethics_committee'))]"/>
+    </record>
+    <record id="rule_gift_receipt_all" model="ir.rule">
+        <field name="name">Gift Receipt: all</field>
+        <field name="model_id" ref="model_bxi_gift_receipt"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_gift_lso')), (4, ref('group_gift_finance')), (4, ref('group_gift_ethics_committee'))]"/>
+    </record>
+    <record id="rule_gift_donation_all" model="ir.rule">
+        <field name="name">Donation: all</field>
+        <field name="model_id" ref="model_bxi_gift_donation"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_gift_lso')), (4, ref('group_gift_finance')), (4, ref('group_gift_ethics_committee'))]"/>
+    </record>
+    <record id="rule_gift_sponsorship_all" model="ir.rule">
+        <field name="name">Sponsorship: all</field>
+        <field name="model_id" ref="model_bxi_gift_sponsorship"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_gift_lso')), (4, ref('group_gift_finance')), (4, ref('group_gift_ethics_committee'))]"/>
+    </record>
+    <record id="rule_gift_extortion_all" model="ir.rule">
+        <field name="name">Extortion Report: all</field>
+        <field name="model_id" ref="model_bxi_gift_extortion"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_gift_lso')), (4, ref('group_gift_etc'))]"/>
+    </record>
+    <record id="rule_gift_violation_all" model="ir.rule">
+        <field name="name">Violation: all</field>
+        <field name="model_id" ref="model_bxi_gift_violation"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_gift_lso')), (4, ref('group_gift_ethics_committee'))]"/>
+    </record>
+    <record id="rule_gift_approval_line_all" model="ir.rule">
+        <field name="name">Approval Line: all</field>
+        <field name="model_id" ref="model_bxi_gift_approval_line"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_gift_lso')), (4, ref('group_gift_finance')), (4, ref('group_gift_ethics_committee'))]"/>
+    </record>
+
+    <!-- Multi-company -->
+    <record id="rule_gift_request_company" model="ir.rule">
+        <field name="name">Gift Request: multi-company</field>
+        <field name="model_id" ref="model_bxi_gift_request"/>
+        <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
+    </record>
+    <record id="rule_gift_receipt_company" model="ir.rule">
+        <field name="name">Gift Receipt: multi-company</field>
+        <field name="model_id" ref="model_bxi_gift_receipt"/>
+        <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
+    </record>
+    <record id="rule_gift_donation_company" model="ir.rule">
+        <field name="name">Donation: multi-company</field>
+        <field name="model_id" ref="model_bxi_gift_donation"/>
+        <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
+    </record>
+    <record id="rule_gift_sponsorship_company" model="ir.rule">
+        <field name="name">Sponsorship: multi-company</field>
+        <field name="model_id" ref="model_bxi_gift_sponsorship"/>
+        <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
+    </record>
+</odoo>

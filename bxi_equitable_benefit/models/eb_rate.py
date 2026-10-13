@@ -63,24 +63,36 @@ class BxiEbRate(models.Model):
                     pattern=rate.work_pattern_id.name))
 
     @api.model
-    def _ensure_hybrid_client_rate(self):
-        """Hybrid is Not Applicable under the policy (section 4): it is not an
-        extended schedule. The seeded matrix only covers Non-Client Aligned, so
-        a Client Aligned Hybrid assignment could not be submitted. Add a 0% row
-        unless the administrator already configured one (even archived).
+    def _ensure_not_applicable_rates(self):
+        """Combinations the policy matrix (section 4) leaves out carry no benefit. Without a
+        row they could not even be submitted, so the employee's pattern history would have
+        gaps. Add a 0% row for each, unless the administrator configured one (even archived).
         """
-        pattern = self.env.ref('bxi_equitable_benefit.work_pattern_hybrid', raise_if_not_found=False)
+        self._ensure_hybrid_client_rate()
+        self._ensure_not_applicable_rate('work_pattern_5_day', 'any', 'onsite')
+        self._ensure_not_applicable_rate('work_pattern_odd_shift', 'non_client', 'any')
+
+    @api.model
+    def _ensure_hybrid_client_rate(self):
+        """Hybrid is Not Applicable for every work category: it is not an extended schedule."""
+        self._ensure_not_applicable_rate('work_pattern_hybrid', 'client', 'any')
+
+    @api.model
+    def _ensure_not_applicable_rate(self, pattern_xmlid, work_category, deployment):
+        pattern = self.env.ref('bxi_equitable_benefit.%s' % pattern_xmlid, raise_if_not_found=False)
         if not pattern:
             return
-        if self.with_context(active_test=False).search_count([
-            ('work_pattern_id', '=', pattern.id),
-            ('work_category', 'in', ('client', 'any')),
-        ], limit=1):
+        domain = [('work_pattern_id', '=', pattern.id)]
+        if work_category != 'any':
+            domain.append(('work_category', 'in', (work_category, 'any')))
+        if deployment != 'any':
+            domain.append(('deployment', 'in', (deployment, 'any')))
+        if self.with_context(active_test=False).search_count(domain, limit=1):
             return
         self.create({
             'work_pattern_id': pattern.id,
-            'work_category': 'client',
-            'deployment': 'any',
+            'work_category': work_category,
+            'deployment': deployment,
             'rate_percent': 0,
             'note': 'Not Applicable',
         })

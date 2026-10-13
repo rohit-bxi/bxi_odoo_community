@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="mail_template_missed_checkout_regularization" model="mail.template">
+            <field name="name">Attendance: Missed Check-out Regularization</field>
+            <field name="model_id" ref="hr_attendance.model_hr_attendance"/>
+            <field name="subject">Attendance regularization required for {{ object.missed_checkout_date and object.missed_checkout_date.strftime('%d-%m-%Y') or '' }}</field>
+            <field name="email_from">hrsupport@bxitech.com</field>
+            <field name="email_to">{{ object.employee_id.work_email }}</field>
+            <!-- Use email_to above, not the record default recipients -->
+            <field name="use_default_to" eval="False"/>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px; font-size: 13px;">
+    <p>Dear <t t-out="object.employee_id.name or ''"/>,</p>
+    <p>
+        No check-out was recorded for your attendance on
+        <strong><t t-out="object.missed_checkout_date and object.missed_checkout_date.strftime('%d-%m-%Y') or ''"/></strong>.
+    </p>
+    <p>
+        Please submit an <strong>Attendance Regularization</strong> request for that day
+        on or before
+        <strong><t t-out="object.regularization_deadline and object.regularization_deadline.strftime('%d-%m-%Y') or ''"/></strong>.
+        Otherwise a full-day <strong>Leave Without Pay (LWP)</strong> is applied for that day.
+    </p>
+    <p>Regards,<br/>HR Support</p>
+</div>
+            </field>
+        </record>
+    </data>
+</odoo>

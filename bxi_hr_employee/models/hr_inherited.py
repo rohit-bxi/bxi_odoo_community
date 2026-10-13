@@ -913,6 +913,13 @@ class HrEmployee(models.Model):
         ],
         string="Finance Clearance Details",
     )
+    @api.onchange("fnf_status")
+    def _onchange_fnf_status(self):
+        if self.fnf_status == "completed":
+            self.hr_clearance = "yes"
+            self.rm_clearance = "yes"
+            self.it_clearance = "yes"
+            self.finance_clearance = "yes"
 
     hr_clearance_status = fields.Char(
         string="HR Status",

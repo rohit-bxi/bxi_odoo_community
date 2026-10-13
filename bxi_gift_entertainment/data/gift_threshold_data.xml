@@ -1,0 +1,397 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="threshold_give_in_gift_1" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_in"/>
+        <field name="category">gift</field>
+        <field name="currency_id" ref="base.INR"/>
+        <field name="amount_from">0</field>
+        <field name="amount_to">500</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'skip_manager'})]"/>
+    </record>
+    <record id="threshold_give_in_gift_2" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_in"/>
+        <field name="category">gift</field>
+        <field name="currency_id" ref="base.INR"/>
+        <field name="amount_from">500</field>
+        <field name="amount_to">20000</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l4'})]"/>
+    </record>
+    <record id="threshold_give_in_gift_3" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_in"/>
+        <field name="category">gift</field>
+        <field name="currency_id" ref="base.INR"/>
+        <field name="amount_from">20000</field>
+        <field name="amount_to">45000</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l3'})]"/>
+    </record>
+    <record id="threshold_give_in_gift_4" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_in"/>
+        <field name="category">gift</field>
+        <field name="currency_id" ref="base.INR"/>
+        <field name="amount_from">45000</field>
+        <field name="amount_to">150000</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l2'})]"/>
+    </record>
+    <record id="threshold_give_in_gift_5" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_in"/>
+        <field name="category">gift</field>
+        <field name="currency_id" ref="base.INR"/>
+        <field name="amount_from">150000</field>
+        <field name="amount_to">600000</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l1'})]"/>
+    </record>
+    <record id="threshold_give_in_gift_6" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_in"/>
+        <field name="category">gift</field>
+        <field name="currency_id" ref="base.INR"/>
+        <field name="amount_from">600000</field>
+        <field name="amount_to">0</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="True"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'due_diligence'}), (0, 0, {'sequence': 20, 'approver_type': 'board'})]"/>
+    </record>
+    <record id="threshold_give_in_entertainment_1" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_in"/>
+        <field name="category">entertainment</field>
+        <field name="currency_id" ref="base.INR"/>
+        <field name="amount_from">0</field>
+        <field name="amount_to">500</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'skip_manager'})]"/>
+    </record>
+    <record id="threshold_give_in_entertainment_2" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_in"/>
+        <field name="category">entertainment</field>
+        <field name="currency_id" ref="base.INR"/>
+        <field name="amount_from">500</field>
+        <field name="amount_to">20000</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l4'})]"/>
+    </record>
+    <record id="threshold_give_in_entertainment_3" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_in"/>
+        <field name="category">entertainment</field>
+        <field name="currency_id" ref="base.INR"/>
+        <field name="amount_from">20000</field>
+        <field name="amount_to">45000</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l3'})]"/>
+    </record>
+    <record id="threshold_give_in_entertainment_4" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_in"/>
+        <field name="category">entertainment</field>
+        <field name="currency_id" ref="base.INR"/>
+        <field name="amount_from">45000</field>
+        <field name="amount_to">150000</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l2'})]"/>
+    </record>
+    <record id="threshold_give_in_entertainment_5" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_in"/>
+        <field name="category">entertainment</field>
+        <field name="currency_id" ref="base.INR"/>
+        <field name="amount_from">150000</field>
+        <field name="amount_to">600000</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l1'})]"/>
+    </record>
+    <record id="threshold_give_in_entertainment_6" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_in"/>
+        <field name="category">entertainment</field>
+        <field name="currency_id" ref="base.INR"/>
+        <field name="amount_from">600000</field>
+        <field name="amount_to">0</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="True"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'due_diligence'}), (0, 0, {'sequence': 20, 'approver_type': 'board'})]"/>
+    </record>
+    <record id="threshold_give_global_gift_1" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_global"/>
+        <field name="category">gift</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">0</field>
+        <field name="amount_to">75</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'skip_manager'})]"/>
+    </record>
+    <record id="threshold_give_global_gift_2" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_global"/>
+        <field name="category">gift</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">75</field>
+        <field name="amount_to">500</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l4'})]"/>
+    </record>
+    <record id="threshold_give_global_gift_3" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_global"/>
+        <field name="category">gift</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">500</field>
+        <field name="amount_to">1500</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l3'})]"/>
+    </record>
+    <record id="threshold_give_global_gift_4" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_global"/>
+        <field name="category">gift</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">1500</field>
+        <field name="amount_to">7500</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l2'})]"/>
+    </record>
+    <record id="threshold_give_global_gift_5" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_global"/>
+        <field name="category">gift</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">7500</field>
+        <field name="amount_to">15000</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l1'})]"/>
+    </record>
+    <record id="threshold_give_global_gift_6" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_global"/>
+        <field name="category">gift</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">15000</field>
+        <field name="amount_to">0</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="True"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'due_diligence'}), (0, 0, {'sequence': 20, 'approver_type': 'board'})]"/>
+    </record>
+    <record id="threshold_give_global_entertainment_1" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_global"/>
+        <field name="category">entertainment</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">0</field>
+        <field name="amount_to">75</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'skip_manager'})]"/>
+    </record>
+    <record id="threshold_give_global_entertainment_2" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_global"/>
+        <field name="category">entertainment</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">75</field>
+        <field name="amount_to">500</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l4'})]"/>
+    </record>
+    <record id="threshold_give_global_entertainment_3" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_global"/>
+        <field name="category">entertainment</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">500</field>
+        <field name="amount_to">1500</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l3'})]"/>
+    </record>
+    <record id="threshold_give_global_entertainment_4" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_global"/>
+        <field name="category">entertainment</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">1500</field>
+        <field name="amount_to">7500</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l2'})]"/>
+    </record>
+    <record id="threshold_give_global_entertainment_5" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_global"/>
+        <field name="category">entertainment</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">7500</field>
+        <field name="amount_to">15000</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l1'})]"/>
+    </record>
+    <record id="threshold_give_global_entertainment_6" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_give_global"/>
+        <field name="category">entertainment</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">15000</field>
+        <field name="amount_to">0</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="True"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'due_diligence'}), (0, 0, {'sequence': 20, 'approver_type': 'board'})]"/>
+    </record>
+    <record id="threshold_government_1" model="bxi.gift.threshold">
+        <field name="category">government</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">0</field>
+        <field name="amount_to">50</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l4'})]"/>
+    </record>
+    <record id="threshold_government_2" model="bxi.gift.threshold">
+        <field name="category">government</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">50</field>
+        <field name="amount_to">0</field>
+        <field name="outcome">prohibited</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="note">Things of value to a Government Official are limited to USD 50 a year</field>
+        <field name="step_ids" eval="[]"/>
+    </record>
+    <record id="threshold_recv_aae_1" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_recv_aae"/>
+        <field name="category">receive</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">0</field>
+        <field name="amount_to">100</field>
+        <field name="outcome">allowed</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[]"/>
+    </record>
+    <record id="threshold_recv_aae_2" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_recv_aae"/>
+        <field name="category">receive</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">100</field>
+        <field name="amount_to">200</field>
+        <field name="outcome">declare</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[]"/>
+    </record>
+    <record id="threshold_recv_aae_3" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_recv_aae"/>
+        <field name="category">receive</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">200</field>
+        <field name="amount_to">0</field>
+        <field name="outcome">prohibited</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="note">Above USD 200 a year from the same giver: return the gift</field>
+        <field name="step_ids" eval="[]"/>
+    </record>
+    <record id="threshold_recv_row_1" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_recv_row"/>
+        <field name="category">receive</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">0</field>
+        <field name="amount_to">10</field>
+        <field name="outcome">allowed</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[]"/>
+    </record>
+    <record id="threshold_recv_row_2" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_recv_row"/>
+        <field name="category">receive</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">10</field>
+        <field name="amount_to">50</field>
+        <field name="outcome">declare</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[]"/>
+    </record>
+    <record id="threshold_recv_row_3" model="bxi.gift.threshold">
+        <field name="zone_id" ref="zone_recv_row"/>
+        <field name="category">receive</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">50</field>
+        <field name="amount_to">0</field>
+        <field name="outcome">prohibited</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="note">Above USD 50 a year from the same giver: return the gift</field>
+        <field name="step_ids" eval="[]"/>
+    </record>
+    <record id="threshold_donation_1" model="bxi.gift.threshold">
+        <field name="category">donation</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">0</field>
+        <field name="amount_to">10000</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l1'}), (0, 0, {'sequence': 20, 'approver_type': 'ethics_committee'})]"/>
+    </record>
+    <record id="threshold_donation_2" model="bxi.gift.threshold">
+        <field name="category">donation</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">10000</field>
+        <field name="amount_to">250000</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'ceo'}), (0, 0, {'sequence': 20, 'approver_type': 'cfo'})]"/>
+    </record>
+    <record id="threshold_donation_3" model="bxi.gift.threshold">
+        <field name="category">donation</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">250000</field>
+        <field name="amount_to">0</field>
+        <field name="outcome">prohibited</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="note">Donations are limited to USD 250,000 a financial year</field>
+        <field name="step_ids" eval="[]"/>
+    </record>
+    <record id="threshold_political_1" model="bxi.gift.threshold">
+        <field name="category">political</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">0</field>
+        <field name="amount_to">0</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="True"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'board'})]"/>
+    </record>
+    <record id="threshold_sponsor_marketing_1" model="bxi.gift.threshold">
+        <field name="category">sponsor_marketing</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">0</field>
+        <field name="amount_to">0</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'l1'})]"/>
+    </record>
+    <record id="threshold_sponsor_charitable_1" model="bxi.gift.threshold">
+        <field name="category">sponsor_charitable</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">0</field>
+        <field name="amount_to">0</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'ethics_committee'})]"/>
+    </record>
+    <record id="threshold_solicit_1" model="bxi.gift.threshold">
+        <field name="category">solicit</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">0</field>
+        <field name="amount_to">9999.99</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="False"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'ceo'}), (0, 0, {'sequence': 20, 'approver_type': 'cfo'})]"/>
+    </record>
+    <record id="threshold_solicit_2" model="bxi.gift.threshold">
+        <field name="category">solicit</field>
+        <field name="currency_id" ref="base.USD"/>
+        <field name="amount_from">9999.99</field>
+        <field name="amount_to">0</field>
+        <field name="outcome">approve</field>
+        <field name="notify_lso" eval="True"/>
+        <field name="step_ids" eval="[(0, 0, {'sequence': 10, 'approver_type': 'ceo'}), (0, 0, {'sequence': 20, 'approver_type': 'cfo'}), (0, 0, {'sequence': 30, 'approver_type': 'ethics_committee'})]"/>
+    </record>
+</odoo>

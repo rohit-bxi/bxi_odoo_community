@@ -28,8 +28,13 @@ class BxiEbAssignment(models.Model):
     work_category = fields.Selection(WORK_CATEGORY, required=True, default='client', tracking=True)
     deployment = fields.Selection(DEPLOYMENT, required=True, default='offshore', tracking=True)
     work_pattern_id = fields.Many2one('bxi.eb.work.pattern', required=True, ondelete='restrict', tracking=True)
-    client_name = fields.Char(string='Client', tracking=True)
-    project_reference = fields.Char(string='Project / Business Objective', tracking=True)
+    project_ids = fields.Many2many(
+        'project.project', 'bxi_eb_assignment_project_rel', 'assignment_id', 'project_id',
+        string='Project / Business Objective',
+        domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]")
+    client_id = fields.Many2one(
+        'res.partner', string='Client', compute='_compute_client_id', store=True, tracking=True,
+        help="Customer of the projects.")
     justification = fields.Text(string='Client / Project Requirement')
     requirement_attachment_ids = fields.Many2many(
         'ir.attachment', 'bxi_eb_assignment_attachment_rel', 'assignment_id', 'attachment_id',
@@ -92,6 +97,11 @@ class BxiEbAssignment(models.Model):
                 rate = Rate._find_rate(rec.work_pattern_id, rec.work_category, rec.deployment,
                                        rec.date_from, rec.company_id or self.env.company)
             rec.rate_percent = rate.rate_percent
+
+    @api.depends('project_ids.partner_id')
+    def _compute_client_id(self):
+        for rec in self:
+            rec.client_id = rec.project_ids.partner_id[:1]
 
     @api.depends('employee_id', 'date_from', 'date_to', 'rate_percent')
     def _compute_component_a_missing(self):
@@ -167,6 +177,10 @@ class BxiEbAssignment(models.Model):
             if rec.work_category == 'client' and not rec.requirement_attachment_ids and not rec.justification:
                 raise UserError(_("Client aligned work patterns must be supported by a documented "
                                   "client or project requirement."))
+            if rec.work_category == 'non_client' and rate.rate_percent and not (
+                    rec.requirement_attachment_ids or rec.justification or rec.project_ids):
+                raise UserError(_("State the project or business objective that requires this work pattern: "
+                                  "non-client aligned extended schedules must be documented too."))
         self.sudo().write({'state': 'submitted'})
         for rec in self:
             rec._eb_notify_group(

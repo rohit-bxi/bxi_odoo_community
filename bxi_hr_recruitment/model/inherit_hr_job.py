@@ -177,10 +177,10 @@ class HrJob(models.Model):
     approval_state = fields.Selection(
         [
             ('draft', 'Draft'),
-            ('rm_approval', 'RM Approval'),
-            ('manager_approval', 'Manager Approval'),
-            ('finance_approval', 'Finance Approval'),
-            ('hr_approval', 'HR Approval'),
+            ('rm_approval', 'Level 1 Rm Approval'),
+            ('manager_approval', 'Level 2 Manager Approval'),
+            ('finance_approval', 'Level 3 Finance Approval'),
+            ('hr_approval', 'Level 4 HR Approval'),
             ('approved', 'Approved'),
             ('rejected', 'Rejected'),
         ],
@@ -192,51 +192,51 @@ class HrJob(models.Model):
 
     rm_id = fields.Many2one(
         'hr.employee',
-        string='Reporting Manager',
+        string='Level 1 RM Approver',
         tracking=True,
         copy=False,
     )
 
     hr_approver_id = fields.Many2one(
         'hr.employee',
-        string='HR Approver',
+        string='Level 4 HR Approver',
         tracking=True,
         copy=False,
     )
     manager_approver_id = fields.Many2one(
         'hr.employee',
-        string='Manager Approver',
+        string='Level 2 Manager Approver',
         tracking=True,
         copy=False,
     )
 
     finance_approver_id = fields.Many2one(
         'hr.employee',
-        string='Finance Approver',
+        string='Level 3 Finance Approver',
         tracking=True,
         copy=False,
     )
 
     rm_approval_date = fields.Datetime(
-        string='RM Approval Date',
+        string='Level 1 RM Approval Date',
         readonly=True,
         copy=False,
     )
 
     manager_approval_date = fields.Datetime(
-        string='Manager Approval Date',
+        string='Level 2 Manager Approval Date',
         readonly=True,
         copy=False,
     )
 
     finance_approval_date = fields.Datetime(
-        string='Finance Approval Date',
+        string='Level 3 Finance Approval Date',
         readonly=True,
         copy=False,
     )
 
     hr_approval_date = fields.Datetime(
-        string='HR Approval Date',
+        string='Level 4 HR Approval Date',
         readonly=True,
         copy=False,
     )
@@ -258,14 +258,14 @@ class HrJob(models.Model):
             if not job.rm_id:
                 raise UserError(
                     _(
-                        "Please select the Reporting Manager "
+                        "Please select the Level 1 RM Approver "
                         "before submitting the job for approval."
                     )
                 )
             if not job.rm_id.user_id:
                 raise UserError(
                     _(
-                        "The selected Reporting Manager does not "
+                        "The selected Level 1 RM Approver does not "
                         "have a related user."
                     )
                 )
@@ -273,7 +273,7 @@ class HrJob(models.Model):
             if not job.manager_approver_id:
                 raise UserError(
                     _(
-                        "Please select the Manager Approver "
+                        "Please select the Level 2 Manager Approver "
                         "before submitting the job for approval."
                     )
                 )
@@ -281,7 +281,7 @@ class HrJob(models.Model):
             if not job.manager_approver_id.user_id:
                 raise UserError(
                     _(
-                        "The selected Manager Approver does not "
+                        "The selected Level 2 Manager Approver does not "
                         "have a related user."
                     )
                 )
@@ -289,7 +289,7 @@ class HrJob(models.Model):
             if not job.finance_approver_id:
                 raise UserError(
                     _(
-                        "Please select the Finance Approver "
+                        "Please select the Level 3 Finance Approver "
                         "before submitting the job for approval."
                     )
                 )
@@ -297,7 +297,7 @@ class HrJob(models.Model):
             if not job.finance_approver_id.user_id:
                 raise UserError(
                     _(
-                        "The selected Finance Approver does not "
+                        "The selected Level 3 Finance Approver does not "
                         "have a related user."
                     )
                 )
@@ -305,7 +305,7 @@ class HrJob(models.Model):
             if not job.hr_approver_id:
                 raise UserError(
                     _(
-                        "Please select the HR Approver "
+                        "Please select the Level 4 HR Approver "
                         "before submitting the job for approval."
                     )
                 )
@@ -313,7 +313,7 @@ class HrJob(models.Model):
             if not job.hr_approver_id.user_id:
                 raise UserError(
                     _(
-                        "The selected HR Approver does not "
+                        "The selected Level 4 HR Approver does not "
                         "have a related user."
                     )
                 )
@@ -340,13 +340,13 @@ class HrJob(models.Model):
 
             if not job.rm_id:
                 raise UserError(
-                    _("Reporting Manager is not configured.")
+                    _("Level 1 RM Approver is not configured.")
                 )
 
             if job.rm_id != current_employee:
                 raise UserError(
                     _(
-                        "Only the assigned Reporting Manager "
+                        "Only the assigned Level 1 RM Approver "
                         "can approve this job."
                     )
                 )
@@ -366,14 +366,14 @@ class HrJob(models.Model):
 
         for job in self:
             if job.approval_state != 'manager_approval':
-                raise UserError(_("This job is not waiting for Manager approval."))
+                raise UserError(_("This job is not waiting for Level 2 Manager approval."))
 
             if not job.manager_approver_id:
-                raise UserError(_("Manager Approver is not configured."))
+                raise UserError(_("Level 2 Manager Approver is not configured."))
 
             if job.manager_approver_id != current_employee:
                 raise UserError(
-                    _("Only the assigned Manager Approver can approve this job.")
+                    _("Only the assigned Level 2 Manager Approver can approve this job.")
                 )
 
             job.write({
@@ -391,14 +391,14 @@ class HrJob(models.Model):
 
         for job in self:
             if job.approval_state != 'finance_approval':
-                raise UserError(_("This job is not waiting for Finance approval."))
+                raise UserError(_("This job is not waiting for Level 3 Finance approval."))
 
             if not job.finance_approver_id:
-                raise UserError(_("Finance Approver is not configured."))
+                raise UserError(_("Level 3 Finance Approver is not configured."))
 
             if job.finance_approver_id != current_employee:
                 raise UserError(
-                    _("Only the assigned Finance Approver can approve this job.")
+                    _("Only the assigned Level 3 Finance Approver can approve this job.")
                 )
 
             job.write({
@@ -416,14 +416,14 @@ class HrJob(models.Model):
 
         for job in self:
             if job.approval_state != 'hr_approval':
-                raise UserError(_("This job is not waiting for HR approval."))
+                raise UserError(_("This job is not waiting for Level 4 HR approval."))
 
             if not job.hr_approver_id:
-                raise UserError(_("HR Approver is not configured."))
+                raise UserError(_("Level 4 HR Approver is not configured."))
 
             if job.hr_approver_id != current_employee:
                 raise UserError(
-                    _("Only the assigned HR Approver can approve this job.")
+                    _("Only the assigned Level 4 HR Approver can approve this job.")
                 )
 
             job.write({

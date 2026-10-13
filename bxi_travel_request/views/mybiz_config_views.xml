@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         LIST VIEW — myBiz Configuration
+    ═══════════════════════════════════════════════════════════════ -->
+    <record id="view_mybiz_config_list" model="ir.ui.view">
+        <field name="name">bxi.mybiz.config.list</field>
+        <field name="model">bxi.mybiz.config</field>
+        <field name="arch" type="xml">
+            <list string="myBiz Configurations">
+                <field name="name"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="client_id"/>
+                <field name="org_id"/>
+                <field name="base_url"/>
+                <field name="active" widget="boolean_toggle"/>
+                <field name="last_test_status"/>
+                <field name="last_test_date"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         FORM VIEW — myBiz Configuration
+    ═══════════════════════════════════════════════════════════════ -->
+    <record id="view_mybiz_config_form" model="ir.ui.view">
+        <field name="name">bxi.mybiz.config.form</field>
+        <field name="model">bxi.mybiz.config</field>
+        <field name="arch" type="xml">
+            <form string="MakeMyTrip myBiz Configuration">
+                <header>
+                    <button name="action_test_connection"
+                            string="Test Connection"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-plug"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="e.g. myBiz Production"/>
+                        </h1>
+                    </div>
+
+                    <!-- Status Alert -->
+                    <div class="alert alert-info" role="alert"
+                         invisible="not last_test_status">
+                        <strong>Last Test:</strong>
+                        <field name="last_test_status" readonly="1" nolabel="1"/>
+                        <span class="text-muted ms-2">
+                            (<field name="last_test_date" readonly="1" nolabel="1"/>)
+                        </span>
+                    </div>
+
+                    <group>
+                        <group string="General">
+                            <field name="name"/>
+                            <field name="company_id"
+                                   options="{'no_create': True}"
+                                   groups="base.group_multi_company"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="🔑 API Credentials">
+                            <div class="alert alert-warning" role="alert">
+                                <strong>⚠️ Security Notice:</strong>
+                                These credentials grant access to your myBiz corporate account.
+                                Ensure your Odoo server's IP is whitelisted with MakeMyTrip myBiz.
+                            </div>
+                            <group>
+                                <group>
+                                    <field name="client_id"
+                                           password="False"
+                                           placeholder="Client ID from myBiz Admin → Company Details"/>
+                                    <field name="org_id"
+                                           placeholder="Organization ID from myBiz Admin"/>
+                                    <field name="api_key"
+                                           password="True"
+                                           placeholder="API Key / Secret (kept confidential)"/>
+                                </group>
+                                <group>
+                                    <field name="base_url"
+                                           placeholder="https://mybiz.makemytrip.com/api/v1"/>
+                                    <field name="travel_request_endpoint"
+                                           placeholder="/travelRequest/create"/>
+                                    <field name="fetch_status_endpoint"
+                                           placeholder="/travelRequest/status"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="ℹ Integration Guide">
+                            <div class="o_form_label">
+                                <h4>How to get your myBiz API Credentials</h4>
+                                <ol>
+                                    <li>Log in to your <strong>myBiz Admin portal</strong> at mybiz.makemytrip.com</li>
+                                    <li>Navigate to <strong>Settings → Company Details → API Integration</strong></li>
+                                    <li>Copy the <strong>Client ID</strong> and <strong>Organization ID</strong></li>
+                                    <li>Generate or copy the <strong>API Key</strong></li>
+                                    <li>Request <strong>IP Whitelisting</strong> for your Odoo server's public IP</li>
+                                    <li>Click <strong>"Test Connection"</strong> above to verify the setup</li>
+                                </ol>
+                                <h4>Workflow</h4>
+                                <ol>
+                                    <li>Employee fills travel request with segments (flight/hotel/cab)</li>
+                                    <li>Manager approves → HR approves</li>
+                                    <li>On HR approval, Odoo automatically pushes the request to myBiz</li>
+                                    <li>myBiz travel desk completes the booking</li>
+                                    <li>Odoo polls myBiz for booking status (daily cron + manual sync)</li>
+                                </ol>
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ACTION
+    ═══════════════════════════════════════════════════════════════ -->
+    <record id="action_mybiz_config" model="ir.actions.act_window">
+        <field name="name">myBiz Configuration</field>
+        <field name="res_model">bxi.mybiz.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Configure MakeMyTrip myBiz API Integration
+            </p>
+            <p>Set up your myBiz corporate API credentials to enable automatic travel booking.</p>
+        </field>
+    </record>
+
+</odoo>

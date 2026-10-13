@@ -9,17 +9,17 @@ _receipt_counter = itertools.count()
 
 
 class ConveyanceTestMixin:
-    """A Reporting Manager with employees of each travel plan, an HR officer, and the policy defaults."""
+    """A Reporting Manager with employees of each travel plan, Finance and HR officers, and the policy defaults."""
 
     @classmethod
     def _setup_conveyance_data(cls):
         # The tests must not depend on the configuration of the database they run on.
         cls.company = cls.env.company
-        cls.company.conveyance_hr_user_id = False
+        cls.company.conveyance_hr_user_id = cls.company.conveyance_finance_user_id = False
         set_param = cls.env['ir.config_parameter'].sudo().set_param
         for key, value in {
-            'claim_days': 45, 'reminder_days': 7, 'office_coverage_months': 2, 'auto_hr_threshold': 1000,
-            'food_daily_limit': 1000, 'non_working_day_mode': 'block',
+            'claim_days': 45, 'reminder_days': 7, 'office_coverage_months': 2, 'food_daily_limit': 1000,
+            'non_working_day_mode': 'block',
         }.items():
             set_param(f'bxi_local_conveyance.{key}', value)
 
@@ -40,6 +40,9 @@ class ConveyanceTestMixin:
         cls.hr_user = new_test_user(
             cls.env, login='lc_test_hr', name='Conveyance HR',
             groups='base.group_user,bxi_local_conveyance.group_conveyance_hr')
+        cls.finance_user = new_test_user(
+            cls.env, login='lc_test_finance', name='Conveyance Finance',
+            groups='base.group_user,bxi_local_conveyance.group_conveyance_finance')
         cls.outsider = new_test_user(cls.env, login='lc_test_outsider', name='Outsider', groups='base.group_user')
         cls.department = cls.env['hr.department'].create({'name': 'Conveyance Engineering'})
         cls.sales = cls.env['hr.department'].create({'name': 'Conveyance Sales', 'is_sales_team': True})
@@ -55,9 +58,11 @@ class ConveyanceTestMixin:
         cls.product_taxi = cls.env.ref('bxi_local_conveyance.product_conveyance_taxi')
         cls.product_parking = cls.env.ref('bxi_local_conveyance.product_conveyance_parking')
         cls.product_food = cls.env.ref('bxi_local_conveyance.product_food_sales')
+        cls.product_transfer_2w = cls.env.ref('bxi_local_conveyance.product_conveyance_transfer_2w')
+        cls.product_transfer_4w = cls.env.ref('bxi_local_conveyance.product_conveyance_transfer_4w')
         # Table A rates, whatever the database says.
-        cls.product_2w.standard_price = 2.5
-        cls.product_4w.standard_price = 5.0
+        cls.product_2w.standard_price = cls.product_transfer_2w.standard_price = 2.5
+        cls.product_4w.standard_price = cls.product_transfer_4w.standard_price = 5.0
 
     @classmethod
     def _last_day(cls, condition):
@@ -80,6 +85,13 @@ class ConveyanceTestMixin:
             'work_email': f"{login}@example.com",
             'resource_calendar_id': cls.calendar.id,
             'tz': 'Asia/Kolkata',
+        })
+
+    @classmethod
+    def _office(cls, name, street=None):
+        address = cls.env['res.partner'].create({'name': name, 'street': street or f"{name} Street"})
+        return cls.env['hr.work.location'].create({
+            'name': name, 'location_type': 'office', 'address_id': address.id,
         })
 
     def _receipt(self, expense, content=None):
@@ -107,13 +119,13 @@ class ConveyanceTestMixin:
                 'conveyance_purpose': 'client_visit', 'conveyance_from': 'Saket office',
                 'conveyance_to': 'Client, Gurugram', 'conveyance_within_city': True,
             })
-        if kind in ('vehicle_2w', 'vehicle_4w'):
+        if kind in ('vehicle_2w', 'vehicle_4w', 'transfer_2w', 'transfer_4w'):
             values['conveyance_distance'] = 10
         else:
             values['total_amount_currency'] = 300
         values.update(vals)
         expense = self.env['hr.expense'].with_user(employee.user_id).create(values)
-        if receipt and kind not in ('vehicle_2w', 'vehicle_4w'):
+        if receipt and kind not in ('vehicle_2w', 'vehicle_4w', 'transfer_2w', 'transfer_4w'):
             self._receipt(expense.sudo())
         return expense
 

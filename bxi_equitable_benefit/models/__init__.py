@@ -11,3 +11,5 @@ from . import hr_payslip
 from . import employee_resignation
 from . import res_company
 from . import res_config_settings
+from . import hr_employee_appraisal
+from . import resource_calendar

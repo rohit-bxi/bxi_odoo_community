@@ -8,7 +8,22 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='band_level']" position="after">
                 <field name="conveyance_travel_plan_id" groups="hr.group_hr_user"/>
+                <field name="conveyance_regular_location_id" groups="hr.group_hr_user"/>
+                <field name="conveyance_flexi_fuel" groups="hr.group_hr_user"/>
             </xpath>
+        </field>
+    </record>
+
+    <record id="action_conveyance_employee_without_band" model="ir.actions.act_window">
+        <field name="name">Employees Without Band</field>
+        <field name="res_model">hr.employee</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_band_set', '=', False)]</field>
+        <field name="context">{'create': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Every employee has a band.</p>
+            <p>Without a Band Level no travel plan applies: the employee cannot claim a taxi or an auto-rickshaw
+               outside an emergency.</p>
         </field>
     </record>
 

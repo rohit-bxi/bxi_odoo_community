@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_inherit_timesheet_check" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.timesheet.check</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="bxi_attendance_missed_checkout.res_config_settings_view_form_inherit_missed_checkout"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='missed_checkout_setting_container']" position="inside">
+                <setting string="Check Timesheets From" company_dependent="1"
+                         help="From this date, a working day without timesheet is Absent until a Missing Timesheet request is approved, and LOP after the cutoff.">
+                    <field name="timesheet_check_start_date"/>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

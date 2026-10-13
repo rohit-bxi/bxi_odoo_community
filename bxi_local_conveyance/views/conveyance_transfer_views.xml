@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_bxi_conveyance_transfer_list" model="ir.ui.view">
+        <field name="name">bxi.conveyance.transfer.list</field>
+        <field name="model">bxi.conveyance.transfer</field>
+        <field name="arch" type="xml">
+            <list string="Domestic Transfers">
+                <field name="employee_id" widget="many2one_avatar_employee"/>
+                <field name="from_city"/>
+                <field name="to_city"/>
+                <field name="transfer_date"/>
+                <field name="vehicle_option"/>
+                <field name="claim_id"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_conveyance_transfer_form" model="ir.ui.view">
+        <field name="name">bxi.conveyance.transfer.form</field>
+        <field name="model">bxi.conveyance.transfer</field>
+        <field name="arch" type="xml">
+            <form string="Domestic Transfer">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="transfer_date"/>
+                            <field name="vehicle_option" widget="radio"/>
+                        </group>
+                        <group>
+                            <field name="from_city"/>
+                            <field name="to_city"/>
+                            <field name="claim_id" invisible="not claim_id"/>
+                        </group>
+                    </group>
+                    <field name="claim_ids" readonly="1" invisible="not claim_ids">
+                        <list>
+                            <field name="date"/>
+                            <field name="name"/>
+                            <field name="conveyance_kind"/>
+                            <field name="conveyance_distance"/>
+                            <field name="total_amount" widget="monetary"
+                                   options="{'currency_field': 'company_currency_id'}"/>
+                            <field name="company_currency_id" column_invisible="1"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+                    <field name="note" placeholder="Notes..."/>
+                    <field name="active" invisible="1"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bxi_conveyance_transfer_search" model="ir.ui.view">
+        <field name="name">bxi.conveyance.transfer.search</field>
+        <field name="model">bxi.conveyance.transfer</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="from_city"/>
+                <field name="to_city"/>
+                <filter name="drive" string="Drive" domain="[('vehicle_option', '=', 'drive')]"/>
+                <filter name="shipment" string="Vehicle Movement" domain="[('vehicle_option', '=', 'shipment')]"/>
+                <separator/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bxi_conveyance_transfer" model="ir.actions.act_window">
+        <field name="name">Domestic Transfers</field>
+        <field name="res_model">bxi.conveyance.transfer</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Record the domestic transfers of employees.</p>
+            <p>The employee is reimbursed either for the movement of their vehicle under the Domestic Transfer
+               Policy, or for driving it to the new city at the Table A rates (two-wheeler Rs. 2.50, four-wheeler
+               Rs. 5.00 per km), not both, and for one vehicle only.</p>
+        </field>
+    </record>
+
+</odoo>

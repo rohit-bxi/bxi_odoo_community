@@ -344,6 +344,25 @@ class BxiEbPayout(models.Model):
         attended = {day for day in self._attended_dates(date_from, date_to) if not self._is_home_day(day)}
         return round(expected, 1), len(attended)
 
+    def _eb_schedules(self, date_from, date_to):
+        """The working schedule of the employee on each day of the period, from their contract versions."""
+        employee = self.employee_id.sudo()
+        versions = employee.version_ids.filtered('active') or employee.with_context(active_test=False).version_ids
+        versions = versions.sorted('date_version')
+        schedules = {}
+        for day in _date_range(date_from, date_to):
+            current = versions.filtered(lambda v: v.date_version <= day)[-1:] or versions[:1]
+            schedules[day] = current.resource_calendar_id
+        return schedules
+
+    def _odd_shift_compliance(self, date_from, date_to):
+        """Return (days, days on an odd shift schedule) of the period, or None when no working schedule is
+        flagged as an odd shift yet."""
+        if not self.env['resource.calendar'].sudo().search_count([('eb_is_odd_shift', '=', True)], limit=1):
+            return None
+        schedules = self._eb_schedules(date_from, date_to)
+        return len(schedules), sum(1 for schedule in schedules.values() if schedule.eb_is_odd_shift)
+
     # ------------------------------------------------------------------
     # Computation
     # ------------------------------------------------------------------
@@ -506,6 +525,19 @@ class BxiEbPayout(models.Model):
                         "of %(expected)s expected (%(percent)s%%).",
                         pattern=pattern.name, date_from=seg['date_from'], date_to=seg['date_to'],
                         attended=attended, expected=expected, percent='%.0f' % percent))
+            # Odd hour / day / week shifts have no office day count: check the schedule actually worked.
+            shift = (rate_percent and pattern.is_shift and not pattern.days_per_week
+                     and self._odd_shift_compliance(seg['date_from'], seg['date_to']))
+            if shift:
+                total, odd = shift
+                percent = odd / total * 100 if total else 100.0
+                vals.update(shift_checked=True, odd_shift_days=odd, odd_shift_percent=percent)
+                if percent < min_compliance:
+                    warnings.append(_(
+                        "%(pattern)s from %(date_from)s to %(date_to)s: on an odd shift working schedule for "
+                        "%(odd)s of %(days)s days (%(percent)s%%).",
+                        pattern=pattern.name, date_from=seg['date_from'], date_to=seg['date_to'],
+                        odd=odd, days=total, percent='%.0f' % percent))
             if rate_percent and not seg['component_a']:
                 missing_component_a = True
             line_vals.append((0, 0, vals))
@@ -765,3 +797,8 @@ class BxiEbPayoutLine(models.Model):
     compliance_percent = fields.Float(
         string='Pattern Compliance (%)', digits=(16, 1), readonly=True,
         help="Office days attended against the days the work pattern expects, net of leave and public holidays.")
+    shift_checked = fields.Boolean(readonly=True)
+    odd_shift_days = fields.Integer(string='Days on Odd Shift', readonly=True)
+    odd_shift_percent = fields.Float(
+        string='Odd Shift (%)', digits=(16, 1), readonly=True,
+        help="Share of the days the employee's working schedule was an odd shift schedule.")

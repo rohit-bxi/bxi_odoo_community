@@ -11,13 +11,11 @@ class ResConfigSettings(models.TransientModel):
     lc_office_coverage_months = fields.Integer(
         string='Other Office Coverage (Months)', default=2,
         config_parameter='bxi_local_conveyance.office_coverage_months')
-    lc_auto_hr_threshold = fields.Float(
-        string='Auto-Rickshaw HR Approval Above', default=1000,
-        config_parameter='bxi_local_conveyance.auto_hr_threshold')
     lc_food_daily_limit = fields.Float(
         string='Food Limit per Day', default=1000, config_parameter='bxi_local_conveyance.food_daily_limit')
     lc_non_working_day_mode = fields.Selection(
         [('block', 'Refuse the claim'), ('flag', 'Send to HR for review')],
         string='Weekends and Holidays', default='block',
         config_parameter='bxi_local_conveyance.non_working_day_mode')
+    conveyance_finance_user_id = fields.Many2one(related='company_id.conveyance_finance_user_id', readonly=False)
     conveyance_hr_user_id = fields.Many2one(related='company_id.conveyance_hr_user_id', readonly=False)

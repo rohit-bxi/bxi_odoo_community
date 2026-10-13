@@ -44,6 +44,22 @@ class HrEmployee(models.Model):
         action['context'] = {'default_employee_id': self.id}
         return action
 
+    def _eb_set_component_a(self, day, amount):
+        """Set the Annualized Component A from ``day`` on, e.g. after an appraisal.
+
+        A contract version is created on ``day`` when needed. Later versions that only carried
+        the previous amount forward are updated too; a later change is kept.
+        """
+        self.ensure_one()
+        employee = self.sudo()
+        previous = employee._get_version(day).eb_annual_component_a
+        targets = employee.create_version({'date_version': day})
+        for version in employee.version_ids.filtered(lambda v: v.date_version > day).sorted('date_version'):
+            if version.eb_annual_component_a != previous:
+                break
+            targets |= version
+        targets.write({'eb_annual_component_a': amount})
+
     def _eb_settle_separation(self, last_day, resignation=False):
         """Settle the Equitable Benefit of separating employees in their Full & Final Settlement."""
         Payout = self.env['bxi.eb.payout'].sudo()

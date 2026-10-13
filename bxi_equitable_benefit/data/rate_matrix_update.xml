@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Runs on every install and upgrade; only adds rate rows that are missing. -->
 <odoo>
-    <function model="bxi.eb.rate" name="_ensure_hybrid_client_rate"/>
+    <function model="bxi.eb.rate" name="_ensure_not_applicable_rates"/>
 </odoo>

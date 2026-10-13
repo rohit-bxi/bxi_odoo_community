@@ -1,155 +1,305 @@
-from odoo import http, fields as odoo_fields
+# -*- coding: utf-8 -*-
+import logging
+
+from odoo import http
 from odoo.http import request
-from odoo.exceptions import AccessError
+
+_logger = logging.getLogger(__name__)
 
 
-class TravelRequest(http.Controller):
+def _is_direct_manager(record, employee):
+    """Whether `employee` is the direct reporting manager of the request's owner."""
+    return bool(
+        record.employee_id.parent_id
+        and employee
+        and record.employee_id.parent_id.id == employee.id
+    )
 
+
+def _is_hr_user(user):
+    """Whether `user` has HR officer/manager/system-admin rights."""
+    return (
+        user.has_group('hr.group_hr_user')
+        or user.has_group('hr.group_hr_manager')
+        or user.has_group('base.group_system')
+    )
+
+
+class TravelRequestPortal(http.Controller):
+
+    # ─── 1. List View (Employee / Manager / HR) ─────────────────────
     @http.route(['/my/travel-request'], type='http', auth='user', website=True)
-    def travel_request(self, **kwargs):
+    def travel_request_list(self, filter_type=None, **kwargs):
         user = request.env.user
+        employee = request.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
         T_Request = request.env['travel.request'].sudo()
 
-        current_employee = request.env['hr.employee'].sudo().search([
-            ('user_id', '=', user.id)
-        ], limit=1)
+        is_hr = _is_hr_user(user)
+        is_manager = bool(employee and employee.child_ids)
 
-        self_requests = T_Request.browse()
-        team_requests = T_Request.browse()
+        domain = [('company_id', 'in', request.env.companies.ids)]
 
-        if current_employee:
-            self_requests = T_Request.search([
-                ('employee_id', '=', current_employee.id)
+        if filter_type == 'pending_approval':
+            if is_hr:
+                domain.append(('state', 'in', ('hr_approval', 'manager_approval')))
+            elif is_manager:
+                domain.extend([('state', '=', 'manager_approval'),
+                              ('employee_id.parent_id', '=', employee.id)])
+            else:
+                domain.append(('employee_id', '=', employee.id if employee else False))
+        elif filter_type == 'team' and is_manager:
+            domain.append(('employee_id.parent_id', '=', employee.id))
+        elif filter_type == 'all' and is_hr:
+            pass  # all requests in allowed companies
+        else:
+            # Default: employee's own requests
+            if employee:
+                domain.append(('employee_id', '=', employee.id))
+            else:
+                domain.append(('id', '=', 0))
+
+        requests = T_Request.search(domain, order='id desc')
+
+        # Count pending for badge counters
+        pending_count = 0
+        if is_hr:
+            pending_count = T_Request.search_count([
+                ('company_id', 'in', request.env.companies.ids),
+                ('state', 'in', ('hr_approval', 'manager_approval'))
             ])
-            team_requests = T_Request.search([
-                ('employee_id.parent_id', '=', current_employee.id)
+        elif is_manager:
+            pending_count = T_Request.search_count([
+                ('company_id', 'in', request.env.companies.ids),
+                ('state', '=', 'manager_approval'),
+                ('employee_id.parent_id', '=', employee.id)
             ])
 
-        values = {
-            'self_requests': self_requests,
-            'team_requests': team_requests,
-            'is_manager': bool(team_requests),
-            'current_employee_id': current_employee.id if current_employee else False,
-        }
-        return request.render('bxi_travel_request.bxi_travel_request_template', values)
+        return request.render('bxi_travel_request.bxi_travel_request_template', {
+            'requests': requests,
+            'employee': employee,
+            'is_hr': is_hr,
+            'is_manager': is_manager,
+            'filter_type': filter_type or 'my',
+            'pending_count': pending_count,
+        })
 
-    @http.route('/my/submit-travel-request', type='http', auth="user", website=True, methods=['GET', 'POST'])
+    # ─── 2. Submit Travel Request ──────────────────────────────────
+    @http.route('/my/submit-travel-request', type='http',
+                auth='user', website=True, methods=['GET', 'POST'])
     def submit_request(self, **post):
         user = request.env.user
-        employee = request.env['hr.employee'].sudo().search([
-                ('user_id', '=', user.id)
-            ], limit=1)
-        
+        employee = request.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
+
+        # AJAX helper for state dropdown dependent on country selection
         country_id = request.params.get('country_id')
         if country_id:
-            states = request.env['res.country.state'].sudo().search([
-                ('country_id', '=', int(country_id))
-            ])
+            states = request.env['res.country.state'].sudo().search(
+                [('country_id', '=', int(country_id))])
             return request.make_json_response({
                 'states': [{'id': s.id, 'name': s.name} for s in states]
             })
+
         india_id = request.env.ref('base.in').id
 
-        def get_int(field, default):
-            return int(post.get(field)) if post.get(field) else default
+        def get_int(field, default=False):
+            val = post.get(field)
+            return int(val) if val and str(val).isdigit() else default
+
+        def get_float(field, default=0.0):
+            val = post.get(field)
+            try:
+                return float(val) if val else default
+            except ValueError:
+                return default
 
         from_country = get_int('from_country', india_id)
         to_country = get_int('to_country', india_id)
         state_model = request.env['res.country.state'].sudo()
-        from_states = state_model.search([('country_id', '=', from_country)])
-        to_states = state_model.search([('country_id', '=', to_country)])
+
         if request.httprequest.method == 'POST' and post.get('travel_purpose'):
-            record = request.env['travel.request'].sudo().create({
-                'name': 'New',
-                'employee_id': employee.id,
-                'manager_id': employee.parent_id.id if employee.parent_id else False,
-                'department_id': employee.department_id.id if employee.department_id else False,
+            hotel_req = bool(post.get('hotel_required'))
+            cab_req = bool(post.get('cab_required'))
+            adv_req = bool(post.get('advance_required'))
+
+            from_city = post.get('from_city')
+            to_city = post.get('to_city')
+            departure_date = post.get('departure_date')
+            return_date = post.get('return_date')
+            mode_of_travel = post.get('mode_of_travel')
+            travel_class = post.get('travel_class', 'economy')
+            hotel_city = post.get('hotel_city') or to_city
+            hotel_checkin = post.get('hotel_checkin') or departure_date
+            hotel_checkout = post.get('hotel_checkout') or return_date
+
+            vals = {
+                'employee_id': employee.id if employee else False,
+                'manager_id': (
+                    employee.parent_id.id if employee and employee.parent_id else False),
+                'department_id': (
+                    employee.department_id.id if employee and employee.department_id else False),
                 'travel_purpose': post.get('travel_purpose'),
                 'from_country': from_country,
                 'to_country': to_country,
-                'from_state': get_int('from_state', False),
-                'to_state': get_int('to_state', False),
-                'from_city': post.get('from_city'),
-                'to_city': post.get('to_city'),
-                'departure_date': post.get('departure_date'),
-                'return_date': post.get('return_date'),
-                'mode_of_travel': post.get('mode_of_travel'),
+                'from_state': get_int('from_state'),
+                'to_state': get_int('to_state'),
+                'from_city': from_city,
+                'to_city': to_city,
+                'from_address': post.get('from_address'),
+                'to_address': post.get('to_address'),
+                'departure_date': departure_date,
+                'return_date': return_date or False,
+                'mode_of_travel': mode_of_travel,
+                'trip_type': post.get('trip_type', 'round_trip'),
+                'travel_class': travel_class,
+                'contact_number': post.get('contact_number'),
+                'email': post.get('email'),
+                'other_info': post.get('other_info'),
+                # Hotel preferences
+                'hotel_required': hotel_req,
+                'hotel_city': hotel_city if hotel_req else False,
+                'hotel_grade': post.get('hotel_grade', '3') if hotel_req else False,
+                'hotel_checkin': hotel_checkin if hotel_req else False,
+                'hotel_checkout': hotel_checkout if hotel_req else False,
+                'hotel_rooms': get_int('hotel_rooms', 1) if hotel_req else 1,
+                # Cab preferences
+                'cab_required': cab_req,
+                'cab_type': post.get('cab_type', 'any') if cab_req else False,
+                'cab_pickup': post.get('cab_pickup') if cab_req else False,
+                'cab_dropoff': post.get('cab_dropoff') if cab_req else False,
+                # Advance Payment
+                'advance_required': adv_req,
+                'advance_amount': get_float('advance_amount') if adv_req else 0.0,
+                'advance_notes': post.get('advance_notes') if adv_req else False,
                 'state': 'manager_approval',
-            })
-            record._send_state_email()
-            
-            return request.redirect(f'/my/travel-request/{record.id}')
-        
+            }
+
+            rec = request.env['travel.request'].sudo().create(vals)
+
+            # Auto-create a travel segment line based on primary travel selection
+            if mode_of_travel:
+                request.env['travel.request.option'].sudo().create({
+                    'travel_request_id': rec.id,
+                    'option_type': mode_of_travel,
+                    'origin_code': from_city,
+                    'destination_code': to_city,
+                    'travel_class': travel_class,
+                    'description': f'{mode_of_travel.capitalize()} from {from_city} to {to_city}',
+                })
+
+            if hotel_req:
+                request.env['travel.request.option'].sudo().create({
+                    'travel_request_id': rec.id,
+                    'option_type': 'hotel',
+                    'hotel_city': hotel_city,
+                    'hotel_grade': post.get('hotel_grade', '3'),
+                    'checkin_date': hotel_checkin,
+                    'checkout_date': hotel_checkout,
+                    'rooms': get_int('hotel_rooms', 1),
+                    'description': f'Hotel stay in {hotel_city}',
+                })
+
+            if cab_req:
+                request.env['travel.request.option'].sudo().create({
+                    'travel_request_id': rec.id,
+                    'option_type': 'cab',
+                    'cab_type': post.get('cab_type', 'any'),
+                    'pickup_location': post.get('cab_pickup'),
+                    'drop_location': post.get('cab_dropoff'),
+                    'description': f'Cab service in {to_city}',
+                })
+
+            rec._send_state_email()
+            return request.redirect(f'/my/travel-request/{rec.id}?success=1')
+
         return request.render('bxi_travel_request.submit_travel_template', {
             'employee': employee,
             'countries': request.env['res.country'].sudo().search([]),
             'from_country_id': from_country,
             'to_country_id': to_country,
-            'from_states': from_states,
-            'to_states': to_states,
+            'from_states': state_model.search([('country_id', '=', from_country)]),
+            'to_states': state_model.search([('country_id', '=', to_country)]),
             'mode_options': request.env['travel.request']._fields['mode_of_travel'].selection,
+            'trip_options': request.env['travel.request']._fields['trip_type'].selection,
+            'class_options': request.env['travel.request']._fields['travel_class'].selection,
+            'hotel_grade_options': request.env['travel.request']._fields['hotel_grade'].selection,
+            'cab_type_options': request.env['travel.request']._fields['cab_type'].selection,
         })
 
+    # ─── 3. Detail View & Approval Actions ──────────────────────────
     @http.route(['/my/travel-request/<int:rec_id>'], type='http', auth='user', website=True)
-    def travel_request_detail(self, rec_id):
+    def travel_request_detail(self, rec_id, **kwargs):
         record = request.env['travel.request'].sudo().browse(rec_id)
+        if not record.exists():
+            return request.not_found()
+
+        user = request.env.user
+        current_emp = request.env['hr.employee'].sudo().search(
+            [('user_id', '=', user.id)], limit=1)
+
+        is_hr = _is_hr_user(user)
+        can_manager_approve = bool(
+            record.state == 'manager_approval'
+            and _is_direct_manager(record, current_emp)
+        )
+        can_hr_approve = bool(record.state == 'hr_approval' and is_hr)
+
         return request.render('bxi_travel_request.travel_request_detail_template', {
-            'record': record
+            'record': record,
+            'can_manager_approve': can_manager_approve,
+            'can_hr_approve': can_hr_approve,
+            'is_hr': is_hr,
+            'success': kwargs.get('success'),
+            'msg': kwargs.get('msg'),
         })
 
-    @http.route('/my/travel-request/approve', type='http', auth='user', website=True, methods=['POST'])
-    def travel_request_approve(self, **post):
-        rec_id = int(post.get('rec_id', 0))
-        if not rec_id:
-            return request.redirect('/my/travel-request')
-
+    # ─── 4. Website Manager Approval Action ────────────────────────
+    @http.route('/my/travel-request/<int:rec_id>/approve-manager',
+                type='http', auth='user', website=True, methods=['POST'])
+    def manager_approve_website(self, rec_id, **kwargs):
         record = request.env['travel.request'].sudo().browse(rec_id)
-        if not record.exists():
-            return request.redirect('/my/travel-request')
+        if record.exists():
+            user = request.env.user
+            current_emp = request.env['hr.employee'].sudo().search(
+                [('user_id', '=', user.id)], limit=1)
+            if _is_direct_manager(record, current_emp):
+                record.manager_action_approve()
+                return request.redirect(
+                    f'/my/travel-request/{rec_id}?msg=Manager+Approved+Successfully')
+        return request.redirect(f'/my/travel-request/{rec_id}')
 
-        # Verify the logged-in user is the manager of that employee
-        current_employee = request.env['hr.employee'].sudo().search([
-            ('user_id', '=', request.env.user.id)
-        ], limit=1)
-
-        if (current_employee
-                and record.employee_id.parent_id
-                and record.employee_id.parent_id.id == current_employee.id
-                and record.state == 'manager_approval'):
-            # Manager identity already verified above; use sudo() to bypass
-            # portal ACL (portal users don't have the 'Role / User' group).
-            # Write directly so the correct manager employee is stamped,
-            # not the sudo superuser.
-            record.sudo().write({
-                'state': 'hr_approval',
-                'manager_approved_by': current_employee.id,
-                'manager_approved_date': odoo_fields.Datetime.now(),
-            })
-            record.sudo()._send_state_email()
-
-        return request.redirect('/my/travel-request')
-
-    @http.route('/my/travel-request/reject', type='http', auth='user', website=True, methods=['POST'])
-    def travel_request_reject(self, **post):
-        rec_id = int(post.get('rec_id', 0))
-        if not rec_id:
-            return request.redirect('/my/travel-request')
-
+    @http.route('/my/travel-request/<int:rec_id>/refuse-manager',
+                type='http', auth='user', website=True, methods=['POST'])
+    def manager_refuse_website(self, rec_id, **kwargs):
         record = request.env['travel.request'].sudo().browse(rec_id)
-        if not record.exists():
-            return request.redirect('/my/travel-request')
+        if record.exists():
+            user = request.env.user
+            current_emp = request.env['hr.employee'].sudo().search(
+                [('user_id', '=', user.id)], limit=1)
+            if _is_direct_manager(record, current_emp):
+                record.manager_action_refuse()
+                return request.redirect(f'/my/travel-request/{rec_id}?msg=Request+Refused')
+        return request.redirect(f'/my/travel-request/{rec_id}')
 
-        # Verify the logged-in user is the manager of that employee
-        current_employee = request.env['hr.employee'].sudo().search([
-            ('user_id', '=', request.env.user.id)
-        ], limit=1)
+    # ─── 5. Website HR Approval Action (Approve + Push to myBiz) ───
+    @http.route('/my/travel-request/<int:rec_id>/approve-hr',
+                type='http', auth='user', website=True, methods=['POST'])
+    def hr_approve_website(self, rec_id, **kwargs):
+        record = request.env['travel.request'].sudo().browse(rec_id)
+        user = request.env.user
+        is_hr = _is_hr_user(user)
+        if record.exists() and is_hr:
+            record.hr_action_approve()
+            return request.redirect(
+                f'/my/travel-request/{rec_id}?msg=HR+Approved+and+Pushed+to+myBiz')
+        return request.redirect(f'/my/travel-request/{rec_id}')
 
-        if (current_employee
-                and record.employee_id.parent_id
-                and record.employee_id.parent_id.id == current_employee.id
-                and record.state == 'manager_approval'):
-            # Manager identity already verified above; use sudo() to bypass
-            # portal ACL.
-            record.sudo().action_cancel()
-
-        return request.redirect('/my/travel-request')
+    @http.route('/my/travel-request/<int:rec_id>/refuse-hr',
+                type='http', auth='user', website=True, methods=['POST'])
+    def hr_refuse_website(self, rec_id, **kwargs):
+        record = request.env['travel.request'].sudo().browse(rec_id)
+        user = request.env.user
+        is_hr = _is_hr_user(user)
+        if record.exists() and is_hr:
+            record.hr_action_refuse()
+            return request.redirect(f'/my/travel-request/{rec_id}?msg=Request+Refused+by+HR')
+        return request.redirect(f'/my/travel-request/{rec_id}')

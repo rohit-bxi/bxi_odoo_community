@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_bxi_gift_donation_list" model="ir.ui.view">
+        <field name="name">bxi.gift.donation.list</field>
+        <field name="model">bxi.gift.donation</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state in ('rejected', 'cancelled')">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="beneficiary_partner_id"/>
+                <field name="donation_type"/>
+                <field name="donation_date"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount" sum="Total"/>
+                <field name="routing" optional="show"/>
+                <field name="state" widget="badge" decoration-success="state in ('approved', 'done')" decoration-info="state == 'submitted'" decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bxi_gift_donation_form" model="ir.ui.view">
+        <field name="name">bxi.gift.donation.form</field>
+        <field name="model">bxi.gift.donation</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" string="Submit" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object" class="btn-primary" invisible="not can_approve"/>
+                    <button name="action_reject" string="Reject" type="object" invisible="not can_approve"/>
+                    <button name="action_done" string="Mark as Paid" type="object" invisible="state != 'approved'" groups="bxi_gift_entertainment.group_gift_finance,bxi_gift_entertainment.group_gift_lso"/>
+                    <button name="action_cancel" string="Cancel" type="object" invisible="state not in ('draft', 'submitted', 'approved')"/>
+                    <button name="action_reset_draft" string="Reset to Draft" type="object" invisible="state not in ('rejected', 'cancelled')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <div class="alert alert-warning" role="alert" invisible="not policy_warning">
+                        <field name="policy_warning" class="d-block" style="white-space: pre-line;"/>
+                    </div>
+                    <div class="alert alert-info" role="alert" invisible="not current_approval_line_id">
+                        Waiting for: <field name="current_approval_line_id" class="d-inline" options="{'no_open': True}"/>
+                    </div>
+                    <group>
+                        <group string="Requester">
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                            <field name="department_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="zone_id" readonly="1"/>
+                        </group>
+                        <group string="Donation">
+                            <field name="beneficiary_partner_id" readonly="state != 'draft'"/>
+                            <field name="donation_type" readonly="state != 'draft'"/>
+                            <field name="donation_date" readonly="state != 'draft'"/>
+                            <label for="amount"/>
+                            <div class="o_row">
+                                <field name="amount" readonly="state != 'draft'"/>
+                                <field name="currency_id" readonly="state != 'draft'" options="{'no_create': True}" groups="base.group_multi_currency"/>
+                            </div>
+                            <field name="personal_capacity" readonly="state != 'draft'"/>
+                            <field name="routing"/>
+                            <field name="fy_total" invisible="state == 'draft'"/>
+                            <field name="edgefi_reference" invisible="state not in ('approved', 'done')"/>
+                        </group>
+                    </group>
+                    <group string="Purpose">
+                        <field name="purpose" nolabel="1" colspan="2" readonly="state != 'draft'"/>
+                    </group>
+                    <notebook>
+                        <page string="Approvals" name="approvals">
+                            <group>
+                                <field name="threshold_id" options="{'no_open': True}" groups="bxi_gift_entertainment.group_gift_lso"/>
+                                <field name="threshold_amount" invisible="not threshold_amount"/>
+                                <field name="threshold_currency_id" invisible="not threshold_amount"/>
+                                <field name="due_diligence_id" invisible="not due_diligence_id" groups="bxi_gift_entertainment.group_gift_lso,bxi_gift_entertainment.group_gift_ethics_committee,bxi_gift_entertainment.group_gift_md,bxi_gift_entertainment.group_gift_ceo,bxi_gift_entertainment.group_gift_cfo,bxi_gift_entertainment.group_gift_board"/>
+                                <field name="submitted_date"/>
+                            </group>
+                            <field name="approval_line_ids" readonly="1">
+                                <list>
+                                    <field name="sequence" column_invisible="1"/>
+                                    <field name="name"/>
+                                    <field name="user_ids" widget="many2many_tags"/>
+                                    <field name="required_votes"/>
+                                    <field name="approved_user_ids" widget="many2many_tags"/>
+                                    <field name="state" widget="badge" decoration-success="state == 'approved'" decoration-info="state == 'pending'" decoration-danger="state == 'rejected'"/>
+                                    <field name="date_done"/>
+                                    <field name="comment"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_bxi_gift_donation_search" model="ir.ui.view">
+        <field name="name">bxi.gift.donation.search</field>
+        <field name="model">bxi.gift.donation</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="beneficiary_partner_id"/>
+                <filter name="my" string="Mine" domain="[('employee_user_id', '=', uid)]"/>
+                <filter name="to_approve" string="To Approve" domain="[('can_approve', '=', True)]"/>
+                <separator/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="submitted" string="Waiting Approval" domain="[('state', '=', 'submitted')]"/>
+                <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <group>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_bxi_gift_donation_my" model="ir.actions.act_window">
+        <field name="name">My Donations</field>
+        <field name="res_model">bxi.gift.donation</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('employee_user_id', '=', uid)]</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Donations and charitable giving on behalf of BXI need approval and LSO due diligence.</p></field>
+    </record>
+    <record id="action_bxi_gift_donation" model="ir.actions.act_window">
+        <field name="name">Donations</field>
+        <field name="res_model">bxi.gift.donation</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Donations and charitable giving on behalf of BXI need approval and LSO due diligence.</p></field>
+    </record>
+</odoo>

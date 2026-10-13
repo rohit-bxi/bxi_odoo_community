@@ -16,3 +16,7 @@ access_bxi_eb_disciplinary_hr,bxi.eb.disciplinary.action.hr,model_bxi_eb_discipl
 access_bxi_eb_rating_ra,bxi.eb.performance.rating.ra,model_bxi_eb_performance_rating,group_eb_revenue_assurance,1,1,1,1
 access_bxi_eb_rating_hr,bxi.eb.performance.rating.hr,model_bxi_eb_performance_rating,hr.group_hr_user,1,1,1,1
 access_bxi_eb_generate_wizard,bxi.eb.generate.payout.wizard,model_bxi_eb_generate_payout_wizard,group_eb_revenue_assurance,1,1,1,1
+access_bxi_eb_component_a_wizard_admin,bxi.eb.component.a.wizard.admin,model_bxi_eb_component_a_wizard,group_eb_admin,1,1,1,1
+access_bxi_eb_component_a_wizard_hr,bxi.eb.component.a.wizard.hr,model_bxi_eb_component_a_wizard,hr.group_hr_user,1,1,1,1
+access_bxi_eb_component_a_wizard_line_admin,bxi.eb.component.a.wizard.line.admin,model_bxi_eb_component_a_wizard_line,group_eb_admin,1,1,1,1
+access_bxi_eb_component_a_wizard_line_hr,bxi.eb.component.a.wizard.line.hr,model_bxi_eb_component_a_wizard_line,hr.group_hr_user,1,1,1,1

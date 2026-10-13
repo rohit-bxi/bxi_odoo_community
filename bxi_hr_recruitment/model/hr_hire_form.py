@@ -134,6 +134,9 @@ class HrHire(models.Model):
     ], string="Type", default='revenue', tracking=True)
     # Basic Info
     band = fields.Char("Band")
+    department_id = fields.Many2one('hr.department', string="Department")
+    emp_skill_category = fields.Char("Skill Category")
+    emp_category = fields.Char("Category")
     company_currency_id = fields.Many2one(
         'res.currency',
         related='company_id.currency_id',
@@ -174,33 +177,17 @@ class HrHire(models.Model):
         readonly=True,
         copy=False,
     )
+
     def _generate_offer_letter_id(self):
-        BASE = "66c277d4-e4a-42fb-8a41-10488f7d59b102"
-        START_SEQUENCE = 102
+        self.ensure_one()
 
-        self.env.cr.execute("""
-            SELECT offer_letter_id
-            FROM hr_applicant
-            WHERE offer_letter_id LIKE %s
-            ORDER BY id DESC
-            LIMIT 1
-        """, (BASE + '%',))
+        if not self.offer_letter_id:
+            self.offer_letter_id = self.env['ir.sequence'].next_by_code(
+                'hr.applicant.offer.letter'
+            )
 
-        row = self.env.cr.fetchone()
-
-        if not row:
-            sequence = START_SEQUENCE
-        else:
-            last_id = row[0]
-            last_sequence = last_id[len(BASE):]
-
-            try:
-                sequence = int(last_sequence) + 1
-            except (ValueError, TypeError):
-                sequence = START_SEQUENCE
-
-        return f"{BASE}{sequence}"
-
+        return self.offer_letter_id
+    
     def create_attachment(self, name, data, res_model, res_id):
         if not data:
             return False
@@ -237,15 +224,15 @@ class HrHire(models.Model):
     # ---------------------------------------------------------
     def action_generate_offer_letter(self):
         self.ensure_one()
-        for rec in self:
-            if not rec.offer_letter_id:
-                rec.offer_letter_id = rec._generate_offer_letter_id()
+        if not self.offer_letter_id:
+            self._generate_offer_letter_id()
 
         if not self.partner_name:
             raise UserError("Please enter Full Name.")
 
-        report = self.env.ref('bxi_hr_recruitment.action_report_offer_letter')
-
+        report = self.env.ref(
+            'bxi_hr_recruitment.action_report_offer_letter'
+        )
         pdf_content, _ = report._render_qweb_pdf(
             'bxi_hr_recruitment.action_report_offer_letter',
             res_ids=[self.id]
