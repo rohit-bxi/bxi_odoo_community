@@ -169,9 +169,21 @@ class HrHire(models.Model):
     ctc_total = fields.Float(compute="_compute_salary", store=True, tracking=True,readonly=False)
 
     location_ids = fields.Many2one(
-        'hr.location',
+        'hr.work.location',
         string="Job Location"
     )
+    work_location_address = fields.Char(
+        string="Work Location Address",
+        compute="_compute_work_location_address",
+        store=False,
+    )
+    def _compute_work_location_address(self):
+        for employee in self:
+            employee.work_location_address = (
+                employee.location_ids.address
+                if employee.location_ids
+                else False
+            )
     offer_letter_id = fields.Char(
         string="Document ID",
         readonly=True,

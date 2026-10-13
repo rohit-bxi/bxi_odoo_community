@@ -44,6 +44,9 @@
                 <field name="bank_account_number" />
                 <field name="bank_document" />
             </xpath>
+            <xpath expr="//field[@name='work_location_id']" position="after">
+                <field name="work_location_address" readonly="1"/>
+            </xpath>
 
             <xpath expr="//page[@name='hr_settings']" position="after">
                 <page string="Payroll &amp; Statutory Info" name="payroll_statutory_info">
