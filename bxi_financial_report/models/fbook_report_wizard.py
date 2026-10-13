@@ -105,7 +105,10 @@ class FbookReportWizard(models.TransientModel):
                 company_name_only = ", ".join(c.name for c in companies)
                 display_company_name = ", ".join(f"{c.name} ({get_c_code(c)})" if get_c_code(c) else c.name for c in companies)
 
-        target_currency = self.env['res.currency'].browse(currency_id)
+        if currency_id:
+            target_currency = self.env['res.currency'].browse(currency_id)
+        else:
+            target_currency = company.currency_id if company else self.env.company.currency_id
 
         y2_start = int(start_financial_year)
         y1_start = y2_start - 1
@@ -1227,49 +1230,40 @@ class FbookReportWizard(models.TransientModel):
                     vendor_data_map[partner_key] = {
                         'name': partner_name,
                         'description': description,
-                        'y1_q1': 0.0,
-                        'y1_q2': 0.0,
-                        'y1_q3': 0.0,
-                        'y1_q4': 0.0,
-                        'y2_q1': 0.0,
-                        'y2_q2': 0.0,
-                        'y2_q3': 0.0,
-                        'y2_q4': 0.0,
+                        'y1_billed': 0.0,
+                        'y1_actual': 0.0,
+                        'y2_billed': 0.0,
+                        'y2_actual': 0.0,
                     }
                 elif not vendor_data_map[partner_key].get('description') and description:
                     vendor_data_map[partner_key]['description'] = description
 
                 sign = -1.0 if bill.move_type == 'in_refund' else 1.0
-                conv_y1 = sign * custom_convert(
-                    bill.amount_total, bill.currency_id, target_currency,
-                    date_val=b_date, year_key='y1', record=bill
-                )
-                conv_y2 = sign * custom_convert(
-                    bill.amount_total, bill.currency_id, target_currency,
-                    date_val=b_date, year_key='y2', record=bill
-                )
+                bill_paid_amt = max(0.0, bill.amount_total - bill.amount_residual)
 
                 if y1_start_str <= b_date_str <= y1_fy_end_str:
-                    q = get_q_num(b_date_str, y1_fy_start)
-                    if q == 1:
-                        vendor_data_map[partner_key]['y1_q1'] += conv_y1
-                    elif q == 2:
-                        vendor_data_map[partner_key]['y1_q2'] += conv_y1
-                    elif q == 3:
-                        vendor_data_map[partner_key]['y1_q3'] += conv_y1
-                    elif q == 4:
-                        vendor_data_map[partner_key]['y1_q4'] += conv_y1
+                    conv_billed_y1 = sign * custom_convert(
+                        bill.amount_total, bill.currency_id, target_currency,
+                        date_val=b_date, year_key='y1', record=bill
+                    )
+                    conv_actual_y1 = sign * custom_convert(
+                        bill_paid_amt, bill.currency_id, target_currency,
+                        date_val=b_date, year_key='y1', record=bill
+                    )
+                    vendor_data_map[partner_key]['y1_billed'] += conv_billed_y1
+                    vendor_data_map[partner_key]['y1_actual'] += conv_actual_y1
 
                 if y2_start_str <= b_date_str <= y2_fy_end_str:
-                    q = get_q_num(b_date_str, y2_cy_start)
-                    if q == 1:
-                        vendor_data_map[partner_key]['y2_q1'] += conv_y2
-                    elif q == 2:
-                        vendor_data_map[partner_key]['y2_q2'] += conv_y2
-                    elif q == 3:
-                        vendor_data_map[partner_key]['y2_q3'] += conv_y2
-                    elif q == 4:
-                        vendor_data_map[partner_key]['y2_q4'] += conv_y2
+                    conv_billed_y2 = sign * custom_convert(
+                        bill.amount_total, bill.currency_id, target_currency,
+                        date_val=b_date, year_key='y2', record=bill
+                    )
+                    conv_actual_y2 = sign * custom_convert(
+                        bill_paid_amt, bill.currency_id, target_currency,
+                        date_val=b_date, year_key='y2', record=bill
+                    )
+                    vendor_data_map[partner_key]['y2_billed'] += conv_billed_y2
+                    vendor_data_map[partner_key]['y2_actual'] += conv_actual_y2
 
         if 'hr.expense' in self.env:
             cexp_domain = [
@@ -1311,81 +1305,124 @@ class FbookReportWizard(models.TransientModel):
                     vendor_data_map[partner_key] = {
                         'name': partner_name,
                         'description': description,
-                        'y1_q1': 0.0,
-                        'y1_q2': 0.0,
-                        'y1_q3': 0.0,
-                        'y1_q4': 0.0,
-                        'y2_q1': 0.0,
-                        'y2_q2': 0.0,
-                        'y2_q3': 0.0,
-                        'y2_q4': 0.0,
+                        'y1_billed': 0.0,
+                        'y1_actual': 0.0,
+                        'y2_billed': 0.0,
+                        'y2_actual': 0.0,
                     }
                 elif not vendor_data_map[partner_key].get('description') and description:
                     vendor_data_map[partner_key]['description'] = description
 
-                conv_y1 = custom_convert(
-                    exp.total_amount_currency, exp.currency_id, target_currency,
-                    date_val=e_date, year_key='y1', record=exp
-                )
-                conv_y2 = custom_convert(
-                    exp.total_amount_currency, exp.currency_id, target_currency,
-                    date_val=e_date, year_key='y2', record=exp
-                )
-
                 if y1_start_str <= e_date_str <= y1_fy_end_str:
-                    q = get_q_num(e_date_str, y1_fy_start)
-                    if q == 1:
-                        vendor_data_map[partner_key]['y1_q1'] += conv_y1
-                    elif q == 2:
-                        vendor_data_map[partner_key]['y1_q2'] += conv_y1
-                    elif q == 3:
-                        vendor_data_map[partner_key]['y1_q3'] += conv_y1
-                    elif q == 4:
-                        vendor_data_map[partner_key]['y1_q4'] += conv_y1
+                    conv_y1 = custom_convert(
+                        exp.total_amount_currency, exp.currency_id, target_currency,
+                        date_val=e_date, year_key='y1', record=exp
+                    )
+                    vendor_data_map[partner_key]['y1_billed'] += conv_y1
+                    vendor_data_map[partner_key]['y1_actual'] += conv_y1
 
                 if y2_start_str <= e_date_str <= y2_fy_end_str:
-                    q = get_q_num(e_date_str, y2_cy_start)
-                    if q == 1:
-                        vendor_data_map[partner_key]['y2_q1'] += conv_y2
-                    elif q == 2:
-                        vendor_data_map[partner_key]['y2_q2'] += conv_y2
-                    elif q == 3:
-                        vendor_data_map[partner_key]['y2_q3'] += conv_y2
-                    elif q == 4:
-                        vendor_data_map[partner_key]['y2_q4'] += conv_y2
+                    conv_y2 = custom_convert(
+                        exp.total_amount_currency, exp.currency_id, target_currency,
+                        date_val=e_date, year_key='y2', record=exp
+                    )
+                    vendor_data_map[partner_key]['y2_billed'] += conv_y2
+                    vendor_data_map[partner_key]['y2_actual'] += conv_y2
+
+        if 'purchase.order' in self.env:
+            po_domain = [
+                ('company_id', 'in', company_ids),
+                ('state', 'in', ('purchase', 'done')),
+            ]
+            if tax_partner_ids:
+                po_domain.append(('partner_id', 'not in', list(tax_partner_ids)))
+            pos = self.env['purchase.order'].sudo().search(po_domain)
+            for po in pos:
+                partner = po.partner_id
+                if not partner:
+                    continue
+                partner_name = (
+                    partner.functional_name or
+                    (partner.commercial_partner_id.functional_name if partner.commercial_partner_id else False) or
+                    partner.name or
+                    'Unknown Vendor'
+                ).strip()
+                partner_key = partner_name.strip().lower()
+
+                billed_po_invoices = sum(inv.amount_total for inv in po.invoice_ids if inv.state != 'cancel')
+                unbilled_amt = max(0.0, po.amount_total - billed_po_invoices)
+                if unbilled_amt <= 0.01:
+                    continue
+
+                po_date = po.date_order
+                if not po_date:
+                    continue
+                po_date_str = po_date.strftime('%Y-%m-%d') if hasattr(po_date, 'strftime') else str(po_date)[:10]
+
+                in_y1 = y1_start_str <= po_date_str <= y1_fy_end_str
+                in_y2 = y2_start_str <= po_date_str <= y2_fy_end_str
+                if not (in_y1 or in_y2):
+                    continue
+
+                if (in_y1 and partner_key in vendor_data_map and vendor_data_map[partner_key]['y1_billed'] > 0.01) or \
+                   (in_y2 and partner_key in vendor_data_map and vendor_data_map[partner_key]['y2_billed'] > 0.01):
+                    continue
+
+                tags = partner.category_id.mapped('name') or (partner.commercial_partner_id.category_id.mapped('name') if partner.commercial_partner_id else [])
+                tag_str = ', '.join([t for t in tags if t and t.upper() != 'NA'])
+                if not tag_str and 'vendor_category' in partner._fields and partner.vendor_category:
+                    vcat_dict = dict(partner._fields['vendor_category'].selection or [])
+                    tag_str = vcat_dict.get(partner.vendor_category, '')
+                description = tag_str
+
+                if partner_key not in vendor_data_map:
+                    vendor_data_map[partner_key] = {
+                        'name': partner_name,
+                        'description': description,
+                        'y1_billed': 0.0,
+                        'y1_actual': 0.0,
+                        'y2_billed': 0.0,
+                        'y2_actual': 0.0,
+                    }
+                elif not vendor_data_map[partner_key].get('description') and description:
+                    vendor_data_map[partner_key]['description'] = description
+
+                if in_y1:
+                    conv_y1 = custom_convert(
+                        unbilled_amt, po.currency_id, target_currency,
+                        date_val=po_date, year_key='y1', record=po
+                    )
+                    vendor_data_map[partner_key]['y1_billed'] += conv_y1
+                if in_y2:
+                    conv_y2 = custom_convert(
+                        unbilled_amt, po.currency_id, target_currency,
+                        date_val=po_date, year_key='y2', record=po
+                    )
+                    vendor_data_map[partner_key]['y2_billed'] += conv_y2
 
         vendor_rows = []
         for v_id in sorted(vendor_data_map.keys(), key=lambda k: vendor_data_map[k]['name'].lower()):
             v_info = vendor_data_map[v_id]
-            y1_q1 = v_info['y1_q1']
-            y1_q2 = v_info['y1_q2']
-            y1_q3 = v_info['y1_q3']
-            y1_q4 = v_info['y1_q4']
-            y1_total = y1_q1 + y1_q2 + y1_q3 + y1_q4
+            y1_billed = v_info['y1_billed']
+            y1_actual = v_info['y1_actual']
+            y2_billed = v_info['y2_billed']
+            y2_actual = v_info['y2_actual']
 
-            y2_q1 = v_info['y2_q1']
-            y2_q2 = v_info['y2_q2']
-            y2_q3 = v_info['y2_q3']
-            y2_q4 = v_info['y2_q4']
-            y2_total = y2_q1 + y2_q2 + y2_q3 + y2_q4
-
-            if abs(y1_total) < 0.01 and abs(y2_total) < 0.01:
+            if abs(y1_billed) < 0.01 and abs(y1_actual) < 0.01 and abs(y2_billed) < 0.01 and abs(y2_actual) < 0.01:
                 continue
 
             vendor_rows.append({
                 'key': v_id,
                 'vendor': v_info['name'],
                 'description': v_info.get('description', ''),
-                'y1_q1': target_currency.round(y1_q1),
-                'y1_q2': target_currency.round(y1_q2),
-                'y1_q3': target_currency.round(y1_q3),
-                'y1_q4': target_currency.round(y1_q4),
-                'y1_total': target_currency.round(y1_total),
-                'y2_q1': target_currency.round(y2_q1),
-                'y2_q2': target_currency.round(y2_q2),
-                'y2_q3': target_currency.round(y2_q3),
-                'y2_q4': target_currency.round(y2_q4),
-                'y2_total': target_currency.round(y2_total),
+                'y1_billed': target_currency.round(y1_billed),
+                'y1_actual': target_currency.round(y1_actual),
+                'y1_remaining': target_currency.round(y1_billed - y1_actual),
+                'y2_billed': target_currency.round(y2_billed),
+                'y2_actual': target_currency.round(y2_actual),
+                'y2_remaining': target_currency.round(y2_billed - y2_actual),
+                'y1_total': target_currency.round(y1_billed),
+                'y2_total': target_currency.round(y2_billed),
             })
 
         # Sort vendors alphabetically by vendor name
@@ -1395,16 +1432,14 @@ class FbookReportWizard(models.TransientModel):
         )
 
         vendor_totals = {
-            'y1_q1': target_currency.round(sum(r['y1_q1'] for r in vendor_rows)),
-            'y1_q2': target_currency.round(sum(r['y1_q2'] for r in vendor_rows)),
-            'y1_q3': target_currency.round(sum(r['y1_q3'] for r in vendor_rows)),
-            'y1_q4': target_currency.round(sum(r['y1_q4'] for r in vendor_rows)),
-            'y1_total': target_currency.round(sum(r['y1_total'] for r in vendor_rows)),
-            'y2_q1': target_currency.round(sum(r['y2_q1'] for r in vendor_rows)),
-            'y2_q2': target_currency.round(sum(r['y2_q2'] for r in vendor_rows)),
-            'y2_q3': target_currency.round(sum(r['y2_q3'] for r in vendor_rows)),
-            'y2_q4': target_currency.round(sum(r['y2_q4'] for r in vendor_rows)),
-            'y2_total': target_currency.round(sum(r['y2_total'] for r in vendor_rows)),
+            'y1_billed': target_currency.round(sum(r['y1_billed'] for r in vendor_rows)),
+            'y1_actual': target_currency.round(sum(r['y1_actual'] for r in vendor_rows)),
+            'y1_remaining': target_currency.round(sum(r['y1_remaining'] for r in vendor_rows)),
+            'y2_billed': target_currency.round(sum(r['y2_billed'] for r in vendor_rows)),
+            'y2_actual': target_currency.round(sum(r['y2_actual'] for r in vendor_rows)),
+            'y2_remaining': target_currency.round(sum(r['y2_remaining'] for r in vendor_rows)),
+            'y1_total': target_currency.round(sum(r['y1_billed'] for r in vendor_rows)),
+            'y2_total': target_currency.round(sum(r['y2_billed'] for r in vendor_rows)),
         }
 
         # Assets Value Section Calculation (Category, Description, In Store, In Use, Customer Loc, Scrapped for Count, Purchase, Depr)
@@ -1963,5 +1998,496 @@ class FbookReportWizard(models.TransientModel):
             'asset_totals': asset_totals,
             'csr_rows': csr_rows,
             'csr_totals': csr_totals,
+        }
+
+    @api.model
+    def action_export_excel(self, company_ids, start_financial_year, currency_id):
+        import io
+        import base64
+        import xlsxwriter
+
+        data = self.get_report_data(company_ids, start_financial_year, currency_id)
+        output = io.BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        ws = workbook.add_worksheet('Financial Book')
+
+        # Keep grid lines visible
+        ws.hide_gridlines(False)
+
+        # Style Formats
+        f_title = workbook.add_format({'bold': True, 'font_size': 16, 'font_color': '#0F172A', 'font_name': 'Segoe UI'})
+        f_subtitle = workbook.add_format({'italic': True, 'font_size': 10, 'font_color': '#475569', 'font_name': 'Segoe UI'})
+        f_sec_title = workbook.add_format({'bold': True, 'font_size': 12, 'bg_color': '#0F172A', 'font_color': '#FFFFFF', 'border': 1, 'border_color': '#0F172A', 'font_name': 'Segoe UI', 'valign': 'vcenter'})
+
+        f_main_header = workbook.add_format({'bold': True, 'font_size': 10, 'bg_color': '#0F172A', 'font_color': '#FFFFFF', 'align': 'center', 'valign': 'vcenter', 'border': 1, 'border_color': '#1E293B', 'font_name': 'Segoe UI'})
+        f_fy_header = workbook.add_format({'bold': True, 'font_size': 10, 'bg_color': '#EA580C', 'font_color': '#FFFFFF', 'align': 'center', 'valign': 'vcenter', 'border': 1, 'border_color': '#C2410C', 'font_name': 'Segoe UI'})
+        f_cy_header = workbook.add_format({'bold': True, 'font_size': 10, 'bg_color': '#16A34A', 'font_color': '#FFFFFF', 'align': 'center', 'valign': 'vcenter', 'border': 1, 'border_color': '#15803D', 'font_name': 'Segoe UI'})
+        f_hi_header = workbook.add_format({'bold': True, 'font_size': 10, 'bg_color': '#BAE6FD', 'font_color': '#0369A1', 'align': 'center', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI'})
+
+        f_sub_left = workbook.add_format({'bold': True, 'font_size': 10, 'bg_color': '#F8FAFC', 'font_color': '#334155', 'align': 'left', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI'})
+        f_sub_center = workbook.add_format({'bold': True, 'font_size': 10, 'bg_color': '#F8FAFC', 'font_color': '#334155', 'align': 'center', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI'})
+        f_sub_right = workbook.add_format({'bold': True, 'font_size': 10, 'bg_color': '#F8FAFC', 'font_color': '#334155', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI'})
+
+        f_text = workbook.add_format({'align': 'left', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI', 'font_size': 10})
+        f_text_bold = workbook.add_format({'bold': True, 'align': 'left', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI', 'font_size': 10})
+        f_amt = workbook.add_format({'num_format': '#,##0.00', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI', 'font_size': 10})
+        f_amt_danger = workbook.add_format({'num_format': '#,##0.00', 'font_color': '#DC2626', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI', 'font_size': 10})
+        f_amt_hi = workbook.add_format({'bold': True, 'num_format': '#,##0.00', 'bg_color': '#F1F5F9', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI', 'font_size': 10})
+        f_int = workbook.add_format({'num_format': '#,##0', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI', 'font_size': 10})
+        f_pct = workbook.add_format({'num_format': '0.00"%"', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI', 'font_size': 10})
+
+        f_tot_label = workbook.add_format({'bold': True, 'bg_color': '#E2E8F0', 'font_color': '#0F172A', 'align': 'left', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI', 'font_size': 10})
+        f_tot_amt = workbook.add_format({'bold': True, 'num_format': '#,##0.00', 'bg_color': '#E2E8F0', 'font_color': '#0F172A', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI', 'font_size': 10})
+        f_tot_pct = workbook.add_format({'bold': True, 'num_format': '0.00"%"', 'bg_color': '#E2E8F0', 'font_color': '#0F172A', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI', 'font_size': 10})
+        f_tot_hi = workbook.add_format({'bold': True, 'num_format': '#,##0.00', 'bg_color': '#BAE6FD', 'font_color': '#0369A1', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI', 'font_size': 10})
+
+        f_rev_tot = workbook.add_format({'bold': True, 'num_format': '#,##0.00', 'bg_color': '#F0FDF4', 'font_color': '#166534', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI', 'font_size': 10})
+        f_exp_tot = workbook.add_format({'bold': True, 'num_format': '#,##0.00', 'bg_color': '#FEF2F2', 'font_color': '#991B1B', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI', 'font_size': 10})
+
+        f_received = workbook.add_format({'bold': True, 'font_size': 10, 'bg_color': '#F0FDF4', 'font_color': '#166534', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI'})
+        f_repaid = workbook.add_format({'bold': True, 'font_size': 10, 'bg_color': '#FEF2F2', 'font_color': '#991B1B', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI'})
+        f_tot_net = workbook.add_format({'bold': True, 'font_size': 10, 'bg_color': '#0284C7', 'font_color': '#FFFFFF', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI'})
+        f_tot_net_amt = workbook.add_format({'bold': True, 'num_format': '#,##0.00', 'bg_color': '#F0F9FF', 'font_color': '#0369A1', 'align': 'right', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI', 'font_size': 10})
+
+        f_purchase = workbook.add_format({'bold': True, 'font_size': 10, 'bg_color': '#FEF3C7', 'font_color': '#92400E', 'align': 'center', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI'})
+        f_depr = workbook.add_format({'bold': True, 'font_size': 10, 'bg_color': '#E0E7FF', 'font_color': '#3730A3', 'align': 'center', 'valign': 'vcenter', 'border': 1, 'border_color': '#CBD5E1', 'font_name': 'Segoe UI'})
+
+        # Title Block
+        row = 0
+        comp_display = data.get('company_name_only') or data.get('company_name') or 'Report'
+        ws.write(row, 0, f"FINANCIAL BOOK - {comp_display}", f_title)
+        ws.set_row(row, 26)
+        row += 1
+        ws.write(row, 0, f"Period: {data.get('year1_label', '')} & {data.get('year2_label', '')} | Currency: {data.get('currency_symbol', '')}", f_subtitle)
+        ws.set_row(row, 18)
+        row += 2
+
+        f_y1 = f_cy_header if data.get('y1_prefix') == 'CY' else f_fy_header
+        f_y2 = f_cy_header if data.get('y2_prefix') == 'CY' else f_fy_header
+
+        # 1. Three Year Summary
+        t3 = data.get('three_year_summary')
+        if t3:
+            years = t3.get('years', [])
+            max_c = len(years) + 1
+            ws.merge_range(row, 0, row, max_c, "1. LAST THREE FINANCIAL YEARS PERFORMANCE", f_sec_title)
+            ws.set_row(row, 24)
+            row += 1
+            ws.write(row, 0, "Financial Metric", f_sub_left)
+            for idx, yr in enumerate(years):
+                f_hdr = f_cy_header if yr.get('prefix') == 'CY' else f_fy_header
+                ws.write(row, 1 + idx, yr.get('label', ''), f_hdr)
+            ws.write(row, 1 + len(years), "Total (3 Years)", f_hi_header)
+            ws.set_row(row, 22)
+            row += 1
+            # Revenue
+            ws.write(row, 0, "Revenue", f_text_bold)
+            for idx, yr in enumerate(years):
+                ws.write(row, 1 + idx, yr.get('revenue', 0.0), f_amt)
+            ws.write(row, 1 + len(years), t3.get('total_revenue', 0.0), f_rev_tot)
+            ws.set_row(row, 20)
+            row += 1
+            # Expenses
+            ws.write(row, 0, "Expenses", f_text_bold)
+            for idx, yr in enumerate(years):
+                ws.write(row, 1 + idx, yr.get('expenses', 0.0), f_amt_danger)
+            ws.write(row, 1 + len(years), t3.get('total_expenses', 0.0), f_exp_tot)
+            ws.set_row(row, 20)
+            row += 1
+            # Margin
+            ws.write(row, 0, "Margin", f_text_bold)
+            for idx, yr in enumerate(years):
+                ws.write(row, 1 + idx, yr.get('margin', 0.0) / 100.0, f_pct)
+            ws.write(row, 1 + len(years), t3.get('total_margin', 0.0) / 100.0, f_pct)
+            ws.set_row(row, 20)
+            row += 1
+            # Investors
+            ws.write(row, 0, "Investors", f_text_bold)
+            for idx, yr in enumerate(years):
+                ws.write(row, 1 + idx, yr.get('investors', 0.0), f_amt)
+            ws.write(row, 1 + len(years), t3.get('total_investors', 0.0), f_tot_hi)
+            ws.set_row(row, 20)
+            row += 3
+
+        # 2. Quarterly Financial Breakdown
+        ws.merge_range(row, 0, row, 10, "2. QUARTERLY FINANCIAL BREAKDOWN", f_sec_title)
+        ws.set_row(row, 24)
+        row += 1
+        ws.write(row, 0, data.get('currency_symbol', ''), f_main_header)
+        ws.merge_range(row, 1, row, 5, data.get('year1_label', ''), f_y1)
+        ws.merge_range(row, 6, row, 10, data.get('year2_label', ''), f_y2)
+        ws.set_row(row, 22)
+        row += 1
+        ws.write(row, 0, "Metric", f_sub_left)
+        for q in range(1, 5):
+            ws.write(row, q, f"Q{q}", f_sub_center)
+        ws.write(row, 5, "Total", f_hi_header)
+        for q in range(1, 5):
+            ws.write(row, 5 + q, f"Q{q}", f_sub_center)
+        ws.write(row, 10, "Total", f_hi_header)
+        ws.set_row(row, 22)
+        row += 1
+        perf_metrics = [
+            ('Booking', 'booking', f_amt, f_amt_hi),
+            ('Billed', 'billed', f_amt, f_amt_hi),
+            ('Actual', 'actual', f_amt, f_amt_hi),
+            ('DSO Amount', 'dso_amount', f_amt, f_amt_hi),
+            ('DSO Days', 'dso_days', f_int, f_int),
+            ('Expenses', 'expenses', f_amt, f_amt_hi),
+            ('Profit', 'profit', f_amt, f_amt_hi),
+            ('GM (%)', 'margin', f_pct, f_pct),
+            ('Cash Flow', 'cash_flow', f_amt, f_amt_hi),
+            ('Calibration', 'calibration', f_amt, f_amt_hi),
+        ]
+        for label, m_key, f_val, f_tot in perf_metrics:
+            ws.write(row, 0, label, f_text_bold)
+            for q_idx, q_key in enumerate(['q1', 'q2', 'q3', 'q4']):
+                v = data['data']['y1'][q_key].get(m_key, 0.0)
+                ws.write(row, 1 + q_idx, v / 100.0 if m_key == 'margin' else v, f_val)
+            v_tot = data['data']['y1']['total'].get(m_key, 0.0)
+            ws.write(row, 5, v_tot / 100.0 if m_key == 'margin' else v_tot, f_tot)
+            for q_idx, q_key in enumerate(['q1', 'q2', 'q3', 'q4']):
+                v = data['data']['y2'][q_key].get(m_key, 0.0)
+                ws.write(row, 6 + q_idx, v / 100.0 if m_key == 'margin' else v, f_val)
+            v_tot = data['data']['y2']['total'].get(m_key, 0.0)
+            ws.write(row, 10, v_tot / 100.0 if m_key == 'margin' else v_tot, f_tot)
+            ws.set_row(row, 20)
+            row += 1
+        row += 3
+
+        # 3. Revenue
+        ws.merge_range(row, 0, row, 12, "3. REVENUE", f_sec_title)
+        ws.set_row(row, 24)
+        row += 1
+        ws.merge_range(row, 0, row, 2, data.get('currency_symbol', ''), f_main_header)
+        ws.merge_range(row, 3, row, 7, data.get('year1_label', ''), f_y1)
+        ws.merge_range(row, 8, row, 12, data.get('year2_label', ''), f_y2)
+        ws.set_row(row, 22)
+        row += 1
+        ws.write(row, 0, "Customers", f_sub_left)
+        ws.write(row, 1, "Industry", f_sub_left)
+        ws.write(row, 2, "Contract Value", f_sub_right)
+        ws.write(row, 3, "Booking", f_sub_right)
+        ws.write(row, 4, "Billed", f_sub_right)
+        ws.write(row, 5, "Actual", f_sub_right)
+        ws.write(row, 6, "Expenses", f_sub_right)
+        ws.write(row, 7, "GM(%)", f_sub_right)
+        ws.write(row, 8, "Booking", f_sub_right)
+        ws.write(row, 9, "Billed", f_sub_right)
+        ws.write(row, 10, "Actual", f_sub_right)
+        ws.write(row, 11, "Expenses", f_sub_right)
+        ws.write(row, 12, "GM(%)", f_sub_right)
+        ws.set_row(row, 22)
+        row += 1
+        for c in data.get('contracts_data', []):
+            ws.write(row, 0, c.get('customers', ''), f_text_bold if c.get('customers') == 'Others' else f_text)
+            ws.write(row, 1, c.get('industry', ''), f_text)
+            ws.write(row, 2, c.get('contract_value', 0.0), f_amt)
+            ws.write(row, 3, c.get('y1_booking', 0.0), f_amt)
+            ws.write(row, 4, c.get('y1_billed', 0.0), f_amt)
+            ws.write(row, 5, c.get('y1_actual', 0.0), f_amt)
+            ws.write(row, 6, c.get('y1_expenses', 0.0), f_amt)
+            ws.write(row, 7, c.get('y1_margin', 0.0) / 100.0, f_pct)
+            ws.write(row, 8, c.get('y2_booking', 0.0), f_amt)
+            ws.write(row, 9, c.get('y2_billed', 0.0), f_amt)
+            ws.write(row, 10, c.get('y2_actual', 0.0), f_amt)
+            ws.write(row, 11, c.get('y2_expenses', 0.0), f_amt)
+            ws.write(row, 12, c.get('y2_margin', 0.0) / 100.0, f_pct)
+            ws.set_row(row, 20)
+            row += 1
+        ws.merge_range(row, 0, row, 1, "Total", f_tot_label)
+        ws.write(row, 2, data.get('total_contract_value', 0.0), f_tot_amt)
+        ws.write(row, 3, data.get('total_y1_booking', 0.0), f_tot_amt)
+        ws.write(row, 4, data.get('total_y1_billed', 0.0), f_tot_amt)
+        ws.write(row, 5, data.get('total_y1_actual', 0.0), f_tot_amt)
+        ws.write(row, 6, data.get('total_y1_expenses', 0.0), f_tot_amt)
+        ws.write(row, 7, data.get('total_y1_margin', 0.0) / 100.0, f_tot_pct)
+        ws.write(row, 8, data.get('total_y2_booking', 0.0), f_tot_amt)
+        ws.write(row, 9, data.get('total_y2_billed', 0.0), f_tot_amt)
+        ws.write(row, 10, data.get('total_y2_actual', 0.0), f_tot_amt)
+        ws.write(row, 11, data.get('total_y2_expenses', 0.0), f_tot_amt)
+        ws.write(row, 12, data.get('total_y2_margin', 0.0) / 100.0, f_tot_pct)
+        ws.set_row(row, 22)
+        row += 3
+
+        # 4. Company Expenses
+        ws.merge_range(row, 0, row, 7, "4. COMPANY EXPENSES", f_sec_title)
+        ws.set_row(row, 24)
+        row += 1
+        ws.merge_range(row, 0, row, 1, data.get('currency_symbol', ''), f_main_header)
+        ws.merge_range(row, 2, row, 4, data.get('year1_label', ''), f_y1)
+        ws.merge_range(row, 5, row, 7, data.get('year2_label', ''), f_y2)
+        ws.set_row(row, 22)
+        row += 1
+        ws.write(row, 0, "Vendor", f_sub_left)
+        ws.write(row, 1, "Category", f_sub_left)
+        ws.write(row, 2, "Billed", f_sub_right)
+        ws.write(row, 3, "Actual", f_sub_right)
+        ws.write(row, 4, "Remaining", f_hi_header)
+        ws.write(row, 5, "Billed", f_sub_right)
+        ws.write(row, 6, "Actual", f_sub_right)
+        ws.write(row, 7, "Remaining", f_hi_header)
+        ws.set_row(row, 22)
+        row += 1
+        for v in data.get('vendor_rows', []):
+            ws.write(row, 0, v.get('vendor', ''), f_text_bold)
+            ws.write(row, 1, v.get('description', ''), f_text)
+            ws.write(row, 2, v.get('y1_billed', 0.0), f_amt)
+            ws.write(row, 3, v.get('y1_actual', 0.0), f_amt)
+            ws.write(row, 4, v.get('y1_remaining', 0.0), f_tot_hi)
+            ws.write(row, 5, v.get('y2_billed', 0.0), f_amt)
+            ws.write(row, 6, v.get('y2_actual', 0.0), f_amt)
+            ws.write(row, 7, v.get('y2_remaining', 0.0), f_tot_hi)
+            ws.set_row(row, 20)
+            row += 1
+        v_t = data.get('vendor_totals', {})
+        ws.merge_range(row, 0, row, 1, "Total", f_tot_label)
+        ws.write(row, 2, v_t.get('y1_billed', 0.0), f_tot_amt)
+        ws.write(row, 3, v_t.get('y1_actual', 0.0), f_tot_amt)
+        ws.write(row, 4, v_t.get('y1_remaining', 0.0), f_tot_hi)
+        ws.write(row, 5, v_t.get('y2_billed', 0.0), f_tot_amt)
+        ws.write(row, 6, v_t.get('y2_actual', 0.0), f_tot_amt)
+        ws.write(row, 7, v_t.get('y2_remaining', 0.0), f_tot_hi)
+        ws.set_row(row, 22)
+        row += 3
+
+        # 5. Expense
+        ws.merge_range(row, 0, row, 5, "5. EXPENSE", f_sec_title)
+        ws.set_row(row, 24)
+        row += 1
+        ws.merge_range(row, 0, row, 1, data.get('currency_symbol', ''), f_main_header)
+        ws.merge_range(row, 2, row, 3, data.get('year1_label', ''), f_y1)
+        ws.merge_range(row, 4, row, 5, data.get('year2_label', ''), f_y2)
+        ws.set_row(row, 22)
+        row += 1
+        ws.write(row, 0, "Category", f_sub_left)
+        ws.write(row, 1, "Sub Category", f_sub_left)
+        ws.write(row, 2, "Plan", f_sub_right)
+        ws.write(row, 3, "Actual", f_sub_right)
+        ws.write(row, 4, "Plan", f_sub_right)
+        ws.write(row, 5, "Actual", f_sub_right)
+        ws.set_row(row, 22)
+        row += 1
+        for e in data.get('expenses_data', []):
+            ws.write(row, 0, e.get('category', ''), f_text_bold)
+            ws.write(row, 1, e.get('sub_category', ''), f_text)
+            ws.write(row, 2, e.get('y1_booked', 0.0), f_amt)
+            ws.write(row, 3, e.get('y1_billed', 0.0), f_amt)
+            ws.write(row, 4, e.get('y2_booked', 0.0), f_amt)
+            ws.write(row, 5, e.get('y2_billed', 0.0), f_amt)
+            ws.set_row(row, 20)
+            row += 1
+        ws.merge_range(row, 0, row, 1, "Total", f_tot_label)
+        ws.write(row, 2, data.get('total_exp_y1_booked', 0.0), f_tot_amt)
+        ws.write(row, 3, data.get('total_exp_y1_billed', 0.0), f_tot_amt)
+        ws.write(row, 4, data.get('total_exp_y2_booked', 0.0), f_tot_amt)
+        ws.write(row, 5, data.get('total_exp_y2_billed', 0.0), f_tot_amt)
+        ws.set_row(row, 22)
+        row += 3
+
+        # 6. Cash Flow
+        ws.merge_range(row, 0, row, 6, "6. CASH FLOW", f_sec_title)
+        ws.set_row(row, 24)
+        row += 1
+        ws.write(row, 0, data.get('currency_symbol', ''), f_main_header)
+        ws.merge_range(row, 1, row, 3, data.get('year1_label', ''), f_y1)
+        ws.merge_range(row, 4, row, 6, data.get('year2_label', ''), f_y2)
+        ws.set_row(row, 22)
+        row += 1
+        ws.write(row, 0, "Month", f_sub_left)
+        ws.write(row, 1, "In", f_sub_right)
+        ws.write(row, 2, "Out", f_sub_right)
+        ws.write(row, 3, "Remaining", f_hi_header)
+        ws.write(row, 4, "In", f_sub_right)
+        ws.write(row, 5, "Out", f_sub_right)
+        ws.write(row, 6, "Remaining", f_hi_header)
+        ws.set_row(row, 22)
+        row += 1
+        for m in data.get('monthly_cashflow', []):
+            ws.write(row, 0, m.get('month', ''), f_text_bold)
+            ws.write(row, 1, m.get('y1_in', 0.0), f_amt)
+            ws.write(row, 2, m.get('y1_out', 0.0), f_amt)
+            ws.write(row, 3, m.get('y1_remaining', 0.0), f_tot_hi)
+            ws.write(row, 4, m.get('y2_in', 0.0), f_amt)
+            ws.write(row, 5, m.get('y2_out', 0.0), f_amt)
+            ws.write(row, 6, m.get('y2_remaining', 0.0), f_tot_hi)
+            ws.set_row(row, 20)
+            row += 1
+        ws.write(row, 0, "Total", f_tot_label)
+        ws.write(row, 1, data.get('total_cf_y1_in', 0.0), f_tot_amt)
+        ws.write(row, 2, data.get('total_cf_y1_out', 0.0), f_tot_amt)
+        ws.write(row, 3, data.get('total_cf_y1_remaining', 0.0), f_tot_hi)
+        ws.write(row, 4, data.get('total_cf_y2_in', 0.0), f_tot_amt)
+        ws.write(row, 5, data.get('total_cf_y2_out', 0.0), f_tot_amt)
+        ws.write(row, 6, data.get('total_cf_y2_remaining', 0.0), f_tot_hi)
+        ws.set_row(row, 22)
+        row += 3
+
+        # 7. Assets
+        ws.merge_range(row, 0, row, 9, "7. ASSETS", f_sec_title)
+        ws.set_row(row, 24)
+        row += 1
+        ws.merge_range(row, 0, row, 1, data.get('currency_symbol', ''), f_main_header)
+        ws.merge_range(row, 2, row, 6, "Assets Count", f_cy_header)
+        ws.merge_range(row, 7, row, 9, "Purchase / Depreciation", f_fy_header)
+        ws.set_row(row, 22)
+        row += 1
+        ws.write(row, 0, "Category", f_sub_left)
+        ws.write(row, 1, "Description", f_sub_left)
+        ws.write(row, 2, "Total", f_sub_center)
+        ws.write(row, 3, "In Store", f_sub_center)
+        ws.write(row, 4, "In Use", f_sub_center)
+        ws.write(row, 5, "Cust. Loc", f_sub_center)
+        ws.write(row, 6, "Scrapped", f_sub_center)
+        ws.write(row, 7, "Purchase Value", f_purchase)
+        ws.write(row, 8, "Depreciation Value", f_depr)
+        ws.write(row, 9, "Last Depreciated Amount", f_sub_center)
+        ws.set_row(row, 22)
+        row += 1
+        for a in data.get('asset_rows', []):
+            ws.write(row, 0, a.get('category', ''), f_text_bold)
+            ws.write(row, 1, a.get('name', ''), f_text)
+            ws.write(row, 2, a.get('count_total', 0), f_int)
+            ws.write(row, 3, a.get('count_in_store', 0), f_int)
+            ws.write(row, 4, a.get('count_in_use', 0), f_int)
+            ws.write(row, 5, a.get('count_customer', 0), f_int)
+            ws.write(row, 6, a.get('count_scrapped', 0), f_int)
+            ws.write(row, 7, a.get('purchase_total', 0.0), f_amt)
+            ws.write(row, 8, a.get('depreciation_total', 0.0), f_amt)
+            ws.write(row, 9, a.get('last_depreciated_amount', 0.0), f_amt)
+            ws.set_row(row, 20)
+            row += 1
+        a_t = data.get('asset_totals', {})
+        ws.merge_range(row, 0, row, 1, "Total", f_tot_label)
+        ws.write(row, 2, a_t.get('count_total', 0), f_int)
+        ws.write(row, 3, a_t.get('count_in_store', 0), f_int)
+        ws.write(row, 4, a_t.get('count_in_use', 0), f_int)
+        ws.write(row, 5, a_t.get('count_customer', 0), f_int)
+        ws.write(row, 6, a_t.get('count_scrapped', 0), f_int)
+        ws.write(row, 7, a_t.get('purchase_total', 0.0), f_tot_amt)
+        ws.write(row, 8, a_t.get('depreciation_total', 0.0), f_tot_amt)
+        ws.write(row, 9, a_t.get('last_depreciated_amount', 0.0), f_tot_amt)
+        ws.set_row(row, 22)
+        row += 3
+
+        # 8. Investors
+        ws.merge_range(row, 0, row, 7, "8. INVESTORS", f_sec_title)
+        ws.set_row(row, 24)
+        row += 1
+        ws.write(row, 0, data.get('currency_symbol', ''), f_main_header)
+        ws.merge_range(row, 1, row, 3, data.get('year1_label', ''), f_y1)
+        ws.merge_range(row, 4, row, 6, data.get('year2_label', ''), f_y2)
+        ws.write(row, 7, "Total Net Invested", f_tot_net)
+        ws.set_row(row, 22)
+        row += 1
+        ws.write(row, 0, "Partner / Investor", f_sub_left)
+        ws.write(row, 1, "Received", f_received)
+        ws.write(row, 2, "Repaid", f_repaid)
+        ws.write(row, 3, "Net Invested", f_sub_right)
+        ws.write(row, 4, "Received", f_received)
+        ws.write(row, 5, "Repaid", f_repaid)
+        ws.write(row, 6, "Net Invested", f_sub_right)
+        ws.write(row, 7, "Cumulative Total", f_tot_net)
+        ws.set_row(row, 22)
+        row += 1
+        for inv in data.get('investor_rows', []):
+            ws.write(row, 0, inv.get('investor', ''), f_text_bold)
+            ws.write(row, 1, inv.get('y1_received', 0.0), f_amt)
+            ws.write(row, 2, inv.get('y1_repaid', 0.0), f_amt)
+            ws.write(row, 3, inv.get('y1_net', 0.0), f_amt_hi)
+            ws.write(row, 4, inv.get('y2_received', 0.0), f_amt)
+            ws.write(row, 5, inv.get('y2_repaid', 0.0), f_amt)
+            ws.write(row, 6, inv.get('y2_net', 0.0), f_amt_hi)
+            ws.write(row, 7, inv.get('total_net', 0.0), f_tot_net_amt)
+            ws.set_row(row, 20)
+            row += 1
+        inv_t = data.get('investor_totals', {})
+        ws.write(row, 0, "Total", f_tot_label)
+        ws.write(row, 1, inv_t.get('y1_received', 0.0), f_tot_amt)
+        ws.write(row, 2, inv_t.get('y1_repaid', 0.0), f_tot_amt)
+        ws.write(row, 3, inv_t.get('y1_net', 0.0), f_tot_hi)
+        ws.write(row, 4, inv_t.get('y2_received', 0.0), f_tot_amt)
+        ws.write(row, 5, inv_t.get('y2_repaid', 0.0), f_tot_amt)
+        ws.write(row, 6, inv_t.get('y2_net', 0.0), f_tot_hi)
+        ws.write(row, 7, inv_t.get('total_net', 0.0), f_tot_hi)
+        ws.set_row(row, 22)
+        row += 3
+
+        # 9. CSR Fund
+        ws.merge_range(row, 0, row, 10, "9. CSR FUND", f_sec_title)
+        ws.set_row(row, 24)
+        row += 1
+        ws.write(row, 0, data.get('currency_symbol', ''), f_main_header)
+        ws.merge_range(row, 1, row, 5, data.get('year1_label', ''), f_y1)
+        ws.merge_range(row, 6, row, 10, data.get('year2_label', ''), f_y2)
+        ws.set_row(row, 22)
+        row += 1
+        ws.write(row, 0, "Particulars", f_sub_left)
+        for col_idx, q_lbl in enumerate(["Q1", "Q2", "Q3", "Q4"], start=1):
+            ws.write(row, col_idx, q_lbl, f_sub_center)
+        ws.write(row, 5, "Total", f_hi_header)
+        for col_idx, q_lbl in enumerate(["Q1", "Q2", "Q3", "Q4"], start=6):
+            ws.write(row, col_idx, q_lbl, f_sub_center)
+        ws.write(row, 10, "Total", f_hi_header)
+        ws.set_row(row, 22)
+        row += 1
+        csr_rows = data.get('csr_rows', [])
+        if csr_rows:
+            for c in csr_rows:
+                ws.write(row, 0, c.get('particulars', ''), f_text_bold)
+                ws.write(row, 1, c.get('y1_q1', 0.0), f_amt)
+                ws.write(row, 2, c.get('y1_q2', 0.0), f_amt)
+                ws.write(row, 3, c.get('y1_q3', 0.0), f_amt)
+                ws.write(row, 4, c.get('y1_q4', 0.0), f_amt)
+                ws.write(row, 5, c.get('y1_total', 0.0), f_tot_hi)
+                ws.write(row, 6, c.get('y2_q1', 0.0), f_amt)
+                ws.write(row, 7, c.get('y2_q2', 0.0), f_amt)
+                ws.write(row, 8, c.get('y2_q3', 0.0), f_amt)
+                ws.write(row, 9, c.get('y2_q4', 0.0), f_amt)
+                ws.write(row, 10, c.get('y2_total', 0.0), f_tot_hi)
+                ws.set_row(row, 20)
+                row += 1
+            c_t = data.get('csr_totals', {})
+            ws.write(row, 0, "Total", f_tot_label)
+            ws.write(row, 1, c_t.get('y1_q1', 0.0), f_tot_amt)
+            ws.write(row, 2, c_t.get('y1_q2', 0.0), f_tot_amt)
+            ws.write(row, 3, c_t.get('y1_q3', 0.0), f_tot_amt)
+            ws.write(row, 4, c_t.get('y1_q4', 0.0), f_tot_amt)
+            ws.write(row, 5, c_t.get('y1_total', 0.0), f_tot_hi)
+            ws.write(row, 6, c_t.get('y2_q1', 0.0), f_tot_amt)
+            ws.write(row, 7, c_t.get('y2_q2', 0.0), f_tot_amt)
+            ws.write(row, 8, c_t.get('y2_q3', 0.0), f_tot_amt)
+            ws.write(row, 9, c_t.get('y2_q4', 0.0), f_tot_amt)
+            ws.write(row, 10, c_t.get('y2_total', 0.0), f_tot_hi)
+            ws.set_row(row, 22)
+        else:
+            ws.merge_range(row, 0, row, 10, "No CSR Expense records found for the selected period.", f_text)
+            ws.set_row(row, 20)
+
+        # Set Column Widths (Professional Spacing)
+        ws.set_column(0, 0, 34)
+        ws.set_column(1, 1, 26)
+        ws.set_column(2, 2, 18)
+        ws.set_column(3, 6, 16)
+        ws.set_column(7, 9, 20)
+        ws.set_column(10, 12, 16)
+
+        workbook.close()
+        output.seek(0)
+
+        clean_comp = "".join([c for c in comp_display if c.isalnum() or c in (' ', '_', '-')]).strip()
+        file_name = f"Financial_Book_{clean_comp}_{start_financial_year}.xlsx"
+        attachment = self.env['ir.attachment'].sudo().create({
+            'name': file_name,
+            'type': 'binary',
+            'datas': base64.b64encode(output.getvalue()),
+            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        })
+
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{attachment.id}?download=true',
+            'name': file_name,
+            'target': 'self',
         }
 

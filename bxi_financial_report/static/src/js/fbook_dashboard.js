@@ -9,6 +9,7 @@ class FbookDashboard extends Component {
 
     setup() {
         this.orm = useService("orm");
+        this.action = useService("action");
 
         const ctx = this.props.action.context || {};
 
@@ -60,7 +61,39 @@ class FbookDashboard extends Component {
         this.state.report_data = result;
     }
 
-    exportToExcel() {
+    async exportToExcel() {
+        try {
+            const action = await this.orm.call(
+                "fbook.report.wizard",
+                "action_export_excel",
+                [],
+                {
+                    company_ids: this.company_ids,
+                    start_financial_year: this.start_financial_year,
+                    currency_id: this.currency_id,
+                }
+            );
+
+            if (action && action.url) {
+                const a = document.createElement("a");
+                a.href = action.url;
+                if (action.name) {
+                    a.download = action.name;
+                }
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                return;
+            } else if (action && this.action) {
+                return this.action.doAction(action);
+            }
+        } catch (err) {
+            console.error("Backend Excel export failed, falling back to client-side exporter:", err);
+            this.exportToExcelFallback();
+        }
+    }
+
+    exportToExcelFallback() {
         const container = document.querySelector(".fbook-dashboard-container");
         if (!container) return;
 
