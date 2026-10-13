@@ -15,6 +15,19 @@ class HrEmployee(models.Model):
 
     version_id = fields.Many2one('hr.version', groups="base.group_user")
     current_version_id = fields.Many2one('hr.version', groups="base.group_user")
+    work_location_address = fields.Char(
+        string="Work Location Address",
+        compute="_compute_work_location_address",
+        store=False,
+    )
+
+    def _compute_work_location_address(self):
+        for employee in self:
+            employee.work_location_address = (
+                employee.work_location_id.address
+                if employee.work_location_id
+                else False
+            )
     is_contractor = fields.Boolean(
         string="Is Contractor",
         compute="_compute_is_contractor",

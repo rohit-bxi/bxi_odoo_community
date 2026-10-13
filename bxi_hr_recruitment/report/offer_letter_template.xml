@@ -264,7 +264,10 @@
                             City
                         </td>
                         <td colspan="3" style="padding: 6px;">
-                            <t t-esc="o.location_ids.name or ''" />
+                            <t t-esc="o.location_ids.name or ''"/>
+                            <t t-if="o.work_location_address">
+                                , <t t-esc="o.work_location_address"/>
+                            </t>
                         </td>
                     </tr>
 
