@@ -76,35 +76,21 @@ class TestMybizCodes(TransactionCase):
 
     def test_code_lists_are_loaded(self):
         airport = self.env['bxi.mybiz.airport'].search([('code', '=', 'DEL')])
-        self.assertEqual((airport.city, airport.city_code), ('New Delhi', 'CTDEL'))
+        self.assertEqual(airport.city, 'New Delhi')
         # Jaipur is only in the India sheet, not in the worldwide dump.
         jaipur = self.City.search([('code', '=', 'CTJAI')])
         self.assertEqual((jaipur.name, jaipur.country_code), ('Jaipur', 'IN'))
 
     # ── Flights ──────────────────────────────────────────────────────
 
-    def test_flight_cities_come_from_airport_list(self):
+    def test_flight_city_names_come_from_airport_list(self):
         request = self._request()
         self._flight(request, 'JAI', 'DEL')
 
         leg = request._build_mybiz_payload()['services']['FLIGHT'][0]['journeyDetails'][0]
 
-        self.assertEqual((leg['from']['cityCode'], leg['from']['cityName']), ('CTJAI', 'Jaipur'))
-        self.assertEqual((leg['to']['cityCode'], leg['to']['cityName']), ('CTDEL', 'New Delhi'))
-
-    @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
-    def test_airport_without_city_code_is_not_pushed(self, mock_post):
-        self.env['bxi.mybiz.airport'].create({
-            'code': 'ZZQ', 'name': 'Test Field', 'city': 'Testpur', 'country_name': 'India'})
-        request = self._request()
-        self._flight(request, 'JAI', 'ZZQ')
-
-        request._push_to_mybiz()
-
-        mock_post.assert_not_called()
-        self.assertIn('MakeMyTrip City Code', request.mybiz_error)
-        self.assertIn('(ZZQ)', request.mybiz_error)
-        self.assertNotIn("'JAI' → 'ZZQ'", request.mybiz_error)
+        self.assertEqual(leg['from']['cityName'], 'Jaipur')
+        self.assertEqual(leg['to']['cityName'], 'New Delhi')
 
     @patch('odoo.addons.bxi_mybiz_integration.models.travel_request.requests.post')
     def test_airport_code_missing_from_list_is_not_pushed(self, mock_post):

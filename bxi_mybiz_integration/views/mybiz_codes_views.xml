@@ -9,11 +9,10 @@
         <field name="name">bxi.mybiz.airport.list</field>
         <field name="model">bxi.mybiz.airport</field>
         <field name="arch" type="xml">
-            <list string="MakeMyTrip Airports" editable="bottom">
+            <list string="MakeMyTrip Airports">
                 <field name="code"/>
                 <field name="name"/>
                 <field name="city"/>
-                <field name="city_code"/>
                 <field name="country_name"/>
                 <field name="timezone" optional="hide"/>
             </list>
