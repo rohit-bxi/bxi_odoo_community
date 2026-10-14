@@ -1,15 +1,16 @@
 <odoo>
     <record id="paperformat_offer_letter_letter_a4" model="report.paperformat">
-            <field name="name">Employee Bonus Letter A4</field>
-            <field name="default" eval="False"/>
-            <field name="format">A4</field>
-            <field name="orientation">Portrait</field>
-            <field name="margin_top">7</field>
-            <field name="margin_bottom">25</field>
-            <field name="margin_left">5</field>
-            <field name="margin_right">5</field>
-            <field name="header_spacing">5</field>
-        </record>
+        <field name="name">Employee Bonus Letter A4</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">35</field>
+        <field name="margin_bottom">30</field>
+        <field name="margin_left">5</field>
+        <field name="margin_right">5</field>
+        <field name="header_spacing">5</field>
+        <field name="header_line" eval="False"/>
+    </record>
 
     <record id="action_report_offer_letter" model="ir.actions.report">
         <field name="name">Offer Letter</field>
