@@ -21,14 +21,15 @@
                t-value="o.template_company_id or res_company"/>
 
             <!-- HEADER COLOR -->
-            <t t-set="header_bg"
-               t-value="'#E3E3E3'"/>
+            <!-- HEADER COLOR -->
+                <t t-set="header_bg" t-value="'#E3E3E3'"/>
 
                 <!-- ================= HEADER ================= -->
                 <div t-attf-style="
                     width:100%;
                     height:95px;
-                    background:#{header_bg};
+                    background-color:#{header_bg} !important;
+                    background-image:none !important;
                     -webkit-print-color-adjust:exact;
                     print-color-adjust:exact;
                     padding:0 30px;
@@ -39,26 +40,25 @@
                         width:100%;
                         height:95px;
                         border-collapse:collapse;
+                        background-color:#E3E3E3;
                     ">
                         <tr>
-
-                            <!-- LEFT LOGO -->
+                            <!-- LOGO -->
                             <td style="
-                                width:20%;
+                                width:100%;
                                 vertical-align:middle;
                                 text-align:right;
+                                background-color:#E3E3E3;
                             ">
                                 <t t-if="company.logo_web">
                                     <img t-att-src="image_data_uri(company.logo_web)"
-                                         style="height:55px; width:auto;"/>
+                                        style="height:55px;width:auto;"/>
                                 </t>
                             </td>
                         </tr>
                     </table>
-
-                </div>
-
-                <!-- ================= BODY ================= -->
+                </div> 
+               <!-- ================= BODY ================= -->
                 <div style="
                     padding:20px;
                     padding-bottom:90px;
@@ -69,16 +69,25 @@
 
                 <!-- ================= FOOTER ================= -->
                 <div class="footer" style="
+                    position:fixed;
+                    left:0;
+                    right:0;
+                    bottom:0;
                     width:100%;
-                    background:#E3E3E3;
-                    color:#222;
+                    height:70px;
+                    background-color:#E3E3E3 !important;
+                    background-image:none !important;
+                    color:#222222;
                     font-size:9px;
+                    -webkit-print-color-adjust:exact;
+                    print-color-adjust:exact;
                 ">
 
                     <table style="
                         width:100%;
                         table-layout:fixed;
                         border-collapse:collapse;
+                        background-color:#E3E3E3;
                     ">
 
                         <tr>
