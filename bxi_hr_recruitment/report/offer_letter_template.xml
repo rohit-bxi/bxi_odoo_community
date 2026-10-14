@@ -11,7 +11,7 @@
                     </t>
                 </t>
 
-                <t t-elif="o.template_company_id and o.template_company_id.id == 2">
+                <t t-elif="o.template_company_id and o.template_company_id.id == 3">
                     <t t-call="custom_template.bxi_n01_layout">
                         <t t-call="bxi_hr_recruitment._report_offer_letter" />
                     </t>
