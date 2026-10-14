@@ -1,207 +1,245 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <template id="six8_life_science_layout">
-<style>
-.footer {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    min-height: 70px;
-    z-index: 9999;
-}
 
-.page:last-child {
-    page-break-after: auto !important;
-}
-</style>
-            <!-- COMPANY -->
-            <t t-set="company"
-               t-value="o.template_company_id or res_company"/>
+        <t t-set="company"
+           t-value="o.template_company_id or res_company"/>
 
-            <!-- HEADER COLOR -->
-            <t t-set="header_bg"
-               t-value="'#0b2a6f'"/>
+        <style>
+            @media print {
+                .six8_header {
+                    position: relative;
+                    width: 100%;
+                    height: 95px;
+                    overflow: hidden;
+                    margin: 0;
+                    padding: 0;
+                }
 
-                <!-- CURVED HEADER -->
-                <div style="
-                    position:relative;
+                .six8_footer {
+                    position: relative;
+                    width: 100%;
+                    height: 85px;
+                    overflow: hidden;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                .six8_article {
+                    padding: 20px 20px 100px 20px;
+                    box-sizing: border-box;
+                }
+            }
+
+            .six8_header,
+            .six8_footer {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        </style>
+
+        <!-- ================= HEADER ================= -->
+        <div class="header six8_header"
+             style="
+                height:95px;
+                width:100%;
+                background:#ffffff;
+                overflow:hidden;
+                margin:0;
+                padding:0;
+             ">
+
+            <!-- CURVED NAVY HEADER -->
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 viewBox="0 0 1000 95"
+                 preserveAspectRatio="none"
+                 style="
+                    position:absolute;
+                    top:0;
+                    left:0;
                     width:100%;
                     height:95px;
-                    overflow:hidden;
-                    background:#ffffff;
-                    -webkit-print-color-adjust:exact;
-                    print-color-adjust:exact;
-                ">
-                    <!-- NAVY BLUE CURVE -->
-                    <svg xmlns="http://www.w3.org/2000/svg"
-                        width="100%" height="95"
-                        viewBox="0 0 1000 95"
-                        preserveAspectRatio="none"
-                        style="position:absolute;top:0;left:0;width:100%;height:95px;">
+                 ">
 
-                        <path d="M0,0 H1000 V5
-                                C760,2 420,8 0,88 Z"
-                            fill="#0b2a6f"/>
+                <path d="M0,0 H1000 V5
+                         C760,2 420,8 0,88 Z"
+                      fill="#0b2a6f"/>
 
-                        <path d="M0,0 H1000 V3
-                                C760,0 420,6 0,84 Z"
-                            fill="#14609c"/>
-                    </svg>
+                <path d="M0,0 H1000 V3
+                         C760,0 420,6 0,84 Z"
+                      fill="#14609c"/>
+            </svg>
 
-                    <!-- LOGO -->
-                    <table style="
-                        position:relative;
-                        z-index:2;
-                        width:100%;
-                        height:95px;
-                        border-collapse:collapse;
+            <!-- HEADER LOGO: RIGHT SIDE -->
+            <table style="
+                position:relative;
+                z-index:2;
+                width:100%;
+                height:95px;
+                border-collapse:collapse;
+            ">
+                <tr>
+                    <td style="width:75%;"></td>
+
+                    <td style="
+                        width:25%;
+                        text-align:right;
+                        vertical-align:middle;
+                        padding:0 30px 0 0;
                     ">
-                        <tr>
-                            <td style="
-                                width:20%;
-                                vertical-align:middle;
-                                text-align:left;
-                                padding-left:30px;
-                            ">
-                                <t t-if="company.logo_web">
-                                    <img t-att-src="image_data_uri(company.logo_web)"
-                                        style="height:60px;width:auto;"/>
-                                </t>
-                            </td>
-                            <td style="width:80%;"></td>
-                        </tr>
-                    </table>
-                </div>
+                        <t t-if="company.logo_web">
+                            <img t-att-src="image_data_uri(company.logo_web)"
+                                 style="
+                                    max-height:60px;
+                                    max-width:180px;
+                                    width:auto;
+                                "/>
+                        </t>
+                    </td>
+                </tr>
+            </table>
+        </div>
 
-                <div style="
-                    padding:20px;
-                    margin-bottom:140px;
-                    box-sizing:border-box;
-                ">
-                    <t t-out="0"/>
-                </div>
+        <!-- ================= REPORT BODY ================= -->
+        <div class="article six8_article"
+             t-att-data-oe-model="o and o._name"
+             t-att-data-oe-id="o and o.id"
+             t-att-data-oe-lang="o and o.env.context.get('lang')"
+             style="
+                padding:20px 20px 100px 20px;
+                box-sizing:border-box;
+             ">
 
-                <!-- FOOTER -->
-                <!-- CURVED FOOTER -->
-    <div class="footer"
-        style="
-            position:fixed;
-            left:0;
-            right:0;
-            bottom:0;
-            width:100%;
-            height:85px;
-            overflow:hidden;
-            z-index:9999;
-            background:#0b2a6f;
-            color:#ffffff;
-            font-size:9px;
-            -webkit-print-color-adjust:exact;
-            print-color-adjust:exact;
-        ">
+            <t t-out="0"/>
+        </div>
 
-        <!-- CURVED CYAN AND GREEN STRIPS -->
-        <svg xmlns="http://www.w3.org/2000/svg"
-            width="100%" height="85"
-            viewBox="0 0 1000 85"
-            preserveAspectRatio="none"
-            style="position:absolute;top:0;left:0;width:100%;height:85px;">
+        <!-- ================= FOOTER ================= -->
+        <div class="footer six8_footer"
+             style="
+                height:85px;
+                width:100%;
+                position:relative;
+                overflow:hidden;
+                background:#0b2a6f;
+                color:#ffffff;
+                font-size:11px;
+                margin:0;
+                padding:0;
+             ">
 
-            <path d="M0,0
-                    C250,20 620,15 1000,0
-                    L1000,15
-                    C620,30 250,35 0,15 Z"
-                fill="#159bc3"/>
+            <!-- CURVED CYAN AND GREEN STRIPS -->
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 viewBox="0 0 1000 85"
+                 preserveAspectRatio="none"
+                 style="
+                    position:absolute;
+                    top:0;
+                    left:0;
+                    width:100%;
+                    height:85px;
+                 ">
 
-            <path d="M0,15
-                    C250,35 620,30 1000,15
-                    L1000,22
-                    C620,37 250,42 0,22 Z"
-                fill="#20b59a"/>
-        </svg>
+                <path d="M0,0
+                         C250,20 620,15 1000,0
+                         L1000,15
+                         C620,30 250,35 0,15 Z"
+                      fill="#159bc3"/>
 
-        <!-- EXISTING FOOTER DETAILS -->
-        <table style="
-            position:relative;
-            z-index:2;
-            width:100%;
-            height:85px;
-            border-collapse:collapse;
-        ">
-            <tr>
-                <!-- LEFT DETAILS -->
-                <td style="
-                    width:55%;
-                    vertical-align:middle;
-                    padding:18px 15px 5px;
-                    color:#ffffff;
-                    line-height:16px;
-                    font-size:11px;
-                ">
-                    <strong>
-                        <t t-esc="company.name"/>
-                    </strong>
-                    <br/>
+                <path d="M0,15
+                         C250,35 620,30 1000,15
+                         L1000,22
+                         C620,37 250,42 0,22 Z"
+                      fill="#20b59a"/>
+            </svg>
 
-                    <t t-esc="company.street or ''"/>
+            <!-- FOOTER DETAILS -->
+            <table style="
+                position:relative;
+                z-index:2;
+                width:100%;
+                height:85px;
+                table-layout:fixed;
+                border-collapse:collapse;
+            ">
+                <tr>
+                    <!-- COMPANY ADDRESS -->
+                    <td style="
+                        width:48%;
+                        vertical-align:middle;
+                        padding:22px 0 3px 15px;
+                        color:#ffffff;
+                        line-height:14px;
+                        font-size:10px;
+                    ">
+                        <strong>
+                            <t t-esc="company.name"/>
+                        </strong>
+                        <br/>
 
-                    <t t-if="company.street2">
-                        , <t t-esc="company.street2"/>
-                    </t>
+                        <t t-esc="company.street or ''"/>
 
-                    <br/>
+                        <t t-if="company.street2">
+                            , <t t-esc="company.street2"/>
+                        </t>
 
-                    <t t-esc="company.city or ''"/>
+                        <br/>
 
-                    <t t-if="company.state_id">
-                        , <t t-esc="company.state_id.name"/>
-                    </t>
+                        <t t-esc="company.city or ''"/>
 
-                    <t t-if="company.zip">
-                        - <t t-esc="company.zip"/>
-                    </t>
+                        <t t-if="company.state_id">
+                            , <t t-esc="company.state_id.name"/>
+                        </t>
 
-                    <br/>
+                        <t t-if="company.zip">
+                            - <t t-esc="company.zip"/>
+                        </t>
 
-                    <t t-esc="company.country_id.name or ''"/>
-                </td>
+                        <t t-if="company.country_id">
+                            , <t t-esc="company.country_id.name"/>
+                        </t>
+                    </td>
 
-                <!-- RIGHT DETAILS -->
-                <td style="
-                    width:25%;
-                    text-align:right;
-                    vertical-align:middle;
-                    padding:18px 15px 5px;
-                    line-height:16px;
-                    font-size:11px;
-                    color:#ffffff;
-                ">
-                    <div>
-                        Email: <t t-esc="company.email or ''"/>
-                    </div>
+                    <!-- EMAIL AND CIN -->
+                    <td style="
+                        width:32%;
+                        text-align:right;
+                        vertical-align:middle;
+                        padding:22px 12px 3px 0;
+                        line-height:15px;
+                        font-size:10px;
+                        color:#ffffff;
+                        overflow-wrap:anywhere;
+                    ">
+                        <div>
+                            Email:
+                            <t t-esc="company.email or ''"/>
+                        </div>
 
-                    <div>
-                        CIN: <t t-esc="company.company_registry or ''"/>
-                    </div>
-                </td>
+                        <div>
+                            CIN:
+                            <t t-esc="company.company_registry or ''"/>
+                        </div>
+                    </td>
 
-                <!-- LOGO -->
-                <td style="
-                    width:20%;
-                    text-align:right;
-                    vertical-align:middle;
-                    padding:18px 15px 5px;
-                ">
-                    <t t-if="company.logo_web">
-                        <img t-att-src="image_data_uri(company.logo_web)"
-                            style="max-height:45px;width:auto;"/>
-                    </t>
-                </td>
-            </tr>
-        </table>
-    </div>
+                    <!-- FOOTER LOGO: RIGHT SIDE -->
+                    <td style="
+                        width:20%;
+                        text-align:right;
+                        vertical-align:middle;
+                        padding:22px 15px 3px 0;
+                    ">
+                        <t t-if="company.logo_web">
+                            <img t-att-src="image_data_uri(company.logo_web)"
+                                 style="
+                                    max-height:42px;
+                                    max-width:125px;
+                                    width:auto;
+                                "/>
+                        </t>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
     </template>
-
-</odoo> 
+</odoo>
