@@ -64,10 +64,10 @@
             style="padding:40px;
                     font-size:14px;
                     font-family:Arial, sans-serif;">
-            <div style="text-align: center; margin-bottom: 20px;">
+            <div style="text-align: center; padding-bottom: 25px;">
                 <h2>Experience and Relieving Letter</h2>
             </div>
-             <table style="width:100%; border-collapse:collapse;">
+            <table style="width:100%; border-collapse:collapse; margin-top:25px;">
                 <tr>
                     <td>    
                         <strong>Date of Leaving:</strong>
