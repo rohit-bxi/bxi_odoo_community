@@ -31,12 +31,12 @@
                         <t t-call="bxi_hr_employee._experience_relieving_letter_content"/>
                     </t>
                 </t>
-                <t t-elif="o.template_company_id and o.template_company_id.id == 2">
+                <t t-elif="o.template_company_id and o.template_company_id.id == 3">
                     <t t-call="custom_template.bxi_n01_layout">
                         <t t-call="bxi_hr_employee._experience_relieving_letter_content"/>
                     </t>
                 </t>
-                <t t-elif="o.template_company_id and o.template_company_id.id == 3">
+                <t t-elif="o.template_company_id and o.template_company_id.id == 10">
                     <t t-call="custom_template.bxi_custom_layout">
                         <t t-call="bxi_hr_employee._experience_relieving_letter_content"/>
                     </t>
@@ -64,12 +64,12 @@
             style="padding:40px;
                     font-size:14px;
                     font-family:Arial, sans-serif;">
-            <div style="text-align:center;">
+            <div style="text-align: center; margin-bottom: 20px;">
                 <h2>Experience and Relieving Letter</h2>
             </div>
              <table style="width:100%; border-collapse:collapse;">
                 <tr>
-                    <td>
+                    <td>    
                         <strong>Date of Leaving:</strong>
                         <span t-field="o.date_of_leaving" />
                     </td>
@@ -131,22 +131,19 @@
                 success in future endeavors.
             </p>
 
-            <div style="margin-top:55px;width:250px;">
-                <div style="margin-bottom:10px;font-size:13px;">
+            <div style="margin-top:55px; width:250px;">
+                <div style="margin-bottom:10px; font-size:13px;">
                     <strong>
                         For
                         <span t-field="o.template_company_id.name"/>
                     </strong>
                 </div>
 
-                <div style="height:55px;margin-bottom:5px;">
+                <div style="height:60px; margin-bottom:5px;">
                     <img
-                        src="/bxi_hr_employee/static/src/img/pallavi_signature.png"
-                        style="
-                            width:95px;
-                            height:auto;
-                            display:block;
-                        "
+                        t-att-src="'/bxi_hr_employee/static/src/img/pallavi_signature.png'"
+                        style="width:95px; height:auto; display:block;"
+                        alt="Authorized Signature"
                     />
                 </div>
             </div>
