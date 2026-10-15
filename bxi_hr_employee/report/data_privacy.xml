@@ -31,12 +31,12 @@
                         <t t-call="bxi_hr_employee.report_data_security_acknowledgement" />
                     </t>
                 </t>
-                <t t-elif="o.template_company_id and o.template_company_id.id == 2">
+                <t t-elif="o.template_company_id and o.template_company_id.id == 3">
                     <t t-call="custom_template.bxi_n01_layout">
                         <t t-call="bxi_hr_employee.report_data_security_acknowledgement" />
                     </t>
                 </t>
-                <t t-elif="o.template_company_id and o.template_company_id.id == 3">
+                <t t-elif="o.template_company_id and o.template_company_id.id == 10">
                     <t t-call="custom_template.bxi_custom_layout">
                         <t t-call="bxi_hr_employee.report_data_security_acknowledgement" />
                     </t>
