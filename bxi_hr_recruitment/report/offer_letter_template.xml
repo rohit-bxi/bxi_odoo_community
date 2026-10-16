@@ -742,6 +742,12 @@
                         </li>
                     </li>
                 </ul>
+            </div>
+
+
+            <!-- ===================== PAGE 9 ===================== -->
+            <div class="page"
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
                 <ul style="margin-left:25px; padding-left:20px; line-height:1.8;">
                     <p>
                         <strong>Coverage under ESI:</strong>
@@ -757,12 +763,6 @@
                         </li>
                     </p>
                 </ul>
-            </div>
-
-
-            <!-- ===================== PAGE 9 ===================== -->
-            <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
                 <p>
                     Employer&amp;contribution to Provident Fund: As per statutory requirements, an
                     employee has to contribute 12% of the basic
@@ -832,6 +832,11 @@
                 <p><strong>4. Performance and Compensation Reviews:</strong> Your performance
                     appraisal and compensation review will be governed by the Company&amp; policy being
                     in force from time to time. </p>
+                 
+            </div>
+            <!-- ===================== PAGE 10 ===================== -->
+            <div class="page"
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
                 <p><strong>5. Notice Period / Separation:</strong> Your employment with the Company
                     can also be terminated either by the Company or by you by giving the other party
                     three months advance notice. If the Company terminates the employment and
@@ -848,12 +853,7 @@
                     all documents and return all Company property. The Company will not be bound to
                     pay the dues, if any, till you have
                     completed all the separation procedur</p>
-                    
-            </div>
-            <!-- ===================== PAGE 10 ===================== -->
-            <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
-<p><strong>6. Agreements:</strong> You may be required to e-sign necessary
+                <p><strong>6. Agreements:</strong> You may be required to e-sign necessary
                     agreements with the Company or client and complete all formalities at the time
                     of joining and during the tenure of employment. You may also be required to sign
                     other Agreements with the Company, as the Company may decide from time to time,
@@ -914,8 +914,6 @@
                     requirements. These
                     are subject to change from time to time.
                 </p>
-                 <h5>10. MOBILITY</h5>
-
                 <p><strong>10. MOBILITY</strong>
                     The Company may require you to perform duties and undertake assignments in
                     any part of India
@@ -928,6 +926,10 @@
                     applicable terms and
                     conditions of such premises.
                 </p>
+            </div>            
+            <!-- ===================== PAGE 13 ===================== -->
+            <div class="page"
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
                 <p><strong>11. DEPUTATION / TRANSFER</strong>
                     The Company may depute you to any Group Company or transfer your services to
                     any Group
@@ -960,10 +962,6 @@
                     your appointment with the Company shall stand terminated/cancelled without
                     any notice.
                 </p>
-            </div>            
-            <!-- ===================== PAGE 13 ===================== -->
-            <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
                 <p style="margin-left:25px; padding-left:20px; line-height:1.8;">
                     <strong>15. DATA PROTECTION</strong>
                     a. The Employee consents to the holding and processing of personal data
@@ -1038,6 +1036,9 @@
                     the discretion
                     of the Company.
                 </p>
+            </div>
+            <div class="page"
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
                 <p>
                     <strong>17. Termination of Employment</strong>
                     <ul>The Company reserves the right to terminate employment, with immediate
@@ -1060,7 +1061,6 @@
                         civil or criminal remedies
                         available under law.</ul>
                 </p>
-
             </div>
             <!-- ===================== PAGE 14 ===================== -->
             <div class="page"
