@@ -714,7 +714,8 @@
                     (Medical Insurance, Term Life Insurance, Personal Accident Insurance).
                 </p>
                 <ul style="margin-left:25px; padding-left:20px; line-height:1.8;">
-                    <strong>Medical Insurance:</strong> <li>Enrollment in the Company&amp; Group Health
+                    <strong>Medical Insurance:</strong> 
+                    <li>Enrollment in the Company&amp; Group Health
                         Medical Insurance policy is compulsory for all employees not covered under
                         the ESI Act, 1948. 
                         <li>Coverage shall commence only upon successful
@@ -732,14 +733,6 @@
                         lead to termination of employment and
                             legal action.
                         </li>
-                        <li>Employees opting for additional coverage beyond
-                        statutory or company-provided limits shall bear the full cost
-                            of such premiums.
-                        </li>
-                        <li>The Company reserves the absolute right to
-                        amend, withdraw, or discontinue any insurance benefit at its sole
-                            discretion, subject to applicable law
-                        </li>
                     </li>
                 </ul>
             </div>
@@ -749,6 +742,14 @@
             <div class="page"
                 style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
                 <ul style="margin-left:25px; padding-left:20px; line-height:1.8;">
+                    <li>Employees opting for additional coverage beyond
+                        statutory or company-provided limits shall bear the full cost
+                            of such premiums.
+                        </li>
+                        <li>The Company reserves the absolute right to
+                        amend, withdraw, or discontinue any insurance benefit at its sole
+                            discretion, subject to applicable law
+                        </li>
                     <p>
                         <strong>Coverage under ESI:</strong>
                         <li>Employees eligible under the Employees&amp; State Insurance Act, 1948 shall
@@ -811,11 +812,14 @@
                     and are to be
                     read in conjunction with the offer letter attached.
                 </p>
-
-                <p>
+     
+            </div>
+            <!-- ===================== PAGE 10 ===================== -->
+            <div class="page"
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
+               <p>
                     <strong>GENERAL TERMS AND CONDITIONS OF EMPLOYMENT</strong>
                 </p>
-
                 <p><strong>1. Location:</strong> Your joining location will be <t
                         t-esc="o.location_ids.name" />. </p>
 
@@ -832,11 +836,6 @@
                 <p><strong>4. Performance and Compensation Reviews:</strong> Your performance
                     appraisal and compensation review will be governed by the Company&amp; policy being
                     in force from time to time. </p>
-                 
-            </div>
-            <!-- ===================== PAGE 10 ===================== -->
-            <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
                 <p><strong>5. Notice Period / Separation:</strong> Your employment with the Company
                     can also be terminated either by the Company or by you by giving the other party
                     three months advance notice. If the Company terminates the employment and
@@ -888,7 +887,14 @@
                             professional references
                             submitted during selection.
                         </li>
-                        <li>
+                        
+                    </ul>
+                </p>
+            </div>            
+            <!-- ===================== PAGE 13 ===================== -->
+            <div class="page"
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
+                <li>
                             In case the prospective employee fails to submit required documents for
                             background
                             verification, they will not be considered for hiring.
@@ -904,9 +910,7 @@
                             given by the background verification team and in line with BXI Tech
                             policies.
                         </li>
-                    </ul>
-                </p>
-                <p><strong>9. WORKING HOURS:</strong>
+                        <p><strong>9. WORKING HOURS:</strong>
                     You will be governed by the normal working hours as existing in the company.
                     You may be
                     required to work in shifts
@@ -914,7 +918,7 @@
                     requirements. These
                     are subject to change from time to time.
                 </p>
-                <p><strong>10. MOBILITY</strong>
+                <p><strong>10. MOBILITY :</strong>
                     The Company may require you to perform duties and undertake assignments in
                     any part of India
                     or abroad,
@@ -925,11 +929,7 @@
                     During deputation to client/customer premises, you shall abide by the
                     applicable terms and
                     conditions of such premises.
-                </p>
-            </div>            
-            <!-- ===================== PAGE 13 ===================== -->
-            <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
+                </p>    
                 <p><strong>11. DEPUTATION / TRANSFER</strong>
                     The Company may depute you to any Group Company or transfer your services to
                     any Group
@@ -1007,6 +1007,10 @@
                     personal data, which is no
                     longer required, will be deleted without undue delay.
                 </p>
+                
+            </div>
+            <div class="page"
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
                 <p>
                     <strong>16. Other Rules and Regulations of the Company:</strong> Your
                     appointment will be governed by the policies, rules, regulations, practices,
@@ -1036,9 +1040,6 @@
                     the discretion
                     of the Company.
                 </p>
-            </div>
-            <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
                 <p>
                     <strong>17. Termination of Employment</strong>
                     <ul>The Company reserves the right to terminate employment, with immediate
