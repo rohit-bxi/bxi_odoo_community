@@ -2,6 +2,7 @@
 import json
 import logging
 import requests
+from markupsafe import Markup
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
@@ -689,7 +690,7 @@ class TravelRequest(models.Model):
                 'mybiz_raw_response': json.dumps(resp_data, indent=2),
             })
             self.message_post(
-                body=_('✅ Successfully pushed to MakeMyTrip myBiz. Service ID: <b>%s</b>') % (
+                body=Markup(_('✅ Successfully pushed to MakeMyTrip myBiz. Service ID: <b>%s</b>')) % (
                     service_id or '—'),
                 subtype_xmlid='mail.mt_note',
             )

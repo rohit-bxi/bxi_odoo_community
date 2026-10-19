@@ -5,6 +5,7 @@ import json
 import logging
 
 import requests
+from markupsafe import Markup
 from odoo import fields, models, _
 from odoo.exceptions import UserError
 
@@ -273,14 +274,11 @@ class TravelRequest(models.Model):
                 'mybiz_raw_response': json.dumps(resp_data, indent=2),
             })
             if is_success:
-                self.message_post(
-                    body=_('✅ Successfully pushed to MakeMyTrip myBiz.<br/>%s') % (
-                        ('<a href="%s" target="_blank">View on myBiz</a>' %
-                         resp_data['travelRequestUrl'])
-                        if resp_data.get('travelRequestUrl') else ''
-                    ),
-                    subtype_xmlid='mail.mt_note',
-                )
+                body = _('✅ Successfully pushed to MakeMyTrip myBiz.')
+                if resp_data.get('travelRequestUrl'):
+                    body = Markup('%s<br/><a href="%s" target="_blank">%s</a>') % (
+                        body, resp_data['travelRequestUrl'], _('View on myBiz'))
+                self.message_post(body=body, subtype_xmlid='mail.mt_note')
                 _logger.info('myBiz push successful for %s', self.name)
             else:
                 self.message_post(
