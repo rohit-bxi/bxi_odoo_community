@@ -86,7 +86,7 @@
                                         <div class="bxi-pr-weightage"><t t-esc="line.weightage"/>%</div>
                                         <div class="bxi-pr-target"><t t-esc="getLineTarget(line)"/></div>
                                         <div class="bxi-pr-readonly-cell"><t t-esc="line.self_achievement || '-'"/></div>
-                                        <div class="bxi-pr-readonly-cell"><t t-esc="line.manager_review || '-'"/></div>
+                                        <!-- <div class="bxi-pr-readonly-cell"><t t-esc="line.manager_review || '-'"/></div> -->
                                         <div class="bxi-pr-score-cell"><span class="bxi-pr-readonly-score"><t t-esc="getScoreDisplay(line)"/></span></div>
                                     </div>
                                 </t>
@@ -103,13 +103,13 @@
                             <div class="bxi-pr-value-box"><t t-esc="state.review.successor_2 || '-'"/></div>
                         </div>
 
-                        <div class="bxi-pr-section-title">Appraisee Questions</div>
+                        <!-- <div class="bxi-pr-section-title">Appraisee Questions</div>
                         <div class="bxi-pr-question-header">
                             <div>Question</div>
                             <div>Appraisee Answer</div>
                             <div>Rating</div>
-                        </div>
-                        <div class="bxi-pr-questions-list">
+                        </div> -->
+                        <!-- <div class="bxi-pr-questions-list">
                             <t t-if="state.appraiseeQuestions.length">
                                 <t t-foreach="state.appraiseeQuestions" t-as="item" t-key="item.id">
                                     <div class="bxi-pr-question-card">
@@ -132,27 +132,27 @@
                                 </t>
                             </t>
                             <div t-else="" class="bxi-pr-empty-question">No appraisee questions configured.</div>
-                        </div>
+                        </div> -->
 
                         <!-- ========================================================= -->
             <!-- MANAGER / RM QUESTIONS                                   -->
             <!-- ========================================================= -->
 
-            <div t-if="canSeeManagerQuestions()"
+            <!-- <div t-if="canSeeManagerQuestions()"
                 class="bxi-pr-section-title">
                 Manager / RM Questions
-            </div>
+            </div> -->
 
-            <div t-if="canSeeManagerQuestions()"
+            <!-- <div t-if="canSeeManagerQuestions()"
                 class="bxi-pr-question-header">
 
                 <div>Question</div>
                 <div>Manager / RM Answer</div>
                 <div>Manager / RM Rating</div>
 
-            </div>
+            </div> -->
 
-            <div t-if="canSeeManagerQuestions()"
+            <!-- <div t-if="canSeeManagerQuestions()"
                 class="bxi-pr-questions-list">
 
                 <t t-if="state.managerQuestions.length">
@@ -161,22 +161,22 @@
                     t-as="item"
                     t-key="item.id">
 
-                        <div class="bxi-pr-question-card">
+                        <div class="bxi-pr-question-card"> -->
 
                             <!-- Question Number -->
-                            <div class="bxi-pr-question-number">
+                            <!-- <div class="bxi-pr-question-number">
                                 <t t-esc="item.sequence"/>
-                            </div>
+                            </div> -->
 
                             <!-- Question + Answer -->
-                            <div class="bxi-pr-question-content">
+                            <!-- <div class="bxi-pr-question-content">
 
                                 <div class="bxi-pr-question-text">
                                     <t t-esc="item.question"/>
-                                </div>
+                                </div> -->
 
                                 <!-- Answer -->
-                                <div class="bxi-pr-question-answer"
+                                <!-- <div class="bxi-pr-question-answer"
                                     t-if="item.response_type === 'answer' || item.response_type === 'both'">
 
                                     <t t-esc="item.answer || '-'"/>
@@ -190,10 +190,10 @@
 
                                 </div>
 
-                            </div>
+                            </div> -->
 
                             <!-- Manager Rating -->
-                            <div class="bxi-pr-question-rating"
+                            <!-- <div class="bxi-pr-question-rating"
                                 t-if="item.response_type === 'rating' || item.response_type === 'both'">
 
                                 <div class="bxi-pr-stars">
@@ -204,9 +204,9 @@
                                     <t t-esc="getManagerRatingText(item)"/>
                                 </div>
 
-                            </div>
+                            </div> -->
 
-                            <div class="bxi-pr-question-rating"
+                            <!-- <div class="bxi-pr-question-rating"
                                 t-if="item.response_type === 'answer'">
 
                                 -
@@ -224,7 +224,7 @@
                     No manager questions configured.
                 </div>
 
-                </div>
+                </div> -->
 
                         <div class="bxi-pr-section-title">Overall</div>
                         <div class="bxi-pr-overall-grid">

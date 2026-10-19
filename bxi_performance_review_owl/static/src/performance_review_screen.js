@@ -118,8 +118,8 @@ export class PerformanceReviewScreen extends Component {
                     "manager_id",
                     "manager_email",
 
-                    "second_manager_id",
-                    "second_manager_email",
+                    // "second_manager_id",
+                    // "second_manager_email",
 
                     "period_id",
                     "template_id",
@@ -212,19 +212,19 @@ export class PerformanceReviewScreen extends Component {
             // APPRAISEE QUESTIONS
             // ----------------------------------------------------
 
-            this.state.appraiseeQuestions = questions.filter(
-                (question) =>
-                    question.question_type === "appraisee"
-            );
+            // this.state.appraiseeQuestions = questions.filter(
+            //     (question) =>
+            //         question.question_type === "appraisee"
+            // );
 
             // ----------------------------------------------------
             // MANAGER QUESTIONS
             // ----------------------------------------------------
 
-            this.state.managerQuestions = questions.filter(
-                (question) =>
-                    question.question_type === "manager"
-            );
+            // this.state.managerQuestions = questions.filter(
+            //     (question) =>
+            //         question.question_type === "manager"
+            // );
 
             console.log(
                 "Performance Review Questions:",
@@ -420,7 +420,6 @@ export class PerformanceReviewScreen extends Component {
         return {
             draft: "Employee Review",
             manager_review: "Manager Review",
-            second_manager_review: "Second Level Review",
             completed: "Completed",
             cancelled: "Cancelled",
         }[this.state.review?.state] || "";
