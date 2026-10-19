@@ -2210,8 +2210,42 @@ class FbookReportWizard(models.TransientModel):
         ws.set_row(row, 22)
         row += 3
 
-        # 4. Company Expenses
-        ws.merge_range(row, 0, row, 7, "4. COMPANY EXPENSES", f_sec_title)
+        # 4. Expense
+        ws.merge_range(row, 0, row, 5, "4. EXPENSE", f_sec_title)
+        ws.set_row(row, 24)
+        row += 1
+        ws.merge_range(row, 0, row, 1, data.get('currency_symbol', ''), f_main_header)
+        ws.merge_range(row, 2, row, 3, data.get('year1_label', ''), f_y1)
+        ws.merge_range(row, 4, row, 5, data.get('year2_label', ''), f_y2)
+        ws.set_row(row, 22)
+        row += 1
+        ws.write(row, 0, "Category", f_sub_left)
+        ws.write(row, 1, "Sub Category", f_sub_left)
+        ws.write(row, 2, "Plan", f_sub_right)
+        ws.write(row, 3, "Actual", f_sub_right)
+        ws.write(row, 4, "Plan", f_sub_right)
+        ws.write(row, 5, "Actual", f_sub_right)
+        ws.set_row(row, 22)
+        row += 1
+        for e in data.get('expenses_data', []):
+            ws.write(row, 0, e.get('category', ''), f_text_bold)
+            ws.write(row, 1, e.get('sub_category', ''), f_text)
+            ws.write(row, 2, e.get('y1_booked', 0.0), f_amt)
+            ws.write(row, 3, e.get('y1_billed', 0.0), f_amt)
+            ws.write(row, 4, e.get('y2_booked', 0.0), f_amt)
+            ws.write(row, 5, e.get('y2_billed', 0.0), f_amt)
+            ws.set_row(row, 20)
+            row += 1
+        ws.merge_range(row, 0, row, 1, "Total", f_tot_label)
+        ws.write(row, 2, data.get('total_exp_y1_booked', 0.0), f_tot_amt)
+        ws.write(row, 3, data.get('total_exp_y1_billed', 0.0), f_tot_amt)
+        ws.write(row, 4, data.get('total_exp_y2_booked', 0.0), f_tot_amt)
+        ws.write(row, 5, data.get('total_exp_y2_billed', 0.0), f_tot_amt)
+        ws.set_row(row, 22)
+        row += 3
+
+        # 5. Company Expenses
+        ws.merge_range(row, 0, row, 7, "5. COMPANY EXPENSES", f_sec_title)
         ws.set_row(row, 24)
         row += 1
         ws.merge_range(row, 0, row, 1, data.get('currency_symbol', ''), f_main_header)
@@ -2248,40 +2282,6 @@ class FbookReportWizard(models.TransientModel):
         ws.write(row, 5, v_t.get('y2_billed', 0.0), f_tot_amt)
         ws.write(row, 6, v_t.get('y2_actual', 0.0), f_tot_amt)
         ws.write(row, 7, v_t.get('y2_remaining', 0.0), f_tot_hi)
-        ws.set_row(row, 22)
-        row += 3
-
-        # 5. Expense
-        ws.merge_range(row, 0, row, 5, "5. EXPENSE", f_sec_title)
-        ws.set_row(row, 24)
-        row += 1
-        ws.merge_range(row, 0, row, 1, data.get('currency_symbol', ''), f_main_header)
-        ws.merge_range(row, 2, row, 3, data.get('year1_label', ''), f_y1)
-        ws.merge_range(row, 4, row, 5, data.get('year2_label', ''), f_y2)
-        ws.set_row(row, 22)
-        row += 1
-        ws.write(row, 0, "Category", f_sub_left)
-        ws.write(row, 1, "Sub Category", f_sub_left)
-        ws.write(row, 2, "Plan", f_sub_right)
-        ws.write(row, 3, "Actual", f_sub_right)
-        ws.write(row, 4, "Plan", f_sub_right)
-        ws.write(row, 5, "Actual", f_sub_right)
-        ws.set_row(row, 22)
-        row += 1
-        for e in data.get('expenses_data', []):
-            ws.write(row, 0, e.get('category', ''), f_text_bold)
-            ws.write(row, 1, e.get('sub_category', ''), f_text)
-            ws.write(row, 2, e.get('y1_booked', 0.0), f_amt)
-            ws.write(row, 3, e.get('y1_billed', 0.0), f_amt)
-            ws.write(row, 4, e.get('y2_booked', 0.0), f_amt)
-            ws.write(row, 5, e.get('y2_billed', 0.0), f_amt)
-            ws.set_row(row, 20)
-            row += 1
-        ws.merge_range(row, 0, row, 1, "Total", f_tot_label)
-        ws.write(row, 2, data.get('total_exp_y1_booked', 0.0), f_tot_amt)
-        ws.write(row, 3, data.get('total_exp_y1_billed', 0.0), f_tot_amt)
-        ws.write(row, 4, data.get('total_exp_y2_booked', 0.0), f_tot_amt)
-        ws.write(row, 5, data.get('total_exp_y2_billed', 0.0), f_tot_amt)
         ws.set_row(row, 22)
         row += 3
 
