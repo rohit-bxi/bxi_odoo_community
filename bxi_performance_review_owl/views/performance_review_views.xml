@@ -196,7 +196,7 @@
                         <!-- ================================================= -->
                         <!-- Manager Questions -->
                         <!-- ================================================= -->
-                       <page string="Manager Questions(RM)">
+                       <!-- <page string="Manager Questions(RM)">
                             <field name="manager_question_ids"
                                 readonly="not can_edit_manager">
                                 <list>
@@ -210,7 +210,7 @@
                                         invisible="response_type == 'answer'"/>
                                 </list>
                             </field>
-                        </page>
+                        </page> -->
 
                         <!-- ================================================= -->
                         <!-- Successor -->
@@ -229,8 +229,8 @@
                             <group>
                                 <field name="appraisee_remarks" readonly="1"/>
                                 <field name="manager_remarks" readonly="not can_edit_manager"/>
-                                <field name="calibration" readonly="1"/>
-                                <field name="reviewer_remarks" readonly="1"/>
+                                <field name="calibration" />
+                                <field name="reviewer_remarks"/>
                             </group>
                         </page>
 

@@ -1,0 +1,9 @@
+<odoo>
+    <record id="seq_hr_comp_off_request" model="ir.sequence">
+        <field name="name">Comp-Off Request</field>
+        <field name="code">hr.comp.off.request</field>
+        <field name="prefix">CO/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

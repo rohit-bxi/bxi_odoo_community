@@ -140,6 +140,6 @@ class EmployeePortalExpense(http.Controller):
                         expense.sudo().write({'message_main_attachment_id': attachment.id})
 
             # 3. Transition directly to finance_approval with all data and attachments in place
-            expense.sudo().write({'state': 'finance_approval'})
+            expense.sudo().write({'state': 'hr_approval'})
 
         return request.redirect('/my/employee-expenses')
