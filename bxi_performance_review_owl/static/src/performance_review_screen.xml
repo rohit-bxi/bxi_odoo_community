@@ -86,7 +86,7 @@
                                         <div class="bxi-pr-weightage"><t t-esc="line.weightage"/>%</div>
                                         <div class="bxi-pr-target"><t t-esc="getLineTarget(line)"/></div>
                                         <div class="bxi-pr-readonly-cell"><t t-esc="line.self_achievement || '-'"/></div>
-                                        <!-- <div class="bxi-pr-readonly-cell"><t t-esc="line.manager_review || '-'"/></div> -->
+                                        <div class="bxi-pr-readonly-cell"><t t-esc="line.manager_review || '-'"/></div>
                                         <div class="bxi-pr-score-cell"><span class="bxi-pr-readonly-score"><t t-esc="getScoreDisplay(line)"/></span></div>
                                     </div>
                                 </t>
