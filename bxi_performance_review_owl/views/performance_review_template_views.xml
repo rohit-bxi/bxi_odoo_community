@@ -36,7 +36,7 @@
                                 </list>
                             </field>
                         </page>
-                        <page string="Appraisee Questions">
+                        <!-- <page string="Appraisee Questions">
                             <field name="appraisee_question_ids" context="{'default_question_type': 'appraisee'}">
                                 <list editable="bottom">
                                     <field name="sequence" widget="handle"/>
@@ -46,8 +46,8 @@
                                     <field name="active"/>
                                 </list>
                             </field>
-                        </page>
-                        <page string="Manager Questions">
+                        </page> -->
+                        <!-- <page string="Manager Questions">
                             <field name="manager_question_ids" context="{'default_question_type': 'manager'}">
                                 <list editable="bottom">
                                     <field name="sequence" widget="handle"/>
@@ -57,7 +57,7 @@
                                     <field name="active"/>
                                 </list>
                             </field>
-                        </page>
+                        </page> -->
                     </notebook>
                 </sheet>
             </form>

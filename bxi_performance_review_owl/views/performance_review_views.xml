@@ -12,11 +12,12 @@
                 <field name="name"/>
                 <field name="employee_id"/>
                 <field name="manager_id"/>
-                <field name="second_manager_id"/>
+                <!-- <field name="second_manager_id"/> -->
                 <field name="period_id"/>
                 <field name="template_id"/>
                 <field name="final_score"/>
                 <field name="state"/>
+                <field name="calibration"/>
             </list>
         </field>
     </record>
@@ -34,6 +35,7 @@
                 <field name="manager_id"/>
                 <field name="period_id"/>
                 <field name="state"/>
+                <field name="calibration"/>
 
                 <filter
                     name="my_reviews"
@@ -146,9 +148,9 @@
                     <group col="4">
                         <field name="employee_id" readonly="1"/>
                         <field name="employee_email" readonly="1"/>
-                        <field name="manager_id" />
+                        <field name="manager_id" readonly="1"/>
                         <field name="manager_email" readonly="1"/>
-                        <field name="second_manager_id" />
+                        <!-- <field name="second_manager_id" /> -->
                         <field name="period_id" readonly="1"/>
                         <field name="template_id" readonly="1"/>
                         <field name="final_score" readonly="1"/>
@@ -174,24 +176,34 @@
                                     <field name="manager_score"/>
                                 </list>
                             </field>
+                            <group string="Successor Identification">
+                                <field name="successor_1" readonly="1"/>
+                                <field name="successor_2" readonly="1"/>
+                            </group>
+                            <group string="Overall">
+                                <field name="appraisee_remarks" readonly="1"/>
+                                <field name="manager_remarks" readonly="not can_edit_manager"/>
+                                <field name="calibration" />
+                                <field name="reviewer_remarks"/>
+                            </group>
 
                         </page>
 
                         <!-- ================================================= -->
                         <!-- Appraisee Questions -->
                         <!-- ================================================= -->
-                        <page string="Appraisee Questions(Self)">
+                        <!-- <page string="Appraisee Questions(Self)">
                             <field name="appraisee_question_ids" readonly="1">
                                 <list>
                                     <field name="sequence" readonly="1"/>
                                     <field name="question" readonly="1"/>
                                     <field name="response_type" readonly="1"/>
-                                    <!-- <field name="rating_scale" readonly="1"/> -->
+                                    <field name="rating_scale" readonly="1"/>
                                     <field name="answer" invisible="response_type == 'rating'"/>
                                     <field name="appraisee_rating" widget="priority" invisible="response_type == 'answer'"/>
                                 </list>
                             </field>
-                        </page>
+                        </page> -->
 
                         <!-- ================================================= -->
                         <!-- Manager Questions -->
@@ -214,25 +226,14 @@
 
                         <!-- ================================================= -->
                         <!-- Successor -->
-                        <!-- ================================================= -->
-                        <page string="Successor">
-                            <group>
-                                <field name="successor_1" readonly="1"/>
-                                <field name="successor_2" readonly="1"/>
-                            </group>
-                        </page>
+                        <!-- ================================================= -->                      
 
                         <!-- ================================================= -->
                         <!-- Overall Remarks -->
                         <!-- ================================================= -->
-                        <page string="Overall Remarks">
-                            <group>
-                                <field name="appraisee_remarks" readonly="1"/>
-                                <field name="manager_remarks" readonly="not can_edit_manager"/>
-                                <field name="calibration" />
-                                <field name="reviewer_remarks"/>
-                            </group>
-                        </page>
+                        <!-- <page string="Overall Remarks">
+                            
+                        </page> -->
 
                     </notebook>
 
