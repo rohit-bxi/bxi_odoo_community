@@ -39,22 +39,21 @@ class HrExpense(models.Model):
             ('hr_approval', 'Hr Approval'),
             ('finance_approval', 'Finance Approval'),
         ],
-        ondelete={'hr_approval': 'set default','finance_approval': 'set default'},
-        string="Status",
-        compute=None,
-        store=True, readonly=True,
-        index=True,
-        copy=False,
-        default='draft',
-        tracking=True,
+        ondelete={'hr_approval': 'set default', 'finance_approval': 'set default'},
+        compute='_compute_state',
+        store=True,
+        readonly=False,
     )
 
-    @api.depends('account_move_id.payment_state', 'account_move_id.state', 'approval_state')
+    @api.depends('account_move_id', 'account_move_id.state', 'account_move_id.payment_state', 'approval_state', 'amount_residual')
     def _compute_state(self):
-        for expense in self:
-            if not expense.account_move_id and expense.state in ('finance_approval', 'approved', 'refused'):
-                continue
-            super(HrExpense, expense)._compute_state()
+        records_to_super = self.filtered(
+            lambda exp: exp.account_move_id or exp.state not in ('draft', 'hr_approval', 'finance_approval', 'approved', 'refused')
+        )
+        if records_to_super:
+            super(HrExpense, records_to_super)._compute_state()
+        for expense in (self - records_to_super):
+            expense.state = expense.state or expense.approval_state or 'draft'
 
     @api.model
     def _portal_expense_product_domain(self):
@@ -97,7 +96,8 @@ class HrExpense(models.Model):
             if not rec.product_id:
                 raise UserError("You cannot submit an expense without a category.")
             rec.write({
-                'state': 'hr_approval'
+                'state': 'finance_approval',
+                'approval_state': 'submitted',
             })
 
     def action_hr_approve(self):
@@ -105,7 +105,9 @@ class HrExpense(models.Model):
             if rec.state != 'hr_approval':
                 raise UserError("Expense must be in HR Approval state.")
             rec.write({
-                'state': 'finance_approval'
+                'state': 'approved',
+                'approval_state': 'approved',
+                'approval_date': fields.Datetime.now(),
             })
 
     def action_finance_approved(self):
@@ -113,12 +115,20 @@ class HrExpense(models.Model):
             if rec.state != 'finance_approval':
                 raise UserError("Expense must be in Finance Approval state.")
             rec.write({
-                'state': 'approved'
+                'state': 'hr_approval',
+                'approval_state': 'submitted',
             })
 
     def action_refuse(self):
         for rec in self:
-            rec.state = 'refused'
+            rec.write({
+                'state': 'refused',
+                'approval_state': 'refused',
+            })
+
+    def _do_reset_approval(self):
+        super()._do_reset_approval()
+        self.write({'state': 'draft'})
 
     def write(self, vals):
         old_states = {rec.id: rec.state for rec in self}
@@ -175,3 +185,27 @@ class HrExpense(models.Model):
                         rec.id,
                         e
                     )
+
+
+class AccountMove(models.Model):
+    _inherit = 'account.move'
+
+    def action_post(self):
+        res = super().action_post()
+        if self.expense_ids:
+            self.expense_ids._compute_state()
+        return res
+
+
+class HrExpensePostWizard(models.TransientModel):
+    _inherit = 'hr.expense.post.wizard'
+
+    def action_post_entry(self):
+        # Ensure company_paid_move_ids is a list to avoid list + tuple concatenation error
+        if not isinstance(self.env.context.get('company_paid_move_ids'), list):
+            self = self.with_context(company_paid_move_ids=list(self.env.context.get('company_paid_move_ids') or []))
+        res = super().action_post_entry()
+        expenses = self.env['hr.expense'].browse(self.env.context.get('active_ids', []))
+        if expenses:
+            expenses._compute_state()
+        return res
