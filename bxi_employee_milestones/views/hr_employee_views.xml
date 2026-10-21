@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_employee_form_inherit_milestones" model="ir.ui.view">
+        <field name="name">hr.employee.form.inherit.milestones</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="bxi_hr_employee.view_employee_form_inherit_employee_code"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_probation_reviews"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-check-square-o"
+                        groups="hr.group_hr_user"
+                        invisible="not probation_review_count">
+                    <field name="probation_review_count" widget="statinfo" string="Probation"/>
+                </button>
+            </xpath>
+            <xpath expr="//field[@name='probation_period']" position="after">
+                <field name="probation_end_date" groups="hr.group_hr_user"
+                       invisible="probation_period != 'yes'"/>
+                <field name="probation_confirmation_date" groups="hr.group_hr_user"
+                       invisible="not probation_confirmation_date"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
