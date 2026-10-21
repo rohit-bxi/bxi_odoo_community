@@ -1,0 +1,40 @@
+<odoo>
+    <!-- Comp-Off User Group -->
+    <record id="group_comp_off_user" model="res.groups">
+        <field name="name">Comp-Off User</field>
+    </record>
+
+    <!-- Comp-Off Manager Group -->
+    <record id="group_comp_off_manager" model="res.groups">
+        <field name="name">Comp-Off Manager</field>
+        <field name="implied_ids"
+               eval="[(4, ref('group_comp_off_user'))]"/>
+    </record>
+
+    <!-- Users can access their own requests -->
+    <record id="rule_comp_off_own_requests" model="ir.rule">
+        <field name="name">Comp-Off: Own Requests</field>
+        <field name="model_id"
+               ref="model_hr_comp_off_request"/>
+        <field name="domain_force">
+            [('employee_id.user_id', '=', user.id)]
+        </field>
+        <field name="groups"
+               eval="[(4, ref('group_comp_off_user'))]"/>
+    </record>
+
+    <!-- Managers can access all requests -->
+    <record id="rule_comp_off_manager_requests" model="ir.rule">
+        <field name="name">Comp-Off: Manager Requests</field>
+        <field name="model_id"
+               ref="model_hr_comp_off_request"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups"
+               eval="[
+                   (4, ref('group_comp_off_manager')),
+                   (4, ref('hr_holidays.group_hr_holidays_manager'))
+               ]"/>
+    </record>
+</odoo>
+
+

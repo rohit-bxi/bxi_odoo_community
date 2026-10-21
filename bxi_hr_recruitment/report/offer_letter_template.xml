@@ -11,13 +11,13 @@
                     </t>
                 </t>
 
-                <t t-elif="o.template_company_id and o.template_company_id.id == 2">
+                <t t-elif="o.template_company_id and o.template_company_id.id == 3">
                     <t t-call="custom_template.bxi_n01_layout">
                         <t t-call="bxi_hr_recruitment._report_offer_letter" />
                     </t>
                 </t>
 
-                <t t-elif="o.template_company_id and o.template_company_id.id == 3">
+                <t t-elif="o.template_company_id and o.template_company_id.id == 10">
                     <t t-call="custom_template.bxi_custom_layout">
                         <t t-call="bxi_hr_recruitment._report_offer_letter" />
                     </t>
@@ -264,7 +264,10 @@
                             City
                         </td>
                         <td colspan="3" style="padding: 6px;">
-                            <t t-esc="o.location_ids.name or ''" />
+                            <t t-esc="o.location_ids.name or ''"/>
+                            <t t-if="o.work_location_address">
+                                , <t t-esc="o.work_location_address"/>
+                            </t>
                         </td>
                     </tr>
 
@@ -643,6 +646,11 @@
                     have to submit original bills on a monthly basis or as and when you wish to get
                     this amount reimbursed. By default, Fuel and Vehicle Maintenance would be
                     treated as reimbursement. </p>
+
+            </div>
+            <!-- ===================== PAGE 5 ===================== -->
+            <div class="page"
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
                 <p style="margin-left:25px; padding-left:20px; line-height:1.8;">
                     <strong>f. Car Lease Rental Reimbursement:</strong> We have an attractive Car
                     Lease Scheme, according to which you can avail the following facilities: </p>
@@ -660,11 +668,6 @@
                     component,
                     unless lease value is finalized.
                 </p>
-
-            </div>
-            <!-- ===================== PAGE 5 ===================== -->
-            <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:12px;line-height:1.8;">
                 <p style="margin-left:25px; padding-left:20px; line-height:1.8;">
                     <strong>g. Food Wallet:</strong> Food Wallet is a voluntary benefit and is
                     applicable for payments related to food and non-alcoholic beverages only. Once
@@ -711,7 +714,8 @@
                     (Medical Insurance, Term Life Insurance, Personal Accident Insurance).
                 </p>
                 <ul style="margin-left:25px; padding-left:20px; line-height:1.8;">
-                    <strong>Medical Insurance:</strong> <li>Enrollment in the Company&amp; Group Health
+                    <strong>Medical Insurance:</strong> 
+                    <li>Enrollment in the Company&amp; Group Health
                         Medical Insurance policy is compulsory for all employees not covered under
                         the ESI Act, 1948. 
                         <li>Coverage shall commence only upon successful
@@ -729,7 +733,16 @@
                         lead to termination of employment and
                             legal action.
                         </li>
-                        <li>Employees opting for additional coverage beyond
+                    </li>
+                </ul>
+            </div>
+
+
+            <!-- ===================== PAGE 9 ===================== -->
+            <div class="page"
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
+                <ul style="margin-left:25px; padding-left:20px; line-height:1.8;">
+                    <li>Employees opting for additional coverage beyond
                         statutory or company-provided limits shall bear the full cost
                             of such premiums.
                         </li>
@@ -737,9 +750,6 @@
                         amend, withdraw, or discontinue any insurance benefit at its sole
                             discretion, subject to applicable law
                         </li>
-                    </li>
-                </ul>
-                <ul style="margin-left:25px; padding-left:20px; line-height:1.8;">
                     <p>
                         <strong>Coverage under ESI:</strong>
                         <li>Employees eligible under the Employees&amp; State Insurance Act, 1948 shall
@@ -777,13 +787,6 @@
                     pay 15 days’ Basic salary (15/26 of
                     a monthly Basic) for every completed year of service to each of his employees on
                     their exit, for any reason after</p>
-            </div>
-
-
-            <!-- ===================== PAGE 9 ===================== -->
-            <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
-
                 <p>
                     <strong>ANNEXURE III</strong>
                 </p>
@@ -809,11 +812,14 @@
                     and are to be
                     read in conjunction with the offer letter attached.
                 </p>
-
-                <p>
+     
+            </div>
+            <!-- ===================== PAGE 10 ===================== -->
+            <div class="page"
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
+               <p>
                     <strong>GENERAL TERMS AND CONDITIONS OF EMPLOYMENT</strong>
                 </p>
-
                 <p><strong>1. Location:</strong> Your joining location will be <t
                         t-esc="o.location_ids.name" />. </p>
 
@@ -846,7 +852,7 @@
                     all documents and return all Company property. The Company will not be bound to
                     pay the dues, if any, till you have
                     completed all the separation procedur</p>
-                    <p><strong>6. Agreements:</strong> You may be required to e-sign necessary
+                <p><strong>6. Agreements:</strong> You may be required to e-sign necessary
                     agreements with the Company or client and complete all formalities at the time
                     of joining and during the tenure of employment. You may also be required to sign
                     other Agreements with the Company, as the Company may decide from time to time,
@@ -862,11 +868,6 @@
                     companies, you must voluntarily declare the same when the offer is made. Direct
                     relatives include parents, spouse, brothers, sisters, and children of the
                     employee. </p>
-            </div>
-            <!-- ===================== PAGE 10 ===================== -->
-            <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
-
                 
                 <p>
                     <strong>8. Background and Reference Check:</strong>
@@ -886,7 +887,14 @@
                             professional references
                             submitted during selection.
                         </li>
-                        <li>
+                        
+                    </ul>
+                </p>
+            </div>            
+            <!-- ===================== PAGE 13 ===================== -->
+            <div class="page"
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
+                <li>
                             In case the prospective employee fails to submit required documents for
                             background
                             verification, they will not be considered for hiring.
@@ -902,11 +910,7 @@
                             given by the background verification team and in line with BXI Tech
                             policies.
                         </li>
-                    </ul>
-                </p>
-                <h5>9. WORKING HOURS</h5>
-
-                <p>
+                        <p><strong>9. WORKING HOURS:</strong>
                     You will be governed by the normal working hours as existing in the company.
                     You may be
                     required to work in shifts
@@ -914,9 +918,7 @@
                     requirements. These
                     are subject to change from time to time.
                 </p>
-                 <h5>10. MOBILITY</h5>
-
-                <p>
+                <p><strong>10. MOBILITY :</strong>
                     The Company may require you to perform duties and undertake assignments in
                     any part of India
                     or abroad,
@@ -927,9 +929,8 @@
                     During deputation to client/customer premises, you shall abide by the
                     applicable terms and
                     conditions of such premises.
-                </p>
-                <h5>11. DEPUTATION / TRANSFER</h5>
-                <p>
+                </p>    
+                <p><strong>11. DEPUTATION / TRANSFER</strong>
                     The Company may depute you to any Group Company or transfer your services to
                     any Group
                     Company.
@@ -938,15 +939,12 @@
                     Company will apply.
                     However, continuity of service will be maintained.
                 </p>
-                <h5>12. RETIREMENT</h5>
-                <p>
+                <p><strong>12. RETIREMENT</strong>
                     You will retire from service on attaining superannuation at the age of 58
                     years.
                 </p>
 
-                <h5>13. OTHER BENEFITS</h5>
-
-                <p>
+                <p><strong>13. OTHER BENEFITS</strong>
                     You shall be eligible for other benefits including leaves, perquisites, etc.
                     in accordance
                     with prevailing Company policies.
@@ -954,8 +952,7 @@
                     and you will be
                     informed accordingly.
                 </p>
-                <h5>14. CORRECTNESS OF DETAILS FURNISHED</h5>
-                <p>
+                <p><strong>14. CORRECTNESS OF DETAILS FURNISHED</strong>
                     You have been appointed on the presumption that the particulars furnished in
                     your
                     application and resume are correct.
@@ -965,14 +962,8 @@
                     your appointment with the Company shall stand terminated/cancelled without
                     any notice.
                 </p>
-            </div>            
-            <!-- ===================== PAGE 13 ===================== -->
-            <div class="page"
-                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
-
-                <h5>15. DATA PROTECTION</h5>
-
                 <p style="margin-left:25px; padding-left:20px; line-height:1.8;">
+                    <strong>15. DATA PROTECTION</strong>
                     a. The Employee consents to the holding and processing of personal data
                     provided to the
                     Employer for all purposes
@@ -1016,6 +1007,10 @@
                     personal data, which is no
                     longer required, will be deleted without undue delay.
                 </p>
+                
+            </div>
+            <div class="page"
+                style="page-break-after: always;always;padding:15px 20px;font-family:Arial, sans-serif;font-size:13px;line-height:1.8;">
                 <p>
                     <strong>16. Other Rules and Regulations of the Company:</strong> Your
                     appointment will be governed by the policies, rules, regulations, practices,
@@ -1067,7 +1062,6 @@
                         civil or criminal remedies
                         available under law.</ul>
                 </p>
-
             </div>
             <!-- ===================== PAGE 14 ===================== -->
             <div class="page"
@@ -1085,7 +1079,8 @@
                 </p>
 
                 <!-- TABLE -->
-                <table style="width:100%; border-collapse: collapse; margin-top:15px;"
+                <table style="width:100%; border-collapse: collapse; margin-top:15px;
+                    font-size:13px; margin-left:auto; margin-right:auto;"
                     border="1">
                     <thead>
                         <tr>
@@ -1216,7 +1211,8 @@
                 </p>
 
                 <!-- TABLE -->
-                <table style="width:100%; border-collapse: collapse; margin-top:15px;"
+                <table style="width:100%; border-collapse: collapse; margin-top:15px;
+                font-size:13px; margin-left:auto; margin-right:auto;"
                     border="1">
                     <thead>
                         <tr>
@@ -1357,34 +1353,32 @@
                 </p>
 
                 <!-- TABLE -->
-                <table style="width:100%; border-collapse: collapse; margin-top:10px;"
+                <table style="width:90%; border-collapse:collapse; margin-top:8px;
+                            font-size:13px; margin-left:auto; margin-right:auto;"
                     border="1">
                     <thead>
                         <tr>
-                            <th style="padding:8px; text-align:center;">S. No.</th>
-                            <th style="padding:8px; text-align:center;">Location</th>
-                            <th style="padding:8px; text-align:center;">Address</th>
+                            <th style="padding:5px; text-align:center; width:10%;">S. No.</th>
+                            <th style="padding:5px; text-align:center; width:20%;">Location</th>
+                            <th style="padding:5px; text-align:center; width:70%;">Address</th>
                         </tr>
                     </thead>
                     <tbody>
-
                         <tr>
-                            <td style="padding:8px; text-align:center;">1</td>
-                            <td style="padding:8px;">NOIDA</td>
-                            <td style="padding:8px;">
+                            <td style="padding:5px; text-align:center;">1</td>
+                            <td style="padding:5px;">NOIDA</td>
+                            <td style="padding:5px;">
                                 601/602, Tower A, Plot No 2, Cyberthum, Sector-140A,
                                 Noida Expressway, Sector 137 road, Greater Noida 201305
                             </td>
                         </tr>
-
                         <tr>
-                            <td style="padding:8px; text-align:center;">2</td>
-                            <td style="padding:8px;">UDAIPUR</td>
-                            <td style="padding:8px;">
+                            <td style="padding:5px; text-align:center;">2</td>
+                            <td style="padding:5px;">UDAIPUR</td>
+                            <td style="padding:5px;">
                                 365, road A, Ambamata Scheme, Udaipur, Rajasthan 313001
                             </td>
                         </tr>
-
                     </tbody>
                 </table>
 
