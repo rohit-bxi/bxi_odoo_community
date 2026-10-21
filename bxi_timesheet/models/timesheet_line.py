@@ -658,8 +658,9 @@ class AccountAnalyticLine(models.Model):
     def _cron_send_monthly_timesheet_compliance_email(self):
         """
         Runs on the 21st of each month.
-        Checks the previous calendar month for missing timesheets
-        and attendance. Approved leave dates are excluded.
+        Checks the current month from the 1st up to yesterday (the 20th)
+        for missing timesheets and attendance. Approved leave dates are
+        excluded.
         This cron only sends notifications; it does not create LWP.
         """
         import logging
@@ -671,10 +672,9 @@ class AccountAnalyticLine(models.Model):
 
         today = fields.Date.today()
 
-        # Audit the previous calendar month.
-        first_day_current_month = today.replace(day=1)
-        period_end = first_day_current_month - timedelta(days=1)
-        period_start = period_end.replace(day=1)
+        # Audit the current month up to yesterday; today is still in progress.
+        period_start = today.replace(day=1)
+        period_end = today - timedelta(days=1)
 
         # Prevent execution on any date other than the 21st.
         # This also protects against someone running the cron manually.
@@ -718,6 +718,18 @@ class AccountAnalyticLine(models.Model):
                 role_band = None
 
             if role_band is not None and role_band >= ROLE_BAND_THRESHOLD:
+                continue
+
+            # Dates before the employee's date of joining are not checked.
+            joining_date = (
+                "emp_date_of_joining" in employee._fields
+                and employee.emp_date_of_joining
+            )
+            employee_working_days = [
+                day for day in working_days
+                if not joining_date or day >= joining_date
+            ]
+            if not employee_working_days:
                 continue
 
             email = (
@@ -792,7 +804,7 @@ class AccountAnalyticLine(models.Model):
 
             issues = []
 
-            for work_date in working_days:
+            for work_date in employee_working_days:
                 # Approved leave means this date is not checked.
                 if work_date in approved_leave_dates:
                     continue
