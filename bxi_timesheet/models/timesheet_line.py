@@ -659,13 +659,14 @@ class AccountAnalyticLine(models.Model):
         """
         Runs on the 21st of each month.
         Checks the current month from the 1st up to yesterday (the 20th)
-        for missing timesheets and attendance. Approved leave dates are
-        excluded.
+        for missing timesheets and attendance. Dates before joining,
+        public holidays and approved leave are excluded.
         This cron only sends notifications; it does not create LWP.
         """
         import logging
         import html
         import calendar
+        import pytz
         from datetime import date, timedelta
 
         _logger = logging.getLogger(__name__)
@@ -701,6 +702,14 @@ class AccountAnalyticLine(models.Model):
         Mail = self.env["mail.mail"].sudo()
 
         employees = Employee.search([("active", "=", True)])
+
+        # Public holidays are not checked, same as on the timesheet dashboard.
+        holiday_dates = self.env[
+            "bxi.timesheet.dashboard"
+        ]._get_public_holiday_dates(
+            employees, period_start, period_end,
+            pytz.timezone("Asia/Kolkata"),
+        )
 
         period_label = period_start.strftime("%B %Y")
         emails_sent = 0
@@ -748,7 +757,8 @@ class AccountAnalyticLine(models.Model):
                 )
                 continue
 
-            # Get approved leaves overlapping the month.
+            # Get approved leaves overlapping the month. Leave still
+            # awaiting approval is checked like any other day.
             approved_leaves = Leave.search([
                 ("employee_id", "=", employee.id),
                 ("state", "=", "validate"),
@@ -767,6 +777,8 @@ class AccountAnalyticLine(models.Model):
                 while day <= last_day:
                     approved_leave_dates.add(day)
                     day += timedelta(days=1)
+
+            excluded_dates = holiday_dates[employee.id] | approved_leave_dates
 
             # Load timesheets for the employee and audited month.
             timesheets = Timesheet.search([
@@ -805,8 +817,8 @@ class AccountAnalyticLine(models.Model):
             issues = []
 
             for work_date in employee_working_days:
-                # Approved leave means this date is not checked.
-                if work_date in approved_leave_dates:
+                # Public holiday or approved leave means this date is not checked.
+                if work_date in excluded_dates:
                     continue
 
                 missing = []
