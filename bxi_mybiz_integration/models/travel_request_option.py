@@ -3,6 +3,7 @@ import logging
 import uuid
 
 import requests
+from markupsafe import Markup
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
@@ -89,7 +90,7 @@ class TravelRequestOption(models.Model):
 
         self.write({'mybiz_status': 'cancelled'})
         self.travel_request_id.message_post(
-            body=_('🔁 myBiz service <b>%s</b> (%s) was recalled: %s') % (
+            body=Markup(_('🔁 myBiz service <b>%s</b> (%s) was recalled: %s')) % (
                 self.mybiz_ref, self.option_type, resp_data.get(
                     'message') or 'Operation executed successfully.'
             ),
