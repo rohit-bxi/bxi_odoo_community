@@ -1094,9 +1094,75 @@ class HrEmployeeLeave(models.Model):
                         'total': total_sick_days,
                     }
                 )
+            
+    def _check_sick_leave_monthly_duplicate(self, employee_id, leave_type_id, request_date_from):
+        """Prevent more than one original Sick Leave request per employee per month."""
+
+        if not employee_id or not leave_type_id or not request_date_from:
+            return
+
+        leave_type = self.env["hr.leave.type"].browse(leave_type_id)
+
+        code = (
+            getattr(leave_type, "code", False)
+            or getattr(leave_type, "leave_code", False)
+            or getattr(leave_type, "time_off_code", False)
+            or ""
+        ).strip().upper()
+
+        if code != "SICK":
+            return
+
+        start_date = fields.Date.to_date(request_date_from)
+        month_start = start_date.replace(day=1)
+
+        if start_date.month == 12:
+            next_month = start_date.replace(
+                year=start_date.year + 1,
+                month=1,
+                day=1,
+            )
+        else:
+            next_month = start_date.replace(
+                month=start_date.month + 1,
+                day=1,
+            )
+
+        existing_leave = self.env["hr.leave"].search([
+            ("employee_id", "=", employee_id),
+            ("is_sick_leave_origin", "=", True),
+            ("request_date_from", ">=", month_start),
+            ("request_date_from", "<", next_month),
+            ("state", "not in", ["cancel", "refuse"]),
+        ], limit=1)
+
+        if existing_leave:
+            raise ValidationError(_(
+                "Sick Leave Already Exists!\n\n"
+                "Only one Sick Leave request is allowed per employee "
+                "per calendar month.\n"
+                "An existing request has already used this month's "
+                "Sick Leave eligibility."
+            ))
 
     @api.model_create_multi
     def create(self, vals_list):
+        # Check before creating any new Sick Leave request.
+        if not self.env.context.get("skip_sick_leave_policy"):
+            for vals in vals_list:
+                employee_id = vals.get("employee_id")
+                leave_type_id = vals.get("holiday_status_id")
+                request_date_from = (
+                    vals.get("request_date_from")
+                    or vals.get("date_from")
+                )
+
+                self._check_sick_leave_monthly_duplicate(
+                    employee_id,
+                    leave_type_id,
+                    request_date_from,
+                )
+
         leaves = super().create(vals_list)
 
         if not self.env.context.get("skip_sick_leave_policy"):
@@ -1104,11 +1170,6 @@ class HrEmployeeLeave(models.Model):
 
         leaves._validate_compensation_date()
 
-        # hr.leave has no 'draft' state in this version: a new leave is
-        # created directly with state='confirm' (submitted), so the
-        # submission notification must be sent right here rather than
-        # waiting on action_confirm()/write(), which are never invoked
-        # for a plain "New > Save" submission.
         if not self.env.context.get("skip_leave_submission_email"):
             for leave in leaves:
                 if leave.state not in ("draft", "cancel", "refuse"):
