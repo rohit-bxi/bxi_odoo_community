@@ -10,7 +10,14 @@
     <menuitem id="menu_contract"
               name="Contracts"
               parent="menu_contract_root"
-              action="action_contract"/>
+              action="action_contract"
+              sequence="10"/>
+
+    <menuitem id="menu_project_allocation"
+              name="Project Allocations"
+              parent="menu_contract_root"
+              action="action_project_allocation"
+              sequence="20"/>
 
     <!-- CONFIGURATION MENU -->
     <menuitem id="menu_contract_config"
