@@ -64,13 +64,10 @@
                 <p class="offer-meta" style="margin-top: 20px;">
                     <strong>Offer Release Date:</strong>
                     <t t-esc="datetime.datetime.now().strftime('%b %d, %Y')" />
-                </p>
-                <p>
-                <!-- RIGHT: Document ID -->
-                <td style="text-align: right; vertical-align: top;font-size: 12px;">
-                    <strong>Document ID - </strong>
-                    <t t-esc="o.offer_letter_id" />
-                </td>
+                    <td style="text-align: right; vertical-align: top;font-size: 12px;">
+                        <strong>Document ID - </strong>
+                        <t t-esc="o.offer_letter_id" />
+                    </td>
                 </p>
 
                 <!-- Candidate Details -->
