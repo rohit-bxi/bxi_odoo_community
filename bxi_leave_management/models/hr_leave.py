@@ -15,7 +15,12 @@ class HrEmployeeLeave(models.Model):
         default=False,
         copy=False
     )
-
+    is_sick_leave_origin = fields.Boolean(
+        string="Original Sick Leave Request",
+        default=False,
+        copy=False,
+        index=True,
+    )
 
     def _check_and_send_leave_notification(self):
         for rec in self:
@@ -727,6 +732,13 @@ class HrEmployeeLeave(models.Model):
             if not leave.request_date_from or not leave.request_date_to:
                 continue
 
+            if not leave.is_sick_leave_origin:
+                leave.with_context(
+                    skip_sick_leave_policy=True
+                ).write({
+                    'is_sick_leave_origin': True,
+                })
+
             self._validate_sick_leave_monthly_limit(leave)
 
             req_days = float(leave.number_of_days or 0.0)
@@ -902,6 +914,7 @@ class HrEmployeeLeave(models.Model):
                 'request_date_to': lwp_end_date,
                 'number_of_days': lwp_days,
                 'company_id': leave.company_id.id,
+                'is_sick_leave_origin': True,
             }
 
             # ---------------------------------------------------------
@@ -1145,8 +1158,6 @@ class HrEmployeeLeave(models.Model):
     
     @api.constrains('employee_id','holiday_status_id','request_date_from',)
     def _check_one_sick_leave_record_per_month(self):
-        """Allow only one Sick Leave record per employee per calendar month."""
-
         for leave in self:
             if not leave.employee_id or not leave.request_date_from:
                 continue
@@ -1179,7 +1190,7 @@ class HrEmployeeLeave(models.Model):
             existing_leave = self.env['hr.leave'].search([
                 ('employee_id', '=', leave.employee_id.id),
                 ('id', '!=', leave.id),
-                ('holiday_status_id.code', '=', 'SICK'),
+                ('is_sick_leave_origin', '=', True),
                 ('request_date_from', '>=', month_start),
                 ('request_date_from', '<', next_month),
                 ('state', 'not in', ['cancel', 'refuse']),
@@ -1188,7 +1199,7 @@ class HrEmployeeLeave(models.Model):
             if existing_leave:
                 raise ValidationError(_(
                     "Sick Leave Already Exists\n\n"
-                    "You can create only one Sick Leave record per month. "
-                    "You already have a Sick Leave record for this month. "
-                    "Please update your existing request instead."
+                    "Only one Sick Leave request is allowed per employee "
+                    "per calendar month. Your existing request has already "
+                    "used this month's Sick Leave eligibility."
                 ))
