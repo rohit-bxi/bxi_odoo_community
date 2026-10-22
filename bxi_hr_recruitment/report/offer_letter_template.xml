@@ -70,14 +70,14 @@
                 <table style="width: 100%;">
                     <tr>
                         <!-- LEFT: Candidate Details -->
-                        <td style="text-align: left; vertical-align: top;">
+                        <td style="text-align: left; vertical-align: top;font-size: 12px;">
                             <t t-esc="o.partner_name" />
                             <br />
                             <t t-esc="o.full_address" />
                         </td>
 
                         <!-- RIGHT: Document ID -->
-                        <td style="text-align: right; vertical-align: top;">
+                        <td style="text-align: right; vertical-align: top;font-size: 12px;">
                             <strong>Document ID - </strong>
                             <t t-esc="o.offer_letter_id" />
                         </td>
