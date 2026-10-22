@@ -500,6 +500,11 @@
                                         </option>
                                     </t>
                                 </select>
+                                <t t-if="!state.projects || state.projects.length === 0">
+                                    <div class="text-muted small mt-1 font-11">
+                                        <i class="fa fa-info-circle me-1"/>No allocated projects found for this employee.
+                                    </div>
+                                </t>
                                 <t t-if="newRowProjectError">
                                     <div class="text-danger small mt-1 font-11 fw-bold">
                                         <i class="fa fa-exclamation-circle me-1"/>

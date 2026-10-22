@@ -5,3 +5,7 @@ access_contract_stage_user,contract.stage.user,model_project_contract_stage,grou
 access_contract_stage,contract.stage.manager,model_project_contract_stage,group_contract_manager,1,1,1,1
 access_contract_service_line_user,contract.service.line.user,model_project_contract_service_line,group_contract_user,1,0,0,0
 access_contract_service_line,contract.service.line.manager,model_project_contract_service_line,group_contract_manager,1,1,1,1
+access_project_resource_allocation,project.resource.allocation,model_project_resource_allocation,base.group_user,1,1,1,1
+access_project_allocation_user,project.allocation.user,model_project_allocation,group_contract_user,1,1,1,1
+access_project_allocation_manager,project.allocation.manager,model_project_allocation,group_contract_manager,1,1,1,1
+access_project_allocation_internal,project.allocation.internal,model_project_allocation,base.group_user,1,1,1,1

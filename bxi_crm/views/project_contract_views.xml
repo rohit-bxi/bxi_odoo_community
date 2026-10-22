@@ -13,4 +13,16 @@
         </field>
     </record>
 
+    <!-- Project Form: restrict partner_id dropdown to customer_type = 'customer' or 'customer_and_vendor' -->
+    <record id="view_project_form_customer_type_domain" model="ir.ui.view">
+        <field name="name">project.project.form.customer.type.domain</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project_contract_management.edit_project_inherit_contract"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="attributes">
+                <attribute name="domain">[('customer_type', 'in', ['customer', 'customer_and_vendor'])]</attribute>
+            </field>
+        </field>
+    </record>
+
 </odoo>
