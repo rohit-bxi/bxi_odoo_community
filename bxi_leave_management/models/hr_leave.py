@@ -1142,3 +1142,53 @@ class HrEmployeeLeave(models.Model):
                     leave._check_and_send_leave_notification()
 
         return result
+    
+    @api.constrains('employee_id','holiday_status_id','request_date_from',)
+    def _check_one_sick_leave_record_per_month(self):
+        """Allow only one Sick Leave record per employee per calendar month."""
+
+        for leave in self:
+            if not leave.employee_id or not leave.request_date_from:
+                continue
+
+            code = (
+                getattr(leave.holiday_status_id, 'code', False)
+                or getattr(leave.holiday_status_id, 'leave_code', False)
+                or getattr(leave.holiday_status_id, 'time_off_code', False)
+                or ''
+            ).strip().upper()
+
+            if code != 'SICK':
+                continue
+
+            start_date = leave.request_date_from
+            month_start = start_date.replace(day=1)
+
+            if start_date.month == 12:
+                next_month = start_date.replace(
+                    year=start_date.year + 1,
+                    month=1,
+                    day=1,
+                )
+            else:
+                next_month = start_date.replace(
+                    month=start_date.month + 1,
+                    day=1,
+                )
+
+            existing_leave = self.env['hr.leave'].search([
+                ('employee_id', '=', leave.employee_id.id),
+                ('id', '!=', leave.id),
+                ('holiday_status_id.code', '=', 'SICK'),
+                ('request_date_from', '>=', month_start),
+                ('request_date_from', '<', next_month),
+                ('state', 'not in', ['cancel', 'refuse']),
+            ], limit=1)
+
+            if existing_leave:
+                raise ValidationError(_(
+                    "Sick Leave Already Exists\n\n"
+                    "You can create only one Sick Leave record per month. "
+                    "You already have a Sick Leave record for this month. "
+                    "Please update your existing request instead."
+                ))
