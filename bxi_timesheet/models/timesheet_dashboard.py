@@ -110,25 +110,26 @@ class BxiTimesheetDashboard(models.AbstractModel):
         end_date = start_date + timedelta(days=6)
         is_past_week = start_date < current_week_start
 
-        # 3. Retrieve projects and tasks (filtered to projects where target_employee is allocated)
+        # 3. Retrieve projects and tasks (using sudo with company_id = False or company_id in allowed_company_ids)
         project_domain = [
             '|', ('company_id', '=', False), ('company_id', 'in', allowed_company_ids)
         ]
 
-        if target_employee:
-            allocated_project_ids = []
-            if 'project.resource.allocation' in self.env:
-                allocations = self.env['project.resource.allocation'].sudo().search([
-                    ('employee_id', '=', target_employee.id),
-                ])
-                allocated_project_ids = allocations.mapped('project_id').ids
-
-            project_domain.append(('id', 'in', allocated_project_ids))
-        else:
-            project_domain.append(('id', 'in', []))
+        # Allocation filter commented out to allow all projects as before:
+        # if target_employee:
+        #     allocated_project_ids = []
+        #     if 'project.resource.allocation' in self.env:
+        #         allocations = self.env['project.resource.allocation'].sudo().search([
+        #             ('employee_id', '=', target_employee.id),
+        #         ])
+        #         allocated_project_ids = allocations.mapped('project_id').ids
+        #
+        #     project_domain.append(('id', 'in', allocated_project_ids))
+        # else:
+        #     project_domain.append(('id', 'in', []))
 
         project_records = self.env['project.project'].sudo().search(project_domain)
-        _logger.info(f"BXI Timesheet: Found {len(project_records)} projects for dashboard (employee: {target_employee.name if target_employee else 'None'})")
+        _logger.info(f"BXI Timesheet: Found {len(project_records)} projects for dashboard")
         projects = []
         for p in project_records:
             p_name = p.display_name or p.name or f"Project #{p.id}"
@@ -146,8 +147,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
             task_domain = [
                 '|', ('project_id', '=', False), '|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', allowed_company_ids)
             ]
-        if target_employee:
-            task_domain.append(('project_id', 'in', project_records.ids))
+        # if target_employee:
+        #     task_domain.append(('project_id', 'in', project_records.ids))
 
         task_records = self.env['project.task'].sudo().search(task_domain)
         _logger.info(f"BXI Timesheet: Found {len(task_records)} tasks for dashboard")
@@ -738,20 +739,20 @@ class BxiTimesheetDashboard(models.AbstractModel):
         proj_id = int(project_id) if project_id else False
         tsk_id = int(task_id) if task_id else False
 
-        # Validate that the target employee is allocated to this project in the allocation table
-        if proj_id and amount > 0.0:
-            is_allocated = False
-            if 'project.resource.allocation' in self.env:
-                alloc = self.env['project.resource.allocation'].sudo().search([
-                    ('project_id', '=', proj_id),
-                    ('employee_id', '=', target_emp_id),
-                ], limit=1)
-                if alloc:
-                    is_allocated = True
-
-            if not is_allocated:
-                p_obj = self.env['project.project'].sudo().browse(proj_id)
-                raise UserError(_("You are not added in the allocation table for project '%s'. Only allocated resources can log timesheets.") % (p_obj.display_name or p_obj.name))
+        # Validate that the target employee is allocated to this project in the allocation table (Commented out to restore previous behavior)
+        # if proj_id and amount > 0.0:
+        #     is_allocated = False
+        #     if 'project.resource.allocation' in self.env:
+        #         alloc = self.env['project.resource.allocation'].sudo().search([
+        #             ('project_id', '=', proj_id),
+        #             ('employee_id', '=', target_emp_id),
+        #         ], limit=1)
+        #         if alloc:
+        #             is_allocated = True
+        #
+        #     if not is_allocated:
+        #         p_obj = self.env['project.project'].sudo().browse(proj_id)
+        #         raise UserError(_("You are not added in the allocation table for project '%s'. Only allocated resources can log timesheets.") % (p_obj.display_name or p_obj.name))
 
         domain = [
             ('employee_id', '=', target_emp_id),
