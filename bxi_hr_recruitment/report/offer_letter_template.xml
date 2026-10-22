@@ -61,25 +61,29 @@
                 <!-- Offer Release Date -->
                 <t t-set="datetime" t-value="datetime" />
 
-                <p class="offer-meta" style="margin-top: 20px;">
-                    <strong>Offer Release Date:</strong>
-                    <t t-esc="datetime.datetime.now().strftime('%b %d, %Y')" />
-                </p>
+               <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                    <tr>
+                        <td style="text-align: left; vertical-align: top; padding: 0;font-size:12px;">
+                            <strong>Offer Release Date:</strong>
+                            <t t-esc="datetime.datetime.now().strftime('%b %d, %Y')"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: left; vertical-align: top; padding: 0;font-size:12px;">
+                            <strong>Document ID - </strong>
+                            <t t-esc="o.offer_letter_id"/>
+                        </td>
+                    </tr>
+                </table>
 
                 <!-- Candidate Details -->
-                <table style="width: 100%;">
+                <table style="width: 100%; margin-top: 20px;">
                     <tr>
                         <!-- LEFT: Candidate Details -->
-                        <td style="text-align: left; vertical-align: top;">
+                        <td style="text-align: left; vertical-align: top;font-size: 12px;">
                             <t t-esc="o.partner_name" />
                             <br />
                             <t t-esc="o.full_address" />
-                        </td>
-
-                        <!-- RIGHT: Document ID -->
-                        <td style="text-align: right; vertical-align: top;">
-                            <strong>Document ID - </strong>
-                            <t t-esc="o.offer_letter_id" />
                         </td>
                     </tr>
                 </table>

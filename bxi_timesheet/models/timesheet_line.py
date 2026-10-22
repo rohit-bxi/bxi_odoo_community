@@ -658,23 +658,24 @@ class AccountAnalyticLine(models.Model):
     def _cron_send_monthly_timesheet_compliance_email(self):
         """
         Runs on the 21st of each month.
-        Checks the previous calendar month for missing timesheets
-        and attendance. Approved leave dates are excluded.
+        Checks the current month from the 1st up to yesterday (the 20th)
+        for missing timesheets and attendance. Dates before joining,
+        public holidays and approved leave are excluded.
         This cron only sends notifications; it does not create LWP.
         """
         import logging
         import html
         import calendar
+        import pytz
         from datetime import date, timedelta
 
         _logger = logging.getLogger(__name__)
 
         today = fields.Date.today()
 
-        # Audit the previous calendar month.
-        first_day_current_month = today.replace(day=1)
-        period_end = first_day_current_month - timedelta(days=1)
-        period_start = period_end.replace(day=1)
+        # Audit the current month up to yesterday; today is still in progress.
+        period_start = today.replace(day=1)
+        period_end = today - timedelta(days=1)
 
         # Prevent execution on any date other than the 21st.
         # This also protects against someone running the cron manually.
@@ -702,6 +703,14 @@ class AccountAnalyticLine(models.Model):
 
         employees = Employee.search([("active", "=", True)])
 
+        # Public holidays are not checked, same as on the timesheet dashboard.
+        holiday_dates = self.env[
+            "bxi.timesheet.dashboard"
+        ]._get_public_holiday_dates(
+            employees, period_start, period_end,
+            pytz.timezone("Asia/Kolkata"),
+        )
+
         period_label = period_start.strftime("%B %Y")
         emails_sent = 0
         employees_with_issues = 0
@@ -720,6 +729,18 @@ class AccountAnalyticLine(models.Model):
             if role_band is not None and role_band >= ROLE_BAND_THRESHOLD:
                 continue
 
+            # Dates before the employee's date of joining are not checked.
+            joining_date = (
+                "emp_date_of_joining" in employee._fields
+                and employee.emp_date_of_joining
+            )
+            employee_working_days = [
+                day for day in working_days
+                if not joining_date or day >= joining_date
+            ]
+            if not employee_working_days:
+                continue
+
             email = (
                 employee.work_email
                 or employee.user_id.email
@@ -736,7 +757,8 @@ class AccountAnalyticLine(models.Model):
                 )
                 continue
 
-            # Get approved leaves overlapping the month.
+            # Get approved leaves overlapping the month. Leave still
+            # awaiting approval is checked like any other day.
             approved_leaves = Leave.search([
                 ("employee_id", "=", employee.id),
                 ("state", "=", "validate"),
@@ -755,6 +777,8 @@ class AccountAnalyticLine(models.Model):
                 while day <= last_day:
                     approved_leave_dates.add(day)
                     day += timedelta(days=1)
+
+            excluded_dates = holiday_dates[employee.id] | approved_leave_dates
 
             # Load timesheets for the employee and audited month.
             timesheets = Timesheet.search([
@@ -792,9 +816,9 @@ class AccountAnalyticLine(models.Model):
 
             issues = []
 
-            for work_date in working_days:
-                # Approved leave means this date is not checked.
-                if work_date in approved_leave_dates:
+            for work_date in employee_working_days:
+                # Public holiday or approved leave means this date is not checked.
+                if work_date in excluded_dates:
                     continue
 
                 missing = []

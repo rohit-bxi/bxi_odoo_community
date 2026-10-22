@@ -80,7 +80,7 @@ class PerformanceReview(models.Model):
         [
             ("draft", "Employee Review"),
             ("manager_review", "Manager Review"),
-            ("second_manager_review", "Second Level Review"),
+            ("second_manager_review", "Calibration"),
             ("completed", "Completed"),
             ("cancelled", "Cancelled"),
         ],
@@ -366,6 +366,20 @@ class PerformanceReviewLine(models.Model):
         ],
         string="Appraise Score (RM)",
     )
+
+    @api.constrains('self_achievement')
+    def _check_self_achievement_word_limit(self):
+        for record in self:
+            text = (record.self_achievement or '').strip()
+            word_count = len(text.split())
+
+            if word_count > 100:
+                raise ValidationError(_(
+                    "Appraisee Actual Achievement (Self) "
+                    "cannot exceed 100 words. "
+                    "Your current word count is %s."
+                ) % word_count)
+            
     @api.constrains("manager_score", "category")
     def _check_manager_score(self):
         for record in self:
@@ -376,7 +390,7 @@ class PerformanceReviewLine(models.Model):
             category = (record.category or "").lower().strip()
 
             # Revenue / Revenue Enablement → only 0 or 1
-            if "revenue" in category:
+            if "Revenue / Revenue Enablement" in category:
                 if score not in (0.0, 1.0):
                     raise ValidationError(
                         _("Revenue / Revenue Enablement score must be either 0 or 1.")
@@ -387,6 +401,23 @@ class PerformanceReviewLine(models.Model):
                 raise ValidationError(
                     _("Manager Score must be between 1 and 5.")
                 )
+            
+    @api.onchange('category')
+    def _onchange_category(self):
+        category = (self.category or '').lower().strip()
+        if 'Revenue / Revenue Enablement' in category:
+            return {
+                'domain': {
+                    'manager_score': [
+                        ('value', 'in', ['0', '1'])
+                    ]
+                }
+            }
+        return {
+            'domain': {
+                'manager_score': []
+            }
+        }
                 
     # @api.constrains("manager_score")
     # def _check_manager_score(self):
