@@ -157,9 +157,8 @@
                         invisible="not is_regularization or state != 'draft'"
                     >
                         The request must be submitted and approved on or
-                        before the <strong>25th</strong> of the attendance
-                        cycle (26th of the previous month to the 25th).
-                        Days without an approved request by then are marked
+                        before the <strong>21th</strong> of the attendance
+                        cycle. Days without an approved request by then are marked
                         as <strong>Loss of Pay (LOP)</strong>.
                     </div>
 

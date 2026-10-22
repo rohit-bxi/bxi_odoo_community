@@ -3,6 +3,8 @@
 import json
 import logging
 from datetime import timedelta
+import pytz
+from datetime import datetime, time, timedelta
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
@@ -363,6 +365,103 @@ class BxiShiftException(models.Model):
         )
         return employee.id or False
 
+    @api.model
+    def _get_ist_now(self):
+        """Return current time in India Standard Time."""
+        utc_now = pytz.UTC.localize(fields.Datetime.now())
+        return utc_now.astimezone(pytz.timezone("Asia/Kolkata"))
+
+    @api.model
+    def _check_regularization_window_open(self):
+        """
+        Window closes on the 22nd of every month at 07:00 IST.
+        It reopens on the 1st of the next month.
+        """
+        now_ist = self._get_ist_now()
+
+        is_after_cutoff = (
+            now_ist.day > 22
+            or (
+                now_ist.day == 22
+                and (now_ist.hour, now_ist.minute) >= (7, 0)
+            )
+        )
+
+        if is_after_cutoff:
+            raise UserError(_(
+                "The attendance regularization window is closed. "
+                "Requests for Missing Timesheet, Late Checkout, and "
+                "Attendance Regularization can only be raised before "
+                "the 22nd of the month at 7:00 AM IST. "
+                "The window will reopen on the 1st of next month."
+            ))
+
+    @api.model
+    def _get_current_month_utc_bounds(self):
+        """Get the current calendar month's boundaries in UTC."""
+        timezone = pytz.timezone("Asia/Kolkata")
+        now_ist = self._get_ist_now()
+
+        month_start_date = now_ist.date().replace(day=1)
+
+        if month_start_date.month == 12:
+            next_month_date = month_start_date.replace(
+                year=month_start_date.year + 1,
+                month=1,
+                day=1,
+            )
+        else:
+            next_month_date = month_start_date.replace(
+                month=month_start_date.month + 1,
+                day=1,
+            )
+
+        start_local = timezone.localize(
+            datetime.combine(month_start_date, time.min)
+        )
+        end_local = timezone.localize(
+            datetime.combine(next_month_date, time.min)
+        )
+
+        start_utc = start_local.astimezone(pytz.UTC).replace(tzinfo=None)
+        end_utc = end_local.astimezone(pytz.UTC).replace(tzinfo=None)
+
+        return start_utc, end_utc
+
+    @api.model
+    def _count_monthly_regularizations(self, employee_id, exclude_id=False):
+        """Count all three regularization categories raised this month."""
+        if not employee_id:
+            return 0
+
+        start_utc, end_utc = self._get_current_month_utc_bounds()
+
+        domain = [
+            ("employee_id", "=", employee_id),
+            ("category", "in", list(REGULARIZATION_CATEGORIES)),
+            ("create_date", ">=", fields.Datetime.to_string(start_utc)),
+            ("create_date", "<", fields.Datetime.to_string(end_utc)),
+        ]
+
+        if exclude_id:
+            domain.append(("id", "!=", exclude_id))
+
+        return self.sudo().search_count(domain)
+
+    @api.model
+    def _check_monthly_regularization_limit(self, employee_id):
+        """Block the fourth regularization request for an employee."""
+        count = self._count_monthly_regularizations(employee_id)
+
+        if count >= 3:
+            raise UserError(_(
+                "You have already raised 3 attendance regularization "
+                "requests this month across Missing Timesheet, "
+                "Late Checkout, and Attendance Regularization. "
+                "The maximum allowed is 3 combined requests per month."
+            ))
+
+
     @api.onchange("category", "date_from")
     def _onchange_regularization(self):
         for record in self:
@@ -435,34 +534,79 @@ class BxiShiftException(models.Model):
                 vals["date_to"] = vals.get("date_from")
                 vals.update(self._get_regularization_cleared_values())
 
+        # Enforce cutoff and combined monthly limit at record creation.
+        pending_counts = {}
+
+        for vals in vals_list:
+            category = vals.get("category", "exception")
+
+            if category not in REGULARIZATION_CATEGORIES:
+                continue
+
+            employee_id = (
+                vals.get("employee_id")
+                or self._default_employee_id()
+            )
+
+            if not employee_id:
+                continue
+
+            self._check_regularization_window_open()
+
+            existing_count = self._count_monthly_regularizations(
+                employee_id
+            )
+            pending_count = pending_counts.get(employee_id, 0)
+
+            if existing_count + pending_count >= 3:
+                raise UserError(_(
+                    "You cannot create another regularization request. "
+                    "An employee can raise a maximum of 3 combined "
+                    "regularization requests per calendar month."
+                ))
+
+            pending_counts[employee_id] = pending_count + 1
+
         records = super().create(vals_list)
 
         return records
 
+    
     def write(self, vals):
-        if "date_from" not in vals and "category" not in vals:
-            return super().write(vals)
+        if "category" in vals or "employee_id" in vals:
+            for record in self:
+                new_category = vals.get("category", record.category)
 
-        regularizations = self.filtered(
-            lambda rec: vals.get("category", rec.category)
-            in REGULARIZATION_CATEGORIES
-        )
+                if new_category not in REGULARIZATION_CATEGORIES:
+                    continue
 
-        # date_to follows date_from in the same write, otherwise the
-        # date order constraint fails before it can be synced.
-        for record in regularizations:
-            record_vals = dict(
-                vals,
-                date_to=vals.get("date_from", record.date_from),
-            )
-            if "category" in vals:
-                record_vals.update(self._get_regularization_cleared_values())
-            super(BxiShiftException, record).write(record_vals)
+                self._check_regularization_window_open()
 
-        others = self - regularizations
-        if others:
-            super(BxiShiftException, others).write(vals)
-        return True
+                new_employee_id = vals.get(
+                    "employee_id",
+                    record.employee_id.id,
+                )
+
+                # Count the request as a new regularization if it is
+                # being converted or moved to another employee.
+                is_new_regularization = (
+                    record.category not in REGULARIZATION_CATEGORIES
+                    or new_employee_id != record.employee_id.id
+                )
+
+                if is_new_regularization:
+                    count = self._count_monthly_regularizations(
+                        new_employee_id,
+                        exclude_id=record.id,
+                    )
+                    if count >= 3:
+                        raise UserError(_(
+                            "This employee has already raised 3 "
+                            "regularization requests this month."
+                        ))
+
+        # Keep the rest of your existing write() method below.
+
 
     @api.constrains("date_from", "date_to")
     def _check_dates(self):
@@ -733,8 +877,26 @@ class BxiShiftException(models.Model):
             # ---------------------------------------------------------
             # Validate WFH / Exception Policy
             # ---------------------------------------------------------
+            
             if record.is_regularization:
+                # Never allow submission after the monthly cutoff.
+                record._check_regularization_window_open()
+
+                # Existing records created before this restriction was
+                # introduced must also respect the monthly limit.
+                monthly_count = record._count_monthly_regularizations(
+                    record.employee_id.id
+                )
+
+                if monthly_count > 3:
+                    raise UserError(_(
+                        "You cannot submit this request because you "
+                        "have exceeded the maximum of 3 combined "
+                        "regularization requests for this month."
+                    ))
+
                 record._validate_regularization_submit()
+
             else:
                 record._validate_wfh_policy()
                 record._check_monthly_home_exception()
