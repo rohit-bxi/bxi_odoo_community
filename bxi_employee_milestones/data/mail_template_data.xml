@@ -40,8 +40,8 @@
         <strong>Happy Job Anniversary!</strong>
         <t t-set="years" t-value="ctx.get('anniversary_years')"/>
         <t t-if="years">
-            Congratulations on completing <strong><t t-out="years"/> <t t-if="years == 1">year</t><t t-else="">years</t></strong>
-            with <t t-out="object.company_id.name or ''"/>.
+            Here’s a little thank-you from us for going the extra mile every day. Congratulations on completing this <strong><t t-out="years"/> <t t-if="years == 1">year</t><t t-else="">years</t></strong>
+            with <t t-out="object.company_id.name or ''"/>Happy Anniversary!!!.
         </t>
     </p>
     <p>
@@ -106,8 +106,12 @@
     </t>
     <p>Please give the second approval to confirm the employee.</p>
     <p>
-        <a t-attf-href="{{ object.get_base_url() }}/mail/view?model=hr.probation.review&amp;res_id={{ object.id }}"
-           style="background-color: #875A7B; padding: 8px 16px; text-decoration: none; color: #fff; border-radius: 5px;">
+        <a t-att-href="'%s/web#id=%s&amp;model=hr.probation.review&amp;view_type=form' % (object.get_base_url(), object.id)"
+        style="background-color: #875A7B;
+                padding: 8px 16px;
+                text-decoration: none;
+                color: #fff;
+                border-radius: 5px;">
             Open Probation Review
         </a>
     </p>
