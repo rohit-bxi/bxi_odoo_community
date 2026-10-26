@@ -580,15 +580,13 @@ class BxiShiftException(models.Model):
                 if new_category not in REGULARIZATION_CATEGORIES:
                     continue
 
-                self._check_regularization_window_open()
+                record._check_regularization_window_open()
 
                 new_employee_id = vals.get(
                     "employee_id",
                     record.employee_id.id,
                 )
 
-                # Count the request as a new regularization if it is
-                # being converted or moved to another employee.
                 is_new_regularization = (
                     record.category not in REGULARIZATION_CATEGORIES
                     or new_employee_id != record.employee_id.id
@@ -605,7 +603,9 @@ class BxiShiftException(models.Model):
                             "regularization requests this month."
                         ))
 
-        # Keep the rest of your existing write() method below.
+        # Required: persist the changes using Odoo's standard ORM.
+        return super().write(vals)
+
 
 
     @api.constrains("date_from", "date_to")
@@ -904,7 +904,9 @@ class BxiShiftException(models.Model):
             # ---------------------------------------------------------
             # Move to Manager Approval
             # ---------------------------------------------------------
-            record.state = "manager_approval"
+            record.write({
+                "state": "manager_approval",
+            })
 
             # ---------------------------------------------------------
             # Manager Email
