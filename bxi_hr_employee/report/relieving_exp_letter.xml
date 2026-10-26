@@ -102,7 +102,7 @@
                 </strong>
                 was working with us as a
                 <strong>
-                    <span t-field="o.job_id.name"/>
+                    <span t-field="o.job_title"/>
                 </strong>
                 from
                 <strong>
