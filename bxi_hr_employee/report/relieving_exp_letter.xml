@@ -131,22 +131,33 @@
                 success in future endeavors.
             </p>
 
-            <div style="margin-top:55px; width:250px;">
-                <div style="margin-bottom:10px; font-size:13px;">
+            <div style="margin-top: 55px; width: 280px;">
+                <div style="margin-bottom: 10px; font-size: 13px;">
                     <strong>
                         For
                         <span t-field="o.template_company_id.name"/>
                     </strong>
                 </div>
 
-                <div style="height:60px; margin-bottom:5px;">
+                <!-- Blue Signature -->
+                <div style="height: 60px; margin-bottom: 5px;">
                     <img
-                        t-att-src="'/bxi_hr_employee/static/src/img/pallavi_signature.png'"
-                        style="width:95px; height:auto; display:block;"
-                        alt="Authorized Signature"
+                        t-att-src="web_base_url + '/bxi_hr_employee/static/src/img/nazia_khan_signature.png'"
+                        style="width:145px; height:55px; object-fit:contain; display:block;"
+                        alt="Nazia Khan Signature"
                     />
                 </div>
+
+                <!-- Signatory Name and Designation -->
+                <div style="margin-bottom: 10px; font-size: 13px;">
+                    <strong>Nazia Khan</strong>
+                    <br/>
+                    <strong style="font-size: 12px;">
+                        Senior Director Human Resources and Compliance
+                    </strong>
+                </div>
+
             </div>
-        </div>
+        </div>  
     </template>
 </odoo>
