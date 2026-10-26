@@ -4,6 +4,9 @@ import email
 import secrets
 import random
 from venv import logger
+from urllib.parse import quote
+import logging
+_logger = logging.getLogger(__name__)
 
 from odoo import http, fields
 from odoo.http import request
@@ -1130,4 +1133,349 @@ class EmployeeAPIController(http.Controller):
                 'data': task_data,
             },
             status=200,
+        )
+
+LETTER_REPORT_XMLIDS = {
+    "bonus_letter":"bxi_hr_performance_bonus.action_report_employee_bonus_letter",
+    "appraisal_promotion_letter":"bxi_hr_performance_bonus.action_report_appraisal_letter",
+    "appraisal_letter":"bxi_hr_performance_appraisal.action_report_appraisal_letter",
+    "promotion_letter":"bxi_hr_performance_bonus.action_report_promotion_letter",
+}
+
+class EmployeeLetterAPI(http.Controller):
+
+    def _text_response(self, message, status=400):
+        response = request.make_response(
+            message,
+            headers=[
+                ("Content-Type", "text/plain; charset=utf-8"),
+                ("Cache-Control", "no-store"),
+            ],
+        )
+        response.status_code = status
+        return response
+
+    def _get_archived_employee(self, email):
+        email = (email or "").strip()
+
+        if not email:
+            return request.env["hr.employee"]
+
+        return request.env["hr.employee"].sudo().search(
+            [
+                ("private_email", "=ilike", email),
+                ("active", "=", False),
+            ],
+            limit=1,
+        )
+
+    def _get_employee_letter(self, letter_id, email):
+        employee = self._get_archived_employee(email)
+
+        if not employee:
+            return employee, request.env["hr.employee.appraisal"]
+
+        letter = request.env["hr.employee.appraisal"].sudo().search(
+            [
+                ("id", "=", letter_id),
+                ("employee_id", "=", employee.id),
+                ("state", "=", "released"),
+            ],
+            limit=1,
+        )
+
+        return employee, letter
+
+    def _get_report_action(self, report_xmlid):
+        if not report_xmlid:
+            return False
+
+        try:
+            module_name, record_name = report_xmlid.split(".", 1)
+        except ValueError:
+            _logger.error("Invalid report XML ID: %s", report_xmlid)
+            return False
+
+        xmlid_record = request.env["ir.model.data"].sudo().search(
+            [
+                ("module", "=", module_name),
+                ("name", "=", record_name),
+                ("model", "=", "ir.actions.report"),
+            ],
+            limit=1,
+        )
+
+        if not xmlid_record:
+            _logger.error(
+                "Report XML ID does not exist: %s",
+                report_xmlid,
+            )
+            return False
+
+        return request.env["ir.actions.report"].sudo().browse(
+            xmlid_record.res_id
+        ).exists()
+
+
+    @http.route("/api/employee/letters",type="jsonrpc",auth="public",methods=["POST"],csrf=False)
+    def employee_letters(self, **post):
+        email = (post.get("email") or "").strip()
+
+        if not email:
+            return {
+                "status": False,
+                "message": "Email is required.",
+                "letters": [],
+            }
+
+        employee = self._get_archived_employee(email)
+
+        if not employee:
+            return {
+                "status": False,
+                "message": "Archived employee not found.",
+                "letters": [],
+            }
+
+        Appraisal = request.env["hr.employee.appraisal"].sudo()
+
+        letters = Appraisal.search(
+            [
+                ("employee_id", "=", employee.id),
+                ("state", "=", "released"),
+            ],
+            order="release_date desc, id desc",
+        )
+
+        letter_labels = dict(
+            Appraisal._fields["letter_type"].selection
+        )
+
+        safe_email = quote(email, safe="")
+        data = []
+
+        for letter in letters:
+            data.append({
+                "id": letter.id,
+                "name": letter_labels.get(
+                    letter.letter_type,
+                    "Employee Letter",
+                ),
+                "letter_type": letter.letter_type or False,
+                "state": letter.state,
+                "release_date": (
+                    letter.release_date.strftime("%Y-%m-%d")
+                    if letter.release_date
+                    else False
+                ),
+                "effective_date": (
+                    letter.effective_date.strftime("%Y-%m-%d")
+                    if letter.effective_date
+                    else False
+                ),
+                "view_url": (
+                    f"/api/employee/letters/{letter.id}/view"
+                    f"?email={safe_email}"
+                ),
+                "download_url": (
+                    f"/api/employee/letters/{letter.id}/download"
+                    f"?email={safe_email}"
+                ),
+            })
+
+        return {
+            "status": True,
+            "employee_id": employee.id,
+            "total_letters": len(data),
+            "letters": data,
+        }
+
+    def _prepare_report_record(self, letter, report):
+        """
+        Return (record_id, temporary_wizard).
+
+        If the report is defined on hr.employee.appraisal, use the
+        appraisal record directly.
+
+        If the report is defined on employee.letter.wizard, create a
+        temporary wizard using the appraisal and letter type.
+        """
+
+        if report.model == "hr.employee.appraisal":
+            return letter.id, False
+
+        if report.model != "employee.letter.wizard":
+            _logger.error(
+                "Unsupported report model %s for report %s",
+                report.model,
+                report.name,
+            )
+            raise ValueError(
+                "The report model must be hr.employee.appraisal "
+                "or employee.letter.wizard."
+            )
+
+        Wizard = request.env["employee.letter.wizard"].sudo()
+
+        wizard_values = {}
+
+        if "appraisal_id" in Wizard._fields:
+            wizard_values["appraisal_id"] = letter.id
+
+        if "letter_type" in Wizard._fields:
+            wizard_values["letter_type"] = letter.letter_type
+
+        # Keep default_appraisal_id compatible with the context used
+        # by action_open_letter_wizard() in the appraisal model.
+        Wizard = Wizard.with_context(
+            default_appraisal_id=letter.id,
+        )
+
+        wizard = Wizard.create(wizard_values)
+
+        return wizard.id, wizard
+
+    def _get_letter_pdf(self, letter, download=False):
+        report_xmlid = LETTER_REPORT_XMLIDS.get(
+            letter.letter_type
+        )
+
+        if not report_xmlid:
+            return self._text_response(
+                "No report is configured for letter type: %s"
+                % (letter.letter_type or "unknown"),
+                status=500,
+            )
+
+        report = self._get_report_action(report_xmlid)
+
+        if not report:
+            return self._text_response(
+                "The configured PDF report was not found: %s"
+                % report_xmlid,
+                status=500,
+            )
+
+        temporary_wizard = False
+
+        try:
+            report_record_id, temporary_wizard = (
+                self._prepare_report_record(letter, report)
+            )
+
+            pdf_content, _ = (
+                request.env["ir.actions.report"].sudo()._render_qweb_pdf(
+                    report_xmlid,
+                    [report_record_id],
+                )
+            )
+
+            if not pdf_content:
+                return self._text_response(
+                    "The report did not generate PDF content.",
+                    status=500,
+                )
+
+        except Exception:
+            _logger.exception(
+                "Could not render letter %s using report %s",
+                letter.id,
+                report_xmlid,
+            )
+            return self._text_response(
+                "Unable to generate the letter PDF. "
+                "Check the Odoo server log for details.",
+                status=500,
+            )
+
+        finally:
+            # The wizard is transient and is only created to render
+            # the PDF for this request.
+            if temporary_wizard and temporary_wizard.exists():
+                try:
+                    temporary_wizard.unlink()
+                except Exception:
+                    _logger.exception(
+                        "Could not clean up temporary letter wizard."
+                    )
+
+        Appraisal = request.env["hr.employee.appraisal"].sudo()
+        letter_labels = dict(
+            Appraisal._fields["letter_type"].selection
+        )
+
+        label = letter_labels.get(
+            letter.letter_type,
+            "Employee Letter",
+        )
+
+        safe_label = "_".join(
+            "".join(
+                char if char.isalnum() else "_"
+                for char in label
+            ).split("_")
+        ).strip("_")
+
+        filename = f"{safe_label}_{letter.id}.pdf"
+        disposition = "attachment" if download else "inline"
+
+        return request.make_response(
+            pdf_content,
+            headers=[
+                ("Content-Type", "application/pdf"),
+                (
+                    "Content-Disposition",
+                    f'{disposition}; filename="{filename}"',
+                ),
+                ("Content-Length", str(len(pdf_content))),
+                ("Cache-Control", "no-store"),
+                ("X-Content-Type-Options", "nosniff"),
+            ],
+        )
+
+
+    @http.route("/api/employee/letters/<int:letter_id>/view",type="http",auth="public",methods=["GET"],csrf=False)
+    def view_employee_letter(self, letter_id, **kw):
+        email = (kw.get("email") or "").strip()
+
+        if not email:
+            return self._text_response(
+                "Email is required.",
+                status=400,
+            )
+
+        employee, letter = self._get_employee_letter(
+            letter_id,
+            email,
+        )
+
+        if not employee or not letter:
+            return request.not_found()
+
+        return self._get_letter_pdf(
+            letter,
+            download=False,
+        )
+
+    @http.route("/api/employee/letters/<int:letter_id>/download",type="http",auth="public",methods=["GET"],csrf=False)
+    def download_employee_letter(self, letter_id, **kw):
+        email = (kw.get("email") or "").strip()
+
+        if not email:
+            return self._text_response(
+                "Email is required.",
+                status=400,
+            )
+
+        employee, letter = self._get_employee_letter(
+            letter_id,
+            email,
+        )
+
+        if not employee or not letter:
+            return request.not_found()
+
+        return self._get_letter_pdf(
+            letter,
+            download=True,
         )
