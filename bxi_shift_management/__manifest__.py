@@ -2,7 +2,7 @@
 {
     'name': 'BXI Shift Management',
     'category': 'Human Resources',
-    'version': '19.0.1.2.0',
+    'version': '19.0.1.3.0',
     'sequence': 1,
     'author': 'BXI Technologies',
     'website': 'https://bxitech.com/',
