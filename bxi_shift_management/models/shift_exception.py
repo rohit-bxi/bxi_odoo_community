@@ -504,7 +504,7 @@ class BxiShiftException(models.Model):
             vals.setdefault(
                 "name",
                 self.env["ir.sequence"].sudo().next_by_code(
-                    "bxi.shift.exception"
+                    "bxi.exception.request"
                 )
                 or "/",
             )
@@ -979,6 +979,9 @@ class BxiShiftException(models.Model):
 
             # ---------------------------------------------------------
             # Send Email
+            #
+            # Sent only once the submit is committed: a failed or
+            # retried submit must not email the manager and HR.
             # ---------------------------------------------------------
             if email_to:
                 try:
@@ -988,7 +991,7 @@ class BxiShiftException(models.Model):
                         "email_from": "hrsupport@bxitech.com",
                         "email_to": email_to,
                         "auto_delete": True,
-                    }).send()
+                    }).send_after_commit()
 
                 except Exception:
                     _logger.exception(
@@ -1336,7 +1339,7 @@ class BxiShiftException(models.Model):
                     "email_to": "hrsupport@bxitech.com",
                     "auto_delete": True,
                 }
-            ).send()
+            ).send_after_commit()
         except Exception:
             _logger.exception(
                 "Failed to send HR approval email for %s",
@@ -1365,7 +1368,7 @@ class BxiShiftException(models.Model):
                     "email_to": employee_email,
                     "auto_delete": True,
                 }
-            ).send()
+            ).send_after_commit()
         except Exception:
             _logger.exception(
                 "Failed to send employee %s email for %s",
