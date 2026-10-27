@@ -84,7 +84,7 @@ class BxiShiftException(models.Model):
         [
             ("exception", "Exception"),
             # ("missing_timesheet", "Missing Timesheet"),
-            ("late_checkout", "Late Checkout"),
+            ("late_checkout", "Missed Checkout"),
             ("attendance_regularization", "Attendance Regularization"),
         ],
         string="Category",
