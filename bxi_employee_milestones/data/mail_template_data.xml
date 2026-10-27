@@ -40,8 +40,9 @@
         <strong>Happy Job Anniversary!</strong>
         <t t-set="years" t-value="ctx.get('anniversary_years')"/>
         <t t-if="years">
-            Here’s a little thank-you from us for going the extra mile every day. Congratulations on completing this <strong><t t-out="years"/> <t t-if="years == 1">year</t><t t-else="">years</t></strong>
-            with <t t-out="object.company_id.name or ''"/>Happy Anniversary!!!.
+            Here’s a little thank-you from all of us at BXI for going the extra mile every day!. Congratulations on completing this <strong><t t-out="years"/> <t t-if="years == 1">year</t><t t-else="">years</t></strong>
+            wonderful years with us.Your dedication, commitment and valuable contributions make a difference, and we truly appreciate having you as part of our journey.
+            Wishing you continued growth, success and many more milestones together!
         </t>
     </p>
     <p>
