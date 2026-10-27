@@ -83,7 +83,7 @@ class BxiShiftException(models.Model):
     category = fields.Selection(
         [
             ("exception", "Exception"),
-            ("missing_timesheet", "Missing Timesheet"),
+            # ("missing_timesheet", "Missing Timesheet"),
             ("late_checkout", "Late Checkout"),
             ("attendance_regularization", "Attendance Regularization"),
         ],
