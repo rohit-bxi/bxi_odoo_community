@@ -6,7 +6,7 @@ from odoo.exceptions import UserError
 
 
 # A review starts this many days before the probation end date.
-PROBATION_REVIEW_LEAD_DAYS = 10
+PROBATION_REVIEW_LEAD_DAYS = 15
 OPEN_STATES = ('manager_review', 'hr_review')
 
 
