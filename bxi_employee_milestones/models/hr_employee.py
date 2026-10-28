@@ -85,15 +85,44 @@ class HrEmployee(models.Model):
     @api.model
     def _cron_send_birthday_wishes(self):
         today = self._milestone_today()
-        employees = self.sudo().search(self._milestone_domain('birthday', today) + [
-            ('birthday_wish_year', '!=', today.year),
-        ])
-        template = self.env.ref('bxi_employee_milestones.mail_template_birthday_wish')
+        employees = self.sudo().search(
+            self._milestone_domain('birthday', today) + [
+                ('active', '=', True),
+                ('work_email', '!=', False),
+                ('birthday_wish_year', '!=', today.year),
+            ]
+        )
+        template = self.env.ref(
+            'bxi_employee_milestones.mail_template_birthday_wish',
+            raise_if_not_found=False,
+        )
+        if not template:
+            _logger.error("Birthday wishes email template not found.")
+            return
+        sent_count = 0
         for employee in employees:
-            template.send_mail(employee.id)
-        employees.write({'birthday_wish_year': today.year})
-        _logger.info('Birthday wishes queued for %s employee(s)', len(employees))
-
+            try:
+                template.send_mail(
+                    employee.id,
+                    force_send=False,
+                    email_values={
+                        'email_to': employee.work_email,
+                    },
+                )
+                employee.sudo().write({
+                    'birthday_wish_year': today.year,
+                })
+                sent_count += 1
+            except Exception:
+                _logger.exception(
+                    "Failed to queue birthday email for employee %s",
+                    employee.name,
+                )
+        _logger.info(
+            'Birthday wishes queued for %s employee(s)',
+            sent_count,
+        )
+        
     @api.model
     def _cron_send_anniversary_wishes(self):
         today = self._milestone_today()
