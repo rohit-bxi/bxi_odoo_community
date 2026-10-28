@@ -84,11 +84,37 @@ class HrEmployee(models.Model):
 
     @api.model
     def _cron_send_birthday_wishes(self):
-        """Send a Happy Birthday email to every active employee."""
-        employees = self.sudo().search([
+        today = self._milestone_today()
+
+        # Find employees whose birthday is today and whose email
+        # has not already been queued for this year.
+        birthday_employees = self.sudo().search(
+            self._milestone_domain('birthday', today) + [
+                ('active', '=', True),
+                ('work_email', '!=', False),
+                ('birthday_wish_year', '!=', today.year),
+            ]
+        )
+
+        if not birthday_employees:
+            _logger.info("No employee birthdays found for today.")
+            return
+
+        # All active employees receive the announcement.
+        recipients = self.sudo().search([
             ('active', '=', True),
             ('work_email', '!=', False),
         ])
+
+        recipient_emails = sorted(set(
+            email.strip()
+            for email in recipients.mapped('work_email')
+            if email and email.strip()
+        ))
+
+        if not recipient_emails:
+            _logger.warning("No active employee email addresses found.")
+            return
 
         template = self.env.ref(
             'bxi_employee_milestones.mail_template_birthday_wish',
@@ -101,26 +127,31 @@ class HrEmployee(models.Model):
 
         sent_count = 0
 
-        for employee in employees:
+        for birthday_employee in birthday_employees:
             try:
                 template.send_mail(
-                    employee.id,
+                    birthday_employee.id,
                     force_send=False,
                     email_values={
-                        'email_to': employee.work_email,
-                        'email_cc': employee.parent_id.work_email or '',
+                        'email_to': ','.join(recipient_emails),
+                        'email_cc': False,
                     },
                 )
+
+                birthday_employee.sudo().write({
+                    'birthday_wish_year': today.year,
+                })
+
                 sent_count += 1
 
             except Exception:
                 _logger.exception(
-                    "Failed to queue birthday email for employee %s",
-                    employee.name,
+                    "Failed to queue birthday announcement for %s",
+                    birthday_employee.name,
                 )
 
         _logger.info(
-            "Happy Birthday emails queued for %s active employee(s).",
+            "Birthday announcements queued for %s employee(s).",
             sent_count,
         )
 
