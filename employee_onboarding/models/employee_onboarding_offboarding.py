@@ -332,13 +332,22 @@ class EmployeeOnboardingOffboarding(models.Model):
 
             for team, tasks in team_tasks.items():
                 if team.is_manager:
-                    manager = rec.manager_id or rec.employee_id.parent_id
-                    recipient_email = manager.work_email or manager.private_email if manager else False
+                    employee = rec.employee_id
+                    manager = employee.parent_id if employee else False
+
+                    recipient_email = (
+                        manager.work_email or manager.private_email
+                        if manager else False
+                    )
                     recipient_name = manager.name if manager else team.name
                     if not recipient_email:
                         rec.message_post(
-                            body=_("Could not send email notification to manager team '%s' because employee's manager (%s) has no email address configured.") % (
-                                team.name, manager.name if manager else _('No Manager')
+                            body=_(
+                                "Could not send email notification to manager team '%s' "
+                                "because the employee's manager (%s) has no email address configured."
+                            ) % (
+                                team.name,
+                                manager.name if manager else _('No Manager')
                             )
                         )
                         continue
