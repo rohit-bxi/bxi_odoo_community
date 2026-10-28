@@ -67,13 +67,14 @@
 <div style="margin: 0px; padding: 0px; font-size: 13px;">
     <p>Dear <t t-out="object.manager_id.name or 'HR Team'"/>,</p>
     <p>
-        The probation period of <strong><t t-out="object.employee_id.name or ''"/></strong>
+        Request you to review the employee's <strong><t t-out="object.employee_id.name or ''"/></strong>
         ends on <strong><t t-out="format_date(object.probation_end_date, date_format='dd MMM yyyy')"/></strong>.
     </p>
     <p>
-        Please review the employee's performance and <strong>confirm</strong> the
-        probation, or record your comments if it should not be confirmed.
-        HR will then give the final approval.
+        Share your feedback and confirm whether the employee is recommended for probation confirmation. 
+        In case of any performance concerns or if confirmation is not recommended, please provide your comments and justification.
+        Based on your feedback, HR will review and proceed with the final approval.
+        Kindly share your confirmation at the earliest.
     </p>
     <p>
         <a t-attf-href="{{ object.get_base_url() }}/mail/view?model=hr.probation.review&amp;res_id={{ object.id }}"
