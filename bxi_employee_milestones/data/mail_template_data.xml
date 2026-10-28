@@ -60,7 +60,7 @@
             <field name="subject">Probation confirmation required: {{ object.employee_id.name }}</field>
             <field name="email_from">hrsupport@bxitech.com</field>
             <field name="email_to">{{ object.manager_id.work_email or object.company_id.milestone_hr_email or '' }}</field>
-            <field name="email_cc">{{ object.company_id.milestone_hr_email or '' }}</field>
+            <field name="email_cc">{{ ','.join(filter(None, [object.company_id.milestone_hr_email,object.employee_id.work_email]))}}</field>            
             <field name="use_default_to" eval="False"/>
             <field name="auto_delete" eval="True"/>
             <field name="body_html" type="html">
