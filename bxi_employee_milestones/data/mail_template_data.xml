@@ -71,7 +71,7 @@
         ends on <strong><t t-out="format_date(object.probation_end_date, date_format='dd MMM yyyy')"/></strong>.
     </p>
     <p>
-        share your feedback and confirm whether the employee is recommended for probation confirmation. 
+        Share your feedback and confirm whether the employee is recommended for probation confirmation. 
         In case of any performance concerns or if confirmation is not recommended, please provide your comments and justification.
         Based on your feedback, HR will review and proceed with the final approval.
         Kindly share your confirmation at the earliest.
