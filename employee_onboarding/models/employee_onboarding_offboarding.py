@@ -319,10 +319,19 @@ class EmployeeOnboardingOffboarding(models.Model):
             rec.state = 'in_progress'
             rec._send_consolidated_team_task_emails()
 
+    
     def _send_consolidated_team_task_emails(self):
         for rec in self:
             if not rec.task_line_ids:
                 continue
+
+            # Determine the employee and reporting manager
+            if rec.request_type_id.employee_model == 'hr.bxi.employee':
+                selected_employee = rec.employee_id
+                manager = rec.onboarding_manager_id
+            else:
+                selected_employee = rec.offboarding_employee_id
+                manager = rec.offboarding_manager_id
 
             # Group tasks by assigned team
             team_tasks = {}
@@ -332,19 +341,18 @@ class EmployeeOnboardingOffboarding(models.Model):
 
             for team, tasks in team_tasks.items():
                 if team.is_manager:
-                    employee = rec.employee_id
-                    manager = employee.parent_id if employee else False
-
                     recipient_email = (
                         manager.work_email or manager.private_email
                         if manager else False
                     )
                     recipient_name = manager.name if manager else team.name
+
                     if not recipient_email:
                         rec.message_post(
                             body=_(
-                                "Could not send email notification to manager team '%s' "
-                                "because the employee's manager (%s) has no email address configured."
+                                "Could not send email notification to manager "
+                                "team '%s' because the employee's reporting "
+                                "manager (%s) has no email address configured."
                             ) % (
                                 team.name,
                                 manager.name if manager else _('No Manager')
@@ -354,17 +362,15 @@ class EmployeeOnboardingOffboarding(models.Model):
                 else:
                     recipient_email = team.email
                     recipient_name = team.name
+
                     if not recipient_email:
                         rec.message_post(
-                            body=_("Could not send email notification to team '%s' because no email address is configured.") % team.name
+                            body=_(
+                                "Could not send email notification to team '%s' "
+                                "because no email address is configured."
+                            ) % team.name
                         )
                         continue
-
-                selected_employee = (
-                    rec.employee_id
-                    if rec.request_type_id.employee_model == 'hr.bxi.employee'
-                    else rec.offboarding_employee_id
-                )
 
                 subject = _("New Tasks Assigned: %s - %s (%s)") % (
                     rec.request_type_id.name or _('Request'),
@@ -374,35 +380,67 @@ class EmployeeOnboardingOffboarding(models.Model):
 
                 task_rows = ""
                 for idx, task_line in enumerate(tasks, start=1):
-                    status_label = dict(task_line._fields['status'].selection).get(task_line.status, task_line.status)
+                    status_label = dict(
+                        task_line._fields['status'].selection
+                    ).get(task_line.status, task_line.status)
+
                     task_rows += f"""
                         <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">{idx}</td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">{task_line.task}</td>
-                            <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">{status_label}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;
+                                    text-align: center;">{idx}</td>
+                            <td style="padding: 8px; border: 1px solid #ddd;">
+                                {task_line.task}
+                            </td>
+                            <td style="padding: 8px; border: 1px solid #ddd;
+                                    text-align: center;">{status_label}</td>
                         </tr>
                     """
 
                 body_html = f"""
-                    <div style="font-family: Arial, sans-serif; font-size: 14px; color: #333333; line-height: 1.5;">
+                    <div style="font-family: Arial, sans-serif;
+                                font-size: 14px; color: #333333;
+                                line-height: 1.5;">
                         <p>Hello <strong>{recipient_name}</strong>,</p>
-                        <p>A new <strong>{rec.request_type_id.name or ''}</strong> request (Ref: <strong>{rec.name or ''}</strong>) has been raised for employee <strong>{selected_employee.name if selected_employee else ''}</strong>.</p>
-                        <p>Please find below the consolidated list of tasks assigned to your team:</p>
-                        <table style="border-collapse: collapse; width: 100%; max-width: 600px; margin-top: 10px; margin-bottom: 15px;">
+
+                        <p>A new <strong>
+                            {rec.request_type_id.name or ''}
+                        </strong> request (Ref: <strong>{rec.name or ''}</strong>)
+                        has been raised for employee
+                        <strong>
+                            {selected_employee.name if selected_employee else ''}
+                        </strong>.</p>
+
+                        <p>Please find below the consolidated list of tasks
+                        assigned to your team:</p>
+
+                        <table style="border-collapse: collapse; width: 100%;
+                                    max-width: 600px; margin-top: 10px;
+                                    margin-bottom: 15px;">
                             <thead>
                                 <tr style="background-color: #f2f2f2;">
-                                    <th style="padding: 8px; border: 1px solid #ddd; width: 40px;">#</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Task Description</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd; width: 100px;">Status</th>
+                                    <th style="padding: 8px;
+                                            border: 1px solid #ddd;">#</th>
+                                    <th style="padding: 8px;
+                                            border: 1px solid #ddd;
+                                            text-align: left;">
+                                        Task Description
+                                    </th>
+                                    <th style="padding: 8px;
+                                            border: 1px solid #ddd;">
+                                        Status
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {task_rows}
                             </tbody>
                         </table>
-                        <p>You are requested to perform all these respective tasks and once done, update the task status in the portal.</p>
-                        <br/>
-                        <p>Best regards,<br/><strong>{self.env.company.name}</strong></p>
+
+                        <p>You are requested to perform all your respective
+                        tasks and update their status in the portal once done.</p>
+
+                        <p>Best regards,<br/>
+                        <strong>{self.env.company.name}</strong></p>
                     </div>
                 """
 
@@ -410,7 +448,10 @@ class EmployeeOnboardingOffboarding(models.Model):
                     'subject': subject,
                     'body_html': body_html,
                     'email_to': recipient_email,
-                    'email_from': self.env.user.email_formatted or self.env.company.email,
+                    'email_from': (
+                        self.env.user.email_formatted
+                        or self.env.company.email
+                    ),
                     'model': 'employee.onboarding.offboarding',
                     'res_id': rec.id,
                 }
