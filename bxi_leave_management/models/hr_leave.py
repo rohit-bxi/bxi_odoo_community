@@ -1470,8 +1470,11 @@ class HrEmployeeLeave(models.Model):
         "request_unit_hours",
         "request_date_from",
         "request_date_to",
+        "number_of_days",
+        "is_hd_leave_origin",
     )
     def _check_el_lwp_full_day_only(self):
+        """Allow EL and LWP requests for both half days and full days."""
         for leave in self:
             if not leave.holiday_status_id:
                 continue
@@ -1483,18 +1486,10 @@ class HrEmployeeLeave(models.Model):
                 or ""
             ).strip().upper()
 
-            # Apply only to direct EL/LWP requests.
-            # Half-day-originated requests converted internally are exempt.
             if code not in ("EL", "LWP"):
                 continue
 
-            if leave.is_hd_leave_origin:
-                continue
-
-            if leave.request_unit_half or leave.request_unit_hours:
-                raise ValidationError(
-                    _(
-                        "%s can only be requested as a full day. "
-                        "For a half-day absence, select Half-Day Leave (HD)."
-                    ) % code
-                )
+            # EL and LWP can be requested for half or full days.
+            # Do not reject request_unit_half=True here.
+            # Keep any separate hourly-request restriction only if
+            # your policy explicitly prohibits hourly EL/LWP requests.
