@@ -292,6 +292,21 @@ class HrEmployeeLeave(models.Model):
     @api.depends("employee_id", "request_date_from", "holiday_status_id")
     def _compute_compensation_required(self):
         for leave in self:
+            leave_type = leave.holiday_status_id
+
+            code = (
+                getattr(leave_type, "time_off_code", False)
+                or getattr(leave_type, "leave_code", False)
+                or getattr(leave_type, "code", False)
+                or ""
+            ).strip().upper()
+            if code == "HD":
+                leave.compensation_required = False
+                continue
+            if leave.is_hd_leave_origin or code == "HD":
+                leave.compensation_required = False
+                continue
+
             leave.compensation_required = (
                 leave._is_compensation_applicable_leave()
                 and leave._is_mandatory_wfo_day()
@@ -1167,6 +1182,8 @@ class HrEmployeeLeave(models.Model):
 
         if not self.env.context.get("skip_sick_leave_policy"):
             leaves._check_sick_leave_policy()
+        if not self.env.context.get("skip_hd_leave_policy"):
+            leaves._check_hd_leave_policy()
 
         leaves._validate_compensation_date()
 
@@ -1199,6 +1216,17 @@ class HrEmployeeLeave(models.Model):
             and not self.env.context.get("skip_sick_leave_policy")
         ):
             self._check_sick_leave_policy()
+        if (
+            {
+                "employee_id",
+                "holiday_status_id",
+                "request_date_from",
+                "request_date_to",
+                "request_unit_half",
+            }.intersection(vals)
+            and not self.env.context.get("skip_hd_leave_policy")
+        ):
+            self._check_hd_leave_policy()
 
         self._validate_compensation_date()
 
@@ -1264,3 +1292,209 @@ class HrEmployeeLeave(models.Model):
                     "per calendar month. Your existing request has already "
                     "used this month's Sick Leave eligibility."
                 ))
+
+    is_hd_leave_type = fields.Boolean(
+        string="Is Half-Day Leave Type",
+        compute="_compute_is_hd_leave_type",
+    )
+
+    @api.depends("holiday_status_id")
+    def _compute_is_hd_leave_type(self):
+        for leave in self:
+            leave_type = leave.holiday_status_id
+            code = (
+                getattr(leave_type, "time_off_code", False)
+                or getattr(leave_type, "leave_code", False)
+                or getattr(leave_type, "code", False)
+                or ""
+            ).strip().upper()
+
+            leave.is_hd_leave_type = code == "HD"
+
+    is_hd_leave_origin = fields.Boolean(
+        string="Original Half-Day Leave Request",
+        default=False,
+        copy=False,
+        index=True,
+    )
+
+    hd_attendance_hours = fields.Float(
+        string="Attendance Hours",
+        compute="_compute_hd_attendance_hours",
+        digits=(16, 2),
+        readonly=True,
+    )
+
+    def _get_hd_attendance_hours(self):
+        """Return completed attendance hours for the requested leave date."""
+        self.ensure_one()
+        if not self.employee_id or not self.request_date_from:
+            return 0.0
+        attendance_model = self.env["hr.attendance"]
+        day_start = fields.Datetime.to_datetime(
+            self.request_date_from
+        )
+        day_end = day_start + timedelta(days=1)
+        attendances = attendance_model.search([
+            ("employee_id", "=", self.employee_id.id),
+            ("check_in", ">=", day_start),
+            ("check_in", "<", day_end),
+            ("check_out", "!=", False),
+        ])
+        return sum(attendances.mapped("worked_hours"))
+
+    @api.depends(
+        "employee_id",
+        "request_date_from",
+        "holiday_status_id",
+    )
+    def _compute_hd_attendance_hours(self):
+        for leave in self:
+            if leave.employee_id and leave.request_date_from:
+                leave.hd_attendance_hours = (
+                    leave._get_hd_attendance_hours()
+                )
+            else:
+                leave.hd_attendance_hours = 0.0
+
+    def _check_hd_leave_policy(self):
+        if self.env.context.get("skip_hd_leave_policy"):
+            return
+
+        for leave in self:
+            if not leave.employee_id or not leave.holiday_status_id:
+                continue
+
+            # Process only Half-Day leave requests.
+            leave_type = leave.holiday_status_id
+            code = (
+                getattr(leave_type, "time_off_code", False)
+                or getattr(leave_type, "leave_code", False)
+                or getattr(leave_type, "code", False)
+                or ""
+            ).strip().upper()
+
+            if code != "HD":
+                continue
+
+            if not leave.request_date_from or not leave.request_date_to:
+                continue
+
+            if leave.request_date_from != leave.request_date_to:
+                raise ValidationError(
+                    _("Half-Day Leave must be requested for one date only.")
+                )
+
+            if not leave.request_unit_half:
+                raise ValidationError(
+                    _("Please select the Half-Day option for this request.")
+                )
+
+            # Validate completed attendance.
+            attendance_hours = leave._get_hd_attendance_hours()
+
+            if attendance_hours < 5.0:
+                raise ValidationError(
+                    _(
+                        "Half-Day Leave requires at least 5 completed "
+                        "attendance hours on the selected date. "
+                        "Recorded hours: %.2f"
+                    ) % attendance_hours
+                )
+
+            # Allow only one original half-day request per month.
+            month_start = leave.request_date_from.replace(day=1)
+
+            if month_start.month == 12:
+                next_month = month_start.replace(
+                    year=month_start.year + 1,
+                    month=1,
+                    day=1,
+                )
+            else:
+                next_month = month_start.replace(
+                    month=month_start.month + 1,
+                    day=1,
+                )
+
+            existing_leave = self.env["hr.leave"].search([
+                ("employee_id", "=", leave.employee_id.id),
+                ("is_hd_leave_origin", "=", True),
+                ("request_date_from", ">=", month_start),
+                ("request_date_from", "<", next_month),
+                ("state", "not in", ("cancel", "refuse")),
+                ("id", "!=", leave.id),
+            ], limit=1)
+
+            if existing_leave:
+                raise ValidationError(
+                    _(
+                        "Only one Half-Day Leave request is allowed "
+                        "per employee per calendar month."
+                    )
+                )
+
+            # Find the configured EL and LWP types.
+            el_type = leave._get_leave_type_by_code("EL")
+            lwp_type = leave._get_leave_type_by_code("LWP")
+
+            if not el_type:
+                raise ValidationError(
+                    _("Earned Leave (EL) is not configured.")
+                )
+
+            if not lwp_type:
+                raise ValidationError(
+                    _("Leave Without Pay (LWP) is not configured.")
+                )
+            el_balance = leave._get_el_balance(
+                leave.employee_id,
+                leave.request_date_from,
+            )
+            target_type = (
+                el_type if el_balance >= 0.5 else lwp_type
+            )
+            leave.with_context(
+                skip_hd_leave_policy=True,
+                skip_el_advance_check=True,
+                internal_hd_conversion=True,
+            ).write({
+                "is_hd_leave_origin": True,
+                "holiday_status_id": target_type.id,
+                "request_unit_half": True,
+            })
+
+    @api.constrains(
+        "holiday_status_id",
+        "request_unit_half",
+        "request_unit_hours",
+        "request_date_from",
+        "request_date_to",
+    )
+    def _check_el_lwp_full_day_only(self):
+        for leave in self:
+            if not leave.holiday_status_id:
+                continue
+
+            code = (
+                getattr(leave.holiday_status_id, "time_off_code", False)
+                or getattr(leave.holiday_status_id, "leave_code", False)
+                or getattr(leave.holiday_status_id, "code", False)
+                or ""
+            ).strip().upper()
+
+            # Apply only to direct EL/LWP requests.
+            # Half-day-originated requests converted internally are exempt.
+            if code not in ("EL", "LWP"):
+                continue
+
+            if leave.is_hd_leave_origin:
+                continue
+
+            if leave.request_unit_half or leave.request_unit_hours:
+                raise ValidationError(
+                    _(
+                        "%s can only be requested as a full day. "
+                        "For a half-day absence, select Half-Day Leave (HD)."
+                    ) % code
+                )
