@@ -920,6 +920,80 @@
                                     </t>
 
                                 </div>
+                                <h5 class="section-title mt-4">Current Address and Landlord Info</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">
+                                            Current Address
+                                        </label>
+                                        <input type="text"
+                                            name="current_address"
+                                            class="form-control"
+                                            t-att-value="employee.current_address or ''" />
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">
+                                            Landlord Name
+                                        </label>
+                                        <input type="text"
+                                            name="landlord_name"
+                                            class="form-control"
+                                            t-att-value="employee.landlord_name or ''" />
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">
+                                            Landlord Number
+                                        </label>
+                                        <input type="text"
+                                            name="landlord_number"
+                                            class="form-control"
+                                            t-att-value="employee.landlord_number or ''" />
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Rent Agreement Document/Electricity Bill/Water Bill
+                                    </label>
+                                    <div class="employee-file-wrapper">
+                                        <input type="text"
+                                            id="display_rent_agreement"
+                                            class="form-control employee-file-name"
+                                            readonly="1"
+                                            t-att-value="
+                                                document_data.get('rent_agreement')[0].get('name')
+                                                if document_data.get('rent_agreement')
+                                                else 'No file selected.'
+                                            " />
+                                        <label for="rent_agreement"
+                                            class="employee-file-browse">
+                                            Browse...
+                                        </label>
+
+                                        <input type="file"
+                                            id="rent_agreement"
+                                            name="rent_agreement"
+                                            class="employee-file-input"
+                                            accept=".jpg,.jpeg,.png,.pdf" />
+
+                                    </div>
+
+                                    <t t-if="document_data.get('rent_agreement')">
+
+                                        <div class="mt-1">
+
+                                            <a
+                                                t-att-href="document_data.get('rent_agreement')[0].get('url')"
+                                                target="_blank"
+                                                class="small text-primary">
+                                                <i class="fa fa-eye me-1"></i> View Document </a>
+                                            <a
+                                                href="/my/employee-profile/document/remove?field=rent_agreement"
+                                                class="small text-danger ms-3">
+                                                <i class="fa fa-trash me-1"></i> Remove </a>
+                                        </div>
+                                    </t>
+
+                                </div>
+                                </div>
                                 <div class="mt-4">
                                     <div
                                         class="d-flex justify-content-between align-items-center mb-3">

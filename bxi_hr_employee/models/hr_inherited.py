@@ -17,17 +17,17 @@ class HrEmployee(models.Model):
     current_version_id = fields.Many2one('hr.version', groups="base.group_user")
     work_location_address = fields.Char(
         string="Work Location Address",
-        compute="_compute_work_location_address",
+        # compute="_compute_work_location_address",
         store=False,
     )
 
-    def _compute_work_location_address(self):
-        for employee in self:
-            employee.work_location_address = (
-                employee.work_location_id.address
-                if employee.work_location_id
-                else False
-            )
+    # def _compute_work_location_address(self):
+    #     for employee in self:
+    #         employee.work_location_address = (
+    #             employee.work_location_id.address
+    #             if employee.work_location_id
+    #             else False
+    #         )
     is_contractor = fields.Boolean(
         string="Is Contractor",
         compute="_compute_is_contractor",
@@ -42,6 +42,8 @@ class HrEmployee(models.Model):
         'attachment_id',
         string='BXI Offer Letter',
     )
+    # notice_period_start_date = fields.Date(string="Notice Period Start Date")
+    # notice_period_end_date = fields.Date(string="Notice Period End Date")
     employee_code = fields.Char(string="Employee Code")
     pa_name = fields.Char(string="PA Name")  
     psa = fields.Char(string="PSA")
@@ -723,7 +725,19 @@ class HrEmployee(models.Model):
     passport_number = fields.Char(
             string='Passport Number'
         ) 
-    
+    current_address = fields.Char(
+        string="Employee Current Address",
+    )
+    rent_agreement=fields.Many2many(
+        'ir.attachment',
+        'hr_employee_aggrement_rel',
+        'employee_id',
+        'attachment_id',
+        string="Rent Agreement Document/Electricity Bill/Water Bill"
+    )  
+    landlord_name = fields.Char(string="Landlord Name")
+    landlord_number = fields.Char(string="Landlord Number")
+
     def action_send_data_privacy_doc(self):
         self.ensure_one()
         if not self.work_email:
