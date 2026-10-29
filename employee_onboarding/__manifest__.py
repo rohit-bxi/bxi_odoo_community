@@ -9,7 +9,7 @@
     'summary': 'Employee Onboarding and Offboarding Management',
     'description': 'Employee Onboarding and Offboarding Management',
     'license': 'LGPL-3',
-    'depends': ['base', 'hr', 'mail'],
+    'depends': ['base', 'hr', 'mail','hr_recruitment'],
     'data': [
         'security/ir.model.access.csv',
         'security/onboarding_security.xml',
