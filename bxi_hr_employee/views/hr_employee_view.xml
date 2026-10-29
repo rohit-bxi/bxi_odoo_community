@@ -246,7 +246,7 @@
                             <field name="passport_doc" widget="many2many_binary"/>
                             <field name="passport_number"/>
                             <field name="current_address"/>
-                            <field name="rent_agreement"/>
+                            <field name="rent_agreement" widget="many2many_binary"/>
                             <field name="landlord_name"/>
                             <field name="landlord_number"/>
                         </group>

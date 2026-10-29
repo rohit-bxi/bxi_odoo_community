@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <template id="bxi_custom_layout">
+    <template id="bxi_n01_layout">
 <style>
 .footer {
     position: fixed;
