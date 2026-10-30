@@ -448,10 +448,7 @@ class EmployeeOnboardingOffboarding(models.Model):
                     'subject': subject,
                     'body_html': body_html,
                     'email_to': recipient_email,
-                    'email_from': (
-                        self.env.user.email_formatted
-                        or self.env.company.email
-                    ),
+                    'email_from': 'hrsupport@bxitech.com',
                     'model': 'employee.onboarding.offboarding',
                     'res_id': rec.id,
                 }
