@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record model="res.groups.privilege" id="res_groups_glpi">
+            <field name="name">GLPI Integration</field>
+            <field name="sequence">110</field>
+            <field name="category_id" ref="asset_management.asset_category"/>
+        </record>
+
+        <!-- Runs syncs, edits mappings, reads logs. Credentials stay admin-only. -->
+        <record id="group_glpi_manager" model="res.groups">
+            <field name="name">Manager</field>
+            <field name="privilege_id" ref="res_groups_glpi"/>
+            <field name="implied_ids" eval="[(4, ref('asset_management.assets_user_group'))]"/>
+        </record>
+
+        <record id="asset_management.assets_admin_group" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('group_glpi_manager'))]"/>
+        </record>
+
+        <!-- Assets synced from GLPI are created by the scheduler, so the
+             "own assets only" rule of asset_management would hide them. -->
+        <record model="ir.rule" id="assets_glpi_user_rule">
+            <field name="name">GLPI-synced Assets Visible to Asset Users</field>
+            <field name="model_id" ref="asset_management.model_asset_management"/>
+            <field name="domain_force">[('glpi_id', '>', 0)]</field>
+            <field name="groups" eval="[(4, ref('asset_management.assets_user_group'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record model="ir.rule" id="assets_transfer_glpi_user_rule">
+            <field name="name">Transfers of GLPI-synced Assets Visible to Transfer Users</field>
+            <field name="model_id" ref="asset_management.model_asset_transfer_entry"/>
+            <field name="domain_force">[('asset_id.glpi_id', '>', 0)]</field>
+            <field name="groups" eval="[(4, ref('asset_management.transfer_user_group'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+    </data>
+</odoo>

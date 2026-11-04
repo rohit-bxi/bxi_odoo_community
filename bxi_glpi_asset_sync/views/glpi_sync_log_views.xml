@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_glpi_sync_log_list" model="ir.ui.view">
+        <field name="name">glpi.sync.log.list</field>
+        <field name="model">glpi.sync.log</field>
+        <field name="arch" type="xml">
+            <list string="GLPI Sync Logs" create="false"
+                  decoration-danger="state == 'failed'"
+                  decoration-warning="state == 'partial'"
+                  decoration-muted="dry_run">
+                <field name="name"/>
+                <field name="trigger"/>
+                <field name="dry_run" optional="hide"/>
+                <field name="fetched_count" optional="show"/>
+                <field name="created_count"/>
+                <field name="linked_count"/>
+                <field name="updated_count"/>
+                <field name="pushed_count"/>
+                <field name="conflict_count"/>
+                <field name="missing_count" optional="show"/>
+                <field name="error_count"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-warning="state == 'partial'"
+                       decoration-danger="state == 'failed'"
+                       decoration-info="state == 'running'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_glpi_sync_log_form" model="ir.ui.view">
+        <field name="name">glpi.sync.log.form</field>
+        <field name="model">glpi.sync.log</field>
+        <field name="arch" type="xml">
+            <form string="GLPI Sync Log" create="false" edit="false">
+                <header>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <div class="alert alert-info" role="alert" invisible="not dry_run">
+                        Dry run: nothing was written in Odoo or GLPI.
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="not message">
+                        <field name="message"/>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="config_id"/>
+                            <field name="trigger"/>
+                            <field name="dry_run"/>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                        </group>
+                        <group>
+                            <field name="fetched_count"/>
+                            <field name="unchanged_count"/>
+                            <field name="skipped_count"/>
+                            <field name="created_count"/>
+                            <field name="linked_count"/>
+                            <field name="updated_count"/>
+                        </group>
+                        <group>
+                            <field name="pushed_count"/>
+                            <field name="exported_count"/>
+                            <field name="conflict_count"/>
+                            <field name="missing_count"/>
+                            <field name="error_count"/>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list decoration-danger="level == 'error'"
+                              decoration-warning="level == 'warning'">
+                            <field name="level" column_invisible="True"/>
+                            <field name="action" widget="badge"/>
+                            <field name="glpi_itemtype"/>
+                            <field name="glpi_id"/>
+                            <field name="glpi_name"/>
+                            <field name="asset_id"/>
+                            <field name="message"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_glpi_sync_log_search" model="ir.ui.view">
+        <field name="name">glpi.sync.log.search</field>
+        <field name="model">glpi.sync.log</field>
+        <field name="arch" type="xml">
+            <search string="GLPI Sync Logs">
+                <field name="name"/>
+                <filter string="With Errors" name="with_errors" domain="[('error_count', '>', 0)]"/>
+                <filter string="With Conflicts" name="with_conflicts"
+                        domain="[('conflict_count', '>', 0)]"/>
+                <filter string="Failed" name="failed" domain="[('state', '=', 'failed')]"/>
+                <separator/>
+                <filter string="Dry Runs" name="dry_runs" domain="[('dry_run', '=', True)]"/>
+                <filter string="Scheduled" name="scheduled" domain="[('trigger', '=', 'cron')]"/>
+                <group>
+                    <filter string="Result" name="group_by_state" context="{'group_by': 'state'}"/>
+                    <filter string="Trigger" name="group_by_trigger" context="{'group_by': 'trigger'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_glpi_sync_log" model="ir.actions.act_window">
+        <field name="name">GLPI Sync Logs</field>
+        <field name="res_model">glpi.sync.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No synchronisation has run yet</p>
+        </field>
+    </record>
+
+</odoo>

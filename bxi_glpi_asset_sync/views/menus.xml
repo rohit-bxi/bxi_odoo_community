@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem id="menu_glpi_assets"
+              name="GLPI Assets"
+              parent="asset_management.menu_asset_root"
+              action="action_glpi_assets"
+              groups="asset_management.assets_user_group,base.group_system"
+              sequence="15"/>
+
+    <menuitem id="menu_glpi_root"
+              name="GLPI Integration"
+              parent="asset_management.asset_configuration"
+              groups="group_glpi_manager,base.group_system"
+              sequence="50"/>
+
+    <menuitem id="menu_glpi_config"
+              name="Connection"
+              parent="menu_glpi_root"
+              action="action_glpi_config"
+              groups="group_glpi_manager,base.group_system"
+              sequence="10"/>
+
+    <menuitem id="menu_glpi_sync_wizard"
+              name="Run Sync"
+              parent="menu_glpi_root"
+              action="action_glpi_sync_wizard"
+              groups="group_glpi_manager,base.group_system"
+              sequence="20"/>
+
+    <menuitem id="menu_glpi_sync_log"
+              name="Sync Logs"
+              parent="menu_glpi_root"
+              action="action_glpi_sync_log"
+              groups="group_glpi_manager,base.group_system"
+              sequence="30"/>
+
+    <menuitem id="menu_glpi_type_map"
+              name="Type Mapping"
+              parent="menu_glpi_root"
+              action="action_glpi_type_map"
+              groups="group_glpi_manager,base.group_system"
+              sequence="40"/>
+
+    <menuitem id="menu_glpi_status_map"
+              name="Status Mapping"
+              parent="menu_glpi_root"
+              action="action_glpi_status_map"
+              groups="group_glpi_manager,base.group_system"
+              sequence="50"/>
+
+    <menuitem id="menu_glpi_user_map"
+              name="User Mapping"
+              parent="menu_glpi_root"
+              action="action_glpi_user_map"
+              groups="group_glpi_manager,base.group_system"
+              sequence="60"/>
+
+</odoo>

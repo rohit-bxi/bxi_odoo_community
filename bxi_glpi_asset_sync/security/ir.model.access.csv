@@ -1,0 +1,12 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_glpi_config_manager,glpi.config.manager,model_glpi_config,group_glpi_manager,1,1,0,0
+access_glpi_config_system,glpi.config.system,model_glpi_config,base.group_system,1,1,1,1
+access_glpi_type_map_user,glpi.type.map.user,model_glpi_type_map,asset_management.assets_user_group,1,0,0,0
+access_glpi_type_map_manager,glpi.type.map.manager,model_glpi_type_map,group_glpi_manager,1,1,1,1
+access_glpi_status_map_user,glpi.status.map.user,model_glpi_status_map,asset_management.assets_user_group,1,0,0,0
+access_glpi_status_map_manager,glpi.status.map.manager,model_glpi_status_map,group_glpi_manager,1,1,1,1
+access_glpi_user_map_user,glpi.user.map.user,model_glpi_user_map,asset_management.assets_user_group,1,0,0,0
+access_glpi_user_map_manager,glpi.user.map.manager,model_glpi_user_map,group_glpi_manager,1,1,1,1
+access_glpi_sync_log_manager,glpi.sync.log.manager,model_glpi_sync_log,group_glpi_manager,1,0,0,1
+access_glpi_sync_log_line_manager,glpi.sync.log.line.manager,model_glpi_sync_log_line,group_glpi_manager,1,0,0,1
+access_glpi_sync_wizard_manager,glpi.sync.wizard.manager,model_glpi_sync_wizard,group_glpi_manager,1,1,1,1
