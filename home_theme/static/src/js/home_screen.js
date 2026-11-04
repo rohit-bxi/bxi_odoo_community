@@ -8,6 +8,7 @@ import { browser } from "@web/core/browser/browser";
 import { rpc } from "@web/core/network/rpc";
 import { _t } from "@web/core/l10n/translation";
 import { localization } from "@web/core/l10n/localization";
+import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 
 const MAX_SEARCH_RESULTS = 12;
 const GROUP_KEY = "home_theme.group_by_category";
@@ -38,6 +39,7 @@ export class HomeScreenDashboard extends Component {
         this.action = useService("action");
         this.menu = useService("menu");
         this.homeMenu = useService("home_menu");
+        this.dialog = useService("dialog");
         this.rootRef = useRef("root");
         this.searchInputRef = useRef("searchInput");
 
@@ -285,6 +287,13 @@ export class HomeScreenDashboard extends Component {
             }
         } catch (error) {
             console.error("[HomeScreen] Error navigating to search result:", menuItem.name, error);
+            const msg = error?.data?.message || error?.message || error?.error?.data?.message || (typeof error === "string" ? error : "");
+            if (msg) {
+                this.dialog.add(AlertDialog, {
+                    title: _t("Notice"),
+                    body: msg,
+                });
+            }
         }
     }
 
@@ -784,6 +793,13 @@ export class HomeScreenDashboard extends Component {
             }
         } catch (error) {
             console.error("[HomeScreen] Error navigating to app:", app.name, error);
+            const msg = error?.data?.message || error?.message || error?.error?.data?.message || (typeof error === "string" ? error : "");
+            if (msg) {
+                this.dialog.add(AlertDialog, {
+                    title: _t("Notice"),
+                    body: msg,
+                });
+            }
         }
     }
 }

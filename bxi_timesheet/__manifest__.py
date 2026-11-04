@@ -31,6 +31,7 @@
         'views/desktime_log_views.xml',
         'views/monthly_attendance_timesheet_wizard_views.xml',
         'views/menu.xml',
+        'views/maintenance.xml',
     ],
     'assets': {
         'web.assets_backend': [
