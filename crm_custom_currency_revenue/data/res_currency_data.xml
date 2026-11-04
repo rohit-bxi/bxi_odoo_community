@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Ensure INR, AED, and USD are active out-of-the-box -->
+    <record id="base.INR" model="res.currency">
+        <field name="active" eval="True"/>
+    </record>
+    <record id="base.AED" model="res.currency">
+        <field name="active" eval="True"/>
+    </record>
+    <record id="base.USD" model="res.currency">
+        <field name="active" eval="True"/>
+    </record>
+</odoo>
