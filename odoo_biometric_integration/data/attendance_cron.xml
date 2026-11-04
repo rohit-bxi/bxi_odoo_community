@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Downloads every device, location by location. To give a location a schedule of
+             its own, add a scheduled action with the code
+             model.action_download_attendance(called_via_cron=True, location_ids=[<location id>]) -->
+        <record id="ir_cron_download_attendance" model="ir.cron">
+            <field name="name">Download Attendance Daily From Biometric</field>
+            <field name="model_id" ref="odoo_biometric_integration.model_essl_api_config"/> 
+            <field name="state">code</field>
+            <field name="code">model.action_download_attendance(called_via_cron=True)</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active">True</field>
+            <!-- <field name="nextcall">2025-04-17 22:00:00</field> -->
+        </record>
+    </data>
+</odoo>

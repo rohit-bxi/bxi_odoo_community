@@ -356,6 +356,14 @@ class HrAttendance(models.Model):
         if vals.get("is_auto_checkout") is True:
             return
         # --------------------------------------------------------
+        # Biometric device sync (odoo_biometric_integration)
+        # --------------------------------------------------------
+        # Device punches carry no GPS: the device itself proves
+        # presence. Only honoured in sudo, so it cannot be sent
+        # from the web client.
+        if self.env.su and self.env.context.get("essl_biometric_sync"):
+            return
+        # --------------------------------------------------------
         # Determine operation
         # --------------------------------------------------------
         is_checkin = "check_in" in vals

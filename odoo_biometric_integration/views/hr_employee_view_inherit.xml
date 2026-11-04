@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_employee_form_view_inherits" model="ir.ui.view">
+        <field name="name">hr.employee.inherit</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//page[@name='hr_settings']" position="attributes">
+                <attribute name="groups">hr.group_hr_manager</attribute>
+            </xpath>
+
+            <xpath expr="//page[@name='personal_information']" position="after">
+                <page name="biometric_configuration" string="Biometric Configuration" groups="hr.group_hr_user">
+                    <group>
+                        <group>
+                            <field name="device_id" string="Biometric Device"
+                                options="{'no_create': True, 'no_create_edit': True}" readonly="not essl_can_edit_device"
+                                />
+                            <field name="essl_emp_code" string="Biometric Employee Code" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
