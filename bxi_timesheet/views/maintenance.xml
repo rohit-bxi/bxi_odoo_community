@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         TIMESHEET MAINTENANCE MODE
+         When this file is active:
+         1. Main menu click directly opens a modal popup dialog
+            alerting the user about the maintenance work.
+         2. All child menus are deactivated to prevent bypass.
+         ============================================================ -->
+
+    <!-- Form View for Maintenance Popup Dialog -->
+    <record id="view_timesheet_maintenance_warning_form" model="ir.ui.view">
+        <field name="name">timesheet.maintenance.warning.form</field>
+        <field name="model">timesheet.maintenance.warning</field>
+        <field name="arch" type="xml">
+            <form string="Notice">
+                <div class="alert alert-warning d-flex align-items-center" role="alert" style="font-size: 15px; margin: 15px 0; border-left: 5px solid #f0ad4e;">
+                    <div style="font-size: 15px; font-weight: 500; color: #856404; line-height: 1.5;">
+                        Due to maintenance, the module is currently not working. We will inform once the maintenance is completed.
+                    </div>
+                </div>
+                <footer>
+                    <button string="OK" class="btn-primary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Act Window Action to open Maintenance Popup Dialog -->
+    <record id="action_timesheet_maintenance_popup" model="ir.actions.act_window">
+        <field name="name">Maintenance Notice</field>
+        <field name="res_model">timesheet.maintenance.warning</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="view_timesheet_maintenance_warning_form"/>
+    </record>
+
+    <!-- Fallback Server Action to also return popup action if called -->
+    <record id="action_timesheet_maintenance_alert" model="ir.actions.server">
+        <field name="name">Timesheet Maintenance Alert</field>
+        <field name="model_id" ref="base.model_res_users"/>
+        <field name="state">code</field>
+        <field name="code">
+action = {
+    'name': 'Maintenance Notice',
+    'type': 'ir.actions.act_window',
+    'res_model': 'timesheet.maintenance.warning',
+    'view_mode': 'form',
+    'views': [(env.ref('bxi_timesheet.view_timesheet_maintenance_warning_form').id, 'form')],
+    'target': 'new',
+}
+        </field>
+    </record>
+
+    <!-- Bind Timesheets Main Menu to the Maintenance Popup Action -->
+    <record id="hr_timesheet.timesheet_menu_root" model="ir.ui.menu">
+        <field name="action" ref="bxi_timesheet.action_timesheet_maintenance_popup"/>
+    </record>
+
+    <!-- Deactivate and redirect child menus to prevent any bypass -->
+    <record id="bxi_timesheet.menu_bxi_timesheet_dashboard" model="ir.ui.menu">
+        <field name="action" ref="bxi_timesheet.action_timesheet_maintenance_popup"/>
+        <field name="active" eval="False"/>
+    </record>
+
+    <record id="hr_timesheet.timesheet_menu_activity_user" model="ir.ui.menu">
+        <field name="action" ref="bxi_timesheet.action_timesheet_maintenance_popup"/>
+        <field name="active" eval="False"/>
+    </record>
+
+    <record id="hr_timesheet.menu_hr_time_tracking" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <record id="bxi_timesheet.menu_bxi_timesheet_team_approvals" model="ir.ui.menu">
+        <field name="action" ref="bxi_timesheet.action_timesheet_maintenance_popup"/>
+        <field name="active" eval="False"/>
+    </record>
+
+    <record id="bxi_timesheet.menu_bxi_timesheet_admin_approvals" model="ir.ui.menu">
+        <field name="action" ref="bxi_timesheet.action_timesheet_maintenance_popup"/>
+        <field name="active" eval="False"/>
+    </record>
+
+    <record id="bxi_timesheet.menu_bxi_desktime_root" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <record id="bxi_timesheet.menu_bxi_timesheet_reporting" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <record id="hr_timesheet.menu_timesheets_reports" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <record id="hr_timesheet.hr_timesheet_menu_configuration" model="ir.ui.menu">
+        <field name="action" ref="bxi_timesheet.action_timesheet_maintenance_popup"/>
+        <field name="active" eval="False"/>
+    </record>
+
+</odoo>

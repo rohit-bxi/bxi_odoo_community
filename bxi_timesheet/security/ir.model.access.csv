@@ -7,3 +7,4 @@ access_bxi_desktime_log_user,bxi.desktime.log.user,model_bxi_desktime_log,base.g
 access_bxi_desktime_sync_wizard,bxi.desktime.sync.wizard.user,model_bxi_desktime_sync_wizard,base.group_user,1,1,1,1
 access_bxi_monthly_attendance_timesheet_wizard,bxi.monthly.attendance.timesheet.wizard.admin,model_bxi_monthly_attendance_timesheet_wizard,base.group_erp_manager,1,1,1,1
 access_bxi_monthly_attendance_timesheet_wizard_system,bxi.monthly.attendance.timesheet.wizard.system,model_bxi_monthly_attendance_timesheet_wizard,base.group_system,1,1,1,1
+access_timesheet_maintenance_warning,timesheet.maintenance.warning,model_timesheet_maintenance_warning,base.group_user,1,1,1,1
