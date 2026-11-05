@@ -202,6 +202,16 @@ class TestGlpiSync(TransactionCase):
         self.assertIn('RAM: 16 GB', created.glpi_specs)
         self.assertEqual(created.glpi_date_mod.strftime('%H:%M'), '03:49', "stored in UTC")
 
+    def test_created_asset_gets_type_accounts(self):
+        account = self.env['account.account'].create({
+            'name': 'GLPI Test Laptops', 'code': '999901', 'account_type': 'asset_fixed'})
+        self.laptop_type.fixed_asset_account_id = account
+        self._sync(push=False)
+        created = self._glpi_asset(2)
+        self.assertEqual(created.asset_type_id, self.laptop_type)
+        self.assertEqual(created.fixed_asset_account_id, account,
+                         "a mapped type must fill its accounts like the asset form does")
+
     def test_second_run_is_idempotent(self):
         self._sync(push=False)
         log = self._sync(push=False)
