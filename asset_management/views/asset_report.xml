@@ -128,7 +128,7 @@
               name="Reporting"
               parent="menu_asset_root"
               groups="reporting_admin_group,base.group_system"
-              sequence="70"/>
+              sequence="65"/>
 
     <!-- Each sub-menu links to a specific chart action -->
     <menuitem id="menu_asset_type_graph"
