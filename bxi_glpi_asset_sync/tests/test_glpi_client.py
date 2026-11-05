@@ -79,6 +79,23 @@ class TestGlpiClient(TransactionCase):
         with self.assertRaisesRegex(GlpiError, 'client_id'):
             self.client.list_assets('Computer')
 
+    def test_auth_failure_explains_missing_password_grant(self):
+        self.client.session.post.return_value = response(status=400, json={
+            'error': 'unauthorized_client',
+            'error_description': 'The authenticated client is not authorized to use this '
+                                 'authorization grant type.',
+        })
+        with self.assertRaisesRegex(GlpiError, r"(?s)not authorized.*add 'Password' to Grants"):
+            self.client.list_assets('Computer')
+
+    def test_auth_failure_explains_wrong_user_password(self):
+        self.client.session.post.return_value = response(status=400, json={
+            'error': 'invalid_grant',
+            'error_description': 'The user credentials were incorrect.',
+        })
+        with self.assertRaisesRegex(GlpiError, 'rejected the username or password'):
+            self.client.list_assets('Computer')
+
     def test_404_allowed(self):
         self.client.session.request.return_value = response(status=404, json={})
         self.assertIsNone(self.client.get_infocom('Computer', 9))

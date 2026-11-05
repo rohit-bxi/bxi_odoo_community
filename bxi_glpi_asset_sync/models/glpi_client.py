@@ -34,6 +34,23 @@ ITEMTYPE_PATHS = {code: f'/Assets/{code}' for code, _label in GLPI_ITEMTYPES}
 # Hardware components summarised into the asset specs (Computer only).
 COMPONENT_KINDS = ('Processor', 'Memory', 'HardDrive')
 
+# What to fix in GLPI for each OAuth2 error code returned by /api.php/token.
+OAUTH_ERROR_HINTS = {
+    'unauthorized_client': (
+        "The GLPI OAuth client does not allow the Password grant. In GLPI open "
+        "Setup > OAuth clients, edit this client, add 'Password' to Grants and save."),
+    'invalid_client': (
+        "GLPI does not recognise the OAuth Client ID / Client Secret. Copy both again "
+        "from Setup > OAuth clients in GLPI."),
+    'invalid_grant': (
+        "GLPI rejected the username or password. Check that this GLPI user is active, "
+        "can log into the GLPI web page with this password, and has two-factor "
+        "authentication disabled."),
+    'invalid_scope': (
+        "The GLPI OAuth client does not allow the requested scope. Add the 'api' scope "
+        "to the client in Setup > OAuth clients."),
+}
+
 _token_cache = {}
 _token_lock = threading.Lock()
 _content_range_re = re.compile(r'(\d+)-(\d+)/(\d+)')
@@ -93,9 +110,11 @@ class GlpiClient:
         except requests.exceptions.RequestException as e:
             raise GlpiError(f'Cannot reach GLPI at {self.base_url}: {e}') from e
         if resp.status_code != 200:
-            raise GlpiError(
-                f'GLPI authentication failed (HTTP {resp.status_code}): {self._error_detail(resp)}',
-                resp.status_code)
+            message = f'GLPI authentication failed (HTTP {resp.status_code}): {self._error_detail(resp)}'
+            hint = OAUTH_ERROR_HINTS.get(self._error_code(resp))
+            if hint:
+                message = f'{message}\n\n{hint}'
+            raise GlpiError(message, resp.status_code)
         payload = resp.json()
         token = payload.get('access_token')
         if not token:
@@ -184,6 +203,15 @@ class GlpiClient:
     def _total_from_range(value):
         match = _content_range_re.search(value or '')
         return int(match.group(3)) if match else None
+
+    @staticmethod
+    def _error_code(resp):
+        """OAuth2 ``error`` code of a token response, e.g. 'invalid_grant'."""
+        try:
+            body = resp.json()
+        except ValueError:
+            return None
+        return body.get('error') if isinstance(body, dict) else None
 
     @staticmethod
     def _error_detail(resp):

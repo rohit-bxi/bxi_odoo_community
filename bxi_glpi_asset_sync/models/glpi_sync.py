@@ -36,6 +36,10 @@ COMMIT_BATCH = 25
 # Fields refreshed on every pull that do not count as a real change.
 BOOKKEEPING_FIELDS = {'glpi_date_mod', 'glpi_last_pull', 'glpi_last_inventory'}
 WARNING_ACTIONS = {'conflict', 'mismatch', 'trashed', 'missing'}
+# Asset Type defaults copied onto an asset when the type is set from a Type Mapping.
+TYPE_ACCOUNT_FIELDS = ('fixed_asset_account_id', 'depreciation_expense_account_id',
+                       'accumulated_depreciation_account_id', 'asset_journal_id',
+                       'asset_clearing_account_id')
 
 
 class GlpiSync(models.AbstractModel):
@@ -434,6 +438,10 @@ class _SyncRun:
         asset_type = type_map.asset_type_id or self.config.default_asset_type_id
         if asset_type and empty('asset_type_id'):
             vals['asset_type_id'] = asset_type.id
+            # Same defaults as picking the type in the form (_onchange_asset_type).
+            for fname in TYPE_ACCOUNT_FIELDS:
+                if asset_type[fname] and empty(fname):
+                    vals[fname] = asset_type[fname].id
         if asset is None and type_map.tag_ids:
             vals['tag_ids'] = [Command.set(type_map.tag_ids.ids)]
         if asset is None:
