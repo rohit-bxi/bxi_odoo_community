@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_essl_punch_history_user,essl.punch.history.user,model_essl_punch_history,base.group_user,1,0,0,0
+access_essl_punch_history_manager,essl.punch.history.manager,model_essl_punch_history,hr_attendance.group_hr_attendance_manager,1,1,1,1
+access_essl_api_config_hr_manager,essl.api.config.hr.manager,model_essl_api_config,hr.group_hr_manager,1,0,0,0
+access_essl_api_config_manager,essl.api.config.manager,model_essl_api_config,hr_attendance.group_hr_attendance_manager,1,1,1,1
+access_visitors_detail_manager,visitors.detail.manager,model_visitors_detail,hr_attendance.group_hr_attendance_manager,1,1,1,1
+access_essl_sync_log_manager,essl.attendance.sync.log.manager,model_essl_attendance_sync_log,hr_attendance.group_hr_attendance_manager,1,1,1,1
+access_manual_upload_attendance_manager,manual.upload.attendance.manager,model_manual_upload_attendance,hr_attendance.group_hr_attendance_manager,1,1,1,1

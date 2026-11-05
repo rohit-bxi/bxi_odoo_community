@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_essl_api_config_tree" model="ir.ui.view">
+        <field name="name">essl.api.config.tree</field>
+        <field name="model">essl.api.config</field>
+        <field name="arch" type="xml">
+            <list default_order="id desc">
+                <field name="name_id"/>
+                <field name="work_location_id"/>
+                <field name="device_ip"/>
+                <field name="port_number"/>
+                <field name="company_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_essl_api_config_search" model="ir.ui.view">
+        <field name="name">essl.api.config.search</field>
+        <field name="model">essl.api.config</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name_id"/>
+                <field name="device_ip"/>
+                <field name="work_location_id"/>
+                <group>
+                    <filter name="group_by_location" string="Location" context="{'group_by': 'work_location_id'}"/>
+                    <filter name="group_by_company" string="Company" context="{'group_by': 'company_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_essl_api_config_form" model="ir.ui.view">
+        <field name="name">essl.api.config.form</field>
+        <field name="model">essl.api.config</field>
+        <field name="arch" type="xml">
+            <form string="Biometric API Configuration">
+                <header>
+                    <field name="status" widget="statusbar"/>
+                    <button name="action_download_attendance" 
+                        string="Get Attendance" 
+                        type="object" class="oe_highlight"
+                    />
+                    <button name="action_lock" 
+                        string="Lock" 
+                        type="object" 
+                        class="oe_highlight"
+                        invisible="status =='lock'"
+                    />
+                    <button name="action_move_to_draft" 
+                        string="Move To draft" 
+                        type="object" 
+                        class="oe_highlight"
+                        invisible="status =='draft'"
+                    />
+
+                </header>
+                <sheet>
+                    <group>
+                        <field name="name_id" 
+                            placeholder="Enter Configuration Name" 
+                            class="oe_edit_only" 
+                            style="font-size:18px; font-weight:bold; width:100%;"
+                            readonly="status == 'lock'"
+                        />
+                    </group>
+
+                    <notebook>
+                        <page string="Biometric Configuration">
+                            <group>
+                                <field name="device_ip" 
+                                    readonly="status == 'lock'"
+                                    />
+                                <field name="port_number" 
+                                    readonly="status == 'lock'"
+                                    />
+                                <field name="device_password" password="True"
+                                    readonly="status == 'lock'"
+                                    />
+                                <field name="tz"
+                                    readonly="status == 'lock'"
+                                    />
+                                <field name="day_start_time" widget="float_time"
+                                    readonly="status == 'lock'"
+                                    />
+                                <field name="company_id"
+                                    readonly="status == 'lock'"
+                                    options="{'no_create': True, 'no_create_edit': True}"
+                                    />
+                                <field name="work_location_id"
+                                    readonly="status == 'lock'"
+                                    options="{'no_create': True, 'no_create_edit': True}"
+                                    />
+                                <field name="start_date"
+                                    required="1" 
+                                    readonly="status == 'lock'"
+                                    />
+                            </group>
+                            <div class="d-flex align-items-center" style="gap: 10px;">
+                                <button name="action_test_connection"
+                                        type="object" class="btn btn-secondary">
+                                    <i class="fa fa-fw o_button_icon fa-television"/>
+                                    Test Connection
+                                </button>
+
+                                <button name="get_all_visitors"
+                                        type="object" class="btn btn-secondary">
+                                    <i class="fa fa-fw o_button_icon fa-users"/>
+                                    Get Visitors
+                                </button> 
+                            </div>
+                            <notebook>
+                                <page string="Device Information">
+                                    <group>
+                                        <field name="device_name" force_save="1" readonly="1"/>
+                                        <field name="device_firmware" force_save="1" readonly="1"/>
+                                        <field name="device_serial_no" force_save="1" readonly="1"/>
+                                        <field name="device_platform" force_save="1" readonly="1"/>
+                                        <field name="device_mac" force_save="1" readonly="1"/>
+                                    </group>
+                                </page>
+                                <page string="Visitors Records">
+                                    <field name="essl_api_config_ids" readonly="status == 'lock'">
+                                        <list editable="bottom">
+                                            <field name="visitors_id"/>
+                                            <field name="visitors_name"/>
+                                            <field name="employee_id"
+                                                options="{'no_create': True, 'no_create_edit': True}"
+                                                />
+                                        </list>
+                                    </field>
+                                </page>
+                            </notebook>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_essl_api_config" model="ir.actions.act_window">
+        <field name="name">Biometric API Configuration</field>
+        <field name="res_model">essl.api.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Configure API settings for Biometric integration.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_essl_api_config_root"
+          name="Biometric"
+          parent="hr.menu_human_resources_configuration"
+          sequence="4"
+          groups="hr_attendance.group_hr_attendance_manager"
+          />
+
+    <menuitem id="menu_essl_api_config"
+          name="Biometric Config"
+          parent="menu_essl_api_config_root"
+          action="action_essl_api_config"
+          sequence="1"
+          groups="hr_attendance.group_hr_attendance_manager"
+          />
+</odoo>

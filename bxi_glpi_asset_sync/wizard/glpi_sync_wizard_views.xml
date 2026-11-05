@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_glpi_sync_wizard_form" model="ir.ui.view">
+        <field name="name">glpi.sync.wizard.form</field>
+        <field name="model">glpi.sync.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Run GLPI Sync">
+                <div class="alert alert-info" role="alert" invisible="not dry_run">
+                    A dry run lists what would be created, linked and updated in Odoo
+                    without writing anything. Run one before the first real import.
+                </div>
+                <div class="alert alert-warning" role="alert"
+                     invisible="dry_run or write_back_enabled or mode == 'pull'">
+                    Write-back is disabled: only the pull from GLPI will run.
+                </div>
+                <group>
+                    <field name="config_id"/>
+                    <field name="mode" widget="radio"/>
+                    <field name="dry_run"/>
+                    <field name="write_back_enabled" invisible="1"/>
+                </group>
+                <footer>
+                    <button name="action_run" string="Run" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_glpi_sync_wizard" model="ir.actions.act_window">
+        <field name="name">Run GLPI Sync</field>
+        <field name="res_model">glpi.sync.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

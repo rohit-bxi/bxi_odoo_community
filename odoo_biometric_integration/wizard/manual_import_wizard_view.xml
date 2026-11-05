@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_manual_upload_attendance_form" model="ir.ui.view">
+        <field name="name">manual.upload.attendance.form</field>
+        <field name="model">manual.upload.attendance</field>
+        <field name="arch" type="xml">
+            <form string="Manual Upload Attendance">
+                <sheet>
+                    <group>
+
+                        <field name="option_dropdown"/>
+                        <field name="upload_option"
+                            invisible="option_dropdown != 'update'"
+                            required="option_dropdown == 'update'"
+                            />
+                        <field name="record_uploaded_for_date"
+                            invisible="option_dropdown != 'update'"
+                            required="option_dropdown == 'update'"
+                            />
+                        <field name="upload_file"
+                            string="Attach File To Upload" 
+                            invisible="option_dropdown != 'update'"
+                            required="option_dropdown == 'update'"
+                            icon="fa fa-upload"
+                            />
+                        <field name="device_id"
+                            invisible="option_dropdown != 'update'"
+                            options="{'no_create': True, 'no_create_edit': True}"
+                            />
+                    </group>
+                    <group>
+                        <button name="action_download_excel" 
+                            string="Download Sample Excel" 
+                            type="object" 
+                            class="btn-primary" 
+                            icon="fa-download"
+                            invisible="option_dropdown != 'download'"
+                            />
+                    </group>
+                    <footer>
+                        <button name="action_confirm" string="Confirm" type="object" class="btn-primary"
+                            invisible="option_dropdown != 'update'"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_manual_upload_attendance" model="ir.actions.act_window">
+        <field name="name">Manual Upload Attendance</field>
+        <field name="res_model">manual.upload.attendance</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- <menuitem id="menu_manual_upload_attendance" 
+        name="Manual Upload Attendance"
+        action="action_manual_upload_attendance"
+        parent="menu_essl_api_config_root"
+        sequence="3"
+        groups="hr_attendance.group_hr_attendance_manager"
+    /> -->
+</odoo>

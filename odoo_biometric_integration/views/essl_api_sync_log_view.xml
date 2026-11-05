@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_essl_attendance_sync_log_tree" model="ir.ui.view">
+        <field name="name">essl.attendance.sync.log.tree</field>
+        <field name="model">essl.attendance.sync.log</field>
+        <field name="arch" type="xml">
+            <list default_order="id desc">
+                <field name="request_data"/>
+                <field name="device_id"/>
+                <field name="work_location_id"/>
+                <field name="response_data"/>
+                <field name="status"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_essl_attendance_sync_log_search" model="ir.ui.view">
+        <field name="name">essl.attendance.sync.log.search</field>
+        <field name="model">essl.attendance.sync.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="device_id"/>
+                <field name="work_location_id"/>
+                <filter name="filter_exception" string="Exceptions" domain="[('status', '=', 'exception')]"/>
+                <group>
+                    <filter name="group_by_location" string="Location" context="{'group_by': 'work_location_id'}"/>
+                    <filter name="group_by_device" string="Device" context="{'group_by': 'device_id'}"/>
+                    <filter name="group_by_status" string="Status" context="{'group_by': 'status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_essl_attendance_sync_log_form" model="ir.ui.view">
+        <field name="name">essl.attendance.sync.log.form</field>
+        <field name="model">essl.attendance.sync.log</field>
+        <field name="arch" type="xml">
+            <form string="Biometric Attendance Sync Log">
+                <header>
+                    <field name="status" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="request_data" readonly="1"/>
+                        <field name="device_id" readonly="1"/>
+                        <field name="work_location_id" readonly="1"/>
+                        <field name="response_data" readonly="1"/>
+                        <field name="exception_reason" readonly="1"
+                            invisible="status != 'exception'"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_essl_attendance_sync_log" model="ir.actions.act_window">
+        <field name="name">Biometric Attendance Sync Log</field>
+        <field name="res_model">essl.attendance.sync.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p>
+                Manage and track Biometric attendance synchronization logs.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_essl_attendance_sync_log" 
+        name="Biometric Attendance Sync Log"
+        action="action_essl_attendance_sync_log"
+        parent="menu_essl_api_config_root"
+        sequence="2"
+        groups="hr_attendance.group_hr_attendance_manager"
+        />
+</odoo>
