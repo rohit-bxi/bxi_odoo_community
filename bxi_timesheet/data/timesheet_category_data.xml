@@ -1,0 +1,664 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- 1. Revenue Generation -->
+        <record id="cat_revenue_generation" model="timesheet.category">
+            <field name="name">Revenue Generation</field>
+            <field name="code">revenue_generation</field>
+            <field name="sequence">10</field>
+            <field name="is_crm" eval="True"/>
+        </record>
+        <record id="act_rg_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_revenue_generation"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 2. Delivery / Project Execution -->
+        <record id="cat_delivery_project" model="timesheet.category">
+            <field name="name">Delivery / Project Execution</field>
+            <field name="code">delivery_project</field>
+            <field name="sequence">20</field>
+            <field name="is_project" eval="True"/>
+        </record>
+        <record id="act_dp_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_delivery_project"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 3. Presales & Bid Management -->
+        <record id="cat_presales_bid" model="timesheet.category">
+            <field name="name">Presales &amp; Bid Management</field>
+            <field name="code">presales_bid</field>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_pb_proposal" model="timesheet.activity">
+            <field name="name">Proposal Preparation</field>
+            <field name="category_id" ref="cat_presales_bid"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_pb_bid_sub" model="timesheet.activity">
+            <field name="name">Bid Submission</field>
+            <field name="category_id" ref="cat_presales_bid"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="act_pb_rfp" model="timesheet.activity">
+            <field name="name">RFP / RFI Response</field>
+            <field name="category_id" ref="cat_presales_bid"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_pb_solution" model="timesheet.activity">
+            <field name="name">Solution Designing</field>
+            <field name="category_id" ref="cat_presales_bid"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_pb_pitch" model="timesheet.activity">
+            <field name="name">Client Pitch &amp; Demo</field>
+            <field name="category_id" ref="cat_presales_bid"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_pb_costing" model="timesheet.activity">
+            <field name="name">Estimation &amp; Costing</field>
+            <field name="category_id" ref="cat_presales_bid"/>
+            <field name="sequence">60</field>
+        </record>
+        <record id="act_pb_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_presales_bid"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 4. Customer Success & Support -->
+        <record id="cat_customer_success" model="timesheet.category">
+            <field name="name">Customer Success &amp; Support</field>
+            <field name="code">customer_success</field>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_cs_ticket" model="timesheet.activity">
+            <field name="name">Ticket Resolution</field>
+            <field name="category_id" ref="cat_customer_success"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_cs_incident" model="timesheet.activity">
+            <field name="name">Incident Management</field>
+            <field name="category_id" ref="cat_customer_success"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="act_cs_user_sup" model="timesheet.activity">
+            <field name="name">User Support</field>
+            <field name="category_id" ref="cat_customer_success"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_cs_service_rev" model="timesheet.activity">
+            <field name="name">Service Review</field>
+            <field name="category_id" ref="cat_customer_success"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_cs_training" model="timesheet.activity">
+            <field name="name">Customer Training</field>
+            <field name="category_id" ref="cat_customer_success"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_cs_escalation" model="timesheet.activity">
+            <field name="name">Escalation Handling</field>
+            <field name="category_id" ref="cat_customer_success"/>
+            <field name="sequence">60</field>
+        </record>
+        <record id="act_cs_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_customer_success"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 5. Finance & Accounts -->
+        <record id="cat_finance_accounts" model="timesheet.category">
+            <field name="name">Finance &amp; Accounts</field>
+            <field name="code">finance_accounts</field>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_fa_invoicing" model="timesheet.activity">
+            <field name="name">Invoicing</field>
+            <field name="category_id" ref="cat_finance_accounts"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_fa_collections" model="timesheet.activity">
+            <field name="name">Collections</field>
+            <field name="category_id" ref="cat_finance_accounts"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="act_fa_ap" model="timesheet.activity">
+            <field name="name">Accounts Payable</field>
+            <field name="category_id" ref="cat_finance_accounts"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_fa_ar" model="timesheet.activity">
+            <field name="name">Accounts Receivable</field>
+            <field name="category_id" ref="cat_finance_accounts"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_fa_reconciliation" model="timesheet.activity">
+            <field name="name">Reconciliation</field>
+            <field name="category_id" ref="cat_finance_accounts"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_fa_reporting" model="timesheet.activity">
+            <field name="name">Financial Reporting</field>
+            <field name="category_id" ref="cat_finance_accounts"/>
+            <field name="sequence">60</field>
+        </record>
+        <record id="act_fa_audit" model="timesheet.activity">
+            <field name="name">Audit Support</field>
+            <field name="category_id" ref="cat_finance_accounts"/>
+            <field name="sequence">70</field>
+        </record>
+        <record id="act_fa_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_finance_accounts"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 6. Human Resources -->
+        <record id="cat_human_resources" model="timesheet.category">
+            <field name="name">Human Resources</field>
+            <field name="code">human_resources</field>
+            <field name="sequence">60</field>
+        </record>
+        <record id="act_hr_recruitment" model="timesheet.activity">
+            <field name="name">Recruitment</field>
+            <field name="category_id" ref="cat_human_resources"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_hr_interview" model="timesheet.activity">
+            <field name="name">Interview</field>
+            <field name="category_id" ref="cat_human_resources"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="act_hr_onboarding" model="timesheet.activity">
+            <field name="name">Onboarding</field>
+            <field name="category_id" ref="cat_human_resources"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_hr_offboarding" model="timesheet.activity">
+            <field name="name">Offboarding</field>
+            <field name="category_id" ref="cat_human_resources"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_hr_payroll" model="timesheet.activity">
+            <field name="name">Payroll Support</field>
+            <field name="category_id" ref="cat_human_resources"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_hr_attendance" model="timesheet.activity">
+            <field name="name">Attendance Review</field>
+            <field name="category_id" ref="cat_human_resources"/>
+            <field name="sequence">60</field>
+        </record>
+        <record id="act_hr_performance" model="timesheet.activity">
+            <field name="name">Performance Management</field>
+            <field name="category_id" ref="cat_human_resources"/>
+            <field name="sequence">70</field>
+        </record>
+        <record id="act_hr_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_human_resources"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 7. Legal & Contracts -->
+        <record id="cat_legal_contracts" model="timesheet.category">
+            <field name="name">Legal &amp; Contracts</field>
+            <field name="code">legal_contracts</field>
+            <field name="sequence">70</field>
+        </record>
+        <record id="act_lc_review" model="timesheet.activity">
+            <field name="name">Contract Review</field>
+            <field name="category_id" ref="cat_legal_contracts"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_lc_drafting" model="timesheet.activity">
+            <field name="name">Contract Drafting</field>
+            <field name="category_id" ref="cat_legal_contracts"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="act_lc_nda" model="timesheet.activity">
+            <field name="name">NDA Review</field>
+            <field name="category_id" ref="cat_legal_contracts"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_lc_compliance" model="timesheet.activity">
+            <field name="name">Compliance Review</field>
+            <field name="category_id" ref="cat_legal_contracts"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_lc_advisory" model="timesheet.activity">
+            <field name="name">Legal Advisory</field>
+            <field name="category_id" ref="cat_legal_contracts"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_lc_regulatory" model="timesheet.activity">
+            <field name="name">Regulatory Activities</field>
+            <field name="category_id" ref="cat_legal_contracts"/>
+            <field name="sequence">60</field>
+        </record>
+        <record id="act_lc_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_legal_contracts"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 8. Procurement & Vendor Management -->
+        <record id="cat_procurement_vendor" model="timesheet.category">
+            <field name="name">Procurement &amp; Vendor Management</field>
+            <field name="code">procurement_vendor</field>
+            <field name="sequence">80</field>
+        </record>
+        <record id="act_pv_vendor_mgmt" model="timesheet.activity">
+            <field name="name">Vendor Management</field>
+            <field name="category_id" ref="cat_procurement_vendor"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_pv_rfq" model="timesheet.activity">
+            <field name="name">RFQ / RFP Processing</field>
+            <field name="category_id" ref="cat_procurement_vendor"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="act_pv_po" model="timesheet.activity">
+            <field name="name">Purchase Orders</field>
+            <field name="category_id" ref="cat_procurement_vendor"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_pv_negotiation" model="timesheet.activity">
+            <field name="name">Contract Negotiation</field>
+            <field name="category_id" ref="cat_procurement_vendor"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_pv_asset" model="timesheet.activity">
+            <field name="name">Asset Procurement</field>
+            <field name="category_id" ref="cat_procurement_vendor"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_pv_meetings" model="timesheet.activity">
+            <field name="name">Vendor Meetings</field>
+            <field name="category_id" ref="cat_procurement_vendor"/>
+            <field name="sequence">60</field>
+        </record>
+        <record id="act_pv_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_procurement_vendor"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 9. IT & Internal Systems -->
+        <record id="cat_it_internal" model="timesheet.category">
+            <field name="name">IT &amp; Internal Systems</field>
+            <field name="code">it_internal_systems</field>
+            <field name="sequence">90</field>
+        </record>
+        <record id="act_it_user_sup" model="timesheet.activity">
+            <field name="name">User Support</field>
+            <field name="category_id" ref="cat_it_internal"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_it_sysadmin" model="timesheet.activity">
+            <field name="name">System Administration</field>
+            <field name="category_id" ref="cat_it_internal"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="act_it_infra" model="timesheet.activity">
+            <field name="name">Infrastructure Support</field>
+            <field name="category_id" ref="cat_it_internal"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_it_app_sup" model="timesheet.activity">
+            <field name="name">Application Support</field>
+            <field name="category_id" ref="cat_it_internal"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_it_security" model="timesheet.activity">
+            <field name="name">Security Management</field>
+            <field name="category_id" ref="cat_it_internal"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_it_license" model="timesheet.activity">
+            <field name="name">License Management</field>
+            <field name="category_id" ref="cat_it_internal"/>
+            <field name="sequence">60</field>
+        </record>
+        <record id="act_it_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_it_internal"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 10. Management & Strategy -->
+        <record id="cat_management_strategy" model="timesheet.category">
+            <field name="name">Management &amp; Strategy</field>
+            <field name="code">management_strategy</field>
+            <field name="sequence">100</field>
+        </record>
+        <record id="act_ms_planning" model="timesheet.activity">
+            <field name="name">Strategic Planning</field>
+            <field name="category_id" ref="cat_management_strategy"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_ms_biz_rev" model="timesheet.activity">
+            <field name="name">Business Review</field>
+            <field name="category_id" ref="cat_management_strategy"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="act_ms_governance" model="timesheet.activity">
+            <field name="name">Governance Meeting</field>
+            <field name="category_id" ref="cat_management_strategy"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_ms_exec" model="timesheet.activity">
+            <field name="name">Executive Meeting</field>
+            <field name="category_id" ref="cat_management_strategy"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_ms_resource" model="timesheet.activity">
+            <field name="name">Resource Planning</field>
+            <field name="category_id" ref="cat_management_strategy"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_ms_reporting" model="timesheet.activity">
+            <field name="name">Reporting</field>
+            <field name="category_id" ref="cat_management_strategy"/>
+            <field name="sequence">60</field>
+        </record>
+        <record id="act_ms_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_management_strategy"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 11. Learning & Development -->
+        <record id="cat_learning_development" model="timesheet.category">
+            <field name="name">Learning &amp; Development</field>
+            <field name="code">learning_development</field>
+            <field name="sequence">110</field>
+        </record>
+        <record id="act_ld_internal_tr" model="timesheet.activity">
+            <field name="name">Internal Training</field>
+            <field name="category_id" ref="cat_learning_development"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_ld_external_tr" model="timesheet.activity">
+            <field name="name">External Training</field>
+            <field name="category_id" ref="cat_learning_development"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="act_ld_cert" model="timesheet.activity">
+            <field name="name">Certification Study</field>
+            <field name="category_id" ref="cat_learning_development"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_ld_sharing" model="timesheet.activity">
+            <field name="name">Knowledge Sharing</field>
+            <field name="category_id" ref="cat_learning_development"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_ld_workshop" model="timesheet.activity">
+            <field name="name">Workshop Participation</field>
+            <field name="category_id" ref="cat_learning_development"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_ld_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_learning_development"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 12. Internal Administration -->
+        <record id="cat_internal_administration" model="timesheet.category">
+            <field name="name">Internal Administration</field>
+            <field name="code">internal_administration</field>
+            <field name="sequence">120</field>
+        </record>
+        <record id="act_ia_meetings" model="timesheet.activity">
+            <field name="name">Internal Meetings</field>
+            <field name="category_id" ref="cat_internal_administration"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_ia_doc" model="timesheet.activity">
+            <field name="name">Documentation</field>
+            <field name="category_id" ref="cat_internal_administration"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="act_ia_reporting" model="timesheet.activity">
+            <field name="name">Reporting</field>
+            <field name="category_id" ref="cat_internal_administration"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_ia_travel" model="timesheet.activity">
+            <field name="name">Travel Coordination</field>
+            <field name="category_id" ref="cat_internal_administration"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_ia_general" model="timesheet.activity">
+            <field name="name">General Administration</field>
+            <field name="category_id" ref="cat_internal_administration"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_ia_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_internal_administration"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 13. Compliance & Audit -->
+        <record id="cat_compliance_audit" model="timesheet.category">
+            <field name="name">Compliance &amp; Audit</field>
+            <field name="code">compliance_audit</field>
+            <field name="sequence">130</field>
+        </record>
+        <record id="act_ca_internal_audit" model="timesheet.activity">
+            <field name="name">Internal Audit</field>
+            <field name="category_id" ref="cat_compliance_audit"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_ca_external_audit" model="timesheet.activity">
+            <field name="name">External Audit</field>
+            <field name="category_id" ref="cat_compliance_audit"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="act_ca_review" model="timesheet.activity">
+            <field name="name">Compliance Review</field>
+            <field name="category_id" ref="cat_compliance_audit"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_ca_risk" model="timesheet.activity">
+            <field name="name">Risk Assessment</field>
+            <field name="category_id" ref="cat_compliance_audit"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_ca_iso" model="timesheet.activity">
+            <field name="name">ISO Activities</field>
+            <field name="category_id" ref="cat_compliance_audit"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_ca_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_compliance_audit"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 14. Marketing & Communications -->
+        <record id="cat_marketing_communications" model="timesheet.category">
+            <field name="name">Marketing &amp; Communications</field>
+            <field name="code">marketing_communications</field>
+            <field name="sequence">140</field>
+        </record>
+        <record id="act_mc_campaign" model="timesheet.activity">
+            <field name="name">Campaign Management</field>
+            <field name="category_id" ref="cat_marketing_communications"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_mc_content" model="timesheet.activity">
+            <field name="name">Content Creation</field>
+            <field name="category_id" ref="cat_marketing_communications"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="act_mc_events" model="timesheet.activity">
+            <field name="name">Events &amp; Webinars</field>
+            <field name="category_id" ref="cat_marketing_communications"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_mc_social" model="timesheet.activity">
+            <field name="name">Social Media</field>
+            <field name="category_id" ref="cat_marketing_communications"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_mc_research" model="timesheet.activity">
+            <field name="name">Market Research</field>
+            <field name="category_id" ref="cat_marketing_communications"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_mc_branding" model="timesheet.activity">
+            <field name="name">Branding Activities</field>
+            <field name="category_id" ref="cat_marketing_communications"/>
+            <field name="sequence">60</field>
+        </record>
+        <record id="act_mc_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_marketing_communications"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 15. R&D / Innovation -->
+        <record id="cat_rd_innovation" model="timesheet.category">
+            <field name="name">R&amp;D / Innovation</field>
+            <field name="code">rd_innovation</field>
+            <field name="sequence">150</field>
+        </record>
+        <record id="act_rd_research" model="timesheet.activity">
+            <field name="name">Research</field>
+            <field name="category_id" ref="cat_rd_innovation"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_rd_innovation_item" model="timesheet.activity">
+            <field name="name">Product Innovation</field>
+            <field name="category_id" ref="cat_rd_innovation"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="act_rd_prototype" model="timesheet.activity">
+            <field name="name">Prototype Development</field>
+            <field name="category_id" ref="cat_rd_innovation"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_rd_ai" model="timesheet.activity">
+            <field name="name">AI / Automation Activities</field>
+            <field name="category_id" ref="cat_rd_innovation"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_rd_tech" model="timesheet.activity">
+            <field name="name">Technology Assessment</field>
+            <field name="category_id" ref="cat_rd_innovation"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_rd_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_rd_innovation"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 16. Business Development & Partnerships -->
+        <record id="cat_bd_partnerships" model="timesheet.category">
+            <field name="name">Business Development &amp; Partnerships</field>
+            <field name="code">bd_partnerships</field>
+            <field name="sequence">160</field>
+        </record>
+        <record id="act_bd_meetings" model="timesheet.activity">
+            <field name="name">Partner Meetings</field>
+            <field name="category_id" ref="cat_bd_partnerships"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_bd_alliance" model="timesheet.activity">
+            <field name="name">Alliance Management</field>
+            <field name="category_id" ref="cat_bd_partnerships"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="act_bd_market_dev" model="timesheet.activity">
+            <field name="name">New Market Development</field>
+            <field name="category_id" ref="cat_bd_partnerships"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_bd_strategic" model="timesheet.activity">
+            <field name="name">Strategic Partnerships</field>
+            <field name="category_id" ref="cat_bd_partnerships"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_bd_opps" model="timesheet.activity">
+            <field name="name">Opportunity Identification</field>
+            <field name="category_id" ref="cat_bd_partnerships"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_bd_networking" model="timesheet.activity">
+            <field name="name">Networking Activities</field>
+            <field name="category_id" ref="cat_bd_partnerships"/>
+            <field name="sequence">60</field>
+        </record>
+        <record id="act_bd_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_bd_partnerships"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 17. Leave / Holiday -->
+        <record id="cat_leave_holiday" model="timesheet.category">
+            <field name="name">Leave / Holiday</field>
+            <field name="code">leave_holiday</field>
+            <field name="sequence">170</field>
+        </record>
+        <record id="act_lh_annual" model="timesheet.activity">
+            <field name="name">Annual Leave</field>
+            <field name="category_id" ref="cat_leave_holiday"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_lh_sick" model="timesheet.activity">
+            <field name="name">Sick Leave</field>
+            <field name="category_id" ref="cat_leave_holiday"/>
+            <field name="sequence">20</field>
+        </record>
+        <record id="act_lh_public" model="timesheet.activity">
+            <field name="name">Public Holiday</field>
+            <field name="category_id" ref="cat_leave_holiday"/>
+            <field name="sequence">30</field>
+        </record>
+        <record id="act_lh_co" model="timesheet.activity">
+            <field name="name">Compensatory Off</field>
+            <field name="category_id" ref="cat_leave_holiday"/>
+            <field name="sequence">40</field>
+        </record>
+        <record id="act_lh_personal" model="timesheet.activity">
+            <field name="name">Personal Leave</field>
+            <field name="category_id" ref="cat_leave_holiday"/>
+            <field name="sequence">50</field>
+        </record>
+        <record id="act_lh_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_leave_holiday"/>
+            <field name="sequence">99</field>
+        </record>
+
+        <!-- 18. Other Work -->
+        <record id="cat_other_work" model="timesheet.category">
+            <field name="name">Other Work</field>
+            <field name="code">other_work</field>
+            <field name="sequence">180</field>
+        </record>
+        <record id="act_ow_other_work" model="timesheet.activity">
+            <field name="name">Other Work</field>
+            <field name="category_id" ref="cat_other_work"/>
+            <field name="sequence">10</field>
+        </record>
+        <record id="act_ow_other" model="timesheet.activity">
+            <field name="name">Other</field>
+            <field name="category_id" ref="cat_other_work"/>
+            <field name="sequence">99</field>
+        </record>
+
+    </data>
+</odoo>

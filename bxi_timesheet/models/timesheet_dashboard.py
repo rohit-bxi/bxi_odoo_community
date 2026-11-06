@@ -24,6 +24,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
         and team list/summary. Returns structured dict for OWL dashboard.
         """
         user = self.env.user
+
         # Multi-company: IDs of all companies the current user is allowed to access
         allowed_company_ids = self.env.companies.ids
 
@@ -162,6 +163,59 @@ class BxiTimesheetDashboard(models.AbstractModel):
                 'project_id': [t.project_id.id, t.project_id.display_name or t.project_id.name] if t.project_id else False,
             })
 
+        # 3b. Fetch L1 Categories and their active L2 Activities
+        cat_records = self.env['timesheet.category'].sudo().search([('active', '=', True)], order='sequence, id')
+        categories_data = []
+        for cat in cat_records:
+            activities = []
+            for act in cat.activity_ids.filtered(lambda a: a.active):
+                activities.append({
+                    'id': act.id,
+                    'name': act.name,
+                    'is_other': act.name.lower() == 'other',
+                })
+            if not any(a.get('is_other') for a in activities):
+                activities.append({
+                    'id': 'other',
+                    'name': 'Other',
+                    'is_other': True,
+                })
+            categories_data.append({
+                'id': cat.id,
+                'name': cat.name,
+                'code': cat.code or '',
+                'is_crm': cat.is_crm,
+                'is_project': cat.is_project,
+                'activities': activities,
+            })
+
+        # 3c. Fetch Own CRM Leads / Opportunities for Revenue Generation
+        crm_leads = []
+        if 'crm.lead' in self.env:
+            # Strictly only leads where the logged-in user is mapped as the salesperson
+            lead_domain = [('active', '=', True), ('user_id', '=', self.env.user.id)]
+            user_leads = self.env['crm.lead'].sudo().search(lead_domain, order='name asc')
+            for ld in user_leads:
+                crm_leads.append({
+                    'id': ld.id,
+                    'name': ld.name or f"Lead #{ld.id}",
+                })
+
+        # 3d. Fetch Assigned Projects based on Allocations for Delivery / Project Execution
+        allocated_projects = []
+        # Current logged-in user's employee
+        logged_in_emp = current_employee or self.env['hr.employee'].sudo().search([('user_id', '=', self.env.user.id)], limit=1)
+        if logged_in_emp and 'project.resource.allocation' in self.env:
+            allocs = self.env['project.resource.allocation'].sudo().search([
+                ('employee_id', '=', logged_in_emp.id)
+            ])
+            for p in allocs.mapped('project_id').filtered(lambda pr: pr.active):
+                if p.id not in [x['id'] for x in allocated_projects]:
+                    allocated_projects.append({
+                        'id': p.id,
+                        'name': p.display_name or p.name,
+                    })
+
         # 4. Fetch attendances and desktime logs for target employee
         import pytz
         timezone_str = self.env.user.tz or 'Asia/Kolkata'
@@ -215,24 +269,58 @@ class BxiTimesheetDashboard(models.AbstractModel):
             approved_count = len(work_ts_lines.filtered(lambda l: l.state == 'approved'))
             refused_count = len(work_ts_lines.filtered(lambda l: l.state == 'refused'))
 
-            # Group timesheets by project, task & description
+            # Group timesheets by Category (L1), Activity (L2) & Description (L3)
             for line in ts_lines:
-                proj_id = line.project_id.id or 0
-                proj_name = line.project_id.name or _('No Project')
-                tsk_id = line.task_id.id or 0
-                tsk_name = line.task_id.name or _('No Task')
+                cat_id = line.timesheet_category_id.id if line.timesheet_category_id else 0
+                cat_name = line.timesheet_category_id.name if line.timesheet_category_id else _('Other Work')
+
+                act_id = line.timesheet_activity_id.id if line.timesheet_activity_id else 0
+                lead_id = line.lead_id.id if line.lead_id else 0
+                proj_id = line.project_id.id if line.project_id else 0
+                tsk_id = line.task_id.id if line.task_id else 0
+
+                if line.timesheet_activity_id:
+                    act_name = line.timesheet_activity_id.name
+                    l2_type = 'activity'
+                    l2_id = line.timesheet_activity_id.id
+                elif line.lead_id:
+                    act_name = line.lead_id.name or line.lead_id.display_name
+                    l2_type = 'lead'
+                    l2_id = line.lead_id.id
+                elif line.project_id:
+                    act_name = line.project_id.display_name or line.project_id.name
+                    if line.task_id:
+                        act_name = f"{act_name} / {line.task_id.name}"
+                    l2_type = 'project'
+                    l2_id = line.project_id.id
+                elif line.l2_activity_name:
+                    act_name = line.l2_activity_name
+                    l2_type = 'activity'
+                    l2_id = 0
+                else:
+                    act_name = _('Other')
+                    l2_type = 'activity'
+                    l2_id = 0
+
                 desc = line.name or ''
 
-                key = (proj_id, tsk_id, desc)
+                key = (cat_id, l2_type, l2_id, desc)
                 if key not in grouped:
                     grouped[key] = {
+                        'category_id': cat_id,
+                        'category_name': cat_name,
+                        'activity_id': act_id,
+                        'activity_name': act_name,
+                        'l2_type': l2_type,
+                        'l2_id': l2_id,
+                        'lead_id': lead_id,
                         'project_id': proj_id,
-                        'project_name': proj_name,
+                        'project_name': line.project_id.name if line.project_id else '',
                         'task_id': tsk_id,
-                        'task_name': tsk_name,
+                        'task_name': line.task_id.name if line.task_id else '',
                         'description': desc,
                         'days': [0.0] * 7,
-                        'states': ['draft'] * 7
+                        'states': ['draft'] * 7,
                     }
 
                 day_idx = (line.date - start_date).days
@@ -364,6 +452,13 @@ class BxiTimesheetDashboard(models.AbstractModel):
 
             grid_lines.append({
                 'index': idx,
+                'category_id': val['category_id'],
+                'category_name': val['category_name'],
+                'activity_id': val['activity_id'],
+                'activity_name': val['activity_name'],
+                'l2_type': val['l2_type'],
+                'l2_id': val['l2_id'],
+                'lead_id': val['lead_id'],
                 'project_id': val['project_id'],
                 'project_name': val['project_name'],
                 'task_id': val['task_id'],
@@ -533,6 +628,9 @@ class BxiTimesheetDashboard(models.AbstractModel):
             'total_prod_str': total_prod_str,
             'total_shift_prod_str': total_shift_prod_str,
             'total_shift_str': total_shift_str,
+            'categories': categories_data,
+            'crm_leads': crm_leads,
+            'allocated_projects': allocated_projects,
         }
 
     def _format_time_12h(self, dt, tz):
@@ -630,9 +728,11 @@ class BxiTimesheetDashboard(models.AbstractModel):
         return f'{h}:{m:02d}'
 
     @api.model
-    def save_timesheet_hours(self, employee_id, date_str, project_id, task_id, amount_str, description=None):
+    def save_timesheet_hours(self, employee_id, date_str, amount_str, description=None,
+                             category_id=None, activity_id=None, lead_id=None,
+                             project_id=None, task_id=None, l2_type=None, l2_id=None):
         """
-        Add or update account.analytic.line records.
+        Add or update account.analytic.line records with L1 Category, L2 Activity, and L3 Description.
         """
         user = self.env.user
         allowed_company_ids = self.env.companies.ids
@@ -705,15 +805,11 @@ class BxiTimesheetDashboard(models.AbstractModel):
             raise UserError(_("Once a week is crossed, timesheets for the previous week cannot be modified or submitted."))
 
         # Check if timesheet for this employee and date is already submitted or approved
-        already_submitted = self.env['account.analytic.line'].sudo().search([
-            ('employee_id', '=', target_emp_id),
-            ('date', '=', target_date),
-            ('state', 'in', ['submitted', 'approved']),
-        ], limit=1)
-        # Only block edits when the target employee is in the role_band < 8 scope.
-        if already_submitted and not is_manager and (target_rb is not None and target_rb < ROLE_BAND_THRESHOLD):
-            status_str = "submitted for approval" if already_submitted.state == 'submitted' else "approved"
-            raise UserError(_("Timesheet for %s has already been %s. You cannot add or modify entries for a date that has already been submitted or approved.") % (target_date.strftime('%Y-%m-%d'), status_str))
+        # Validate L3 task description word count (max 100 words)
+        if description:
+            words = description.strip().split()
+            if len(words) > 100:
+                raise UserError(_("Task description (L3) cannot exceed 100 words (current: %d words).") % len(words))
 
         # Parse hours
         amount = 0.0
@@ -736,72 +832,129 @@ class BxiTimesheetDashboard(models.AbstractModel):
         if amount > 9.0:
             raise UserError(_("You cannot log more than 9 hours for a single day."))
 
+        # Resolve L1 & L2 references
+        cat_id = int(category_id) if category_id else False
+        act_id = int(activity_id) if (activity_id and str(activity_id).isdigit()) else False
+        ld_id = int(lead_id) if lead_id else False
         proj_id = int(project_id) if project_id else False
         tsk_id = int(task_id) if task_id else False
 
-        # Validate that the target employee is allocated to this project in the allocation table (Commented out to restore previous behavior)
-        # if proj_id and amount > 0.0:
-        #     is_allocated = False
-        #     if 'project.resource.allocation' in self.env:
-        #         alloc = self.env['project.resource.allocation'].sudo().search([
-        #             ('project_id', '=', proj_id),
-        #             ('employee_id', '=', target_emp_id),
-        #         ], limit=1)
-        #         if alloc:
-        #             is_allocated = True
-        #
-        #     if not is_allocated:
-        #         p_obj = self.env['project.project'].sudo().browse(proj_id)
-        #         raise UserError(_("You are not added in the allocation table for project '%s'. Only allocated resources can log timesheets.") % (p_obj.display_name or p_obj.name))
+        if l2_type == 'lead' and l2_id:
+            ld_id = int(l2_id)
+        elif l2_type == 'project' and l2_id:
+            proj_id = int(l2_id)
+        elif l2_type == 'activity' and l2_id and str(l2_id).isdigit():
+            act_id = int(l2_id)
+
+        # L2 is mandatory rule: If no activity, lead, or project is selected
+        if not act_id and not ld_id and not proj_id:
+            # Check if an 'Other' activity exists for the selected category
+            if cat_id:
+                other_act = self.env['timesheet.activity'].sudo().search([
+                    ('category_id', '=', cat_id),
+                    ('name', '=ilike', 'Other')
+                ], limit=1)
+                if other_act:
+                    act_id = other_act.id
+            if not act_id and not ld_id and not proj_id and amount > 0.0:
+                raise UserError(_("Activity (L2) is mandatory."))
+
+        # Validate Revenue Generation lead mapping (strictly salesperson == logged-in user)
+        if cat_id:
+            category = self.env['timesheet.category'].sudo().browse(cat_id)
+            if category.exists():
+                if (category.is_crm or category.code == 'revenue_generation') and ld_id:
+                    lead = self.env['crm.lead'].sudo().browse(ld_id)
+                    if lead.exists() and lead.user_id != self.env.user:
+                        raise UserError(_("For Revenue Generation, you can only select leads/opportunities where you are mapped as the salesperson."))
+                elif (category.is_project or category.code == 'delivery_project') and proj_id:
+                    logged_in_emp = current_employee or self.env['hr.employee'].sudo().search([('user_id', '=', self.env.user.id)], limit=1)
+                    if logged_in_emp and 'project.resource.allocation' in self.env:
+                        has_alloc = self.env['project.resource.allocation'].sudo().search_count([
+                            ('employee_id', '=', logged_in_emp.id),
+                            ('project_id', '=', proj_id),
+                        ])
+                        if not has_alloc:
+                            raise UserError(_("For Delivery / Project Execution, you can only select projects where you are mapped under project resource allocation."))
 
         domain = [
             ('employee_id', '=', target_emp_id),
             ('date', '=', target_date),
-            ('project_id', '=', proj_id),
-            ('task_id', '=', tsk_id),
         ]
+        if cat_id:
+            domain.append(('timesheet_category_id', '=', cat_id))
+        if act_id:
+            domain.append(('timesheet_activity_id', '=', act_id))
+        if ld_id:
+            domain.append(('lead_id', '=', ld_id))
+        if proj_id:
+            domain.append(('project_id', '=', proj_id))
+        if tsk_id:
+            domain.append(('task_id', '=', tsk_id))
         if description is not None:
             domain.append(('name', '=', description))
 
         existing_line = self.env['account.analytic.line'].search(domain, limit=1)
 
         if existing_line:
-            # Block edits on approved timesheets for employees
-            if existing_line.state == 'approved':
-                if not is_manager:
-                    raise UserError(_("You cannot edit a timesheet that has already been approved."))
+            # Block edits on approved or submitted timesheets for non-managers
+            if existing_line.state in ('submitted', 'approved') and not is_manager:
+                status_str = "submitted for approval" if existing_line.state == 'submitted' else "approved"
+                raise UserError(_("You cannot edit a timesheet that has already been %s.") % status_str)
 
             if amount <= 0.0:
                 existing_line.unlink()
             else:
+                # Daily total hours check (excluding existing line being updated)
+                day_domain = [
+                    ('employee_id', '=', target_emp_id),
+                    ('date', '=', target_date),
+                    ('id', '!=', existing_line.id),
+                ]
+                if 'holiday_id' in self.env['account.analytic.line']._fields:
+                    day_domain.append(('holiday_id', '=', False))
+                other_day_lines = self.env['account.analytic.line'].sudo().search(day_domain)
+                total_day_hours = sum(other_day_lines.mapped('unit_amount')) + amount
+                if total_day_hours > 9.001:
+                    raise UserError(_(
+                        "Total timesheet hours for %s cannot exceed 9 hours.\n"
+                        "Already logged: %.2f hrs, Attempting to save: %.2f hrs, Total: %.2f hrs."
+                    ) % (target_date.strftime('%Y-%m-%d'), sum(other_day_lines.mapped('unit_amount')), amount, total_day_hours))
+
                 write_vals = {'unit_amount': amount}
                 if description is not None:
                     write_vals['name'] = description
                 existing_line.write(write_vals)
         else:
             if amount > 0.0:
-                any_existing = self.env['account.analytic.line'].sudo().search([
+                # Daily total hours check for new entry
+                day_domain = [
                     ('employee_id', '=', target_emp_id),
                     ('date', '=', target_date),
-                ], limit=1)
-                if any_existing:
-                    raise UserError(_("A timesheet entry already exists for %s. Only one timesheet entry is allowed per day.") % target_date.strftime('%Y-%m-%d'))
+                ]
+                if 'holiday_id' in self.env['account.analytic.line']._fields:
+                    day_domain.append(('holiday_id', '=', False))
+                existing_day_lines = self.env['account.analytic.line'].sudo().search(day_domain)
+                total_day_hours = sum(existing_day_lines.mapped('unit_amount')) + amount
+                if total_day_hours > 9.001:
+                    raise UserError(_(
+                        "Total timesheet hours for %s cannot exceed 9 hours.\n"
+                        "Already logged: %.2f hrs, New entry: %.2f hrs, Total: %.2f hrs."
+                    ) % (target_date.strftime('%Y-%m-%d'), sum(existing_day_lines.mapped('unit_amount')), amount, total_day_hours))
 
-                task_name = self.env['project.task'].browse(tsk_id).name if tsk_id else ''
-                proj_name = self.env['project.project'].browse(proj_id).name if proj_id else ''
-                # Use the target employee's company for the timesheet line
                 target_emp = self.env['hr.employee'].browse(target_emp_id)
                 emp_company_id = target_emp.company_id.id or self.env.company.id
-
-                line_name = description if description else (f"{proj_name} / {task_name}" if proj_name and task_name else "Logged via Dashboard")
 
                 vals = {
                     'employee_id': target_emp_id,
                     'date': target_date,
+                    'timesheet_category_id': cat_id,
+                    'timesheet_activity_id': act_id,
+                    'lead_id': ld_id,
                     'project_id': proj_id,
                     'task_id': tsk_id,
                     'unit_amount': amount,
-                    'name': line_name,
+                    'name': description or _("Timesheet entry"),
                     'company_id': emp_company_id,
                     'state': 'draft',
                 }

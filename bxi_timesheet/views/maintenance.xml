@@ -2,11 +2,9 @@
 <odoo>
 
     <!-- ============================================================
-         TIMESHEET MAINTENANCE MODE
-         When this file is active:
-         1. Main menu click directly opens a modal popup dialog
-            alerting the user about the maintenance work.
-         2. All child menus are deactivated to prevent bypass.
+         TIMESHEET MAINTENANCE MODE (DISABLED - RESTORED FOR ALL USERS)
+         All Timesheet menus and actions are restored to their normal
+         access groups for all users.
          ============================================================ -->
 
     <!-- Form View for Maintenance Popup Dialog -->
@@ -27,7 +25,7 @@
         </field>
     </record>
 
-    <!-- Act Window Action to open Maintenance Popup Dialog -->
+    <!-- Window Action for the Maintenance Popup Dialog -->
     <record id="action_timesheet_maintenance_popup" model="ir.actions.act_window">
         <field name="name">Maintenance Notice</field>
         <field name="res_model">timesheet.maintenance.warning</field>
@@ -36,68 +34,70 @@
         <field name="view_id" ref="view_timesheet_maintenance_warning_form"/>
     </record>
 
-    <!-- Fallback Server Action to also return popup action if called -->
-    <record id="action_timesheet_maintenance_alert" model="ir.actions.server">
-        <field name="name">Timesheet Maintenance Alert</field>
-        <field name="model_id" ref="base.model_res_users"/>
+    <!-- Server Action: Open Timesheet Dashboard for All Users -->
+    <record id="action_timesheet_menu_entry" model="ir.actions.server">
+        <field name="name">Timesheet Menu Entry</field>
+        <field name="model_id" ref="model_timesheet_maintenance_warning"/>
         <field name="state">code</field>
         <field name="code">
-action = {
-    'name': 'Maintenance Notice',
-    'type': 'ir.actions.act_window',
-    'res_model': 'timesheet.maintenance.warning',
-    'view_mode': 'form',
-    'views': [(env.ref('bxi_timesheet.view_timesheet_maintenance_warning_form').id, 'form')],
-    'target': 'new',
-}
+action = env.ref('bxi_timesheet.action_bxi_timesheet_dashboard').sudo().read()[0]
         </field>
     </record>
 
-    <!-- Bind Timesheets Main Menu to the Maintenance Popup Action -->
+    <!-- Restore Timesheets Main Menu (clear maintenance action so default first submenu opens) -->
     <record id="hr_timesheet.timesheet_menu_root" model="ir.ui.menu">
-        <field name="action" ref="bxi_timesheet.action_timesheet_maintenance_popup"/>
+        <field name="action" eval="False"/>
     </record>
 
-    <!-- Deactivate and redirect child menus to prevent any bypass -->
+    <!-- Restore child menus and their normal security groups for all users -->
     <record id="bxi_timesheet.menu_bxi_timesheet_dashboard" model="ir.ui.menu">
-        <field name="action" ref="bxi_timesheet.action_timesheet_maintenance_popup"/>
-        <field name="active" eval="False"/>
+        <field name="action" ref="bxi_timesheet.action_bxi_timesheet_dashboard"/>
+        <field name="active" eval="True"/>
+        <field name="group_ids" eval="[Command.clear()]"/>
     </record>
 
     <record id="hr_timesheet.timesheet_menu_activity_user" model="ir.ui.menu">
-        <field name="action" ref="bxi_timesheet.action_timesheet_maintenance_popup"/>
-        <field name="active" eval="False"/>
+        <field name="action" ref="hr_timesheet.act_hr_timesheet_line"/>
+        <field name="active" eval="True"/>
+        <field name="group_ids" eval="[Command.set([ref('hr_timesheet.group_hr_timesheet_user')])]"/>
     </record>
 
     <record id="hr_timesheet.menu_hr_time_tracking" model="ir.ui.menu">
-        <field name="active" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="group_ids" eval="[Command.clear()]"/>
     </record>
 
     <record id="bxi_timesheet.menu_bxi_timesheet_team_approvals" model="ir.ui.menu">
-        <field name="action" ref="bxi_timesheet.action_timesheet_maintenance_popup"/>
-        <field name="active" eval="False"/>
+        <field name="action" ref="bxi_timesheet.action_bxi_timesheet_approvals"/>
+        <field name="active" eval="True"/>
+        <field name="group_ids" eval="[Command.set([ref('hr_timesheet.group_hr_timesheet_approver')])]"/>
     </record>
 
     <record id="bxi_timesheet.menu_bxi_timesheet_admin_approvals" model="ir.ui.menu">
-        <field name="action" ref="bxi_timesheet.action_timesheet_maintenance_popup"/>
-        <field name="active" eval="False"/>
+        <field name="action" ref="bxi_timesheet.action_bxi_timesheet_admin_approvals"/>
+        <field name="active" eval="True"/>
+        <field name="group_ids" eval="[Command.set([ref('base.group_system'), ref('hr_timesheet.group_timesheet_manager')])]"/>
     </record>
 
     <record id="bxi_timesheet.menu_bxi_desktime_root" model="ir.ui.menu">
-        <field name="active" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="group_ids" eval="[Command.set([ref('hr_timesheet.group_timesheet_manager')])]"/>
     </record>
 
     <record id="bxi_timesheet.menu_bxi_timesheet_reporting" model="ir.ui.menu">
-        <field name="active" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="group_ids" eval="[Command.set([ref('base.group_erp_manager'), ref('base.group_system')])]"/>
     </record>
 
     <record id="hr_timesheet.menu_timesheets_reports" model="ir.ui.menu">
-        <field name="active" eval="False"/>
+        <field name="active" eval="True"/>
+        <field name="group_ids" eval="[Command.set([ref('hr_timesheet.group_hr_timesheet_approver')])]"/>
     </record>
 
     <record id="hr_timesheet.hr_timesheet_menu_configuration" model="ir.ui.menu">
-        <field name="action" ref="bxi_timesheet.action_timesheet_maintenance_popup"/>
-        <field name="active" eval="False"/>
+        <field name="action" ref="hr_timesheet.hr_timesheet_config_settings_action"/>
+        <field name="active" eval="True"/>
+        <field name="group_ids" eval="[Command.set([ref('hr_timesheet.group_timesheet_manager')])]"/>
     </record>
 
 </odoo>

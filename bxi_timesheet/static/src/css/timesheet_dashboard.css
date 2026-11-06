@@ -119,6 +119,13 @@
     font-size: 11px;
 }
 
+.l1-category-val,
+.l2-activity-val {
+    color: #000000 !important;
+    font-weight: 700 !important;
+    font-size: 12px;
+}
+
 /* Cell Inputs */
 .day-cell {
     position: relative;
