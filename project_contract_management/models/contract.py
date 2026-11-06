@@ -1570,22 +1570,38 @@ class ProjectResourceAllocation(models.Model):
                 billing = rec.project_allocation_id.billing_amount or 0.0
             rec.amount = billing * (rec.allocation_percentage / 100.0)
 
-    @api.depends('resource_type', 'allocation_percentage', 'amount', 'customer_price', 'vendor_price', 'employee_id')
+    @api.depends('resource_type', 'allocation_percentage', 'amount', 'customer_price', 'vendor_price',
+                 'employee_id', 'employee_id.l10n_in_basic_salary_amount',
+                 'employee_id.l10n_in_fixed_allowance', 'start_date', 'end_date')
     def _compute_margin(self):
         for rec in self:
             if rec.resource_type in ('hardwares', 'licenses'):
                 rec.margin = (rec.customer_price or 0.0) - (rec.vendor_price or 0.0)
             elif rec.resource_type == 'employee':
-                wage = 0.0
-                if rec.employee_id:
-                    emp_sudo = rec.employee_id.sudo()
-                    wage = getattr(emp_sudo, 'contract_wage', 0.0) or getattr(emp_sudo, 'wage', 0.0) or 0.0
-                allocated_cost = wage * (rec.allocation_percentage / 100.0)
+                allocated_cost = rec._get_employee_allocated_cost()
                 rec.margin = (rec.amount or 0.0) - allocated_cost
             else:
                 rec.margin = 0.0
 
-    @api.onchange('allocation_percentage', 'resource_type', 'customer_price', 'vendor_price', 'employee_id')
+    def _get_employee_allocated_cost(self):
+        """Salary cost of the employee for the allocation period.
+
+        Monthly salary = Basic + Fixed (Flexible / Special) Allowance of the employee record.
+        It is spread over a 30 day month and multiplied by the allocated days
+        (start date to end date, both included) and the allocation %.
+        """
+        self.ensure_one()
+        if not (self.employee_id and self.start_date and self.end_date):
+            return 0.0
+        emp_sudo = self.employee_id.sudo()
+        monthly_salary = (emp_sudo.l10n_in_basic_salary_amount or 0.0) + (emp_sudo.l10n_in_fixed_allowance or 0.0)
+        days = (self.end_date - self.start_date).days + 1
+        if days <= 0:
+            return 0.0
+        return monthly_salary / 30.0 * days * (self.allocation_percentage / 100.0)
+
+    @api.onchange('allocation_percentage', 'resource_type', 'customer_price', 'vendor_price', 'employee_id',
+                  'start_date', 'end_date')
     def _onchange_allocation_percentage(self):
         billing = 0.0
         if self.project_id:
