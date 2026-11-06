@@ -19,12 +19,16 @@
                         <group string="Timesheet Information">
                             <field name="employee_id" readonly="1"/>
                             <field name="date" readonly="1"/>
-                            <field name="project_id" readonly="1"/>
-                            <field name="task_id" readonly="1"/>
+                            <field name="timesheet_category_id" string="Category (L1)" readonly="1"/>
+                            <field name="timesheet_activity_id" string="Predefined Activity (L2)" invisible="not timesheet_activity_id" readonly="1"/>
+                            <field name="lead_id" string="CRM Lead (L2)" invisible="not lead_id" readonly="1"/>
+                            <field name="project_id" string="Project (L2)" invisible="not project_id" readonly="1"/>
+                            <field name="task_id" string="Task" invisible="not task_id" readonly="1"/>
+                            <field name="l2_activity_name" string="Activity (L2)" readonly="1"/>
                         </group>
                         <group string="Details">
                             <field name="unit_amount" string="Duration (Hours)" widget="float_time" readonly="1"/>
-                            <field name="name" string="Description" readonly="1"/>
+                            <field name="name" string="Description (L3)" readonly="1"/>
                             <field name="company_id" groups="base.group_multi_company" readonly="1"/>
                         </group>
                     </group>
@@ -50,9 +54,9 @@
                   edit="true">
                 <field name="employee_id"/>
                 <field name="date"/>
-                <field name="project_id"/>
-                <field name="task_id"/>
-                <field name="name"/>
+                <field name="timesheet_category_id" string="Category (L1)"/>
+                <field name="l2_activity_name" string="Activity (L2)"/>
+                <field name="name" string="Description (L3)"/>
                 <field name="unit_amount" widget="float_time" sum="Total Hours"/>
                 <field name="remarks" string="Manager Remarks"/>
                 <field name="state" widget="badge" 

@@ -40,10 +40,16 @@ class BxiTimesheetDashboard extends Component {
             total_shift_prod_str: "0:00",
             total_shift_str: "0:00",
 
-            // Modal states
+            // L1 & L2 reference data
+            categories: [],
+            crm_leads: [],
+            allocated_projects: [],
+
+            // Modal states for 3 Levels
             show_add_row_modal: false,
-            new_row_project_id: "",
-            new_row_task_id: "",
+            new_row_category_id: "",
+            new_row_activity_id: "",
+            activity_search_query: "",
             new_row_description: "",
             new_row_date: "",
             new_row_hours: "",
@@ -71,7 +77,6 @@ class BxiTimesheetDashboard extends Component {
         return String.fromCharCode(97 + (index % 26));
     }
 
-
     async loadData() {
         this.state.loaded = false;
         try {
@@ -97,8 +102,8 @@ class BxiTimesheetDashboard extends Component {
             this.state.overall_total = result.overall_total;
             this.state.employee_options = result.employee_options;
             this.state.team_summary = result.team_summary;
-            this.state.projects = result.projects;
-            this.state.tasks = result.tasks;
+            this.state.projects = result.projects || [];
+            this.state.tasks = result.tasks || [];
             this.state.start_date_str = result.start_date_str;
             this.state.is_target_employee_manager = result.is_target_employee_manager || false;
             this.state.is_past_week = result.is_past_week || false;
@@ -110,7 +115,9 @@ class BxiTimesheetDashboard extends Component {
             this.state.approved_count = result.approved_count || 0;
             this.state.refused_count = result.refused_count || 0;
 
-
+            this.state.categories = result.categories || [];
+            this.state.crm_leads = result.crm_leads || [];
+            this.state.allocated_projects = result.allocated_projects || [];
 
             // Set selected employee ID to default if not set
             if (!this.state.selected_employee_id && result.employee_id) {
@@ -159,7 +166,6 @@ class BxiTimesheetDashboard extends Component {
     async onCellBlur(ev, line, dateStr) {
         const value = ev.target.value.trim();
 
-        // Optimistic local feedback if format is wrong, or save to backend
         try {
             await this.orm.call(
                 "bxi.timesheet.dashboard",
@@ -168,61 +174,148 @@ class BxiTimesheetDashboard extends Component {
                 {
                     employee_id: parseInt(this.state.selected_employee_id),
                     date_str: dateStr,
-                    project_id: line.project_id || false,
-                    task_id: line.task_id || false,
                     amount_str: value,
                     description: line.description || false,
+                    category_id: line.category_id || false,
+                    activity_id: line.activity_id || false,
+                    lead_id: line.lead_id || false,
+                    project_id: line.project_id || false,
+                    task_id: line.task_id || false,
+                    l2_type: line.l2_type || false,
+                    l2_id: line.l2_id || false,
                 }
             );
-            // Reload to recalculate totals and normalize formats (e.g. "2" becomes "2:00")
             await this.loadData();
         } catch (error) {
             console.error("Error saving timesheet hours:", error);
-            // Revert value
+            const msg = error?.data?.message || error?.message || "Error saving timesheet hours.";
+            if (this.notification) {
+                this.notification.add(msg, { title: "Warning", type: "warning" });
+            }
             await this.loadData();
         }
     }
 
     async openAddRowModal() {
-        this.state.new_row_project_id = "";
-        this.state.new_row_task_id = "";
+        if (!this.state.categories || this.state.categories.length === 0) {
+            await this.loadData();
+        }
+
+        // Set default category
+        const defaultCat = this.state.categories && this.state.categories.length > 0 ? this.state.categories[0] : null;
+        this.state.new_row_category_id = defaultCat ? String(defaultCat.id) : "";
+        this.state.activity_search_query = "";
+
+        // Set default activity (prefer "Other", or first available)
+        this.resetDefaultActivity();
+
         this.state.new_row_description = "";
         this.state.new_row_date = this.formatDateStr(new Date());
         this.state.new_row_hours = "";
-        if (!this.state.projects || this.state.projects.length === 0) {
-            await this.loadData();
-        }
         this.state.show_add_row_modal = true;
+    }
+
+    resetDefaultActivity() {
+        const acts = this.availableActivities;
+        const otherAct = acts.find(a => a.name.toLowerCase() === 'other');
+        if (otherAct) {
+            this.state.new_row_activity_id = String(otherAct.id);
+        } else if (acts.length > 0) {
+            this.state.new_row_activity_id = String(acts[0].id);
+        } else {
+            this.state.new_row_activity_id = "";
+        }
     }
 
     closeAddRowModal() {
         this.state.show_add_row_modal = false;
     }
 
-    get filteredTasks() {
-        if (!this.state.new_row_project_id) {
-            return [];
-        }
-        const selectedProjId = parseInt(this.state.new_row_project_id, 10);
-        return (this.state.tasks || []).filter(t => {
-            if (!t.project_id) return false;
-            if (Array.isArray(t.project_id)) {
-                return t.project_id[0] === selectedProjId;
-            }
-            return parseInt(t.project_id, 10) === selectedProjId;
-        });
+    get selectedCategory() {
+        if (!this.state.new_row_category_id) return null;
+        const catId = parseInt(this.state.new_row_category_id, 10);
+        return (this.state.categories || []).find(c => c.id === catId) || null;
     }
 
-    get newRowProjectError() {
-        if (!this.state.new_row_project_id) {
-            return "Project is required.";
+    get availableActivities() {
+        const cat = this.selectedCategory;
+        if (!cat) return [];
+
+        // 1. Revenue Generation: Own CRM Leads / Opportunities
+        if (cat.is_crm || cat.code === 'revenue_generation') {
+            const list = (this.state.crm_leads || []).map(l => ({
+                id: 'lead_' + l.id,
+                l2_type: 'lead',
+                l2_id: l.id,
+                name: l.name,
+            }));
+            list.push({
+                id: 'other',
+                l2_type: 'activity',
+                l2_id: 'other',
+                name: 'Other',
+            });
+            return list;
+        }
+
+        // 2. Delivery / Project Execution: Assigned Projects based on Allocations
+        if (cat.is_project || cat.code === 'delivery_project') {
+            const list = (this.state.allocated_projects || []).map(p => ({
+                id: 'proj_' + p.id,
+                l2_type: 'project',
+                l2_id: p.id,
+                name: p.name,
+            }));
+            list.push({
+                id: 'other',
+                l2_type: 'activity',
+                l2_id: 'other',
+                name: 'Other',
+            });
+            return list;
+        }
+
+        // 3. Predefined Activities for Category
+        const list = (cat.activities || []).map(a => ({
+            id: String(a.id),
+            l2_type: 'activity',
+            l2_id: a.id,
+            name: a.name,
+        }));
+        if (!list.some(a => a.name.toLowerCase() === 'other')) {
+            list.push({
+                id: 'other',
+                l2_type: 'activity',
+                l2_id: 'other',
+                name: 'Other',
+            });
+        }
+        return list;
+    }
+
+    get filteredActivities() {
+        const q = (this.state.activity_search_query || "").trim().toLowerCase();
+        const acts = this.availableActivities;
+        if (!q) return acts;
+        return acts.filter(a => a.name.toLowerCase().includes(q));
+    }
+
+    get wordCount() {
+        const val = (this.state.new_row_description || "").trim();
+        if (!val) return 0;
+        return val.split(/\s+/).filter(Boolean).length;
+    }
+
+    get newRowCategoryError() {
+        if (!this.state.new_row_category_id) {
+            return "Category (L1) is required.";
         }
         return "";
     }
 
-    get newRowTaskError() {
-        if (!this.state.new_row_task_id) {
-            return "Task is required.";
+    get newRowActivityError() {
+        if (!this.state.new_row_activity_id) {
+            return "Activity (L2) is mandatory.";
         }
         return "";
     }
@@ -230,7 +323,10 @@ class BxiTimesheetDashboard extends Component {
     get newRowDescriptionError() {
         const val = (this.state.new_row_description || "").trim();
         if (!val) {
-            return "Description / Notes is required.";
+            return "Task Description (L3) is required.";
+        }
+        if (this.wordCount > 100) {
+            return `Task description cannot exceed 100 words (current: ${this.wordCount} words).`;
         }
         return "";
     }
@@ -249,30 +345,34 @@ class BxiTimesheetDashboard extends Component {
         } else {
             hours = parseFloat(val) || 0.0;
         }
+        if (isNaN(hours) || hours <= 0.0) {
+            return "Time Spent must be greater than 0:00.";
+        }
         if (hours > 9.0) {
-            return "Hours cannot exceed 9:00 hours per day.";
+            return "You cannot log more than 9 hours for a single day.";
+        }
+
+        // Validate daily total does not exceed 9.0 hours across the day's entries
+        const targetDateStr = this.state.new_row_date;
+        if (targetDateStr && this.state.grid_lines && this.state.grid_lines.length > 0) {
+            let existingHours = 0.0;
+            for (const line of this.state.grid_lines) {
+                const day = line.days_data && line.days_data.find(d => d.date_str === targetDateStr);
+                if (day && day.hours_raw > 0.0) {
+                    existingHours += day.hours_raw;
+                }
+            }
+            if (existingHours + hours > 9.001) {
+                return `Total timesheet hours for ${targetDateStr} cannot exceed 9 hours (Already logged: ${existingHours.toFixed(2)} hrs, Attempting to add: ${hours.toFixed(2)} hrs, Total: ${(existingHours + hours).toFixed(2)} hrs).`;
+            }
         }
         return "";
     }
 
     get newRowDateError() {
-        if (!this.state.new_row_date) {
-            return "Date is required.";
-        }
         const targetDateStr = this.state.new_row_date;
-
-        // Check if any line on this date is already submitted or approved
-        if (this.state.grid_lines && this.state.grid_lines.length > 0) {
-            const dateIdx = (this.state.dates || []).findIndex(d => d.date_str === targetDateStr);
-            if (dateIdx !== -1) {
-                const isAlreadySubmitted = this.state.grid_lines.some(line => {
-                    const st = line.states ? line.states[dateIdx] : false;
-                    return st === 'submitted' || st === 'approved';
-                });
-                if (isAlreadySubmitted && !(this.state.is_manager || this.state.is_hr || this.state.is_admin)) {
-                    return `Timesheet for ${targetDateStr} has already been submitted or approved.`;
-                }
-            }
+        if (!targetDateStr) {
+            return "Date is required.";
         }
 
         const parts = targetDateStr.split('-');
@@ -283,7 +383,6 @@ class BxiTimesheetDashboard extends Component {
         const targetDate = new Date(year, month, day);
         targetDate.setHours(0, 0, 0, 0);
 
-        // Find preceding Sunday for today
         const today = new Date();
         const sunday = new Date(today);
         sunday.setDate(today.getDate() - today.getDay());
@@ -295,13 +394,18 @@ class BxiTimesheetDashboard extends Component {
         return "";
     }
 
-    onProjectChange(ev) {
-        this.state.new_row_project_id = ev.target.value;
-        this.state.new_row_task_id = "";
+    onCategoryChange(ev) {
+        this.state.new_row_category_id = ev.target.value;
+        this.state.activity_search_query = "";
+        this.resetDefaultActivity();
     }
 
-    onTaskChange(ev) {
-        this.state.new_row_task_id = ev.target.value;
+    onActivitySearch(ev) {
+        this.state.activity_search_query = ev.target.value;
+    }
+
+    onActivityChange(ev) {
+        this.state.new_row_activity_id = ev.target.value;
     }
 
     onDescriptionChange(ev) {
@@ -317,22 +421,37 @@ class BxiTimesheetDashboard extends Component {
     }
 
     async confirmAddRow() {
-        if (this.newRowProjectError || this.newRowTaskError || this.newRowDescriptionError || this.newRowDateError || this.newRowHoursError) {
+        const validationError = this.newRowCategoryError || this.newRowActivityError || this.newRowDescriptionError || this.newRowDateError || this.newRowHoursError;
+        if (validationError) {
             if (this.notification) {
-                this.notification.add(
-                    this.newRowProjectError || this.newRowTaskError || this.newRowDescriptionError || this.newRowDateError || this.newRowHoursError,
-                    { title: "Required Field", type: "warning" }
-                );
+                this.notification.add(validationError, { title: "Validation Error", type: "warning" });
             }
             return;
         }
 
-        const projId = parseInt(this.state.new_row_project_id) || 0;
-        const tskId = parseInt(this.state.new_row_task_id) || 0;
-
         let empId = parseInt(this.state.selected_employee_id) || 0;
         if (!empId && this.state.employee_options && this.state.employee_options.length > 0) {
             empId = parseInt(this.state.employee_options[0].id) || 0;
+        }
+
+        // Find the selected activity object to determine whether it is lead, project, or predefined activity
+        const actVal = this.state.new_row_activity_id;
+        const selectedAct = this.availableActivities.find(a => String(a.id) === String(actVal));
+
+        const catId = parseInt(this.state.new_row_category_id, 10) || false;
+        let l2_type = selectedAct ? selectedAct.l2_type : 'activity';
+        let l2_id = selectedAct ? selectedAct.l2_id : false;
+
+        let actId = false;
+        let leadId = false;
+        let projId = false;
+
+        if (l2_type === 'lead') {
+            leadId = l2_id;
+        } else if (l2_type === 'project') {
+            projId = l2_id;
+        } else if (l2_type === 'activity') {
+            actId = l2_id;
         }
 
         try {
@@ -343,28 +462,28 @@ class BxiTimesheetDashboard extends Component {
                 {
                     employee_id: empId || false,
                     date_str: this.state.new_row_date,
-                    project_id: projId,
-                    task_id: tskId,
                     amount_str: this.state.new_row_hours || "0:00",
-                    description: this.state.new_row_description || false,
+                    description: this.state.new_row_description.trim(),
+                    category_id: catId,
+                    activity_id: actId,
+                    lead_id: leadId,
+                    project_id: projId,
+                    l2_type: l2_type,
+                    l2_id: l2_id,
                 }
             );
             await this.loadData();
             this.closeAddRowModal();
         } catch (error) {
             console.error("Error adding timesheet line:", error);
+            const msg = error?.data?.message || error?.message || "Error adding timesheet line.";
             if (this.notification) {
-                this.notification.add(
-                    error.message || "Error adding timesheet line.",
-                    { title: "Error", type: "danger" }
-                );
+                this.notification.add(msg, { title: "Error", type: "danger" });
             }
         }
     }
 
     async submitTimesheet() {
-        // Rely on server-side validation (including approved leaves/overrides)
-
         try {
             await this.orm.call(
                 "bxi.timesheet.dashboard",

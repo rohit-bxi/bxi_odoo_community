@@ -130,8 +130,9 @@
                         <thead>
                             <!-- Row 1: Day Titles (colspan 2) -->
                             <tr class="table-light text-center border-bottom text-muted small">
-                                <th rowspan="3" class="row-project-task-header text-start py-3 ps-3 align-middle border-end">ACTIVITY</th>
-                                <th rowspan="3" class="row-description-header text-start py-3 ps-3 align-middle border-end" style="min-width: 160px;">Description</th>
+                                <th rowspan="3" class="row-category-header text-start py-3 ps-3 align-middle border-end" style="min-width: 150px;">CATEGORY (L1)</th>
+                                <th rowspan="3" class="row-activity-header text-start py-3 ps-3 align-middle border-end" style="min-width: 170px;">ACTIVITY (L2)</th>
+                                <th rowspan="3" class="row-description-header text-start py-3 ps-3 align-middle border-end" style="min-width: 180px;">DESCRIPTION (L3)</th>
                                 <t t-foreach="state.dates" t-as="d" t-key="d.date_str">
                                     <th colspan="2" t-attf-class="day-header py-2 border-end #{
                                         (d.day_name === 'Saturday' || d.day_name === 'Sunday' || d.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
@@ -180,7 +181,7 @@
                             <!-- Timesheet Row Entries -->
                             <t t-if="state.grid_lines.length === 0">
                                 <tr>
-                                    <td colspan="17" class="text-center text-muted py-4 fs-6 fw-normal">
+                                    <td colspan="18" class="text-center text-muted py-4 fs-6 fw-normal">
                                         No timesheets logged for this week. Click "Add a line" to get started!
                                     </td>
                                 </tr>
@@ -189,19 +190,21 @@
                             <t t-else="">
                                 <t t-foreach="state.grid_lines" t-as="line" t-key="'row_' + line.index">
                                     <tr class="grid-row">
-                                        <!-- Project & Task -->
-                                        <td class="ps-3 py-3 border-end">
+                                        <!-- Category (L1) -->
+                                        <td class="ps-3 py-3 border-end text-start align-middle">
                                             <div class="d-flex align-items-center gap-2">
                                                 <span class="row-index-badge small"><t t-esc="getRowBadge(line.index)"/></span>
-                                                <div class="d-inline-flex flex-column text-start">
-                                                    <span class="fw-bold text-dark small"><t t-esc="line.project_name"/></span>
-                                                    <span class="task-name-label small font-11 fw-semibold"><t t-esc="line.task_name"/></span>
-                                                </div>
+                                                <span class="l1-category-val fw-bold font-12" style="color: #000000 !important; font-weight: 700 !important;"><t t-esc="line.category_name || '-'"/></span>
                                             </div>
                                         </td>
 
-                                        <!-- Description -->
-                                        <td class="ps-3 py-3 border-end text-start small text-dark font-12">
+                                        <!-- Activity (L2) -->
+                                        <td class="ps-3 py-3 border-end text-start align-middle">
+                                            <span class="l2-activity-val fw-bold font-12" style="color: #000000 !important; font-weight: 700 !important;"><t t-esc="line.activity_name || '-'"/></span>
+                                        </td>
+
+                                        <!-- Description (L3) -->
+                                        <td class="ps-3 py-3 border-end text-start small text-dark font-12 align-middle" style="max-width: 250px; word-break: break-word;">
                                             <t t-esc="line.description || '-'"/>
                                         </td>
                                         
@@ -246,7 +249,7 @@
                             <!-- Add a line action link (STRICTLY HIDDEN if past week) -->
                             <t t-if="!state.is_past_week">
                                 <tr class="add-line-row">
-                                    <td colspan="17" class="ps-3 py-3 text-start bg-light border-0">
+                                    <td colspan="18" class="ps-3 py-3 text-start bg-light border-0">
                                         <button class="btn btn-link btn-sm add-line-btn text-decoration-none d-inline-flex align-items-center gap-1 p-0 fw-bold" 
                                                 t-on-click="openAddRowModal">
                                             <i class="oi oi-plus"></i> Add a line
@@ -260,7 +263,7 @@
                         <tfoot>
                             <!-- 1. Timesheet Logged Totals -->
                             <tr class="table-totals-row border-top-2">
-                                <td colspan="2" class="ps-3 py-3 text-start fw-bold text-dark border-end" style="background-color: #dbe2e9;">Total Time Entry Hours</td>
+                                <td colspan="3" class="ps-3 py-3 text-start fw-bold text-dark border-end" style="background-color: #dbe2e9;">Total Time Entry Hours</td>
                                 <t t-foreach="state.dates" t-as="d" t-key="'total_' + d.date_str">
                                     <td colspan="2" t-attf-class="text-center py-3 fw-bold text-dark border-end #{
                                         (d.day_name === 'Saturday' || d.day_name === 'Sunday' || d.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
@@ -276,7 +279,7 @@
 
                             <!-- 2. DeskTime Productive Hours -->
                             <tr class="table-prod-hours-row border-top">
-                                <td colspan="2" class="ps-3 py-2 text-start fw-bold text-success border-end font-12 bg-light">
+                                <td colspan="3" class="ps-3 py-2 text-start fw-bold text-success border-end font-12 bg-light">
                                     ACS Hours
                                 </td>
                                 <t t-foreach="state.dates" t-as="d" t-key="'prod_' + d.date_str">
@@ -296,7 +299,7 @@
 
                             <!-- DeskTime Shift Wise Production Hours (lunch break included) -->
                             <tr class="table-shift-prod-hours-row border-top">
-                                <td colspan="2" class="ps-3 py-2 text-start fw-bold text-success border-end font-12 bg-light">
+                                <td colspan="3" class="ps-3 py-2 text-start fw-bold text-success border-end font-12 bg-light">
                                     Shift Wise Production Hours
                                 </td>
                                 <t t-foreach="state.dates" t-as="d" t-key="'shift_prod_' + d.date_str">
@@ -316,7 +319,7 @@
 
                             <!-- 3. Shift / Scheduled Hours -->
                             <tr class="table-shift-hours-row border-top">
-                                <td colspan="2" class="ps-3 py-2 text-start fw-bold text-primary border-end font-12 bg-light">
+                                <td colspan="3" class="ps-3 py-2 text-start fw-bold text-primary border-end font-12 bg-light">
                                     Shift Hours
                                 </td>
                                 <t t-foreach="state.dates" t-as="d" t-key="'shift_' + d.date_str">
@@ -480,69 +483,87 @@
                             <button type="button" class="btn-close" t-on-click="closeAddRowModal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body px-4 py-3">
-                            <!-- Warning Banner if mandatory fields are missing -->
-                            <!-- Warning Banner if mandatory fields are missing -->
-                            <t t-if="newRowProjectError || newRowTaskError || newRowDescriptionError || newRowDateError || newRowHoursError">
+                            <!-- Warning Banner if mandatory fields are missing or word count exceeded -->
+                            <t t-if="newRowCategoryError || newRowActivityError || newRowDescriptionError || newRowDateError || newRowHoursError">
                                 <div class="alert alert-warning d-flex align-items-center gap-2 p-2 mb-3 rounded border-warning small font-12 fw-bold text-dark">
                                     <i class="fa fa-exclamation-triangle text-warning fs-6 me-1"/>
-                                    <span>Please fill in all mandatory fields: Project, Task, Description, Date, and Time Spent.</span>
+                                    <span><t t-esc="newRowCategoryError || newRowActivityError || newRowDescriptionError || newRowDateError || newRowHoursError"/></span>
                                 </div>
                             </t>
 
-                            <!-- Project Select -->
+                            <!-- Level 1: Category Select -->
                             <div class="mb-3">
-                                <label class="form-label text-dark fw-bold small">Project <span class="text-danger">*</span></label>
-                                <select t-att-class="newRowProjectError ? 'form-select is-invalid border-danger text-danger fw-semibold' : 'form-select'" t-att-value="state.new_row_project_id" t-on-change="onProjectChange">
-                                    <option value="">— Select Project —</option>
-                                    <t t-foreach="state.projects || []" t-as="p" t-key="p.id">
-                                        <option t-att-value="p.id" t-att-selected="state.new_row_project_id == p.id">
-                                            <t t-esc="p.display_name || p.name"/>
+                                <label class="form-label text-dark fw-bold small">Category (L1) <span class="text-danger">*</span></label>
+                                <select t-att-class="newRowCategoryError ? 'form-select is-invalid border-danger text-danger fw-semibold' : 'form-select'" t-att-value="state.new_row_category_id" t-on-change="onCategoryChange">
+                                    <option value="">— Select Category —</option>
+                                    <t t-foreach="state.categories || []" t-as="cat" t-key="cat.id">
+                                        <option t-att-value="cat.id" t-att-selected="state.new_row_category_id == cat.id">
+                                            <t t-esc="cat.name"/>
                                         </option>
                                     </t>
                                 </select>
-                                <!--
-                                <t t-if="!state.projects || state.projects.length === 0">
-                                    <div class="text-muted small mt-1 font-11">
-                                        <i class="fa fa-info-circle me-1"/>No allocated projects found for this employee.
-                                    </div>
-                                </t>
-                                -->
-                                <t t-if="newRowProjectError">
+                                <t t-if="newRowCategoryError">
                                     <div class="text-danger small mt-1 font-11 fw-bold">
                                         <i class="fa fa-exclamation-circle me-1"/>
-                                        <t t-esc="newRowProjectError"/>
+                                        <t t-esc="newRowCategoryError"/>
                                     </div>
                                 </t>
                             </div>
                             
-                            <!-- Task Select -->
+                            <!-- Level 2: Activity Select (Searchable) -->
                             <div class="mb-3">
-                                <label class="form-label text-dark fw-bold small">Task <span class="text-danger">*</span></label>
-                                <select t-att-class="newRowTaskError ? 'form-select is-invalid border-danger text-danger fw-semibold' : 'form-select'" t-att-value="state.new_row_task_id" t-on-change="onTaskChange">
-                                    <option value="">— Select Task —</option>
-                                    <t t-foreach="filteredTasks || []" t-as="t" t-key="t.id">
-                                        <option t-att-value="t.id" t-att-selected="state.new_row_task_id == t.id">
-                                            <t t-esc="t.display_name || t.name"/>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label text-dark fw-bold small m-0">Activity (L2) <span class="text-danger">*</span></label>
+                                    <t t-if="selectedCategory and selectedCategory.is_crm">
+                                        <span class="badge bg-primary text-white font-10">CRM Leads / Opps</span>
+                                    </t>
+                                    <t t-elif="selectedCategory and selectedCategory.is_project">
+                                        <span class="badge bg-info text-white font-10">Allocated Projects</span>
+                                    </t>
+                                </div>
+                                <input type="text"
+                                       class="form-control form-control-sm mb-2"
+                                       placeholder="🔍 Search activity (e.g. Other, Review, Invoicing...)"
+                                       t-att-value="state.activity_search_query"
+                                       t-on-input="onActivitySearch"/>
+                                <select t-att-class="newRowActivityError ? 'form-select is-invalid border-danger text-danger fw-semibold' : 'form-select'" t-att-value="state.new_row_activity_id" t-on-change="onActivityChange">
+                                    <option value="">— Select Activity —</option>
+                                    <t t-foreach="filteredActivities || []" t-as="act" t-key="act.id">
+                                        <option t-att-value="act.id" t-att-selected="state.new_row_activity_id == act.id">
+                                            <t t-esc="act.name"/>
                                         </option>
                                     </t>
                                 </select>
-                                <t t-if="newRowTaskError">
+                                <div class="d-flex justify-content-between text-muted small mt-1 font-11">
+                                    <span><i class="fa fa-info-circle me-1"/>Default is "Other" if no predefined activity matches.</span>
+                                </div>
+                                <t t-if="newRowActivityError">
                                     <div class="text-danger small mt-1 font-11 fw-bold">
                                         <i class="fa fa-exclamation-circle me-1"/>
-                                        <t t-esc="newRowTaskError"/>
+                                        <t t-esc="newRowActivityError"/>
                                     </div>
                                 </t>
                             </div>
 
-                            <!-- Description Input -->
+                            <!-- Level 3: Task Description (100 words limit) -->
                             <div class="mb-3">
-                                <label class="form-label text-dark fw-bold small">Description / Notes <span class="text-danger">*</span></label>
-                                <input type="text"
-                                       t-att-class="newRowDescriptionError ? 'form-control is-invalid border-danger text-danger fw-semibold' : 'form-control'"
-                                       placeholder="e.g. Development work, Client Meeting..."
-                                       t-att-value="state.new_row_description"
-                                       t-on-input="onDescriptionChange"
-                                       required="required"/>
+                                <label class="form-label text-dark fw-bold small">Task Description (L3) <span class="text-danger">*</span></label>
+                                <textarea t-att-class="newRowDescriptionError ? 'form-control is-invalid border-danger text-danger fw-semibold' : 'form-control'"
+                                          rows="3"
+                                          placeholder="Enter detailed task description (maximum 100 words)..."
+                                          t-att-value="state.new_row_description"
+                                          t-on-input="onDescriptionChange"
+                                          required="required"/>
+                                <div class="d-flex justify-content-between align-items-center mt-1 font-11">
+                                    <span t-att-class="wordCount > 100 ? 'text-danger fw-bold' : 'text-muted'">
+                                        Word count: <strong><t t-esc="wordCount"/></strong> / 100 words
+                                    </span>
+                                    <t t-if="wordCount > 100">
+                                        <span class="text-danger fw-bold">
+                                            <i class="fa fa-times-circle me-1"/>Exceeds 100 words limit!
+                                        </span>
+                                    </t>
+                                </div>
                                 <t t-if="newRowDescriptionError">
                                     <div class="text-danger small mt-1 font-11 fw-bold">
                                         <i class="fa fa-exclamation-circle me-1"/>
@@ -586,7 +607,7 @@
                         </div>
                         <div class="modal-footer border-top-0 pt-0 pb-4 px-4 d-flex gap-2 justify-content-end">
                             <button type="button" class="btn btn-light border px-4 rounded-pill fw-bold text-secondary btn-sm" t-on-click="closeAddRowModal">Cancel</button>
-                            <button type="button" class="btn btn-primary px-4 rounded-pill fw-bold btn-sm text-white shadow" t-on-click="confirmAddRow" t-att-disabled="newRowProjectError || newRowTaskError || newRowDescriptionError || newRowDateError || newRowHoursError">Add Line</button>
+                            <button type="button" class="btn btn-primary px-4 rounded-pill fw-bold btn-sm text-white shadow" t-on-click="confirmAddRow" t-att-disabled="newRowCategoryError || newRowActivityError || newRowDescriptionError || newRowDateError || newRowHoursError">Add Line</button>
                         </div>
                     </div>
                 </div>

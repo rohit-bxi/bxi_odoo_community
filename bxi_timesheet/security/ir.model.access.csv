@@ -8,3 +8,9 @@ access_bxi_desktime_sync_wizard,bxi.desktime.sync.wizard.user,model_bxi_desktime
 access_bxi_monthly_attendance_timesheet_wizard,bxi.monthly.attendance.timesheet.wizard.admin,model_bxi_monthly_attendance_timesheet_wizard,base.group_erp_manager,1,1,1,1
 access_bxi_monthly_attendance_timesheet_wizard_system,bxi.monthly.attendance.timesheet.wizard.system,model_bxi_monthly_attendance_timesheet_wizard,base.group_system,1,1,1,1
 access_timesheet_maintenance_warning,timesheet.maintenance.warning,model_timesheet_maintenance_warning,base.group_user,1,1,1,1
+access_timesheet_category_user,timesheet.category.user,model_timesheet_category,base.group_user,1,0,0,0
+access_timesheet_category_manager,timesheet.category.manager,model_timesheet_category,hr_timesheet.group_timesheet_manager,1,1,1,1
+access_timesheet_category_admin,timesheet.category.admin,model_timesheet_category,base.group_system,1,1,1,1
+access_timesheet_activity_user,timesheet.activity.user,model_timesheet_activity,base.group_user,1,0,0,0
+access_timesheet_activity_manager,timesheet.activity.manager,model_timesheet_activity,hr_timesheet.group_timesheet_manager,1,1,1,1
+access_timesheet_activity_admin,timesheet.activity.admin,model_timesheet_activity,base.group_system,1,1,1,1

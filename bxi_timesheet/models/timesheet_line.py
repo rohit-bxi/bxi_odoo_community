@@ -25,6 +25,61 @@ class AccountAnalyticLine(models.Model):
 
     remarks = fields.Text(string='Manager Remarks', copy=False)
 
+    timesheet_category_id = fields.Many2one(
+        'timesheet.category',
+        string='Category (L1)',
+        index=True
+    )
+    timesheet_activity_id = fields.Many2one(
+        'timesheet.activity',
+        string='Activity (L2)',
+        index=True
+    )
+    lead_id = fields.Many2one(
+        'crm.lead',
+        string='CRM Lead / Opportunity',
+        index=True
+    )
+    l2_activity_name = fields.Char(
+        string='Activity Name (L2)',
+        compute='_compute_l2_activity_name',
+        store=True
+    )
+
+    @api.depends('timesheet_activity_id', 'lead_id', 'project_id', 'task_id')
+    def _compute_l2_activity_name(self):
+        for rec in self:
+            if rec.timesheet_activity_id:
+                rec.l2_activity_name = rec.timesheet_activity_id.name
+            elif rec.lead_id:
+                rec.l2_activity_name = rec.lead_id.name or rec.lead_id.display_name
+            elif rec.project_id:
+                if rec.task_id:
+                    rec.l2_activity_name = f"{rec.project_id.name} / {rec.task_id.name}"
+                else:
+                    rec.l2_activity_name = rec.project_id.name
+            else:
+                rec.l2_activity_name = ''
+
+    @api.constrains('name')
+    def _check_description_word_count(self):
+        """Enforce L3 description word limit (max 100 words)."""
+        for rec in self:
+            if rec.name:
+                words = rec.name.strip().split()
+                if len(words) > 100:
+                    raise ValidationError(_("Task description (L3) cannot exceed 100 words (current: %d words).") % len(words))
+
+    @api.constrains('timesheet_category_id', 'timesheet_activity_id')
+    def _check_activity_category_match(self):
+        """Ensure L2 activity belongs to selected L1 category."""
+        for rec in self:
+            if rec.timesheet_category_id and rec.timesheet_activity_id:
+                if rec.timesheet_activity_id.category_id != rec.timesheet_category_id:
+                    raise ValidationError(_("Selected Activity (L2) '%s' does not belong to Category (L1) '%s'.") % (
+                        rec.timesheet_activity_id.name, rec.timesheet_category_id.name
+                    ))
+
     @api.constrains('date')
     def _check_past_week_lock(self):
         """Block standard employees from adding or modifying timesheets for past weeks."""
@@ -59,63 +114,32 @@ class AccountAnalyticLine(models.Model):
             if rec.date and rec.date < current_week_start:
                 raise UserError(_("Timesheets for previous weeks (before %s) cannot be created, modified, or submitted.") % current_week_start.strftime('%Y-%m-%d'))
 
-    @api.constrains("employee_id", "date")
-    def _check_one_entry_per_day(self):
-        AnalyticLine = self.env["account.analytic.line"]
+    @api.constrains('timesheet_category_id', 'lead_id', 'project_id', 'employee_id')
+    def _check_category_l2_allocation(self):
+        """Enforce salesperson mapping for Revenue Generation and project allocation for Delivery / Project Execution."""
         for rec in self:
-            if not rec.employee_id or not rec.date:
+            if not rec.timesheet_category_id:
                 continue
-            if "holiday_id" in AnalyticLine._fields:
-                if rec.holiday_id:
-                    continue
-            if not rec.unit_amount:
-                continue
-            try:
-                role_band = (
-                    int(rec.employee_id.role_band)
-                    if rec.employee_id.role_band
-                    else None
-                )
-            except (TypeError, ValueError):
-                role_band = None
-
-            if role_band is None:
-                continue
-
-            # Role band 8+ is exempt.
-            if role_band >= ROLE_BAND_THRESHOLD:
-                continue
-            domain = [
-                ("employee_id", "=", rec.employee_id.id),
-                ("date", "=", rec.date),
-                ("id", "!=", rec.id),
-            ]
-
-            if "holiday_id" in AnalyticLine._fields:
-                domain.append(("holiday_id", "=", False))
-            existing = AnalyticLine.search(
-                domain,
-                limit=1,
-            )
-
-            if existing:
-                raise ValidationError(
-                    _(
-                        "Only one timesheet entry is allowed per day "
-                        "(%(date)s) for employee %(employee)s."
-                    )
-                    % {
-                        "date": rec.date.strftime("%Y-%m-%d"),
-                        "employee": rec.employee_id.name,
-                    }
-                )
+            cat = rec.timesheet_category_id
+            if (cat.is_crm or cat.code == 'revenue_generation') and rec.lead_id:
+                if self.env.user and not self.env.user.has_group('base.group_system'):
+                    if rec.lead_id.user_id != self.env.user:
+                        raise ValidationError(_("For Revenue Generation, you can only select leads/opportunities where you are mapped as the salesperson."))
+            elif (cat.is_project or cat.code == 'delivery_project') and rec.project_id:
+                if 'project.resource.allocation' in self.env and self.env.user and not self.env.user.has_group('base.group_system'):
+                    emp = self.env['hr.employee'].sudo().search([('user_id', '=', self.env.user.id)], limit=1) or rec.employee_id
+                    if emp:
+                        has_alloc = self.env['project.resource.allocation'].sudo().search_count([
+                            ('employee_id', '=', emp.id),
+                            ('project_id', '=', rec.project_id.id),
+                        ])
+                        if not has_alloc:
+                            raise ValidationError(_("For Delivery / Project Execution, you can only select projects where you are mapped under project resource allocation."))
 
     @api.constrains("unit_amount", "employee_id", "date")
     def _check_max_hours_per_day(self):
         """
-        Prevent employees with role_band < 8 from having
-        more than 9 total timesheet hours on a single day.
-
+        Prevent employees from having more than 9 total timesheet hours on a single day.
         Time-off analytic lines are excluded.
         Employees with role_band >= 8 are excluded.
         """
@@ -135,10 +159,8 @@ class AccountAnalyticLine(models.Model):
             except (TypeError, ValueError):
                 role_band = None
 
-            if role_band is None:
-                continue
-
-            if role_band >= ROLE_BAND_THRESHOLD:
+            # Role band 8+ is exempt. Regular users (None or < 8) are checked.
+            if role_band is not None and role_band >= ROLE_BAND_THRESHOLD:
                 continue
             if rec.unit_amount <= 0:
                 continue
@@ -156,10 +178,8 @@ class AccountAnalyticLine(models.Model):
                 day_lines.mapped("unit_amount")
             )
 
-            # ---------------------------------------------------------
             # Maximum 9 hours per day
-            # ---------------------------------------------------------
-            if total_hours > 9.0:
+            if total_hours > 9.001:
                 raise ValidationError(
                     _(
                         "You cannot log more than 9 hours for a single day "
@@ -222,20 +242,26 @@ class AccountAnalyticLine(models.Model):
                     if not (is_admin or is_hr or is_manager):
                         raise UserError(_("Timesheets for previous weeks cannot be submitted for approval."))
 
-            # Check if another timesheet for the same employee & date is already submitted or approved
+            # Allow N timesheets for the day, but verify daily sum does not exceed 9.0 hours
             if rec.state == 'draft':
-                domain = [
-                    ('employee_id', '=', rec.employee_id.id),
-                    ('date', '=', rec.date),
-                    ('state', 'in', ['submitted', 'approved']),
-                    ('id', '!=', rec.id)
-                ]
-                if 'holiday_id' in self.env['account.analytic.line']._fields:
-                    domain.append(('holiday_id', '=', False))
-                already_submitted = self.env['account.analytic.line'].sudo().search(domain, limit=1)
-                if already_submitted:
-                    status_str = "submitted for approval" if already_submitted.state == 'submitted' else "approved"
-                    raise UserError(_("Timesheet for %s on %s has already been %s.") % (rec.employee_id.name, rec.date.strftime('%Y-%m-%d'), status_str))
+                try:
+                    rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
+                except Exception:
+                    rb_val = None
+
+                if rb_val is None or rb_val < ROLE_BAND_THRESHOLD:
+                    domain = [
+                        ('employee_id', '=', rec.employee_id.id),
+                        ('date', '=', rec.date),
+                    ]
+                    if 'holiday_id' in self.env['account.analytic.line']._fields:
+                        domain.append(('holiday_id', '=', False))
+                    day_lines = self.env['account.analytic.line'].sudo().search(domain)
+                    total_hours = sum(day_lines.mapped('unit_amount'))
+                    if total_hours > 9.001:
+                        raise UserError(_(
+                            "Total timesheet hours for %s on %s cannot exceed 9 hours (current total: %.2f hrs)."
+                        ) % (rec.employee_id.name, rec.date.strftime('%Y-%m-%d'), total_hours))
 
                 rec.sudo().write({'state': 'submitted'})
         return True
