@@ -6,7 +6,7 @@
     "category": "Project",
     "author": "BXI Technologies",
     "website": "https://bxitech.com/",
-    "depends": ['base', 'project', 'mail', 'sale', 'hr', 'hr_timesheet'],
+    "depends": ['base', 'project', 'mail', 'sale', 'hr', 'hr_timesheet', 'bxi_hr_employee'],
     "data": [
         "security/project_contract_security.xml",
         "security/ir.model.access.csv",
