@@ -237,10 +237,10 @@ class AccountAnalyticLine(models.Model):
                 except Exception:
                     rb_val = None
 
-                if rb_val is not None and rb_val < ROLE_BAND_THRESHOLD:
-                    is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
-                    if not (is_admin or is_hr or is_manager):
-                        raise UserError(_("Timesheets for previous weeks cannot be submitted for approval."))
+                # if rb_val is not None and rb_val < ROLE_BAND_THRESHOLD:
+                #     is_manager = current_employee and rec.employee_id.parent_id.id == current_employee.id
+                #     if not (is_admin or is_hr or is_manager):
+                #         raise UserError(_("Timesheets for previous weeks cannot be submitted for approval."))
 
             # Allow N timesheets for the day, but verify daily sum does not exceed 9.0 hours
             if rec.state == 'draft':
