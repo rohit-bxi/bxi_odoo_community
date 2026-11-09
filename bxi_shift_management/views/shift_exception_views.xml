@@ -36,7 +36,7 @@
                         type="object"
                         string="Refuse"
                         class="btn-danger"
-                        invisible="not (state in ('manager_approval', 'approved') and is_request_manager or state == 'hr_approval' and can_hr_approve)"
+                        invisible="state != 'draft'"
                     />
                     <button
                         name="action_set_draft"
@@ -156,8 +156,7 @@
                         role="alert"
                         invisible="not is_regularization or state != 'draft'"
                     >
-                        The request must be submitted and approved on or
-                        before the <strong>21th</strong> of the attendance
+                        The request must be submitted and approved on <strong>21th</strong> of the attendance
                         cycle. Days without an approved request by then are marked
                         as <strong>Loss of Pay (LOP)</strong>.
                     </div>
