@@ -388,9 +388,9 @@ class BxiTimesheetDashboard extends Component {
         sunday.setDate(today.getDate() - today.getDay());
         sunday.setHours(0, 0, 0, 0);
 
-        if (targetDate < sunday) {
-            return "Timesheets for previous weeks cannot be created or modified.";
-        }
+        // if (targetDate < sunday) {
+        //     return "Timesheets for previous weeks cannot be created or modified.";
+        // }
         return "";
     }
 

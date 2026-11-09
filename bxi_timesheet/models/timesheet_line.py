@@ -80,39 +80,39 @@ class AccountAnalyticLine(models.Model):
                         rec.timesheet_activity_id.name, rec.timesheet_category_id.name
                     ))
 
-    @api.constrains('date')
-    def _check_past_week_lock(self):
-        """Block standard employees from adding or modifying timesheets for past weeks."""
-        today = date.today()
-        offset = (today.weekday() + 1) % 7
-        current_week_start = today - timedelta(days=offset)
+    # @api.constrains('date')
+    # def _check_past_week_lock(self):
+        # """Block standard employees from adding or modifying timesheets for past weeks."""
+        # today = date.today()
+        # offset = (today.weekday() + 1) % 7
+        # current_week_start = today - timedelta(days=offset)
 
-        user = self.env.user
-        is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager')
-        is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager')
-        current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
+        # user = self.env.user
+        # is_admin = user.has_group('base.group_system') or user.has_group('base.group_erp_manager')
+        # is_hr = user.has_group('hr.group_hr_user') or user.has_group('hr.group_hr_manager')
+        # current_employee = self.env['hr.employee'].sudo().search([('user_id', '=', user.id)], limit=1)
 
-        for rec in self:
-            # Time off requests / holidays are managed via the Time Off app; skip past-week lock check
-            if hasattr(rec, 'holiday_id') and rec.holiday_id:
-                continue
+        # for rec in self:
+        #     # Time off requests / holidays are managed via the Time Off app; skip past-week lock check
+        #     if hasattr(rec, 'holiday_id') and rec.holiday_id:
+        #         continue
 
-            # Only enforce when there are hours logged on the line
-            if not getattr(rec, 'unit_amount', 0):
-                continue
+        #     # Only enforce when there are hours logged on the line
+        #     if not getattr(rec, 'unit_amount', 0):
+        #         continue
 
-            # Only enforce past-week lock for employees whose role_band is below the threshold.
-            # Employees with role_band >= 8 are exempt from these restrictions.
-            try:
-                rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
-            except Exception:
-                rb_val = None
+        #     # Only enforce past-week lock for employees whose role_band is below the threshold.
+        #     # Employees with role_band >= 8 are exempt from these restrictions.
+        #     try:
+        #         rb_val = int(rec.employee_id.role_band) if rec.employee_id and rec.employee_id.role_band else None
+        #     except Exception:
+        #         rb_val = None
 
-            if rb_val is not None and rb_val >= ROLE_BAND_THRESHOLD:
-                continue
+        #     if rb_val is not None and rb_val >= ROLE_BAND_THRESHOLD:
+        #         continue
 
-            if rec.date and rec.date < current_week_start:
-                raise UserError(_("Timesheets for previous weeks (before %s) cannot be created, modified, or submitted.") % current_week_start.strftime('%Y-%m-%d'))
+        #     if rec.date and rec.date < current_week_start:
+        #         raise UserError(_("Timesheets for previous weeks (before %s) cannot be created, modified, or submitted.") % current_week_start.strftime('%Y-%m-%d'))
 
     @api.constrains('timesheet_category_id', 'lead_id', 'project_id', 'employee_id')
     def _check_category_l2_allocation(self):

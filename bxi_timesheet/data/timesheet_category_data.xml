@@ -19,7 +19,7 @@
         <record id="cat_delivery_project" model="timesheet.category">
             <field name="name">Delivery / Project Execution</field>
             <field name="code">delivery_project</field>
-            <field name="sequence">20</field>
+            <field name="sequence">30</field>
             <field name="is_project" eval="True"/>
         </record>
         <record id="act_dp_other" model="timesheet.activity">
