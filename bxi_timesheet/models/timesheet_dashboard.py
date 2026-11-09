@@ -1006,8 +1006,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         current_week_start = self._get_current_week_start()
 
-        if start_date < current_week_start and not is_manager:
-            raise UserError(_("Once a week is crossed, timesheets for the previous week cannot be submitted."))
+        # if start_date < current_week_start and not is_manager:
+        #     raise UserError(_("Once a week is crossed, timesheets for the previous week cannot be submitted."))
 
         end_date = start_date + timedelta(days=6)
         domain = [
