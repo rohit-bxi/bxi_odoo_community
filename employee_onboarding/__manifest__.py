@@ -18,6 +18,7 @@
         'views/onboarding_menus.xml',
         'views/hr_employee_views.xml',
         'views/hr_bxi_employee.xml',
+        'data/employee_resignation_cron.xml',
     ],
     'installable': True,
     'application': False,
