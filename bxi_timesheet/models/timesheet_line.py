@@ -399,11 +399,37 @@ class AccountAnalyticLine(models.Model):
         ])
 
         for emp in employees:
-
             try:
+                doj = emp.emp_date_of_joining
+                if not doj:
+                    _logger.warning(
+                        "Employee %s has no Date of Joining. Skipping LWP check.",
+                        emp.name
+                    )
+                    continue
+                if doj >= today:
+                    _logger.info(
+                        "Employee %s joined on %s. Skipping LWP check.",
+                        emp.name,
+                        doj
+                    )
+                    continue
+                employee_working_days = [
+                    day for day in working_days if day >= doj
+                ]
+
+                if len(employee_working_days) < 6:
+                    _logger.info(
+                        "Employee %s has only %s eligible working days after DOJ %s. Skipping LWP check.",
+                        emp.name,
+                        len(employee_working_days),
+                        doj
+                    )
+                    continue
+
                 try:
                     emp_rb = int(emp.role_band) if emp.role_band else None
-                except Exception:
+                except (TypeError, ValueError):
                     emp_rb = None
 
                 if emp_rb is not None and emp_rb >= ROLE_BAND_THRESHOLD:
@@ -438,7 +464,7 @@ class AccountAnalyticLine(models.Model):
                 # -------------------------------------------------
                 logged_days = self.env['account.analytic.line'].sudo().search([
                     ('employee_id', '=', emp.id),
-                    ('date', 'in', working_days),
+                    ('date', 'in', employee_working_days),
                     ('unit_amount', '>', 0.0),
                 ])
 
@@ -456,8 +482,8 @@ class AccountAnalyticLine(models.Model):
                 # -------------------------------------------------
                 approved_leaves = self.env['hr.leave'].sudo().search([
                     ('employee_id', '=', emp.id),
-                    ('request_date_from', '<=', max(working_days)),
-                    ('request_date_to', '>=', min(working_days)),
+                    ('request_date_from', '<=', max(employee_working_days)),
+                    ('request_date_to', '>=', min(employee_working_days)),
                     ('state', '=', 'validate'),
                 ])
 
@@ -470,7 +496,7 @@ class AccountAnalyticLine(models.Model):
 
                     while current_date <= end_date:
 
-                        if current_date in working_days:
+                        if current_date in employee_working_days:
                             distinct_logged_dates.add(current_date)
 
                         current_date += timedelta(days=1)
@@ -480,7 +506,7 @@ class AccountAnalyticLine(models.Model):
                 # -------------------------------------------------
                 missing_days = [
                     day
-                    for day in working_days
+                    for day in employee_working_days
                     if day not in distinct_logged_dates
                 ]
 
@@ -488,7 +514,7 @@ class AccountAnalyticLine(models.Model):
                     "Employee: %s | Working Days: %s | "
                     "Missing Days: %s",
                     emp.name,
-                    working_days,
+                    employee_working_days,
                     missing_days,
                 )
 
