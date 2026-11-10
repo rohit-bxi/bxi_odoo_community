@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View: Department Category Linking -->
+    <record id="view_timesheet_department_category_list" model="ir.ui.view">
+        <field name="name">timesheet.department.category.list</field>
+        <field name="model">timesheet.department.category</field>
+        <field name="arch" type="xml">
+            <list string="Department Category Linking">
+                <field name="company_id"/>
+                <field name="department_id"/>
+                <field name="category_id"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View: Department Category Linking -->
+    <record id="view_timesheet_department_category_form" model="ir.ui.view">
+        <field name="name">timesheet.department.category.form</field>
+        <field name="model">timesheet.department.category</field>
+        <field name="arch" type="xml">
+            <form string="Department Category Linking">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="company_id" options="{'no_create': True}"/>
+                            <field name="department_id"
+                                   domain="[('company_id', '=', company_id)]"
+                                   readonly="not company_id"
+                                   options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="category_id" options="{'no_create': True}"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View: Department Category Linking -->
+    <record id="view_timesheet_department_category_search" model="ir.ui.view">
+        <field name="name">timesheet.department.category.search</field>
+        <field name="model">timesheet.department.category</field>
+        <field name="arch" type="xml">
+            <search string="Department Category Linking">
+                <field name="company_id"/>
+                <field name="department_id"/>
+                <field name="category_id"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter string="Company" name="group_by_company" context="{'group_by': 'company_id'}"/>
+                <filter string="Department" name="group_by_department" context="{'group_by': 'department_id'}"/>
+                <filter string="Category (L1)" name="group_by_category" context="{'group_by': 'category_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action: Department Category Linking -->
+    <record id="action_timesheet_department_category" model="ir.actions.act_window">
+        <field name="name">Department Category Linking</field>
+        <field name="res_model">timesheet.department.category</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_timesheet_department_category_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Link HR Departments with Timesheet Categories (L1)
+            </p>
+            <p>
+                Configure which Category (L1) options are available in the Timesheet "Add a line" popup for each employee's department.
+            </p>
+        </field>
+    </record>
+
+    <!-- Parent Menu: Masters Configuration (placed after Configuration) -->
+    <menuitem id="menu_bxi_timesheet_masters_config"
+              name="Masters Configuration"
+              parent="hr_timesheet.timesheet_menu_root"
+              groups="hr_timesheet.group_timesheet_manager,hr.group_hr_manager,base.group_erp_manager,base.group_system"
+              sequence="110"/>
+
+    <!-- Child Menu: Department Category Linking -->
+    <menuitem id="menu_bxi_timesheet_department_category"
+              name="Department Category Linking"
+              parent="menu_bxi_timesheet_masters_config"
+              action="action_timesheet_department_category"
+              groups="hr_timesheet.group_timesheet_manager,hr.group_hr_manager,base.group_erp_manager,base.group_system"
+              sequence="10"/>
+
+</odoo>
+

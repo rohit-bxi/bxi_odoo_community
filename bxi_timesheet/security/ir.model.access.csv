@@ -14,3 +14,7 @@ access_timesheet_category_admin,timesheet.category.admin,model_timesheet_categor
 access_timesheet_activity_user,timesheet.activity.user,model_timesheet_activity,base.group_user,1,0,0,0
 access_timesheet_activity_manager,timesheet.activity.manager,model_timesheet_activity,hr_timesheet.group_timesheet_manager,1,1,1,1
 access_timesheet_activity_admin,timesheet.activity.admin,model_timesheet_activity,base.group_system,1,1,1,1
+access_timesheet_department_category_user,timesheet.department.category.user,model_timesheet_department_category,base.group_user,1,0,0,0
+access_timesheet_department_category_manager,timesheet.department.category.manager,model_timesheet_department_category,hr_timesheet.group_timesheet_manager,1,1,1,1
+access_timesheet_department_category_hr_manager,timesheet.department.category.hr.manager,model_timesheet_department_category,hr.group_hr_manager,1,1,1,1
+access_timesheet_department_category_admin,timesheet.department.category.admin,model_timesheet_department_category,base.group_system,1,1,1,1

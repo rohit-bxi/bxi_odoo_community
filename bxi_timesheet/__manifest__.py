@@ -32,6 +32,7 @@
         'views/desktime_config_views.xml',
         'views/desktime_log_views.xml',
         'views/monthly_attendance_timesheet_wizard_views.xml',
+        'views/department_category_views.xml',
         'views/menu.xml',
         'views/maintenance.xml',
     ],
