@@ -164,7 +164,21 @@ class BxiTimesheetDashboard(models.AbstractModel):
             })
 
         # 3b. Fetch L1 Categories and their active L2 Activities
-        cat_records = self.env['timesheet.category'].sudo().search([('active', '=', True)], order='sequence, id')
+        # Only include categories linked to the logged-in user's employee department
+        dept_id = current_employee.department_id.id if current_employee and current_employee.department_id else False
+        if dept_id:
+            dept_links = self.env['timesheet.department.category'].sudo().search([
+                ('department_id', '=', dept_id),
+                ('active', '=', True),
+                ('category_id.active', '=', True),
+            ])
+            linked_cat_ids = dept_links.mapped('category_id').ids
+            cat_records = self.env['timesheet.category'].sudo().search([
+                ('id', 'in', linked_cat_ids),
+                ('active', '=', True),
+            ], order='sequence, id')
+        else:
+            cat_records = self.env['timesheet.category']
         categories_data = []
         for cat in cat_records:
             activities = []

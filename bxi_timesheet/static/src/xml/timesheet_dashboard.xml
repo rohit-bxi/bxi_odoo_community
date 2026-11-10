@@ -502,6 +502,12 @@
                                         </option>
                                     </t>
                                 </select>
+                                <t t-if="!state.categories || state.categories.length === 0">
+                                    <div class="text-warning small mt-1 font-11 fw-semibold">
+                                        <i class="fa fa-info-circle me-1"/>
+                                        No categories are linked to your department. Please contact your administrator.
+                                    </div>
+                                </t>
                                 <t t-if="newRowCategoryError">
                                     <div class="text-danger small mt-1 font-11 fw-bold">
                                         <i class="fa fa-exclamation-circle me-1"/>
