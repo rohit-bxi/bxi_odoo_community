@@ -11,8 +11,8 @@
     'license': 'LGPL-3',
     'depends': ['base', 'hr', 'mail','hr_recruitment'],
     'data': [
-        'security/ir.model.access.csv',
         'security/onboarding_security.xml',
+        'security/ir.model.access.csv',
         'views/onboarding_views.xml',
         'views/employee_resignation_views.xml',
         'views/onboarding_menus.xml',
