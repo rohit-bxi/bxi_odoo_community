@@ -395,6 +395,15 @@ class EmployeeOnboardingOffboarding(models.Model):
                                     text-align: center;">{status_label}</td>
                         </tr>
                     """
+                base_url = self.env['ir.config_parameter'].sudo().get_param(
+                    'web.base.url'
+                )
+
+                url = (
+                    f"{base_url}/web#id={rec.id}"
+                    f"&azmodel=employee.onboarding.offboarding"
+                    f"&view_type=form"
+                )
 
                 body_html = f"""
                     <div style="font-family: Arial, sans-serif;
@@ -435,6 +444,21 @@ class EmployeeOnboardingOffboarding(models.Model):
                                 {task_rows}
                             </tbody>
                         </table>
+                        <div style="margin-top: 20px; margin-bottom: 20px;">
+                            <a href="{url}"
+                            target="_blank"
+                            style="
+                                display: inline-block;
+                                background-color: #875a7b;
+                                color: white;
+                                padding: 10px 20px;
+                                text-decoration: none;
+                                font-weight: bold;
+                                border-radius: 4px;
+                            ">
+                                View Assigned Tasks
+                            </a>
+                        </div>
 
                         <p>You are requested to perform all your respective
                         tasks and update their status in the portal once done.</p>
