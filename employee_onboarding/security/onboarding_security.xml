@@ -31,7 +31,7 @@
             ['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]
         </field>
     </record>
-    
+
     <!-- Custom Access Rights Category -->
     <record id="module_category_employee_onboarding"
             model="ir.module.category">
@@ -45,22 +45,11 @@
     <!-- Offboarding Administrator -->
     <record id="group_offboarding_admin" model="res.groups">
         <field name="name">Offboarding Administrator</field>
-        <field name="category_id"
-               ref="employee_onboarding.module_category_employee_onboarding"/>
-        <field name="comment">
-            Full access to employee onboarding and offboarding.
-        </field>
     </record>
 
     <!-- Offboarding Manager -->
     <record id="group_offboarding_manager" model="res.groups">
         <field name="name">Offboarding Manager</field>
-        <field name="category_id"
-               ref="employee_onboarding.module_category_employee_onboarding"/>
-        <field name="comment">
-            Restricted access to offboarding requests received through
-            authorized email links.
-        </field>
     </record>
 
 </odoo>
