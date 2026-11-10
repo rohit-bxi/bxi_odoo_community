@@ -397,13 +397,11 @@ class EmployeeOnboardingOffboarding(models.Model):
                     """
                 base_url = self.env['ir.config_parameter'].sudo().get_param(
                     'web.base.url'
-                )
-
-                url = (
-                    f"{base_url}/web#id={rec.id}"
-                    f"&azmodel=employee.onboarding.offboarding"
-                    f"&view_type=form"
-                )
+                ).rstrip('/')
+                action_id = self.env.ref(
+                    'employee_onboarding.action_employee_onboarding_offboarding'
+                ).id
+                url = f"{base_url}/odoo/action-{action_id}/{rec.id}"
 
                 body_html = f"""
                     <div style="font-family: Arial, sans-serif;
@@ -444,13 +442,13 @@ class EmployeeOnboardingOffboarding(models.Model):
                                 {task_rows}
                             </tbody>
                         </table>
-                        <div style="margin-top: 20px; margin-bottom: 20px;">
+                        <div style="margin: 20px 0;">
                             <a href="{url}"
                             target="_blank"
                             style="
                                 display: inline-block;
                                 background-color: #875a7b;
-                                color: white;
+                                color: #ffffff;
                                 padding: 10px 20px;
                                 text-decoration: none;
                                 font-weight: bold;
@@ -459,7 +457,6 @@ class EmployeeOnboardingOffboarding(models.Model):
                                 View Assigned Tasks
                             </a>
                         </div>
-
                         <p>You are requested to perform all your respective
                         tasks and update their status in the portal once done.</p>
 
