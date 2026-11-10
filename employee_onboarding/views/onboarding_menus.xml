@@ -7,7 +7,7 @@
         name="Employee Onboarding"
         sequence="10"
         web_icon="employee_onboarding,static/description/icon.png"
-        groups="hr.group_hr_manager"/>
+        groups="employee_onboarding.group_offboarding_admin"/>
 
     <!-- Onboarding / Offboarding -->
     <menuitem
