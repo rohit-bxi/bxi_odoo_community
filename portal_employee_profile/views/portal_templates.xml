@@ -951,7 +951,7 @@
                                     </div>
                                     <div class="col-md-6 mb-3">
                                     <label class="form-label">
-                                        Rent Agreement Document/Electricity Bill/Water Bill
+                                        Rent Agreement Document/Electricity Bill
                                     </label>
                                     <div class="employee-file-wrapper">
                                         <input type="text"
