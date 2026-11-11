@@ -51,5 +51,52 @@
     <record id="group_offboarding_manager" model="res.groups">
         <field name="name">Offboarding Manager</field>
     </record>
+    <!-- Managers can only see requests of their reporting employees -->
+    <record id="employee_onboarding_manager_rule" model="ir.rule">
+        <field name="name">Onboarding: Reporting Manager Only</field>
+        <field name="model_id"
+            ref="model_employee_onboarding_offboarding"/>
+        <field name="groups"
+            eval="[(4, ref('employee_onboarding.group_offboarding_manager'))]"/>
+        <field name="domain_force">
+            [
+                '|',
+                ('onboarding_manager_id.user_id', '=', user.id),
+                ('offboarding_manager_id.user_id', '=', user.id)
+            ]
+        </field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <!-- Managers can only see their own assigned manager tasks -->
+    <record id="employee_onboarding_task_manager_rule" model="ir.rule">
+        <field name="name">Onboarding Tasks: Reporting Manager Only</field>
+        <field name="model_id" ref="model_employee_onboarding_task"/>
+        <field name="groups"
+            eval="[(4, ref('employee_onboarding.group_offboarding_manager'))]"/>
+        <field name="domain_force">
+            [
+                '|',
+                ('onboarding_id.onboarding_manager_id.user_id', '=', user.id),
+                ('onboarding_id.offboarding_manager_id.user_id', '=', user.id)
+            ]
+        </field>
+    </record>
+    <!-- Employees and their reporting managers can see relevant resignations -->
+    <record id="employee_resignation_manager_rule" model="ir.rule">
+        <field name="name">Resignation: Own Employees and Reporting Team</field>
+        <field name="model_id" ref="model_employee_resignation"/>
+        <field name="groups"
+            eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">
+            [
+                '|',
+                ('employee_id.user_id', '=', user.id),
+                ('manager_id.user_id', '=', user.id)
+            ]
+        </field>
+    </record>
 
 </odoo>
