@@ -53,31 +53,26 @@
     </record>
     <!-- Managers can only see requests of their reporting employees -->
     <record id="employee_onboarding_manager_rule" model="ir.rule">
-        <field name="name">Onboarding: Reporting Manager Only</field>
-        <field name="model_id"
-            ref="model_employee_onboarding_offboarding"/>
+        <field name="name">Manager: Own Reporting Employees Only</field>
+        <field name="model_id" ref="model_employee_onboarding_offboarding"/>
         <field name="groups"
             eval="[(4, ref('employee_onboarding.group_offboarding_manager'))]"/>
         <field name="domain_force">
-            [
-                '|',
-                ('onboarding_manager_id.user_id', '=', user.id),
-                ('offboarding_manager_id.user_id', '=', user.id)
-            ]
+            ['|',
+            ('onboarding_manager_id.user_id', '=', user.id),
+            ('offboarding_manager_id.user_id', '=', user.id)]
         </field>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="False"/>
-        <field name="perm_create" eval="False"/>
-        <field name="perm_unlink" eval="False"/>
     </record>
     <!-- Managers can only see their own assigned manager tasks -->
-    <record id="employee_onboarding_task_manager_rule" model="ir.rule">
-        <field name="name">Onboarding Tasks: Reporting Manager Only</field>
+   <record id="employee_onboarding_task_manager_rule" model="ir.rule">
+        <field name="name">Manager: Assigned Manager Tasks Only</field>
         <field name="model_id" ref="model_employee_onboarding_task"/>
         <field name="groups"
             eval="[(4, ref('employee_onboarding.group_offboarding_manager'))]"/>
         <field name="domain_force">
             [
+                '&amp;',
+                ('performed_by.is_manager', '=', True),
                 '|',
                 ('onboarding_id.onboarding_manager_id.user_id', '=', user.id),
                 ('onboarding_id.offboarding_manager_id.user_id', '=', user.id)
@@ -86,17 +81,36 @@
     </record>
     <!-- Employees and their reporting managers can see relevant resignations -->
     <record id="employee_resignation_manager_rule" model="ir.rule">
-        <field name="name">Resignation: Own Employees and Reporting Team</field>
+        <field name="name">Manager: Own Reporting Employees Resignations</field>
         <field name="model_id" ref="model_employee_resignation"/>
         <field name="groups"
-            eval="[(4, ref('base.group_user'))]"/>
+            eval="[(4, ref('employee_onboarding.group_offboarding_manager'))]"/>
         <field name="domain_force">
-            [
-                '|',
-                ('employee_id.user_id', '=', user.id),
-                ('manager_id.user_id', '=', user.id)
-            ]
+            [('manager_id.user_id', '=', user.id)]
         </field>
+    </record>
+    <record id="employee_onboarding_admin_rule" model="ir.rule">
+        <field name="name">Administrator: All Onboarding Records</field>
+        <field name="model_id" ref="model_employee_onboarding_offboarding"/>
+        <field name="groups"
+            eval="[(4, ref('employee_onboarding.group_offboarding_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="employee_onboarding_task_admin_rule" model="ir.rule">
+        <field name="name">Administrator: All Onboarding Tasks</field>
+        <field name="model_id" ref="model_employee_onboarding_task"/>
+        <field name="groups"
+            eval="[(4, ref('employee_onboarding.group_offboarding_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="employee_resignation_admin_rule" model="ir.rule">
+        <field name="name">Administrator: All Resignations</field>
+        <field name="model_id" ref="model_employee_resignation"/>
+        <field name="groups"
+            eval="[(4, ref('employee_onboarding.group_offboarding_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
     </record>
 
 </odoo>
