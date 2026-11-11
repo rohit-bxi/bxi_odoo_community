@@ -9,7 +9,8 @@
             <field name="code">model._cron_send_birthday_wishes()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">days</field>
-            <field name="nextcall" eval="(DateTime.now() + timedelta(days=1)).strftime('%Y-%m-%d 03:30:00')"/>
+            <field name="nextcall"
+                eval="(DateTime.now().replace(hour=5, minute=30, second=0, microsecond=0) + timedelta(days=1 if DateTime.now().hour >= 5 and DateTime.now().minute >= 30 else 0)).strftime('%Y-%m-%d %H:%M:%S')"/>
             <field name="active" eval="True"/>
         </record>
 

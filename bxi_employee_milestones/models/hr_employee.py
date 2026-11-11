@@ -84,14 +84,15 @@ class HrEmployee(models.Model):
 
     @api.model
     def _cron_send_birthday_wishes(self):
+        """Send birthday announcements to all active employees
+        across every company in the Odoo database.
+        """
         today = self._milestone_today()
 
-        # Find employees whose birthday is today and whose email
-        # has not already been queued for this year.
+        # Find birthdays across ALL companies
         birthday_employees = self.sudo().search(
             self._milestone_domain('birthday', today) + [
                 ('active', '=', True),
-                ('work_email', '!=', False),
                 ('birthday_wish_year', '!=', today.year),
             ]
         )
@@ -100,7 +101,7 @@ class HrEmployee(models.Model):
             _logger.info("No employee birthdays found for today.")
             return
 
-        # All active employees receive the announcement.
+        # Collect recipients across ALL companies
         recipients = self.sudo().search([
             ('active', '=', True),
             ('work_email', '!=', False),
@@ -113,7 +114,7 @@ class HrEmployee(models.Model):
         ))
 
         if not recipient_emails:
-            _logger.warning("No active employee email addresses found.")
+            _logger.warning("No employee email addresses found.")
             return
 
         template = self.env.ref(
@@ -122,37 +123,44 @@ class HrEmployee(models.Model):
         )
 
         if not template:
-            _logger.error("Birthday wishes email template not found.")
+            _logger.error("Birthday email template not found.")
             return
 
-        sent_count = 0
+        # One email announcement per birthday employee
+        email_values = {
+            'email_from': 'hr_support@bxitech.com',
+            'email_to': recipient_emails[0],
+            'email_cc': False,
+            'email_bcc': ','.join(recipient_emails[1:]),
+        }
 
-        for birthday_employee in birthday_employees:
+        queued_count = 0
+
+        for employee in birthday_employees:
             try:
-                template.send_mail(
-                    birthday_employee.id,
+                mail_id = template.send_mail(
+                    employee.id,
                     force_send=False,
-                    email_values={
-                        'email_to': ','.join(recipient_emails),
-                        'email_cc': False,
-                    },
+                    email_values=email_values,
                 )
 
-                birthday_employee.sudo().write({
-                    'birthday_wish_year': today.year,
-                })
-
-                sent_count += 1
+                if mail_id:
+                    employee.sudo().write({
+                        'birthday_wish_year': today.year,
+                    })
+                    queued_count += 1
 
             except Exception:
                 _logger.exception(
-                    "Failed to queue birthday announcement for %s",
-                    birthday_employee.name,
+                    "Birthday announcement failed for employee %s",
+                    employee.display_name,
                 )
 
         _logger.info(
-            "Birthday announcements queued for %s employee(s).",
-            sent_count,
+            "Birthday announcements queued: %s. "
+            "Total recipients across all companies: %s.",
+            queued_count,
+            len(recipient_emails),
         )
 
     @api.model
