@@ -217,6 +217,14 @@ class EmployeeResignation(models.Model):
         manager_email = self.employee_id.parent_id.work_email
 
         subject = _('Resignation Submitted: %s - %s') % (employee.name, self.name)
+
+        base_url = self.env['ir.config_parameter'].sudo().get_param(
+            'web.base.url'
+        ).rstrip('/')
+        action_id = self.env.ref(
+            'employee_onboarding.action_employee_resignation'
+        ).id
+        url = f"{base_url}/odoo/action-{action_id}/{self.id}"
         body_html = f"""
             <div style="font-family: Arial, sans-serif; font-size: 14px;">
                 <p>Dear HR Support,</p>
@@ -261,6 +269,21 @@ class EmployeeResignation(models.Model):
                 </table>
                 <p><strong>Resignation Letter:</strong></p>
                 <div>{self.resignation_body or ''}</div>
+                <div style="margin: 20px 0;">
+                    <a href="{url}"
+                    target="_blank"
+                    style="
+                        display: inline-block;
+                        background-color: #875a7b;
+                        color: #ffffff;
+                        padding: 10px 20px;
+                        text-decoration: none;
+                        font-weight: bold;
+                        border-radius: 4px;
+                    ">
+                        View Assigned Tasks
+                    </a>
+                </div>
             </div>
         """
 
