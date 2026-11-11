@@ -25,7 +25,7 @@
         parent="menu_employee_onboarding_root"
         action="action_employee_resignation"
         sequence="5"
-        groups="group_offboarding_admin"/>
+        groups="group_offboarding_admin,group_offboarding_manager"/>
 
     <!-- Configuration -->
     <menuitem
