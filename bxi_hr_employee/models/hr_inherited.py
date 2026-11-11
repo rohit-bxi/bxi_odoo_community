@@ -733,7 +733,7 @@ class HrEmployee(models.Model):
         'hr_employee_aggrement_rel',
         'employee_id',
         'attachment_id',
-        string="Rent Agreement Document/Electricity Bill/Water Bill"
+        string="Rent Agreement Document/Electricity Bill"
     )  
     landlord_name = fields.Char(string="Landlord Name")
     landlord_number = fields.Char(string="Landlord Number")
