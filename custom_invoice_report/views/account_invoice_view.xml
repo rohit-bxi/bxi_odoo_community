@@ -24,6 +24,9 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//group[@id='header_right_group']" position="inside">
+                <field name="customer_po_no" invisible="move_type not in ('out_invoice', 'out_refund')"/>
+            </xpath>
             <xpath expr="//field[@name='invoice_line_ids']/list/field[@name='quantity']" position="after">
                 <field name="inv_months"/>
             </xpath>

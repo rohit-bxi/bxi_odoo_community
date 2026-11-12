@@ -70,6 +70,11 @@
                                 <span t-field="o.invoice_date"/>
                                 <br/>
                                 <br/>
+                                <b>PO NO.</b>
+                                <br/>
+                                <span t-field="o.customer_po_no"/>
+                                <br/>
+                                <br/>
                                 <b>INVOICE NO.</b>
                                 <br/>
                                 <span t-field="o.name"/>
@@ -299,6 +304,10 @@
                             </td>
                         </tr>
                     </table>
+
+                    <div style="text-align:center;margin-top:12px;font-size:14px;font-weight:bold;">
+                        This is a computer-generated invoice, no signature required.
+                    </div>
 
                 </div>
             </t>
