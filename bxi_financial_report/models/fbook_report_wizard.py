@@ -292,6 +292,43 @@ class FbookReportWizard(models.TransientModel):
             'y2': fields.Date.from_string(f'{y2_start}-04-01'),
         }
 
+        other_income_accounts = None
+        if 'account.move.line' in self.env and 'account.account' in self.env:
+            other_income_accounts = self.env['account.account'].sudo().search([
+                ('company_ids', 'in', company_ids),
+                ('name', '=ilike', 'Other Income'),
+            ])
+            if not other_income_accounts:
+                other_income_accounts = self.env['account.account'].sudo().search([
+                    ('company_ids', 'in', company_ids),
+                    ('name', 'ilike', 'Other Income'),
+                ])
+            if not other_income_accounts:
+                other_income_accounts = self.env['account.account'].sudo().search([]).filtered(
+                    lambda a: 'other income' in (a.name or '').lower()
+                )
+
+        def compute_other_income(start_str, end_str, rate_year_key):
+            if not other_income_accounts or 'account.move.line' not in self.env:
+                return 0.0
+            oi_total = 0.0
+            oi_lines = self.env['account.move.line'].sudo().search([
+                ('company_id', 'in', company_ids),
+                ('parent_state', '=', 'posted'),
+                ('account_id', 'in', other_income_accounts.ids),
+                ('date', '>=', start_str),
+                ('date', '<=', end_str),
+            ])
+            for line in oi_lines:
+                net_oi = (line.credit or 0.0) - (line.debit or 0.0)
+                if abs(net_oi) < 0.0001:
+                    continue
+                oi_total += custom_convert(
+                    net_oi, line.company_id.currency_id, target_currency,
+                    date_val=line.date, year_key=rate_year_key, record=line
+                )
+            return oi_total
+
         for qdef in quarters_def:
             year_key = qdef['year']
             q_key = qdef['q']
@@ -518,10 +555,13 @@ class FbookReportWizard(models.TransientModel):
                 cash_flow_val = 0.0
                 calibration_val = 0.0
 
+            other_income_val = compute_other_income(qdef['start'], qdef['end'], year_key)
+
             data[year_key][q_key] = {
                 'booking': target_currency.round(booking_val),
                 'billed': target_currency.round(billed_val),
                 'actual': target_currency.round(actual_val),
+                'other_income': target_currency.round(other_income_val),
                 'dso_days': int(round(dso_days_val)),
                 'dso_amount': target_currency.round(dso_amount_val),
                 'expenses': target_currency.round(expenses_val),
@@ -536,6 +576,7 @@ class FbookReportWizard(models.TransientModel):
             sum_booking = sum(data[y][q]['booking'] for q in ['q1', 'q2', 'q3', 'q4'])
             sum_billed = sum(data[y][q]['billed'] for q in ['q1', 'q2', 'q3', 'q4'])
             sum_actual = sum(data[y][q]['actual'] for q in ['q1', 'q2', 'q3', 'q4'])
+            sum_other_income = sum(data[y][q]['other_income'] for q in ['q1', 'q2', 'q3', 'q4'])
 
             # DSO Amount & Days for Year Total based on Total Billed and Total Actual
             total_uncollected = max(0.0, sum_billed - sum_actual)
@@ -574,6 +615,7 @@ class FbookReportWizard(models.TransientModel):
                 'booking': target_currency.round(sum_booking),
                 'billed': target_currency.round(sum_billed),
                 'actual': target_currency.round(sum_actual),
+                'other_income': target_currency.round(sum_other_income),
                 'dso_days': int(round(avg_dso_days)),
                 'dso_amount': target_currency.round(sum_dso_amount),
                 'expenses': target_currency.round(sum_expenses),
@@ -1858,8 +1900,15 @@ class FbookReportWizard(models.TransientModel):
                     date_val=slip.date_to, year_key='y1', record=slip
                 )
 
-        y0_profit = y0_billed - y0_expenses
-        y0_margin = (y0_profit / y0_billed * 100) if y0_billed > 0 else 0.0
+        # Other Income COA amount per year (y0, y1, y2) for the First Table Revenue section
+        y0_other_income = compute_other_income(y0_start_str, y0_end_str, 'y1')
+        y1_other_income = compute_other_income(y1_start_str, y1_end_str, 'y1')
+        y2_other_income = compute_other_income(y2_start_str, y2_end_str, 'y2')
+
+        y0_revenue = y0_billed + y0_other_income
+        y0_profit = y0_revenue - y0_expenses
+        y0_margin = (y0_profit / y0_revenue * 100) if y0_revenue > 0 else 0.0
+        y0_margin = min(100.0, y0_margin)
 
         # Investors calculation for Year 0 (3rd year back)
         y0_investors = 0.0
@@ -1884,26 +1933,31 @@ class FbookReportWizard(models.TransientModel):
                     )
 
         y1_billed = data['y1']['total']['billed']
+        y1_revenue = y1_billed + y1_other_income
         y1_expenses = data['y1']['total']['expenses']
         y1_investors = data['y1']['total']['calibration']
-        y1_profit = data['y1']['total']['profit']
-        y1_margin = data['y1']['total']['margin']
+        y1_profit = y1_revenue - y1_expenses
+        y1_margin = (y1_profit / y1_revenue * 100) if y1_revenue > 0 else 0.0
+        y1_margin = min(100.0, y1_margin)
 
         y2_billed = data['y2']['total']['billed']
+        y2_revenue = y2_billed + y2_other_income
         y2_expenses = data['y2']['total']['expenses']
         y2_investors = data['y2']['total']['calibration']
-        y2_profit = data['y2']['total']['profit']
-        y2_margin = data['y2']['total']['margin']
+        y2_profit = y2_revenue - y2_expenses
+        y2_margin = (y2_profit / y2_revenue * 100) if y2_revenue > 0 else 0.0
+        y2_margin = min(100.0, y2_margin)
 
         y0_prefix = 'CY' if y0_start == current_fy_start else 'FY'
         y1_prefix = 'CY' if y1_start == current_fy_start else 'FY'
         y2_prefix = 'CY' if y2_start == current_fy_start else 'FY'
 
-        total_3y_revenue = y0_billed + y1_billed + y2_billed
+        total_3y_revenue = y0_revenue + y1_revenue + y2_revenue
         total_3y_expenses = y0_expenses + y1_expenses + y2_expenses
         total_3y_investors = y0_investors + y1_investors + y2_investors
         total_3y_profit = total_3y_revenue - total_3y_expenses
         total_3y_margin = (total_3y_profit / total_3y_revenue * 100) if total_3y_revenue > 0 else 0.0
+        total_3y_margin = min(100.0, total_3y_margin)
 
         three_year_summary = {
             'years': [
@@ -1911,7 +1965,7 @@ class FbookReportWizard(models.TransientModel):
                     'label': f"{y0_prefix}{y0_start - 2000 + 1} - {y0_start} -{y0_start + 1}",
                     'short_label': f"{y0_prefix}{y0_start - 2000 + 1}",
                     'prefix': y0_prefix,
-                    'revenue': target_currency.round(y0_billed),
+                    'revenue': target_currency.round(y0_revenue),
                     'expenses': target_currency.round(y0_expenses),
                     'investors': target_currency.round(y0_investors),
                     'profit': target_currency.round(y0_profit),
@@ -1921,7 +1975,7 @@ class FbookReportWizard(models.TransientModel):
                     'label': f"{y1_prefix}{y1_start - 2000 + 1} - {y1_start} -{y1_start + 1}",
                     'short_label': f"{y1_prefix}{y1_start - 2000 + 1}",
                     'prefix': y1_prefix,
-                    'revenue': target_currency.round(y1_billed),
+                    'revenue': target_currency.round(y1_revenue),
                     'expenses': target_currency.round(y1_expenses),
                     'investors': target_currency.round(y1_investors),
                     'profit': target_currency.round(y1_profit),
@@ -1931,7 +1985,7 @@ class FbookReportWizard(models.TransientModel):
                     'label': f"{y2_prefix}{y2_start - 2000 + 1} - {y2_start} -{y2_start + 1}",
                     'short_label': f"{y2_prefix}{y2_start - 2000 + 1}",
                     'prefix': y2_prefix,
-                    'revenue': target_currency.round(y2_billed),
+                    'revenue': target_currency.round(y2_revenue),
                     'expenses': target_currency.round(y2_expenses),
                     'investors': target_currency.round(y2_investors),
                     'profit': target_currency.round(y2_profit),
@@ -2131,6 +2185,7 @@ class FbookReportWizard(models.TransientModel):
             ('Booking', 'booking', f_amt, f_amt_hi),
             ('Billed', 'billed', f_amt, f_amt_hi),
             ('Actual', 'actual', f_amt, f_amt_hi),
+            ('Other Income', 'other_income', f_amt, f_amt_hi),
             ('DSO Amount', 'dso_amount', f_amt, f_amt_hi),
             ('DSO Days', 'dso_days', f_int, f_int),
             ('Expenses', 'expenses', f_amt, f_amt_hi),
