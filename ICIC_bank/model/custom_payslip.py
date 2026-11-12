@@ -549,10 +549,20 @@ class HrPayslip(models.Model):
                         error_code = None
 
                     if error_code:
-                        raise ValidationError(
-                            _("ICICI API Error [%s] (HTTP %s):\n%s")
-                            % (error_code, response.status_code, error_message)
+                        message = _("ICICI API Error [%s] (HTTP %s):\n%s") % (
+                            error_code, response.status_code, error_message,
                         )
+                        # 8010 is raised by ICICI's gateway before the
+                        # request reaches CIB; it is not fixable in Odoo.
+                        if str(error_code).strip() == "8010":
+                            message += _(
+                                "\n\nICICI rejected the request on its "
+                                "side. Ask ICICI API support to confirm "
+                                "that the app and API key for Aggregator "
+                                "ID %s are active and that this server's "
+                                "IP address is whitelisted."
+                            ) % self._get_icici_param("aggr_id")
+                        raise ValidationError(message)
 
                     raise ValidationError(
                         _("ICICI API Error (HTTP %s):\n%s")

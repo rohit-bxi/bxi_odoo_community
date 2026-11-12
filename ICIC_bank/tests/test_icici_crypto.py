@@ -196,6 +196,28 @@ class TestICICIApiCall(ICICICommon):
         self.assertIn("Bank is down", str(capture.exception))
 
     @patch('odoo.addons.ICIC_bank.model.custom_payslip.requests.post')
+    def test_call_icici_api_8010_explains_bank_side_cause(self, mock_post):
+        body = {
+            "success": False,
+            "response": "8010",
+            "message": "The system had an internal exception",
+        }
+        response = MagicMock(status_code=500)
+        response.json.return_value = body
+        response.text = json.dumps(body)
+        response.headers = {}
+        mock_post.return_value = response
+
+        with self.assertRaises(ValidationError) as capture:
+            self.env['hr.payslip'].call_icici_api(
+                "https://example.invalid/api", {"UNIQUEID": "1"},
+            )
+        error = str(capture.exception)
+        self.assertIn("[8010]", error)
+        self.assertIn("whitelisted", error)
+        self.assertIn("TESTAGGR", error)
+
+    @patch('odoo.addons.ICIC_bank.model.custom_payslip.requests.post')
     def test_call_icici_api_non_json_error_shows_first_line_only(
         self, mock_post,
     ):
