@@ -740,6 +740,23 @@
                             <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.actual)"/></td>
                         </tr>
 
+                        <!-- Other Income -->
+                        <tr class="metric-row">
+                            <td class="row-label">Other Income</td>
+                            <!-- Y1 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q1.other_income)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q2.other_income)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q3.other_income)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y1.q4.other_income)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.other_income)"/></td>
+                            <!-- Y2 -->
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q1.other_income)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q2.other_income)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q3.other_income)"/></td>
+                            <td><t t-out="formatAmt(state.report_data.data.y2.q4.other_income)"/></td>
+                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.other_income)"/></td>
+                        </tr>
+
                         <!-- DSO -->
                         <tr class="metric-row">
                             <td class="row-label">DSO (Amount)</td>
