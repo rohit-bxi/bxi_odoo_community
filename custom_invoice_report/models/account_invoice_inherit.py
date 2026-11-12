@@ -8,6 +8,7 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     amount_total_in_words = fields.Char(compute="_compute_amount_in_words", store=True)
+    customer_po_no = fields.Char(string="Customer PO No.", tracking=True)
 
     is_different_shipping_address = fields.Boolean(string="Different Shipping Address", default=False)
     shipping_partner_id = fields.Many2one(
