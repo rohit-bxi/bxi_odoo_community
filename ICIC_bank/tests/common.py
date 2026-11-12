@@ -60,6 +60,23 @@ class ICICICommon(TransactionCase):
         self.addCleanup(patcher_public.stop)
         self.addCleanup(patcher_private.stop)
 
+        # ICICI is enabled per company through its settings; production
+        # has no fallback identifiers, so the test company needs its own.
+        self._configure_icici_company(self.env.company)
+
+    def _configure_icici_company(self, company):
+        """Fill the ICICI settings of ``company`` with test values."""
+        company.with_company(company).write({
+            'icici_api_key': 'TEST-API-KEY',
+            'icici_corp_id': 'TESTCORP',
+            'icici_user_id': 'TESTUSER',
+            'icici_urn': 'TESTURN',
+            'icici_aggr_id': 'TESTAGGR',
+            'icici_aggr_name': 'TESTAGGRNAME',
+            'icici_debit_account': '000000000001',
+            'icici_debit_branch': '0011',
+        })
+
     def _create_employee_with_bank(self, name, acc_number, ifsc):
         """Create an employee with one usable bank account."""
         partner = self.env['res.partner'].create({'name': name})

@@ -86,6 +86,44 @@ class TestActionReleaseSalary(ICICICommon):
         self.assertEqual(payload["AGGRID"], "CIBBULK001")
         self.assertEqual(payload["URN"], "CIBTESTING")
 
+    def test_company_without_icici_settings_is_blocked(self):
+        other = self.env['res.company'].create({'name': 'No ICICI Co'})
+        slip = self._create_payslip(self.employee, company_id=other.id)
+        with patch.object(
+            type(slip), 'call_icici_api',
+            return_value=_api_result({"RESPONSE": "SUCCESS"}),
+        ) as mock_call:
+            with self.assertRaises(ValidationError) as capture:
+                slip.action_release_salary()
+        mock_call.assert_not_called()
+        self.assertIn('No ICICI Co', str(capture.exception))
+
+    def test_payslips_of_two_companies_are_blocked(self):
+        other = self.env['res.company'].create({'name': 'Second Co'})
+        self._configure_icici_company(other)
+        slip = self._create_payslip(self.employee, company_id=other.id)
+        with patch.object(
+            type(slip), 'call_icici_api',
+            return_value=_api_result({"RESPONSE": "SUCCESS"}),
+        ) as mock_call:
+            with self.assertRaises(ValidationError):
+                (self.slip | slip).action_release_salary()
+        mock_call.assert_not_called()
+
+    def test_settings_read_from_payslip_company_not_active_one(self):
+        other = self.env['res.company'].create({'name': 'Other Co'})
+        self._configure_icici_company(other)
+        other.with_company(other).icici_corp_id = 'OTHERCORP'
+        slip = self._create_payslip(self.employee, company_id=other.id)
+        # The user works in the main company while releasing Other Co.
+        slip = slip.with_company(self.env.company)
+        with patch.object(
+            type(slip), 'call_icici_api',
+            return_value=_api_result({"RESPONSE": "SUCCESS"}),
+        ) as mock_call:
+            slip.action_release_salary()
+        self.assertEqual(mock_call.call_args.args[1]["CORPID"], 'OTHERCORP')
+
     def test_otp_pending_can_request_new_otp(self):
         self.slip.write({
             'icici_payment_status': 'otp_pending',

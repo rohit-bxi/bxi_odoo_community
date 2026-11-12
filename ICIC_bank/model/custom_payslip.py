@@ -29,15 +29,10 @@ ICICI_ENVIRONMENTS = {
         "create_path": "/api/Corporate/CIB/v1/Create",
         "bulk_payment_path": "/api/v1/cibbulkpayment/bulkPayment",
         "reverse_path": "/api/v1/ReverseMis",
-        "defaults": {
-            "aggr_id": "BULK0173",
-            "aggr_name": "BXITECH",
-            "corp_id": "601902129",
-            "user_id": "BALCHAND",
-            "urn": "SR283346233",
-            "debit_account": "693905601661",
-            "debit_branch": "0011",
-        },
+        # No fallbacks: production identifiers (debit account, corporate
+        # login) belong to one company and must come from that company's
+        # own settings, never be borrowed by another company.
+        "defaults": {},
     },
     "sandbox": {
         "public_key": "icici_public_sandbox.pem",
@@ -54,6 +49,18 @@ ICICI_ENVIRONMENTS = {
             "debit_branch": "0011",
         },
     },
+}
+
+# Settings a company needs before it may send payments through ICICI.
+ICICI_REQUIRED_PARAMS = {
+    "api_key": "ICICI API Key",
+    "corp_id": "ICICI Corporate ID",
+    "user_id": "ICICI User ID",
+    "urn": "ICICI URN",
+    "aggr_id": "ICICI Aggregator ID",
+    "aggr_name": "ICICI Aggregator Name",
+    "debit_account": "ICICI Debit Account Number",
+    "debit_branch": "ICICI Debit Branch Code",
 }
 
 
@@ -122,13 +129,24 @@ class HrPayslip(models.Model):
         for slip in self:
             slip.net_wage = slip.get_salary_line_total("NET")
 
+    def _get_icici_company(self):
+        """Return the payslips' company, in its own company context.
+
+        The ICICI fields are company_dependent on res.company and Settings
+        stores each company's values under its own id, so they must be
+        read with that company active. Otherwise a user whose current
+        company differs from the payslip's would read empty values.
+        """
+        company = self.company_id[:1] or self.env.company
+        return company.with_company(company)
+
     def _get_icici_param(self, key, default=""):
         """Fetch a company-dependent ICICI credential/config value.
 
-        Falls back to the default of the active ICICI environment, so a
-        sandbox setup never mixes in production identifiers.
+        Falls back to the default of the active ICICI environment (only
+        the public sandbox test identifiers have defaults).
         """
-        company = self.company_id[:1] or self.env.company
+        company = self._get_icici_company()
         # Values pasted into Settings often carry stray spaces.
         value = (getattr(company, "icici_%s" % key, None) or "").strip()
         return (
@@ -139,7 +157,7 @@ class HrPayslip(models.Model):
 
     def _get_icici_environment(self):
         """Return the ICICI environment settings matching the base URL."""
-        company = self.company_id[:1] or self.env.company
+        company = self._get_icici_company()
         base_url = company.icici_base_url or ICICI_PRODUCTION_URL
         if "sandbox" in base_url.lower():
             return ICICI_ENVIRONMENTS["sandbox"]
@@ -641,6 +659,39 @@ class HrPayslip(models.Model):
 
         return base_url
 
+    def _check_icici_company(self):
+        """Allow ICICI requests only for one fully configured company.
+
+        ICICI is enabled per company by filling its Settings > ICICI Bank
+        page; companies left empty cannot release salary through ICICI.
+        """
+        companies = self.company_id
+        if len(companies) > 1:
+            raise ValidationError(
+                _(
+                    "Salary can be released through ICICI for one company "
+                    "at a time. The selected payslips belong to: %s"
+                )
+                % ", ".join(companies.mapped("name"))
+            )
+
+        missing = [
+            label
+            for key, label in ICICI_REQUIRED_PARAMS.items()
+            if not self._get_icici_param(key)
+        ]
+        if missing:
+            raise ValidationError(
+                _(
+                    "ICICI Bank is not enabled for %(company)s. Fill in "
+                    "Settings > ICICI Bank for this company: %(fields)s"
+                )
+                % {
+                    "company": self._get_icici_company().name,
+                    "fields": ", ".join(missing),
+                }
+            )
+
     def action_release_salary(self):
         """Validate payslips, call ICICI Create API and open OTP wizard."""
 
@@ -648,6 +699,9 @@ class HrPayslip(models.Model):
             raise ValidationError(
                 _("No payslips selected.")
             )
+
+        self._check_icici_company()
+
         for slip in self:
 
             # "otp_pending" may be released again: it requests a new OTP,
@@ -1012,6 +1066,8 @@ class HrPayslip(models.Model):
                 _("Only payments in Processing state can be reversed.")
             )
 
+        self._check_icici_company()
+
         corp_id = self._get_icici_param("corp_id")
         user_id = self._get_icici_param("user_id")
 
@@ -1135,6 +1191,8 @@ class HrPayslip(models.Model):
             raise ValidationError(
                 _("Please enter the OTP.")
             )
+
+        self._check_icici_company()
 
         for slip in self:
 
