@@ -130,20 +130,24 @@
                             string="Start"
                             type="object"
                             class="oe_highlight"
+                            groups="employee_onboarding.group_offboarding_admin"
                             invisible="state != 'draft'"/>
                     <button name="action_done"
                             string="Done"
                             type="object"
                             class="oe_highlight"
+                            groups="employee_onboarding.group_offboarding_admin"
                             invisible="state != 'in_progress'"/>
                     <button name="action_cancel"
                             string="Cancel"
                             type="object"
+                            groups="employee_onboarding.group_offboarding_admin"
                             invisible="state in ('done', 'cancelled')"/>
                     <button name="action_reset_to_draft"
                             string="Reset to Draft"
                             type="object"
-                            invisible="state not in ('cancelled',)"/>
+                            groups="employee_onboarding.group_offboarding_admin"
+                            invisible="state in ('draft')"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,in_progress,done"/>
                 </header>
@@ -296,6 +300,8 @@
                 <field name="name"/>
                 <field name="email"/>
                 <field name="is_manager"/>
+                <field name="is_team"/>
+                <field name="user_ids"/>
             </list>
         </field>
     </record>
@@ -314,6 +320,8 @@
                         <group>
                             <field name="email"/>
                         </group>
+                        <field name="is_team"/>
+                        <field name="user_ids"/>
                     </group>
                 </sheet>
             </form>

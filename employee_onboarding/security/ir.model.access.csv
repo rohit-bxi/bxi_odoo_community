@@ -9,3 +9,5 @@ access_request_type_team_admin,request.type.team.admin,model_request_type_team,e
 access_boarding_request_type_admin,boarding.request.type.admin,model_boarding_request_type,employee_onboarding.group_offboarding_admin,1,1,1,1
 access_boarding_request_type_task_admin,boarding.request.type.task.admin,model_boarding_request_type_task,employee_onboarding.group_offboarding_admin,1,1,1,1
 access_hr_bxi_employee_admin,hr.bxi.employee.admin,model_hr_bxi_employee,employee_onboarding.group_offboarding_admin,1,1,1,1
+access_employee_onboarding_offboarding_user,employee.onboarding.offboarding.user,model_employee_onboarding_offboarding,base.group_user,1,0,0,0
+access_employee_onboarding_task_user,employee.onboarding.task.user,model_employee_onboarding_task,base.group_user,1,1,0,0
