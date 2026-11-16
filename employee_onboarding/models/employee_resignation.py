@@ -125,6 +125,19 @@ class EmployeeResignation(models.Model):
         string='Off-boarding Count',
         compute='_compute_offboarding_count',
     )
+    notice_period_start_date = fields.Date(
+        string="Notice Period Start Date",
+        readonly=True,
+        tracking=True,
+        copy=False,
+    )
+
+    notice_period_end_date = fields.Date(
+        string="Notice Period End Date",
+        readonly=True,
+        tracking=True,
+        copy=False,
+    )
 
     @api.depends('offboarding_ids')
     def _compute_offboarding_count(self):
@@ -202,6 +215,12 @@ class EmployeeResignation(models.Model):
                 vals['manager_id'] = False
                 vals['company_id'] = False
                 vals['emp_date_of_joining'] = False
+            if 'approved_last_working_day' in vals:
+                for rec in self:
+                    if rec.state == 'approved':
+                        vals['notice_period_end_date'] = (
+                            vals.get('approved_last_working_day')
+                        )
         return super().write(vals)
 
     def _send_submission_email(self):
@@ -309,10 +328,25 @@ class EmployeeResignation(models.Model):
         for rec in self:
             if rec.state != 'submitted':
                 continue
-            rec.state = 'approved'
-            # Set approved last working day to requested last working day if not set
-            if not rec.approved_last_working_day:
-                rec.approved_last_working_day = rec.last_working_day
+            approved_date = fields.Date.context_today(rec)
+            approved_lwd = (
+                rec.approved_last_working_day
+                or rec.last_working_day
+            )
+            if not approved_lwd:
+                raise ValidationError(
+                    _("Please set the Approved Last Working Day.")
+                )
+            if approved_lwd < approved_date:
+                raise ValidationError(
+                    _("Approved Last Working Day cannot be earlier than the approval date.")
+                )
+            rec.write({
+                'state': 'approved',
+                'approved_last_working_day': approved_lwd,
+                'notice_period_start_date': approved_date,
+                'notice_period_end_date': approved_lwd,
+            })
 
     def action_reject(self):
         for rec in self:
