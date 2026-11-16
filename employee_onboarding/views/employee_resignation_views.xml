@@ -104,6 +104,7 @@
                             <field name="job_id"/>
                             <field name="manager_id"/>
                             <field name="emp_date_of_joining"/>
+                            <field name="notice_period_start_date"/>
                         </group>
                         <group string="Resignation Details">
                             <field name="resignation_date" readonly="state != 'draft'"/>
@@ -111,6 +112,7 @@
                             <field name="approved_last_working_day" readonly="state not in ('draft', 'submitted')"/>
                             <field name="reason" readonly="state != 'draft'"/>
                             <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="notice_period_end_date"/>
                         </group>
                     </group>
                     <notebook>
