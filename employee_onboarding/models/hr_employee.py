@@ -84,8 +84,20 @@ class HrBxiEmployee(models.Model):
 
     name = fields.Char(
         string='Full Name',
-        required=True,
+        required=False,
         index=True,
+        related='applicant_id.partner_name',
+        store=True,
+        readonly=False,
+    )
+
+    applicant_id = fields.Many2one(
+        'hr.applicant',
+        string='Recruitment Applicant',
+        copy=False,
+        index=True,
+        ondelete='set null',
+        domain="[('stage_id.name', '=', 'Contract Proposal')]",
     )
     contact_number = fields.Char(
         string='Contact Number',

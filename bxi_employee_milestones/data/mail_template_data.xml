@@ -6,14 +6,14 @@
             <field name="name">Employee Milestones: Happy Birthday</field>
             <field name="model_id" ref="hr.model_hr_employee"/>
             <field name="subject">Happy Birthday, {{ object.name }}!</field>
-            <field name="email_from">hrsupport@bxitech.com</field>
-            <field name="email_to">{{ object.work_email }}</field>
-            <field name="email_cc">{{ object.parent_id.work_email or '' }}</field>
+            <field name="email_from">hr_support@bxitech.com</field>
+            <field name="email_to">hr_support@bxitech.com</field>
+            <field name="email_cc"></field>
             <field name="use_default_to" eval="False"/>
             <field name="auto_delete" eval="True"/>
             <field name="body_html" type="html">
 <div style="margin: 0px; padding: 0px; font-size: 13px;">
-    <p>Dear <t t-out="object.name or ''"/>,</p>
+    <p>Dear <t t-out="object.name or 'our colleague'"/>,</p>
     <p>
         Wishing you a very <strong>Happy Birthday</strong>!
         May the year ahead bring you good health, happiness and success.
@@ -40,8 +40,9 @@
         <strong>Happy Job Anniversary!</strong>
         <t t-set="years" t-value="ctx.get('anniversary_years')"/>
         <t t-if="years">
-            Congratulations on completing <strong><t t-out="years"/> <t t-if="years == 1">year</t><t t-else="">years</t></strong>
-            with <t t-out="object.company_id.name or ''"/>.
+            Here’s a little thank-you from all of us at BXI for going the extra mile every day!. Congratulations on completing this <strong><t t-out="years"/> <t t-if="years == 1">year</t><t t-else="">years</t></strong>
+            wonderful years with us.Your dedication, commitment and valuable contributions make a difference, and we truly appreciate having you as part of our journey.
+            Wishing you continued growth, success and many more milestones together!
         </t>
     </p>
     <p>
@@ -59,20 +60,21 @@
             <field name="subject">Probation confirmation required: {{ object.employee_id.name }}</field>
             <field name="email_from">hrsupport@bxitech.com</field>
             <field name="email_to">{{ object.manager_id.work_email or object.company_id.milestone_hr_email or '' }}</field>
-            <field name="email_cc">{{ object.company_id.milestone_hr_email or '' }}</field>
+            <field name="email_cc">{{ ','.join(filter(None, [object.company_id.milestone_hr_email,object.employee_id.work_email]))}}</field>            
             <field name="use_default_to" eval="False"/>
             <field name="auto_delete" eval="True"/>
             <field name="body_html" type="html">
 <div style="margin: 0px; padding: 0px; font-size: 13px;">
     <p>Dear <t t-out="object.manager_id.name or 'HR Team'"/>,</p>
     <p>
-        The probation period of <strong><t t-out="object.employee_id.name or ''"/></strong>
+        Request you to review the employee's <strong><t t-out="object.employee_id.name or ''"/></strong>
         ends on <strong><t t-out="format_date(object.probation_end_date, date_format='dd MMM yyyy')"/></strong>.
     </p>
     <p>
-        Please review the employee's performance and <strong>confirm</strong> the
-        probation, or record your comments if it should not be confirmed.
-        HR will then give the final approval.
+        Share your feedback and confirm whether the employee is recommended for probation confirmation. 
+        In case of any performance concerns or if confirmation is not recommended, please provide your comments and justification.
+        Based on your feedback, HR will review and proceed with the final approval.
+        Kindly share your confirmation at the earliest.
     </p>
     <p>
         <a t-attf-href="{{ object.get_base_url() }}/mail/view?model=hr.probation.review&amp;res_id={{ object.id }}"
@@ -106,8 +108,12 @@
     </t>
     <p>Please give the second approval to confirm the employee.</p>
     <p>
-        <a t-attf-href="{{ object.get_base_url() }}/mail/view?model=hr.probation.review&amp;res_id={{ object.id }}"
-           style="background-color: #875A7B; padding: 8px 16px; text-decoration: none; color: #fff; border-radius: 5px;">
+        <a t-att-href="'%s/web#id=%s&amp;model=hr.probation.review&amp;view_type=form' % (object.get_base_url(), object.id)"
+        style="background-color: #875A7B;
+                padding: 8px 16px;
+                text-decoration: none;
+                color: #fff;
+                border-radius: 5px;">
             Open Probation Review
         </a>
     </p>

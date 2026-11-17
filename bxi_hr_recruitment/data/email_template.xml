@@ -188,5 +188,61 @@
     ]]></field>
         </record>
 
+  <record id="email_template_recruitment_refused" model="mail.template">
+    <field name="name">Recruitment Refused</field>
+    <field name="model_id" ref="hr_recruitment.model_hr_applicant"/>
+    <field name="subject">Update on Your Application - BXI</field>
+    <field name="email_from">careers@bxitech.com</field>
+    <field name="email_to">${object.email_from}</field>
+    <field name="auto_delete">False</field>
+    <field name="body_html"><![CDATA[
+        <div style="font-family: Arial, sans-serif; font-size: 14px; color: #333333;">
+            <p>Dear <b><t t-esc="object.partner_name or 'Candidate'"/></b>,</p>
+
+            <p>
+                Thank you for taking the time to interview with
+                <strong>BXI</strong> and for your interest in joining our team.
+            </p>
+
+            <p>
+                After carefully reviewing your profile and interview feedback,
+                we regret to inform you that we will not be moving forward with
+                your application at this time, as we have decided to proceed
+                with candidates whose experience more closely aligns with our
+                current requirements.
+            </p>
+
+            <p>
+                We sincerely appreciate the effort you invested in the selection
+                process and were pleased to learn more about your background
+                and accomplishments.
+            </p>
+
+            <p>
+                We wish you every success in your future career endeavors and
+                encourage you to apply for suitable opportunities with
+                <strong>BXI</strong> in the future.
+            </p>
+
+            <p>
+                Thank you once again for your interest in <strong>BXI</strong>.
+            </p>
+
+            <p>
+                Best regards,<br/>
+                <strong>BXI Recruitment Team</strong>
+            </p>
+        </div>
+    ]]></field>
+</record>
+
+<record id="refuse_reason_recruitment_refused"
+        model="hr.applicant.refuse.reason">
+    <field name="name">Recruitment Refused</field>
+    <field name="template_id"
+           ref="bxi_hr_recruitment.email_template_recruitment_refused"/>
+    <field name="sequence">11</field>
+</record>
+
     </data>
 </odoo>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crm_lead_view_form_custom_currency_revenue" model="ir.ui.view">
+        <field name="name">crm.lead.view.form.custom.currency.revenue</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <!-- Place Currency selector and Float Multiplier fields at the top of the Opportunity left column -->
+            <xpath expr="//group[@name='opportunity_partner']/field[1]" position="before">
+                <field name="company_currency"
+                       string="Currency (INR / AED / USD)"
+                       options="{'no_create': True, 'no_open': True}"/>
+                <field name="base_amount" string="Base Value"/>
+                <field name="multiplier_rate" string="Multiplier / Rate"/>
+            </xpath>
+            <!-- Also support Lead form mode if switched to Lead view -->
+            <xpath expr="//group[@name='lead_partner']/field[1]" position="before">
+                <field name="company_currency"
+                       string="Currency (INR / AED / USD)"
+                       options="{'no_create': True, 'no_open': True}"/>
+                <field name="base_amount" string="Base Value"/>
+                <field name="multiplier_rate" string="Multiplier / Rate"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

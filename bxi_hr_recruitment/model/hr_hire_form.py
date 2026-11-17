@@ -229,7 +229,70 @@ class HrHire(models.Model):
             else:
                 rec.stage_level = 0
 
+    def _sync_bxi_employee(self):
+        Employee = self.env['hr.bxi.employee'].sudo()
 
+        for applicant in self:
+            stage_name = (
+                (applicant.stage_id.name or '').strip().casefold()
+            )
+
+            if stage_name != 'make proposal':
+                continue
+
+            employee = Employee.search(
+                [('applicant_id', '=', applicant.id)],
+                limit=1,
+            )
+
+            vals = {
+                'applicant_id': applicant.id,
+                'name': (
+                    applicant.partner_name
+                    or applicant.name
+                    or 'New Applicant'
+                ),
+                'contact_number': applicant.partner_phone or False,
+                'personal_email': applicant.email_from or False,
+                'job_id': applicant.job_id.id or False,
+                'job_title': (
+                    applicant.job_id.name
+                    if applicant.job_id else False
+                ),
+                'company_id': (
+                    applicant.company_id.id
+                    if applicant.company_id
+                    else self.env.company.id
+                ),
+                'department_id': (
+                    applicant.job_id.department_id.id
+                    if applicant.job_id
+                    and applicant.job_id.department_id
+                    else False
+                ),
+            }
+
+            if employee:
+                employee.write(vals)
+            else:
+                Employee.create(vals)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        applicants = super().create(vals_list)
+        applicants._sync_bxi_employee()
+        return applicants
+
+    def write(self, vals):
+        result = super().write(vals)
+
+        if {
+            'stage_id', 'partner_name', 'name',
+            'partner_phone', 'email_from', 'job_id', 'company_id'
+        }.intersection(vals):
+            self._sync_bxi_employee()
+
+        return result
 
     # ---------------------------------------------------------
     # OFFER LETTER ACTIONS

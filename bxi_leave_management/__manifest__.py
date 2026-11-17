@@ -7,7 +7,7 @@
     'website': 'https://bxitech.com/',
     'summary': 'Add Time Off Code field in Leave Type',
     'description': 'Add Time Off Code field in Leave Type',
-    'depends': ['hr_holidays'],
+    'depends': ['hr_holidays','hr_attendance'],
     'data': [
         'data/leave_cron.xml',
         'data/mail_template.xml',

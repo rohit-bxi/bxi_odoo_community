@@ -81,6 +81,7 @@ class EmployeePortal(http.Controller):
         'data_security_doc',
         'passport_doc',
         'bxi_offer_letter',
+        'rent_agreement',
     ]
 
     EXPERIENCE_DOCUMENT_FIELDS = [
@@ -449,6 +450,24 @@ class EmployeePortal(http.Controller):
             if 'aadhar_card' in employee._fields:
                 vals['aadhar_card'] = (
                     post.get('aadhar_card') or False
+                )
+                
+        if 'current_address' in post:
+            if 'current_address' in employee._fields:
+                vals['current_address'] = (
+                    post.get('current_address') or False
+                )
+
+        if 'landlord_name' in post:
+            if 'landlord_name' in employee._fields:
+                vals['landlord_name'] = (
+                    post.get('landlord_name') or False
+                )
+
+        if 'landlord_number' in post:
+            if 'landlord_number' in employee._fields:
+                vals['landlord_number'] = (
+                    post.get('landlord_number') or False
                 )
 
         if 'role_band' in post:

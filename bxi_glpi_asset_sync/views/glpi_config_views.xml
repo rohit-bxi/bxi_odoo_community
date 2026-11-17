@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_glpi_config_form" model="ir.ui.view">
+        <field name="name">glpi.config.form</field>
+        <field name="model">glpi.config</field>
+        <field name="arch" type="xml">
+            <form string="GLPI Connection">
+                <header>
+                    <button name="action_test_connection" string="Test Connection"
+                            type="object" class="btn-primary" icon="fa-plug"/>
+                    <button name="action_open_sync_wizard" string="Run Sync"
+                            type="object" class="btn-secondary" icon="fa-refresh"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object"
+                                name="action_view_logs" icon="fa-list-alt">
+                            <field name="log_count" widget="statinfo" string="Sync Logs"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <field name="active" invisible="1"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name"/></h1>
+                    </div>
+
+                    <div class="alert alert-warning" role="alert" invisible="not insecure_url">
+                        <strong>Plain HTTP:</strong> the OAuth secret, the password and every
+                        access token travel unencrypted. Enable HTTPS on GLPI before production use.
+                    </div>
+
+                    <group>
+                        <group string="Connection">
+                            <field name="base_url" placeholder="https://glpi.example.com"/>
+                            <field name="api_version"/>
+                            <field name="client_id" groups="base.group_system"/>
+                            <field name="client_secret" password="True" groups="base.group_system"/>
+                            <field name="username" groups="base.group_system"/>
+                            <field name="password" password="True" groups="base.group_system"/>
+                            <field name="scope"/>
+                        </group>
+                        <group string="Options">
+                            <field name="entity_id"/>
+                            <field name="entity_recursive"/>
+                            <field name="glpi_tz"/>
+                            <field name="verify_ssl"/>
+                            <field name="timeout"/>
+                            <field name="page_size"/>
+                            <field name="insecure_url" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Import from GLPI" name="import">
+                            <group>
+                                <group string="Item Types">
+                                    <field name="sync_computer"/>
+                                    <field name="sync_printer"/>
+                                    <field name="sync_monitor"/>
+                                    <field name="sync_peripheral"/>
+                                    <field name="sync_phone"/>
+                                    <field name="sync_network_equipment"/>
+                                </group>
+                                <group string="Import Rules">
+                                    <field name="auto_create_assets"/>
+                                    <field name="skip_without_serial"/>
+                                    <field name="skip_name_pattern"/>
+                                    <field name="import_custodian_on_create"/>
+                                    <field name="create_products"/>
+                                    <field name="default_asset_type_id"/>
+                                    <field name="responsible_user_id"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Write-back to GLPI" name="write_back">
+                            <div class="alert alert-info" role="alert">
+                                Write-back needs a GLPI profile with write rights on assets and
+                                financial information. Odoo is the master for these fields:
+                                existing GLPI values are overwritten when an asset changes in Odoo.
+                            </div>
+                            <group>
+                                <group string="Fields Pushed to GLPI">
+                                    <field name="write_back_enabled"/>
+                                    <field name="push_inventory_number" readonly="not write_back_enabled"/>
+                                    <field name="push_custodian" readonly="not write_back_enabled"/>
+                                    <field name="push_status" readonly="not write_back_enabled"/>
+                                    <field name="push_location" readonly="not write_back_enabled"/>
+                                    <field name="push_financials" readonly="not write_back_enabled"/>
+                                </group>
+                                <group string="Odoo-only Assets">
+                                    <field name="export_new_assets" readonly="not write_back_enabled"/>
+                                    <field name="export_itemtype"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Last Run" name="last_run">
+                            <group>
+                                <field name="last_sync_date"/>
+                                <field name="last_sync_state"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_glpi_config_list" model="ir.ui.view">
+        <field name="name">glpi.config.list</field>
+        <field name="model">glpi.config</field>
+        <field name="arch" type="xml">
+            <list string="GLPI Connections">
+                <field name="name"/>
+                <field name="base_url"/>
+                <field name="write_back_enabled"/>
+                <field name="last_sync_date"/>
+                <field name="last_sync_state" widget="badge"
+                       decoration-success="last_sync_state == 'done'"
+                       decoration-warning="last_sync_state == 'partial'"
+                       decoration-danger="last_sync_state == 'failed'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_glpi_config" model="ir.actions.act_window">
+        <field name="name">GLPI Connection</field>
+        <field name="res_model">glpi.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Connect Odoo to GLPI</p>
+            <p>Register an OAuth client in GLPI (Setup &gt; OAuth Clients, Password grant,
+               scope "api"), then enter its credentials here.</p>
+        </field>
+    </record>
+
+</odoo>

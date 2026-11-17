@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_attendance_form_inherit" model="ir.ui.view">
+        <field name="name">hr.attendance.form.inherit.essl</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='overtime_hours']" position="after">
+                <field name="synced_with_essl" string="Synced With Biometric" readonly="1"/>
+                <field name="essl_status" readonly="1" invisible="not essl_status"/>
+            </xpath>
+            <xpath expr="//sheet/group" position="after">
+                <notebook>
+                    <page string="Biometric Punch IN History">
+                        <field name="essl_punch_history_ids" nolabel="1" readonly="1">
+                            <list editable="bottom">
+                                <field name="punch_in_times"/>
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_glpi_type_map_list" model="ir.ui.view">
+        <field name="name">glpi.type.map.list</field>
+        <field name="model">glpi.type.map</field>
+        <field name="arch" type="xml">
+            <list string="GLPI Type Mapping" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="glpi_itemtype"/>
+                <field name="glpi_type_name" placeholder="any type"/>
+                <field name="asset_type_id"/>
+                <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_glpi_type_map" model="ir.actions.act_window">
+        <field name="name">GLPI Type Mapping</field>
+        <field name="res_model">glpi.type.map</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Map GLPI item types to Asset Types</p>
+            <p>e.g. Computer / Notebook → Laptop. Also used to pick the GLPI item type when an
+               Odoo asset is created in GLPI.</p>
+        </field>
+    </record>
+
+    <record id="view_glpi_status_map_list" model="ir.ui.view">
+        <field name="name">glpi.status.map.list</field>
+        <field name="model">glpi.status.map</field>
+        <field name="arch" type="xml">
+            <list string="GLPI Status Mapping" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="glpi_state_name"/>
+                <field name="odoo_status"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_glpi_status_map" model="ir.actions.act_window">
+        <field name="name">GLPI Status Mapping</field>
+        <field name="res_model">glpi.status.map</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Map GLPI statuses to operational statuses</p>
+            <p>Used when importing new assets and when pushing the operational status to GLPI
+               (the first mapping of a status wins).</p>
+        </field>
+    </record>
+
+    <record id="view_glpi_user_map_list" model="ir.ui.view">
+        <field name="name">glpi.user.map.list</field>
+        <field name="model">glpi.user.map</field>
+        <field name="arch" type="xml">
+            <list string="GLPI User Mapping" editable="bottom">
+                <field name="glpi_login"/>
+                <field name="employee_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_glpi_user_map" model="ir.actions.act_window">
+        <field name="name">GLPI User Mapping</field>
+        <field name="res_model">glpi.user.map</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Map GLPI logins to employees</p>
+            <p>Only needed when the GLPI user's email does not match the employee's work email
+               and the login does not match the employee's Odoo user.</p>
+        </field>
+    </record>
+
+</odoo>

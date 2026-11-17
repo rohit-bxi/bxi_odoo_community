@@ -2,6 +2,7 @@
 
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
+from datetime import timedelta
 
 
 class EmployeeResignation(models.Model):
@@ -16,6 +17,12 @@ class EmployeeResignation(models.Model):
         copy=False,
         readonly=True,
         default=lambda self: _('New'),
+    )
+    hr_support_notification_sent = fields.Boolean(
+        string='HR Support Notification Sent',
+        default=False,
+        copy=False,
+        readonly=True,
     )
 
     # ── Employee Information ─────────────────────────────────────────────
@@ -118,6 +125,19 @@ class EmployeeResignation(models.Model):
         string='Off-boarding Count',
         compute='_compute_offboarding_count',
     )
+    notice_period_start_date = fields.Date(
+        string="Notice Period Start Date",
+        readonly=True,
+        tracking=True,
+        copy=False,
+    )
+
+    notice_period_end_date = fields.Date(
+        string="Notice Period End Date",
+        readonly=True,
+        tracking=True,
+        copy=False,
+    )
 
     @api.depends('offboarding_ids')
     def _compute_offboarding_count(self):
@@ -195,6 +215,12 @@ class EmployeeResignation(models.Model):
                 vals['manager_id'] = False
                 vals['company_id'] = False
                 vals['emp_date_of_joining'] = False
+            if 'approved_last_working_day' in vals:
+                for rec in self:
+                    if rec.state == 'approved':
+                        vals['notice_period_end_date'] = (
+                            vals.get('approved_last_working_day')
+                        )
         return super().write(vals)
 
     def _send_submission_email(self):
@@ -210,6 +236,14 @@ class EmployeeResignation(models.Model):
         manager_email = self.employee_id.parent_id.work_email
 
         subject = _('Resignation Submitted: %s - %s') % (employee.name, self.name)
+
+        base_url = self.env['ir.config_parameter'].sudo().get_param(
+            'web.base.url'
+        ).rstrip('/')
+        action_id = self.env.ref(
+            'employee_onboarding.action_employee_resignation'
+        ).id
+        url = f"{base_url}/odoo/action-{action_id}/{self.id}"
         body_html = f"""
             <div style="font-family: Arial, sans-serif; font-size: 14px;">
                 <p>Dear HR Support,</p>
@@ -254,6 +288,21 @@ class EmployeeResignation(models.Model):
                 </table>
                 <p><strong>Resignation Letter:</strong></p>
                 <div>{self.resignation_body or ''}</div>
+                <div style="margin: 20px 0;">
+                    <a href="{url}"
+                    target="_blank"
+                    style="
+                        display: inline-block;
+                        background-color: #875a7b;
+                        color: #ffffff;
+                        padding: 10px 20px;
+                        text-decoration: none;
+                        font-weight: bold;
+                        border-radius: 4px;
+                    ">
+                        View Assigned Tasks
+                    </a>
+                </div>
             </div>
         """
 
@@ -279,10 +328,25 @@ class EmployeeResignation(models.Model):
         for rec in self:
             if rec.state != 'submitted':
                 continue
-            rec.state = 'approved'
-            # Set approved last working day to requested last working day if not set
-            if not rec.approved_last_working_day:
-                rec.approved_last_working_day = rec.last_working_day
+            approved_date = fields.Date.context_today(rec)
+            approved_lwd = (
+                rec.approved_last_working_day
+                or rec.last_working_day
+            )
+            if not approved_lwd:
+                raise ValidationError(
+                    _("Please set the Approved Last Working Day.")
+                )
+            if approved_lwd < approved_date:
+                raise ValidationError(
+                    _("Approved Last Working Day cannot be earlier than the approval date.")
+                )
+            rec.write({
+                'state': 'approved',
+                'approved_last_working_day': approved_lwd,
+                'notice_period_start_date': approved_date,
+                'notice_period_end_date': approved_lwd,
+            })
 
     def action_reject(self):
         for rec in self:
@@ -333,7 +397,6 @@ class EmployeeResignation(models.Model):
                 'request_type_id': offboarding_type.id if offboarding_type else False,
                 'effective_date': self.approved_last_working_day or self.last_working_day,
                 'reason': _("Resignation (%s): %s") % (self.name, reason_label) if reason_label else _("Resignation: %s") % self.name,
-                'company_id': self.company_id.id if self.company_id else self.env.company.id,
                 'task_line_ids': task_lines,
             }
             offboarding = self.env['employee.onboarding.offboarding'].create(offboarding_vals)
@@ -366,3 +429,145 @@ class EmployeeResignation(models.Model):
             action['view_mode'] = 'list,form'
         return action
 
+    @api.model
+    def _cron_notify_hr_support_before_last_working_day(self):
+        """
+        Notify HR Support when an approved resignation is within
+        10 days of the employee's last working day.
+        """
+        today = fields.Date.today()
+        resignations = self.sudo().search([
+            ('state', '=', 'approved'),
+            ('hr_support_notification_sent', '=', False),
+        ])
+
+        for resignation in resignations:
+
+            # Prefer approved last working day
+            last_working_day = (
+                resignation.approved_last_working_day
+                or resignation.last_working_day
+            )
+
+            if not last_working_day:
+                continue
+
+            remaining_days = (last_working_day - today).days
+
+            # Send notification when 10 days or fewer remain,
+            # but never after the last working day.
+            if not 0 <= remaining_days <= 10:
+                continue
+
+            employee = resignation.employee_id
+
+            if not employee:
+                continue
+
+            subject = _(
+                'Action Required: Initiate Offboarding Process - %s'
+            ) % employee.name
+
+            body_html = f"""
+                <div style="font-family: Arial, sans-serif;
+                            font-size: 14px; color: #333;">
+
+                    <p>Dear HR Team,</p>
+                    <p>
+                        This is an automated notification that the following
+                        employee has an <strong>approved resignation</strong>.
+                        The employee's last working day is approaching.
+                    </p>
+                    <p>
+                        You are requested to please initiate the
+                        <strong>employee offboarding process</strong>
+                        and coordinate the necessary activities.
+                    </p>
+                    <table border="1" cellpadding="8" cellspacing="0"
+                        style="border-collapse: collapse; width: 100%;">
+
+                        <tr>
+                            <th align="left">Employee Name</th>
+                            <td>{employee.name or 'N/A'}</td>
+                        </tr>
+
+                        <tr>
+                            <th align="left">Employee Code</th>
+                            <td>{resignation.employee_code or 'N/A'}</td>
+                        </tr>
+
+                        <tr>
+                            <th align="left">Department</th>
+                            <td>{employee.department_id.name
+                                if employee.department_id else 'N/A'}</td>
+                        </tr>
+
+                        <tr>
+                            <th align="left">Job Position</th>
+                            <td>{employee.job_id.name
+                                if employee.job_id else 'N/A'}</td>
+                        </tr>
+
+                        <tr>
+                            <th align="left">Reporting Manager</th>
+                            <td>{employee.parent_id.name
+                                if employee.parent_id else 'N/A'}</td>
+                        </tr>
+
+                        <tr>
+                            <th align="left">Resignation Reference</th>
+                            <td>{resignation.name}</td>
+                        </tr>
+
+                        <tr>
+                            <th align="left">Resignation Date</th>
+                            <td>{resignation.resignation_date or 'N/A'}</td>
+                        </tr>
+
+                        <tr>
+                            <th align="left">Last Working Day</th>
+                            <td>{last_working_day}</td>
+                        </tr>
+
+                        <tr>
+                            <th align="left">Remaining Days</th>
+                            <td>{remaining_days} days</td>
+                        </tr>
+
+                    </table>
+                    <p>
+                        Please start the offboarding activities and ensure
+                        that all required tasks are completed
+                        before the employee's last working day.
+                    </p>
+
+                    <p>
+                        Regards,<br/>
+                        <strong>HR Management System</strong>
+                    </p>
+
+                    <p>
+                        <small>
+                            This is an automatically generated notification.
+                            Please do not reply to this email.
+                        </small>
+                    </p>
+
+                </div>
+            """
+
+            mail = self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'body_html': body_html,
+                'email_to': 'hrsupport@bxitech.com',
+                'email_from': 'HR Support <hrsupport@bxitech.com>',
+                'auto_delete': False,
+                'model': resignation._name,
+                'res_id': resignation.id,
+            })
+            mail.send()
+            # Prevent duplicate notification
+            resignation.write({
+                'hr_support_notification_sent': True,
+            })
+        return True

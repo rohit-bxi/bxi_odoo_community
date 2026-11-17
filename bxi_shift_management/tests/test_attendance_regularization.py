@@ -190,6 +190,11 @@ class TestAttendanceRegularization(TransactionCase):
         self.assertFalse(request.is_regularization)
         self.assertEqual(request.date_to, WEDNESDAY)
 
+    def test_request_numbered_by_sequence(self):
+        first, second = self._request(), self._request(day=TUESDAY)
+        self.assertTrue(first.name.startswith('BXI/ER/'))
+        self.assertNotEqual(first.name, second.name)
+
     def test_regularization_is_single_day(self):
         request = self._request(date_to=WEDNESDAY, mode='home')
         self.assertTrue(request.is_regularization)

@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_asset_form_glpi" model="ir.ui.view">
+        <field name="name">asset.management.form.glpi</field>
+        <field name="model">asset.management</field>
+        <field name="inherit_id" ref="asset_management.view_asset_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/button[@name='action_generate_qr']" position="after">
+                <button name="action_glpi_sync" string="Sync with GLPI" type="object"
+                        class="btn-secondary" icon="fa-refresh"
+                        invisible="not glpi_id"
+                        groups="bxi_glpi_asset_sync.group_glpi_manager"/>
+                <button name="action_glpi_push" string="Push to GLPI" type="object"
+                        class="btn-secondary" icon="fa-upload"
+                        invisible="not glpi_id or glpi_sync_state != 'linked'"
+                        groups="bxi_glpi_asset_sync.group_glpi_manager"/>
+                <button name="action_glpi_export" string="Create in GLPI" type="object"
+                        class="btn-secondary" icon="fa-cloud-upload"
+                        invisible="glpi_id or state == 'disposed'"
+                        groups="bxi_glpi_asset_sync.group_glpi_manager"/>
+            </xpath>
+
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" type="object" name="action_open_in_glpi"
+                        icon="fa-desktop" invisible="not glpi_id">
+                    <div class="o_stat_info">
+                        <span class="o_stat_value"><field name="glpi_id"/></span>
+                        <span class="o_stat_text">Open in GLPI</span>
+                    </div>
+                </button>
+            </xpath>
+
+            <xpath expr="//div[hasclass('oe_title')]" position="before">
+                <div class="alert alert-warning" role="alert" invisible="not glpi_custodian_mismatch">
+                    <strong>GLPI custodian mismatch:</strong> GLPI reports
+                    <field name="glpi_user_name" class="fw-bold"/> as the user.
+                    Odoo is the master: push to GLPI to overwrite it, or record a transfer in Odoo.
+                </div>
+                <div class="alert alert-danger" role="alert"
+                     invisible="glpi_sync_state not in ('trashed', 'missing')">
+                    <strong>Removed in GLPI:</strong>
+                    <field name="glpi_sync_state" readonly="1"/>. Review whether this asset
+                    should be disposed or unlinked.
+                </div>
+            </xpath>
+
+            <xpath expr="//notebook" position="inside">
+                <page string="GLPI" name="glpi" invisible="not glpi_id">
+                    <group>
+                        <group string="Link">
+                            <field name="glpi_itemtype"/>
+                            <field name="glpi_id"/>
+                            <field name="glpi_sync_state"/>
+                            <field name="glpi_url" widget="url"/>
+                            <field name="glpi_push_pending"/>
+                            <field name="glpi_custodian_mismatch"/>
+                            <field name="glpi_last_pull"/>
+                            <field name="glpi_last_push"/>
+                        </group>
+                        <group string="Reported by GLPI">
+                            <field name="glpi_name"/>
+                            <field name="glpi_manufacturer"/>
+                            <field name="glpi_model"/>
+                            <field name="glpi_type"/>
+                            <field name="glpi_inventory_number"/>
+                            <field name="glpi_status"/>
+                            <field name="glpi_location"/>
+                            <field name="glpi_user_name"/>
+                            <field name="glpi_contact"/>
+                            <field name="glpi_uuid"/>
+                            <field name="glpi_last_inventory"/>
+                            <field name="glpi_date_mod"/>
+                        </group>
+                    </group>
+                    <group string="Hardware Specs" invisible="not glpi_specs">
+                        <field name="glpi_specs" nolabel="1" colspan="2"/>
+                    </group>
+                    <div class="text-end">
+                        <button name="action_glpi_unlink" string="Unlink from GLPI" type="object"
+                                class="btn-link text-danger" icon="fa-chain-broken"
+                                confirm="Remove the link to GLPI? The next sync may link it again by serial number."
+                                groups="bxi_glpi_asset_sync.group_glpi_manager"/>
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_asset_tree_glpi" model="ir.ui.view">
+        <field name="name">asset.management.list.glpi</field>
+        <field name="model">asset.management</field>
+        <field name="inherit_id" ref="asset_management.view_asset_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="glpi_name" optional="hide"/>
+                <field name="glpi_last_inventory" optional="hide"/>
+                <field name="glpi_sync_state" optional="hide" widget="badge"
+                       decoration-success="glpi_sync_state == 'linked'"
+                       decoration-danger="glpi_sync_state in ('trashed', 'missing')"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_asset_search_glpi" model="ir.ui.view">
+        <field name="name">asset.management.search.glpi</field>
+        <field name="model">asset.management</field>
+        <field name="inherit_id" ref="asset_management.view_asset_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='serial_number']" position="after">
+                <field name="glpi_name" string="GLPI Hostname"/>
+            </xpath>
+            <xpath expr="//filter[@name='draft']" position="before">
+                <filter string="From GLPI" name="from_glpi" domain="[('glpi_id', '>', 0)]"/>
+                <filter string="Not in GLPI" name="not_in_glpi"
+                        domain="['|', ('glpi_id', '=', False), ('glpi_id', '=', 0)]"/>
+                <filter string="GLPI Push Pending" name="glpi_push_pending"
+                        domain="[('glpi_id', '>', 0), ('glpi_push_pending', '=', True)]"/>
+                <filter string="GLPI Custodian Mismatch" name="glpi_custodian_mismatch"
+                        domain="[('glpi_custodian_mismatch', '=', True)]"/>
+                <filter string="Removed in GLPI" name="glpi_removed"
+                        domain="[('glpi_sync_state', 'in', ('trashed', 'missing'))]"/>
+                <separator/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_glpi_assets" model="ir.actions.act_window">
+        <field name="name">GLPI Assets</field>
+        <field name="res_model">asset.management</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="context">{'search_default_from_glpi': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No asset synced from GLPI yet</p>
+            <p>Configure the GLPI connection and run a sync.</p>
+        </field>
+    </record>
+
+</odoo>
