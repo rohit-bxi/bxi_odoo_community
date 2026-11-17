@@ -39,8 +39,23 @@ class PurchaseRequisition(models.Model):
                                  readonly=True,
                                  help='User who confirmed the requisition.')
     manager_id = fields.Many2one(comodel_name='res.users',
-                                 string='Department Manager', readonly=True,
-                                 help='Select a department manager')
+                                 string='Manager Approved By', readonly=True,
+                                 help='Manager who approved the requisition.')
+    manager_approval_date = fields.Date(string='Manager Approval Date',
+                                        readonly=True,
+                                        help='Date of manager approval')
+    ra_id = fields.Many2one(comodel_name='res.users',
+                            string='Revenue Assurance Approved By', readonly=True,
+                            help='Revenue Assurance user who approved the requisition.')
+    ra_approval_date = fields.Date(string='Revenue Assurance Approval Date',
+                                   readonly=True,
+                                   help='Date of Revenue Assurance approval')
+    finance_id = fields.Many2one(comodel_name='res.users',
+                                 string='Finance Approved By', readonly=True,
+                                 help='Finance user who approved the requisition.')
+    finance_approval_date = fields.Date(string='Finance Approval Date',
+                                        readonly=True,
+                                        help='Date of Finance approval')
     requisition_head_id = fields.Many2one(comodel_name='res.users',
                                           string='Approved By', readonly=True,
                                           help='User who approved the requisition.')
@@ -56,6 +71,18 @@ class PurchaseRequisition(models.Model):
                                 help='Requisition approval date')
     reject_date = fields.Date(string='Rejection Date', readonly=True,
                               help='Requisition rejected date')
+    can_manager_approve = fields.Boolean(
+        compute='_compute_can_manager_approve',
+        string='Can Manager Approve'
+    )
+    can_ra_approve = fields.Boolean(
+        compute='_compute_can_ra_approve',
+        string='Can RA Approve'
+    )
+    can_finance_approve = fields.Boolean(
+        compute='_compute_can_finance_approve',
+        string='Can Finance Approve'
+    )
     source_location_id = fields.Many2one(
         comodel_name='stock.location',
         string='Source Location',
@@ -87,13 +114,17 @@ class PurchaseRequisition(models.Model):
     internal_transfer_count = fields.Integer(string='Internal Transfer count',
                                              help='Internal transfer count',
                                              compute='_compute_internal_transfer_count')
-    state = fields.Selection([('new', 'New'), 
-                            # ('waiting_department_approval','Waiting HR Approval'),
-                            ('waiting_head_approval','Waiting Finance Approval'),
-                            ('approved', 'Approved'),
-                            ('purchase_order_created','Purchase Order Created'),
-                            ('received', 'Received'),
-                            ('cancelled', 'Cancelled')], default='new', copy=False, tracking=True)
+    state = fields.Selection([
+        ('new', 'New'),
+        ('waiting_manager_approval', 'Waiting Manager Approval'),
+        ('waiting_ra_approval', 'Waiting Revenue Assurance Approval'),
+        ('waiting_finance_approval', 'Waiting Finance Approval'),
+        ('approved', 'Approved'),
+        ('purchase_order_created', 'Purchase Order Created'),
+        ('received', 'Received'),
+        ('cancelled', 'Cancelled'),
+        ('waiting_head_approval', 'Waiting Finance Approval'),
+    ], default='new', copy=False, tracking=True)
 
     req_type = fields.Selection([('internal', 'Internal'),
                                 ('customer', 'Customer')], default='internal',
@@ -184,9 +215,51 @@ class PurchaseRequisition(models.Model):
 
         return records
 
-    def action_confirm_requisition(self):
-        """Function to confirm purchase requisition with respective company details"""
+    def _check_group(self, xml_id):
+        try:
+            group = self.env.ref(xml_id, raise_if_not_found=False)
+            return bool(group and group in self.env.user.groups_id)
+        except Exception:
+            return False
+
+    def _compute_can_manager_approve(self):
+        current_user = self.env.user
+        is_admin = current_user.has_group('employee_purchase_requisition.material_category_admin_group') or self.env.is_superuser()
+        is_mgr_group = current_user.has_group('employee_purchase_requisition.material_category_manager_group')
         for rec in self:
+            is_parent = bool(
+                rec.employee_id and rec.employee_id.parent_id and rec.employee_id.parent_id.user_id == current_user
+            )
+            is_dept_manager = bool(
+                rec.dept_id and rec.dept_id.manager_id and rec.dept_id.manager_id.user_id == current_user
+            )
+            rec.can_manager_approve = is_admin or is_mgr_group or is_parent or is_dept_manager
+
+    def _compute_can_ra_approve(self):
+        current_user = self.env.user
+        is_admin = current_user.has_group('employee_purchase_requisition.material_category_admin_group') or self.env.is_superuser()
+        is_ra = (
+            current_user.has_group('employee_purchase_requisition.material_category_ra_group')
+            or self._check_group('bxi_equitable_benefit.group_eb_revenue_assurance')
+        )
+        for rec in self:
+            rec.can_ra_approve = is_admin or is_ra
+
+    def _compute_can_finance_approve(self):
+        current_user = self.env.user
+        is_admin = current_user.has_group('employee_purchase_requisition.material_category_admin_group') or self.env.is_superuser()
+        is_finance = (
+            current_user.has_group('employee_purchase_requisition.material_category_finance_group')
+            or self._check_group('bxi_equitable_benefit.group_eb_finance')
+        )
+        for rec in self:
+            rec.can_finance_approve = is_admin or is_finance
+
+    def action_confirm_requisition(self):
+        """Function to confirm purchase requisition with respective company details and submit to Manager"""
+        for rec in self:
+            if not rec.requisition_order_ids:
+                raise ValidationError("Please add at least one product requisition line before confirming.")
             warehouse = rec._get_or_create_warehouse(rec.company_id)
 
             dept_loc = rec.employee_id.sudo().department_id.department_location_id
@@ -201,44 +274,122 @@ class PurchaseRequisition(models.Model):
 
             rec.delivery_type_id = warehouse.in_type_id.id if (warehouse and warehouse.in_type_id) else False
             rec.internal_picking_id = warehouse.int_type_id.id if (warehouse and warehouse.int_type_id) else False
-            rec.write({'state': 'waiting_head_approval'})
-            rec.confirm_id = rec.env.uid
-            rec.confirmed_date = fields.Date.today()
+            rec.write({
+                'state': 'waiting_manager_approval',
+                'confirm_id': rec.env.uid,
+                'confirmed_date': fields.Date.today(),
+            })
+            rec.message_post(body=f"Requisition confirmed by {rec.env.user.name} and submitted for Manager approval.")
 
-    def action_department_approval(self):
-        """Approval from department"""
-        self.write({'state': 'waiting_head_approval'})
-        self.manager_id = self.env.uid
-        self.department_approval_date = fields.Date.today()
-
-    def action_department_cancel(self):
-        """Cancellation from department """
-        self.write({'state': 'cancelled'})
-        self.rejected_user_id = self.env.uid
-        self.reject_date = fields.Date.today()
-
-    def action_head_approval(self):
-        """Approval from department head"""
-        self.write({'state': 'approved'})
-        self.requisition_head_id = self.env.uid
-        self.approval_date = fields.Date.today()
-        template = self.env.ref(
-            'employee_purchase_requisition.email_template_requisition_approved',
-            raise_if_not_found=False
-        )
-
+    def action_manager_approval(self):
+        """Approval from Manager -> Moves to Waiting Revenue Assurance Approval"""
         for rec in self:
+            if not rec.can_manager_approve:
+                raise ValidationError("Only the reporting manager, department manager, or an authorized manager/admin can approve at this stage.")
+            rec.write({
+                'state': 'waiting_ra_approval',
+                'manager_id': rec.env.uid,
+                'manager_approval_date': fields.Date.today(),
+                'department_approval_date': fields.Date.today(),
+            })
+            rec.message_post(body=f"Requisition approved by Manager ({rec.env.user.name}) and submitted for Revenue Assurance approval.")
+
+    def action_manager_cancel(self):
+        """Rejection by Manager"""
+        for rec in self:
+            if not rec.can_manager_approve:
+                raise ValidationError("Only the reporting manager, department manager, or an authorized manager/admin can reject at this stage.")
+            emp_id = rec.env.user.employee_id.id if rec.env.user.employee_id else False
+            rec.write({
+                'state': 'cancelled',
+                'rejected_user_id': emp_id,
+                'reject_date': fields.Date.today(),
+            })
+            rec.message_post(body=f"Requisition rejected by Manager ({rec.env.user.name}).")
+
+    def action_ra_approval(self):
+        """Approval from Revenue Assurance -> Moves to Waiting Finance Approval"""
+        for rec in self:
+            if not rec.can_ra_approve:
+                raise ValidationError("Only Revenue Assurance team or an administrator can approve at this stage.")
+            rec.write({
+                'state': 'waiting_finance_approval',
+                'ra_id': rec.env.uid,
+                'ra_approval_date': fields.Date.today(),
+            })
+            rec.message_post(body=f"Requisition approved by Revenue Assurance ({rec.env.user.name}) and submitted for Finance approval.")
+
+    def action_ra_cancel(self):
+        """Rejection by Revenue Assurance"""
+        for rec in self:
+            if not rec.can_ra_approve:
+                raise ValidationError("Only Revenue Assurance team or an administrator can reject at this stage.")
+            emp_id = rec.env.user.employee_id.id if rec.env.user.employee_id else False
+            rec.write({
+                'state': 'cancelled',
+                'rejected_user_id': emp_id,
+                'reject_date': fields.Date.today(),
+            })
+            rec.message_post(body=f"Requisition rejected by Revenue Assurance ({rec.env.user.name}).")
+
+    def action_finance_approval(self):
+        """Approval from Finance -> Moves to Approved"""
+        for rec in self:
+            if not rec.can_finance_approve:
+                raise ValidationError("Only the Finance team or an administrator can approve at this stage.")
+            rec.write({
+                'state': 'approved',
+                'finance_id': rec.env.uid,
+                'finance_approval_date': fields.Date.today(),
+                'requisition_head_id': rec.env.uid,
+                'approval_date': fields.Date.today(),
+            })
+            rec.message_post(body=f"Requisition approved by Finance ({rec.env.user.name}). Purchase Order can now be created.")
+            template = rec.env.ref(
+                'employee_purchase_requisition.email_template_requisition_approved',
+                raise_if_not_found=False
+            )
             if template:
                 template.send_mail(rec.id, force_send=True)
 
+    def action_finance_cancel(self):
+        """Rejection by Finance"""
+        for rec in self:
+            if not rec.can_finance_approve:
+                raise ValidationError("Only the Finance team or an administrator can reject at this stage.")
+            emp_id = rec.env.user.employee_id.id if rec.env.user.employee_id else False
+            rec.write({
+                'state': 'cancelled',
+                'rejected_user_id': emp_id,
+                'reject_date': fields.Date.today(),
+            })
+            rec.message_post(body=f"Requisition rejected by Finance ({rec.env.user.name}).")
+
+    def action_reset_to_draft(self):
+        """Reset cancelled requisition to draft (new)"""
+        for rec in self:
+            rec.write({
+                'state': 'new',
+            })
+            rec.message_post(body=f"Requisition reset to New by {rec.env.user.name}.")
+
+    def action_department_approval(self):
+        return self.action_manager_approval()
+
+    def action_department_cancel(self):
+        return self.action_manager_cancel()
+
+    def action_head_approval(self):
+        return self.action_finance_approval()
+
     def action_head_cancel(self):
-        """Cancellation from department head"""
-        self.write({'state': 'cancelled'})
-        self.rejected_user_id = self.env.uid
-        self.reject_date = fields.Date.today()
+        return self.action_finance_cancel()
 
     def action_create_purchase_order(self):
         """Create purchase order and internal transfer with respective company details following standard purchasing flow."""
+        for req in self:
+            if req.state != 'approved':
+                raise ValidationError("Purchase Order can only be created once the requisition has been approved by Finance.")
         created_pos = self.env['purchase.order']
         created_pickings = self.env['stock.picking']
 
