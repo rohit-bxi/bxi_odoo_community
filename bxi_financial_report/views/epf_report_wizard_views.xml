@@ -9,15 +9,17 @@
                 <sheet>
                     <div class="oe_title">
                         <h2>EPF Report Parameters</h2>
-                        <p class="text-muted">Select month, year, and company to generate the EPF Excel Report.</p>
+                        <p class="text-muted">Select company, period type, and period to generate the EPF Excel Report.</p>
                     </div>
                     <group>
                         <group>
-                            <field name="month"/>
-                            <field name="year"/>
+                            <field name="company_id" options="{'no_create': True}"/>
+                            <field name="period_type"/>
                         </group>
                         <group>
-                            <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
+                            <field name="year"/>
+                            <field name="quarter" invisible="period_type != 'quarterly'" required="period_type == 'quarterly'"/>
+                            <field name="month" invisible="period_type != 'monthly'" required="period_type == 'monthly'"/>
                         </group>
                     </group>
                 </sheet>

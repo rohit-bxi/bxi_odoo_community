@@ -494,11 +494,15 @@ class FbookReportWizard(models.TransientModel):
                         date_val=tline.date, year_key=year_key, record=tline
                     )
 
+            # 5. Other Income and Total Income (Actual + Other Income)
+            other_income_val = compute_other_income(qdef['start'], qdef['end'], year_key)
+            total_income_val = actual_val + other_income_val
+
             # 6. Profit
-            profit_val = billed_val - expenses_val
+            profit_val = total_income_val - expenses_val
 
             # 7. Margin %
-            margin_val = (profit_val / billed_val * 100) if billed_val > 0 else 0.0
+            margin_val = (profit_val / total_income_val * 100) if total_income_val > 0 else 0.0
             margin_val = min(100.0, margin_val)
 
             # 8. Cash Flow: Current cumulative Bank & Cash balance as of quarter end (effective_end)
@@ -555,15 +559,14 @@ class FbookReportWizard(models.TransientModel):
                 cash_flow_val = 0.0
                 calibration_val = 0.0
 
-            other_income_val = compute_other_income(qdef['start'], qdef['end'], year_key)
-
             data[year_key][q_key] = {
                 'booking': target_currency.round(booking_val),
                 'billed': target_currency.round(billed_val),
                 'actual': target_currency.round(actual_val),
-                'other_income': target_currency.round(other_income_val),
                 'dso_days': int(round(dso_days_val)),
                 'dso_amount': target_currency.round(dso_amount_val),
+                'other_income': target_currency.round(other_income_val),
+                'total_income': target_currency.round(total_income_val),
                 'expenses': target_currency.round(expenses_val),
                 'profit': target_currency.round(profit_val),
                 'margin': round(margin_val, 2),
@@ -577,6 +580,7 @@ class FbookReportWizard(models.TransientModel):
             sum_billed = sum(data[y][q]['billed'] for q in ['q1', 'q2', 'q3', 'q4'])
             sum_actual = sum(data[y][q]['actual'] for q in ['q1', 'q2', 'q3', 'q4'])
             sum_other_income = sum(data[y][q]['other_income'] for q in ['q1', 'q2', 'q3', 'q4'])
+            sum_total_income = sum(data[y][q]['total_income'] for q in ['q1', 'q2', 'q3', 'q4'])
 
             # DSO Amount & Days for Year Total based on Total Billed and Total Actual
             total_uncollected = max(0.0, sum_billed - sum_actual)
@@ -592,8 +596,8 @@ class FbookReportWizard(models.TransientModel):
             else:
                 avg_dso_days = 0
             sum_expenses = sum(data[y][q]['expenses'] for q in ['q1', 'q2', 'q3', 'q4'])
-            total_profit = sum_billed - sum_expenses
-            total_margin = (total_profit / sum_billed * 100) if sum_billed > 0 else 0.0
+            total_profit = sum_total_income - sum_expenses
+            total_margin = (total_profit / sum_total_income * 100) if sum_total_income > 0 else 0.0
             total_margin = min(100.0, total_margin)
 
             active_q = 'q4'
@@ -615,9 +619,10 @@ class FbookReportWizard(models.TransientModel):
                 'booking': target_currency.round(sum_booking),
                 'billed': target_currency.round(sum_billed),
                 'actual': target_currency.round(sum_actual),
-                'other_income': target_currency.round(sum_other_income),
                 'dso_days': int(round(avg_dso_days)),
                 'dso_amount': target_currency.round(sum_dso_amount),
+                'other_income': target_currency.round(sum_other_income),
+                'total_income': target_currency.round(sum_total_income),
                 'expenses': target_currency.round(sum_expenses),
                 'profit': target_currency.round(total_profit),
                 'margin': round(total_margin, 2),
@@ -2185,9 +2190,10 @@ class FbookReportWizard(models.TransientModel):
             ('Booking', 'booking', f_amt, f_amt_hi),
             ('Billed', 'billed', f_amt, f_amt_hi),
             ('Actual', 'actual', f_amt, f_amt_hi),
-            ('Other Income', 'other_income', f_amt, f_amt_hi),
             ('DSO Amount', 'dso_amount', f_amt, f_amt_hi),
             ('DSO Days', 'dso_days', f_int, f_int),
+            ('Other Income', 'other_income', f_amt, f_amt_hi),
+            ('Total Income', 'total_income', f_amt, f_amt_hi),
             ('Expenses', 'expenses', f_amt, f_amt_hi),
             ('Profit', 'profit', f_amt, f_amt_hi),
             ('GM (%)', 'margin', f_pct, f_pct),

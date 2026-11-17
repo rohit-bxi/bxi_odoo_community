@@ -21,41 +21,60 @@
             <form>
                 <header>
                     <field name="state" widget='statusbar'
-                           statusbar_visible='new,waiting_head_approval,approved,purchase_order_created,received'/>
+                           statusbar_visible='new,waiting_manager_approval,waiting_ra_approval,waiting_finance_approval,approved,purchase_order_created,received'/>
+                    <field name="can_manager_approve" invisible="1"/>
+                    <field name="can_ra_approve" invisible="1"/>
+                    <field name="can_finance_approve" invisible="1"/>
+
+                    <!-- Employee Confirm -->
                     <button name="action_confirm_requisition"
                             class="oe_highlight"
                             invisible="state != 'new'" string="Confirm"
                             type="object"
-                            help="Submit to HR Approval"
+                            help="Submit for Manager Approval"
                             />
-                    <!-- <button name="action_department_approval"
+
+                    <!-- Manager Approval -->
+                    <button name="action_manager_approval"
                             class="oe_highlight"
-                            invisible="state != 'waiting_department_approval'"
+                            invisible="state != 'waiting_manager_approval' or not can_manager_approve"
                             string="Approve" type="object"
-                            help="Approve purchase requisition,Submit for Approval for Finance Head"
-                            groups="employee_purchase_requisition.material_category_hr_group,employee_purchase_requisition.material_category_admin_group"
+                            help="Approve requisition and submit for Revenue Assurance approval"
                             />
-                    <button name="action_department_cancel"
-                            class="oe_highlight"
-                            invisible="state != 'waiting_department_approval'"
+                    <button name="action_manager_cancel"
+                            invisible="state != 'waiting_manager_approval' or not can_manager_approve"
                             string="Reject" type="object"
                             help="Reject Purchase Requisition"
-                            groups="employee_purchase_requisition.material_category_hr_group,employee_purchase_requisition.material_category_admin_group"
-                            /> -->
-                    <button name="action_head_approval" class="oe_highlight"
-                            invisible="state != 'waiting_head_approval'"
+                            />
+
+                    <!-- Revenue Assurance Approval -->
+                    <button name="action_ra_approval"
+                            class="oe_highlight"
+                            invisible="state != 'waiting_ra_approval' or not can_ra_approve"
+                            string="Approve" type="object"
+                            help="Approve requisition and submit for Finance approval"
+                            />
+                    <button name="action_ra_cancel"
+                            invisible="state != 'waiting_ra_approval' or not can_ra_approve"
+                            string="Reject" type="object"
+                            help="Reject Purchase Requisition"
+                            />
+
+                    <!-- Finance Approval -->
+                    <button name="action_finance_approval" class="oe_highlight"
+                            invisible="state not in ['waiting_finance_approval', 'waiting_head_approval'] or not can_finance_approve"
                             string="Approve"
                             type="object"
                             help="Approve Purchase requisition"
-                            groups="employee_purchase_requisition.material_category_finance_group,employee_purchase_requisition.material_category_admin_group"
                             />
-                    <button name="action_head_cancel" class="oe_highlight"
-                            invisible="state != 'waiting_head_approval'"
+                    <button name="action_finance_cancel"
+                            invisible="state not in ['waiting_finance_approval', 'waiting_head_approval'] or not can_finance_approve"
                             string="Reject"
                             type="object"
                             help="Reject Purchase Requisition"
-                            groups="employee_purchase_requisition.material_category_finance_group,employee_purchase_requisition.material_category_admin_group"
                             />
+
+                    <!-- Create PO (Only once approved by Finance) -->
                     <button name="action_create_purchase_order"
                             class="oe_highlight"
                             invisible="state != 'approved'"
@@ -69,6 +88,12 @@
                             string="Received"
                             type="object"
                             groups="employee_purchase_requisition.material_category_finance_group,employee_purchase_requisition.material_category_admin_group"
+                            />
+                    <button name="action_reset_to_draft"
+                            invisible="state != 'cancelled'"
+                            string="Reset to Draft"
+                            type="object"
+                            groups="employee_purchase_requisition.material_category_admin_group"
                             />
                 </header>
                 <sheet>
@@ -115,14 +140,14 @@
                     </group>
                     <notebook>
                         <page string="Requisition Orders ">
-                            <field name="requisition_order_ids" readonly="1 if state not in ['new','waiting_department_approval','waiting_head_approval', 'approved'] else 0"/>
+                            <field name="requisition_order_ids" readonly="1 if state not in ['new', 'waiting_manager_approval', 'waiting_ra_approval', 'waiting_finance_approval', 'approved'] else 0"/>
                         </page>
                         <page string="Picking Details">
                             <group>
                                 <group>
                                     <field name="source_location_id" domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]"/>
                                     <field name="delivery_type_id" domain="[('company_id', '=', company_id), ('code', '=', 'incoming')]"/>
-                                </group>
+                                								</group>
                                 <group>
                                     <field name="destination_location_id" domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]"/>
                                     <field name="internal_picking_id" domain="[('company_id', '=', company_id), ('code', '=', 'internal')]"/>
@@ -131,16 +156,19 @@
                         </page>
                         <page string="Other Info">
                             <group>
-                                <group>
+                                <group string="Approval Details">
                                     <field name="confirm_id"/>
+                                    <field name="confirmed_date"/>
                                     <field name="manager_id"/>
-                                    <field name="requisition_head_id"/>
-                                    <field name="rejected_user_id"/>
+                                    <field name="manager_approval_date"/>
+                                    <field name="ra_id"/>
+                                    <field name="ra_approval_date"/>
+                                    <field name="finance_id"/>
+                                    <field name="finance_approval_date"/>
                                 </group>
-                                <group>
-                                    <!-- <field name="confirmed_date"/>
-                                    <field name="department_approval_date"/> -->
-                                    <field name="approval_date"/>
+                                <group string="Status Info">
+                                    <field name="approval_date" string="Final Approved Date"/>
+                                    <field name="rejected_user_id"/>
                                     <field name="reject_date"/>
                                 </group>
                             </group>
@@ -170,7 +198,7 @@
                 <field name="requisition_date"/>
                 <field name="state" widget="badge"
                        decoration-success="state in ('approved','received')"
-                       decoration-warning="state in ('waiting_department_approval','waiting_head_approval')"
+                       decoration-warning="state in ('waiting_manager_approval','waiting_ra_approval','waiting_finance_approval','waiting_head_approval')"
                        decoration-info="state =='purchase_order_created'"
                        decoration-danger="state =='cancelled'"/>
             </list>
@@ -218,12 +246,12 @@
                                                    decoration-success="state in
                                             ('approved','received')"
                                                    decoration-warning="state in
-                                            ('waiting_department_approval','waiting_head_approval')"
+                                            ('waiting_manager_approval','waiting_ra_approval','waiting_finance_approval','waiting_head_approval')"
                                                    decoration-info="state
                                             =='purchase_order_created'"
                                                    decoration-danger="state
                                             =='cancelled'"
-                                            />
+                                             />
                                         </b>
                                     </div>
                                 </div>

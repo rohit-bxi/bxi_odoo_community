@@ -1521,6 +1521,11 @@ class ProjectResourceAllocation(models.Model):
     name = fields.Char(
         string="Based On Type",
     )
+    vendor_id = fields.Many2one(
+        'res.partner',
+        string="Vendor",
+        domain="[('customer_type', 'in', ('vendor', 'customer_and_vendor'))]",
+    )
     service_line_id = fields.Many2one(
         'project.contract.service.line',
         string="Service Line",
@@ -1658,10 +1663,12 @@ class ProjectResourceAllocation(models.Model):
 
     @api.onchange('resource_type')
     def _onchange_resource_type(self):
-        if self.resource_type != 'employee':
+        if self.resource_type == 'employee':
+            self.vendor_id = False
+            if self.employee_id:
+                self.name = self.employee_id.name
+        else:
             self.employee_id = False
-        elif self.employee_id:
-            self.name = self.employee_id.name
 
     @api.onchange('employee_id')
     def _onchange_employee_id(self):

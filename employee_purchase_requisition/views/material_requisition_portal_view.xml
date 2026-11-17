@@ -79,9 +79,10 @@
                                             <!-- STATUS BADGE -->
                                             <td>
                                                 <span t-if="req.state == 'new'" class="badge bg-secondary px-3 py-2">New</span>
-                                                <span t-elif="req.state == 'waiting_department_approval'" class="badge bg-info px-3 py-2">Dept Approval</span>
-                                                <span t-elif="req.state == 'waiting_head_approval'" class="badge bg-warning text-dark px-3 py-2">Head Approval</span>
-                                                <span t-elif="req.state == 'approved'" class="badge bg-primary px-3 py-2">Approved</span>
+                                                <span t-elif="req.state == 'waiting_manager_approval'" class="badge bg-info px-3 py-2">Manager Approval</span>
+                                                <span t-elif="req.state == 'waiting_ra_approval'" class="badge bg-warning text-dark px-3 py-2">Revenue Assurance</span>
+                                                <span t-elif="req.state in ('waiting_finance_approval', 'waiting_head_approval')" class="badge bg-primary px-3 py-2">Finance Approval</span>
+                                                <span t-elif="req.state == 'approved'" class="badge bg-success px-3 py-2">Approved</span>
                                                 <span t-elif="req.state == 'purchase_order_created'" class="badge bg-success px-3 py-2">PO Created</span>
                                                 <span t-elif="req.state == 'received'" class="badge bg-success px-3 py-2">Received</span>
                                                 <span t-elif="req.state == 'cancelled'" class="badge bg-danger px-3 py-2">Cancelled</span>
@@ -123,9 +124,10 @@
                         </h4>
                         <div>
                             <span t-if="requisition.state == 'new'" class="badge bg-secondary px-3 py-2">New</span>
-                            <span t-elif="requisition.state == 'waiting_department_approval'" class="badge bg-info px-3 py-2">Dept Approval</span>
-                            <span t-elif="requisition.state == 'waiting_head_approval'" class="badge bg-warning text-dark px-3 py-2">Head Approval</span>
-                            <span t-elif="requisition.state == 'approved'" class="badge bg-primary px-3 py-2">Approved</span>
+                            <span t-elif="requisition.state == 'waiting_manager_approval'" class="badge bg-info px-3 py-2">Manager Approval</span>
+                            <span t-elif="requisition.state == 'waiting_ra_approval'" class="badge bg-warning text-dark px-3 py-2">Revenue Assurance</span>
+                            <span t-elif="requisition.state in ('waiting_finance_approval', 'waiting_head_approval')" class="badge bg-primary px-3 py-2">Finance Approval</span>
+                            <span t-elif="requisition.state == 'approved'" class="badge bg-success px-3 py-2">Approved</span>
                             <span t-elif="requisition.state == 'purchase_order_created'" class="badge bg-success px-3 py-2">PO Created</span>
                             <span t-elif="requisition.state == 'received'" class="badge bg-success px-3 py-2">Received</span>
                             <span t-elif="requisition.state == 'cancelled'" class="badge bg-danger px-3 py-2">Cancelled</span>

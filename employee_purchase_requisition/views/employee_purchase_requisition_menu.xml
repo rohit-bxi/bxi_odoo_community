@@ -13,7 +13,7 @@
           inherit_id="portal.portal_my_home"
           name="Portal Home - Material Request">
         <xpath expr="//div[@id='portal_common_category']" position="inside">
-            <t t-if="(request.env.user.has_group('employee_purchase_requisition.material_category_user_group') or request.env.user.has_group('employee_purchase_requisition.material_category_hr_group') or request.env.user.has_group('employee_purchase_requisition.material_category_finance_group') or request.env.user.has_group('employee_purchase_requisition.material_category_admin_group'))">
+            <t t-if="(request.env.user.has_group('employee_purchase_requisition.material_category_user_group') or request.env.user.has_group('employee_purchase_requisition.material_category_manager_group') or request.env.user.has_group('employee_purchase_requisition.material_category_ra_group') or request.env.user.has_group('employee_purchase_requisition.material_category_hr_group') or request.env.user.has_group('employee_purchase_requisition.material_category_finance_group') or request.env.user.has_group('employee_purchase_requisition.material_category_admin_group'))">
                 <t t-call="portal.portal_docs_entry">
                     <t t-set="icon"
                        t-value="'/employee_purchase_requisition/static/src/img/icon-material-requisition.svg'"/>

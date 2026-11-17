@@ -48,6 +48,9 @@
                             <field name="name"
                                    string="Based On Type"
                                    invisible="resource_type == 'employee'"/>
+                            <field name="vendor_id"
+                                   string="Vendor"
+                                   invisible="resource_type == 'employee'"/>
                             <field name="service_line_id" options="{'no_create': True, 'no_open': True, 'no_edit': True}"/>
                             <field name="start_date" widget="daterange" options="{'end_date_field': 'end_date'}" string="Start Date"/>
                             <field name="end_date" string="End Date"/>
@@ -69,6 +72,10 @@
                                            readonly="1"/>
                                     <field name="name"
                                            string="Based On Type"
+                                           invisible="resource_type == 'employee'"
+                                           readonly="1"/>
+                                    <field name="vendor_id"
+                                           string="Vendor"
                                            invisible="resource_type == 'employee'"
                                            readonly="1"/>
                                     <field name="service_line_id" options="{'no_create': True, 'no_open': True, 'no_edit': True}" readonly="1"/>

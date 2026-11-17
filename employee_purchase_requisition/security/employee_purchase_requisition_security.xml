@@ -18,20 +18,34 @@
             <field name="privilege_id" ref="material_category_group"/>
         </record>
 
-        <record id="material_category_hr_group" model="res.groups">
-            <field name="name">HR</field>
+        <record id="material_category_manager_group" model="res.groups">
+            <field name="name">Manager</field>
             <field name="privilege_id" ref="material_category_group"/>
+            <field name="implied_ids" eval="[(4, ref('material_category_user_group'))]"/>
+        </record>
+
+        <record id="material_category_ra_group" model="res.groups">
+            <field name="name">Revenue Assurance</field>
+            <field name="privilege_id" ref="material_category_group"/>
+            <field name="implied_ids" eval="[(4, ref('material_category_user_group'))]"/>
         </record>
 
         <record id="material_category_finance_group" model="res.groups">
             <field name="name">Finance</field>
             <field name="privilege_id" ref="material_category_group"/>
+            <field name="implied_ids" eval="[(4, ref('material_category_user_group'))]"/>
+        </record>
+
+        <record id="material_category_hr_group" model="res.groups">
+            <field name="name">HR</field>
+            <field name="privilege_id" ref="material_category_group"/>
+            <field name="implied_ids" eval="[(4, ref('material_category_user_group'))]"/>
         </record>
 
         <record id="material_category_admin_group" model="res.groups">
             <field name="name">Administrator</field>
-             <field name="privilege_id" ref="material_category_group"/>
-            <field name="implied_ids" eval="[(4, ref('material_category_user_group'))]"/>
+            <field name="privilege_id" ref="material_category_group"/>
+            <field name="implied_ids" eval="[(4, ref('material_category_user_group')), (4, ref('material_category_manager_group')), (4, ref('material_category_ra_group')), (4, ref('material_category_finance_group'))]"/>
         </record>
 
     </data>
