@@ -189,6 +189,20 @@ class TestMybizPushFixes(_MybizRequestCase):
             request.action_recall_all_mybiz_services()
 
     @patch(PUSH_POST)
+    def test_unknown_traveller_error_explains_fix(self, mock_post):
+        # Real myBiz answer when the pax email is not a user in the corporate account.
+        mock_post.return_value = _http_error(500, (
+            '{"status":"FAILURE","statusCode":500,"responseCode":"CUNF",'
+            '"message":"Corporate User Details not found in system"}'))
+        request = self._request()
+        request._push_to_mybiz()
+        self.assertEqual(request.mybiz_status, 'failed')
+        self.assertEqual(request.mybiz_response_code, 'CUNF')
+        self.assertIn('Corporate User Details not found', request.mybiz_error)
+        self.assertIn('fix.traveller@example.com', request.mybiz_error)
+        self.assertIn('CUNF', request.mybiz_raw_response)
+
+    @patch(PUSH_POST)
     def test_duplicate_request_number_blocks_push(self, mock_post):
         first = self._request()
         second = self._request(name=first.name)

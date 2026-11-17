@@ -272,6 +272,21 @@ class TravelRequest(models.Model):
     # Push / Recall
     # ──────────────────────────────────────────────────────────────
 
+    def _mybiz_error_text(self, data):
+        """myBiz's error message, plus what to do for the codes we know."""
+        self.ensure_one()
+        message = data.get('message') or ''
+        code = str(data.get('responseCode') or '')
+        if code == 'CUNF':
+            email = self.employee_id.work_email or self.email or ''
+            return _(
+                '%(message)s (%(code)s). The traveller %(email)s is not a user in the '
+                'company\'s myBiz account. Add them in myBiz (Admin → Employees), or set '
+                'their Work Email to the address registered in myBiz, then click Retry.',
+                message=message, code=code, email=email,
+            )
+        return f'{message} ({code})' if code else message
+
     def _record_mybiz_push_failure(self, err, raw_response=None):
         """Mark the push as failed on the request and its segments, and say so
         in the chatter so HR sees it without opening the myBiz tab."""
@@ -359,9 +374,21 @@ class TravelRequest(models.Model):
             # A Response is falsy for 4xx/5xx, so compare against None.
             body = e.response.text if e.response is not None else ''
             code = e.response.status_code if e.response is not None else '?'
-            err = f'HTTP {code}: {body[:500]}'
+            try:
+                data = json.loads(body)
+            except ValueError:
+                data = None
+            if isinstance(data, dict) and data.get('message'):
+                # myBiz reports business errors (e.g. unknown traveller) as 4xx/5xx JSON.
+                self.write({
+                    'mybiz_response_code': str(data.get('responseCode') or ''),
+                    'mybiz_response_message': data['message'],
+                })
+                err = f'HTTP {code}: {self._mybiz_error_text(data)}'
+            else:
+                err = f'HTTP {code}: {body[:500]}'
             self._record_mybiz_push_failure(err, raw_response=body[:2000])
-            _logger.error('myBiz push HTTP error for %s: %s', self.name, err)
+            _logger.error('myBiz push HTTP error for %s: %s', self.name, body[:500])
             return
         except requests.exceptions.Timeout:
             err = ('Request timed out — myBiz did not respond within 30 seconds. '
@@ -390,7 +417,8 @@ class TravelRequest(models.Model):
         })
         if not is_success:
             self._record_mybiz_push_failure(
-                resp_data.get('message') or 'myBiz returned a non-success status.')
+                self._mybiz_error_text(resp_data) if resp_data.get('message')
+                else 'myBiz returned a non-success status.')
             _logger.error('myBiz push rejected for %s: %s', self.name, resp_data)
             return
 
