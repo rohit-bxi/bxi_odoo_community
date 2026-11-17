@@ -333,6 +333,12 @@ class TravelRequest(models.Model):
         self._prepare_mybiz_options()
         problems = []
         payload = self._build_mybiz_payload(problems=problems)
+        # trfId is the request number; myBiz needs it unique per request.
+        if self.sudo().search_count([('name', '=', self.name), ('id', '!=', self.id)]):
+            problems.append(_(
+                'Request number %s is also used by another travel request, and myBiz '
+                'needs a unique number (trfId). Ask an administrator to renumber one of them.'
+            ) % self.name)
         if problems:
             self._record_mybiz_push_failure(
                 _('Not sent — fix these and click Retry: %s') % '; '.join(problems))

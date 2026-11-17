@@ -12,6 +12,8 @@ class TestMybizConfigIntegration(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # Real DBs already hold a config; get_active_config must find this one.
+        cls.env['bxi.mybiz.config'].search([]).write({'active': False})
         cls.config = cls.env['bxi.mybiz.config'].create({
             'name': 'Real Contract Config',
             'partner_api_key': 'PARTNER-KEY-1',

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import uuid
 from unittest.mock import MagicMock, patch
 
 from odoo.exceptions import UserError
@@ -13,12 +14,16 @@ class TestMybizRecall(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.employee = cls.env['hr.employee'].create({'name': 'Recall Tester'})
+        # Real DBs already hold a config; get_active_config must find this one.
+        cls.env['bxi.mybiz.config'].search([]).write({'active': False})
         cls.config = cls.env['bxi.mybiz.config'].create({
             'name': 'Recall Config',
             'partner_api_key': 'KEY',
             'client_code': 'CODE',
         })
         cls.request = cls.env['travel.request'].create({
+            # Own number: a reset sequence on a real DB would reuse existing ones.
+            'name': f'TEST/MYBIZ/{uuid.uuid4().hex[:10]}',
             'employee_id': cls.employee.id,
             'travel_purpose': 'Recall testing',
             'from_city': 'Pune',
@@ -81,6 +86,8 @@ class TestMybizRecall(TransactionCase):
 
     def test_recall_all_without_pushed_services_raises(self):
         fresh_request = self.env['travel.request'].create({
+            # Own number: a reset sequence on a real DB would reuse existing ones.
+            'name': f'TEST/MYBIZ/{uuid.uuid4().hex[:10]}',
             'employee_id': self.employee.id,
             'travel_purpose': 'No services pushed',
             'from_city': 'Kochi',

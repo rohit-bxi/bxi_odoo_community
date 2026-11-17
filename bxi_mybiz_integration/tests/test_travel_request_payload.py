@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import calendar
 import datetime
+import uuid
 from unittest.mock import MagicMock, patch
 
 from odoo.tests.common import TransactionCase, tagged
@@ -40,12 +41,16 @@ class TestMybizPayload(TransactionCase):
             'parent_id': cls.manager.id,
             'work_email': 'payload.employee@example.com',
         })
+        # Real DBs already hold a config; get_active_config must find this one.
+        cls.env['bxi.mybiz.config'].search([]).write({'active': False})
         cls.config = cls.env['bxi.mybiz.config'].create({
             'name': 'Payload Config',
             'partner_api_key': 'KEY',
             'client_code': 'CODE',
         })
         cls.request = cls.env['travel.request'].create({
+            # Own number: a reset sequence on a real DB would reuse existing ones.
+            'name': f'TEST/MYBIZ/{uuid.uuid4().hex[:10]}',
             'employee_id': cls.employee.id,
             'manager_id': cls.manager.id,
             'travel_purpose': 'Quarterly review',
@@ -210,6 +215,8 @@ class TestMybizPushWithoutServices(TransactionCase):
             'name': 'Bus Traveller',
             'work_email': 'bus.traveller@example.com',
         })
+        # Real DBs already hold a config; get_active_config must find this one.
+        cls.env['bxi.mybiz.config'].search([]).write({'active': False})
         cls.env['bxi.mybiz.config'].create({
             'name': 'No Services Config',
             'partner_api_key': 'KEY',
@@ -218,6 +225,8 @@ class TestMybizPushWithoutServices(TransactionCase):
 
     def _bus_request(self, **overrides):
         vals = {
+            # Own number: a reset sequence on a real DB would reuse existing ones.
+            'name': f'TEST/MYBIZ/{uuid.uuid4().hex[:10]}',
             'employee_id': self.employee.id,
             'travel_purpose': 'Meeting with OEM',
             'from_city': 'Jaipur',

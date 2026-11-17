@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import uuid
 from unittest.mock import MagicMock, patch
 
 import requests
@@ -76,11 +77,15 @@ class _MybizRequestCase(TransactionCase):
         cls.india = cls.env.ref('base.in')
         cls.employee = cls.env['hr.employee'].create({
             'name': 'Fix Traveller', 'work_email': 'fix.traveller@example.com'})
+        # Real DBs already hold a config; get_active_config must find this one.
+        cls.env['bxi.mybiz.config'].search([]).write({'active': False})
         cls.env['bxi.mybiz.config'].create({
             'name': 'Fix Config', 'partner_api_key': 'KEY', 'client_code': 'CODE'})
 
     def _request(self, **vals):
         base = {
+            # Own number: a reset sequence on a real DB would reuse existing ones.
+            'name': f'TEST/MYBIZ/{uuid.uuid4().hex[:10]}',
             'employee_id': self.employee.id,
             'travel_purpose': 'Site visit',
             'from_city': 'Ghaziabad',
@@ -182,6 +187,15 @@ class TestMybizPushFixes(_MybizRequestCase):
             option._recall_mybiz_service()
         with self.assertRaises(UserError):
             request.action_recall_all_mybiz_services()
+
+    @patch(PUSH_POST)
+    def test_duplicate_request_number_blocks_push(self, mock_post):
+        first = self._request()
+        second = self._request(name=first.name)
+        second._push_to_mybiz()
+        mock_post.assert_not_called()
+        self.assertEqual(second.mybiz_status, 'failed')
+        self.assertIn('unique number', second.mybiz_error)
 
 
 @tagged('post_install', '-at_install')
