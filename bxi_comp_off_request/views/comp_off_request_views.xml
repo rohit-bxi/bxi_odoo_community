@@ -96,16 +96,37 @@
         <field name="context">{}</field>
     </record>
 
-    <menuitem id="menu_hr_comp_off_root"
-          name="Comp-Off"
-          parent="bxi_shift_management.menu_shift_management_root"
-          sequence="35"
-          groups="group_comp_off_user,group_comp_off_manager,hr_holidays.group_hr_holidays_manager"/>
+    <menuitem
+        id="menu_hr_comp_off_root"
+        name="Comp-Off"
+        parent="bxi_shift_management.menu_shift_management_root"
+        sequence="35"
+        groups="bxi_comp_off_request.group_comp_off_user,bxi_comp_off_request.group_comp_off_manager,bxi_comp_off_request.group_comp_off_admin,hr_holidays.group_hr_holidays_manager"
+    />
+    <menuitem
+        id="menu_hr_comp_off_my_request"
+        name="My Comp-Off Requests"
+        parent="menu_hr_comp_off_root"
+        action="action_hr_comp_off_my_request"
+        sequence="10"
+        groups="bxi_comp_off_request.group_comp_off_user"
+    />
+    <menuitem
+        id="menu_hr_comp_off_team_request"
+        name="Team Comp-Off Requests"
+        parent="menu_hr_comp_off_root"
+        action="action_hr_comp_off_team_request"
+        sequence="20"
+        groups="bxi_comp_off_request.group_comp_off_manager"
+    />
+    <menuitem
+        id="menu_hr_comp_off_all_request"
+        name="All Comp-Off Requests"
+        parent="menu_hr_comp_off_root"
+        action="action_hr_comp_off_all_request"
+        sequence="30"
+        groups="bxi_comp_off_request.group_comp_off_admin,hr_holidays.group_hr_holidays_manager"
+    />
 
-<menuitem id="menu_hr_comp_off_requests"
-          name="Comp-Off Requests"
-          parent="menu_hr_comp_off_root"
-          action="action_hr_comp_off_request"
-          sequence="10"
-          groups="group_comp_off_user,group_comp_off_manager,hr_holidays.group_hr_holidays_manager"/>
-        </odoo>
+
+</odoo>
