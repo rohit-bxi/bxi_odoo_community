@@ -81,7 +81,11 @@ class BxiMyBizConfig(models.Model):
             # reached. myBiz validates the payload before the credentials, so
             # those are only proven by the first real push.
             if resp.status_code in (200, 201, 204, 405):
-                status = f'✅ Connection successful (HTTP {resp.status_code})'
+                status = (
+                    f'✅ Connection successful (HTTP {resp.status_code}) — myBiz is '
+                    'reachable. The Partner API Key / Client Code are only verified '
+                    'by the first real push.'
+                )
                 msg_type = 'success'
             elif resp.status_code in (401, 403):
                 status = (

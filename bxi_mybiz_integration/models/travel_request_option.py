@@ -53,11 +53,13 @@ class TravelRequestOption(models.Model):
 
     def _recall_mybiz_service(self):
         self.ensure_one()
-        if not self.mybiz_ref:
-            raise UserError(
-                _('This segment has not been pushed to myBiz yet — nothing to recall.'))
         if self.mybiz_status == 'cancelled':
             raise UserError(_('This segment is already recalled/cancelled.'))
+        # mybiz_ref is assigned while the payload is built, before myBiz
+        # answers; only 'confirmed' means myBiz accepted this service.
+        if not self.mybiz_ref or self.mybiz_status != 'confirmed':
+            raise UserError(
+                _('This segment has not been pushed to myBiz yet — nothing to recall.'))
 
         # sudo: any HR/manager approver must be able to trigger a recall even
         # if they don't personally have access to the myBiz Configuration model.
@@ -82,13 +84,26 @@ class TravelRequestOption(models.Model):
             response = requests.post(url, json=payload, headers=headers, timeout=20)
             response.raise_for_status()
             resp_data = response.json()
+        except requests.exceptions.HTTPError as e:
+            resp = e.response
+            status = resp.status_code if resp is not None else None
+            body = resp.text if resp is not None else ''
+            if status == 403 and 'Access Denied' in body:
+                raise UserError(_(
+                    'MakeMyTrip blocked the recall (HTTP 403 Access Denied). MMT has not '
+                    'whitelisted this Odoo server\'s IP for the recall API '
+                    '(%s). Ask the MMT myBiz team to whitelist it.'
+                ) % url) from e
+            raise UserError(_('myBiz recall failed: HTTP %(status)s %(body)s',
+                              status=status, body=body[:300])) from e
         except requests.exceptions.RequestException as e:
-            raise UserError(_('myBiz recall request failed: %s') % str(e))
+            raise UserError(_('myBiz recall request failed: %s') % str(e)) from e
 
         if str(resp_data.get('status', '')).lower() != 'success':
             raise UserError(_('myBiz recall failed: %s') % (resp_data.get('message') or resp_data))
 
         self.write({'mybiz_status': 'cancelled'})
+        self.travel_request_id._update_mybiz_state_after_recall()
         self.travel_request_id.message_post(
             body=Markup(_('🔁 myBiz service <b>%s</b> (%s) was recalled: %s')) % (
                 self.mybiz_ref, self.option_type, resp_data.get(

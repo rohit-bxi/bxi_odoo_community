@@ -38,7 +38,7 @@
                         type="object"
                         icon="fa-undo"
                         class="btn-link"
-                        invisible="not mybiz_ref or mybiz_status == 'cancelled'"
+                        invisible="not mybiz_ref or mybiz_status != 'confirmed'"
                         confirm="Recall this service from myBiz?"/>
             </xpath>
 

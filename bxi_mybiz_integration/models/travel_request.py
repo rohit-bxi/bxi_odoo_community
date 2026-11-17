@@ -9,13 +9,12 @@ from markupsafe import Markup
 from odoo import fields, models, _
 from odoo.exceptions import UserError
 
+from .mmt_codes import resolve_airport_code, resolve_city_code
+
 _logger = logging.getLogger(__name__)
 
-TRIP_TYPE_MAP = {
-    'one_way': 'ONWARDS',
-    'round_trip': 'ROUND_TRIP',
-    'multi_city': 'MULTICITY',
-}
+TRIP_TYPE_ONWARDS = 'ONWARDS'
+TRIP_TYPE_ROUND_TRIP = 'ROUND_TRIP'
 TRAVEL_CLASS_MAP = {
     'economy': 'ECONOMY',
     'premium_economy': 'PREMIUM_ECONOMY',
@@ -57,43 +56,79 @@ class TravelRequest(models.Model):
     # Payload construction (real myBiz contract)
     # ──────────────────────────────────────────────────────────────
 
-    def _build_mybiz_pax_details(self):
+    def _build_mybiz_pax_details(self, problems=None):
         self.ensure_one()
+        email = self.employee_id.work_email or self.email or ''
+        if not email and problems is not None:
+            problems.append(_(
+                'Traveller %s has no email address (set the employee\'s Work Email).'
+            ) % (self.employee_id.name or ''))
         return [{
             'name': self.employee_id.name,
-            'email': self.employee_id.work_email or self.email or '',
+            'email': email,
             'isPrimaryPax': True,
         }]
 
-    def _build_mybiz_flight_service(self, opt):
-        """Build one FLIGHT service entry from a travel.request.option, or None."""
-        opt._ensure_mybiz_service_id()
+    def _mybiz_airport(self, value, country, problems, label):
+        code = resolve_airport_code(value, country.name)
+        if not code and problems is not None:
+            problems.append(_(
+                '%(label)s: no airport found for "%(value)s". Enter the 3-letter IATA '
+                'code (e.g. DEL, BOM) in the travel segment.',
+                label=label, value=value or '',
+            ))
+        return code or value or ''
 
-        origin_country = opt.origin_country_id or self.from_country
-        dest_country = opt.destination_country_id or self.to_country
-        departure = opt.departure_datetime
-        arrival = opt.arrival_datetime or opt.departure_datetime
-
-        journey = [{
+    def _mybiz_journey(self, origin, origin_country, origin_city, dest, dest_country,
+                       dest_city, departure, arrival, problems, label):
+        return {
             'from': {
-                'airportCode': opt.origin_code or self.from_city,
-                'cityName': self.from_city,
+                'airportCode': self._mybiz_airport(
+                    origin, origin_country, problems, _('%s origin') % label),
+                'cityName': origin_city,
                 'countryCode': origin_country.code or '',
                 'countryName': origin_country.name or '',
             },
             'to': {
-                'airportCode': opt.destination_code or self.to_city,
-                'cityName': self.to_city,
+                'airportCode': self._mybiz_airport(
+                    dest, dest_country, problems, _('%s destination') % label),
+                'cityName': dest_city,
                 'countryCode': dest_country.code or '',
                 'countryName': dest_country.name or '',
             },
-            'departureDate': _epoch_ms(departure) or _epoch_ms(self.departure_date),
-            'arrivalDate': _epoch_ms(arrival) or _epoch_ms(self.departure_date),
-        }]
+            'departureDate': _epoch_ms(departure),
+            'arrivalDate': _epoch_ms(arrival or departure),
+        }
+
+    def _build_mybiz_flight_service(self, opt, problems=None, with_return=False):
+        """Build one FLIGHT service entry from a travel.request.option.
+
+        Each segment is its own service (so it can be recalled on its own) and
+        is sent as ONWARDS. The one exception: a round-trip request with a
+        single flight segment also gets the return leg, as ROUND_TRIP.
+        """
+        opt._ensure_mybiz_service_id()
+        label = _('Flight %s→%s') % (opt.origin_code or self.from_city,
+                                      opt.destination_code or self.to_city)
+
+        origin_country = opt.origin_country_id or self.from_country
+        dest_country = opt.destination_country_id or self.to_country
+        departure = opt.departure_datetime or self.departure_date
+        journeys = [self._mybiz_journey(
+            opt.origin_code or self.from_city, origin_country, self.from_city,
+            opt.destination_code or self.to_city, dest_country, self.to_city,
+            departure, opt.arrival_datetime, problems, label,
+        )]
+        if with_return:
+            journeys.append(self._mybiz_journey(
+                opt.destination_code or self.to_city, dest_country, self.to_city,
+                opt.origin_code or self.from_city, origin_country, self.from_city,
+                self.return_date, None, problems, _('%s return') % label,
+            ))
 
         return {
             'serviceId': opt.mybiz_ref,
-            'tripType': TRIP_TYPE_MAP.get(self.trip_type or 'round_trip', 'ONWARDS'),
+            'tripType': TRIP_TYPE_ROUND_TRIP if with_return else TRIP_TYPE_ONWARDS,
             'travelClass': TRAVEL_CLASS_MAP.get(
                 opt.travel_class or self.travel_class or 'economy', 'ECONOMY'),
             'paxDetails': {
@@ -101,20 +136,27 @@ class TravelRequest(models.Model):
                 'child': {'count': 0, 'age': []},
                 'infant': 0,
             },
-            'journeyDetails': journey,
+            'journeyDetails': journeys,
         }
 
-    def _build_mybiz_hotel_service(self, opt):
-        """Build one HOTEL service entry from a travel.request.option, or None."""
+    def _build_mybiz_hotel_service(self, opt, problems=None):
+        """Build one HOTEL service entry from a travel.request.option."""
         opt._ensure_mybiz_service_id()
         checkin = opt.checkin_date or self.departure_date
         checkout = opt.checkout_date or self.return_date or self.departure_date
         hotel_country = self.to_country
+        city = opt.hotel_city or self.hotel_city or self.to_city
+        resolved = resolve_city_code(city, hotel_country.name)
+        if not resolved and problems is not None:
+            problems.append(_(
+                'Hotel: no MakeMyTrip city found for "%s". Check the hotel city spelling.'
+            ) % (city or ''))
+        city_code, city_name = resolved or (city, city)
 
         return {
             'serviceId': opt.mybiz_ref,
-            'cityCode': opt.hotel_city or self.hotel_city or self.to_city,
-            'cityName': opt.hotel_city or self.hotel_city or self.to_city,
+            'cityCode': city_code,
+            'cityName': city_name,
             'countryCode': hotel_country.code or '',
             'countryName': hotel_country.name or '',
             'checkin': _epoch_ms(checkin),
@@ -128,8 +170,7 @@ class TravelRequest(models.Model):
 
     def _has_mybiz_services(self):
         """True when the request has something myBiz can book (a flight or a
-        hotel). Mirrors the service selection in _build_mybiz_payload without
-        creating its auto-generated options."""
+        hotel). Mirrors _prepare_mybiz_options without creating anything."""
         self.ensure_one()
         return bool(
             self.travel_option_ids.filtered(lambda o: o.option_type in ('flight', 'hotel'))
@@ -137,43 +178,62 @@ class TravelRequest(models.Model):
             or self.hotel_required
         )
 
-    def _build_mybiz_payload(self):
-        """Build the JSON payload for the myBiz Travel Request API (real contract)."""
+    def _prepare_mybiz_options(self):
+        """Create the flight/hotel segment from the header fields when the
+        request asks for one but has no structured segment, so it is not
+        silently dropped."""
+        self.ensure_one()
+        Option = self.env['travel.request.option']
+        options = self.travel_option_ids
+        if self.mode_of_travel == 'flight' and not options.filtered(
+                lambda o: o.option_type == 'flight'):
+            Option.create({
+                'travel_request_id': self.id,
+                'option_type': 'flight',
+                'origin_code': self.from_city,
+                'destination_code': self.to_city,
+                'departure_datetime': self.departure_date,
+                'travel_class': self.travel_class,
+                'description': 'Auto-generated from header fields for myBiz push.',
+            })
+        if self.hotel_required and not options.filtered(lambda o: o.option_type == 'hotel'):
+            Option.create({
+                'travel_request_id': self.id,
+                'option_type': 'hotel',
+                'hotel_city': self.hotel_city or self.to_city,
+                'hotel_grade': self.hotel_grade,
+                'checkin_date': self.hotel_checkin or self.departure_date,
+                'checkout_date': self.hotel_checkout or self.return_date,
+                'rooms': self.hotel_rooms or 1,
+                'description': 'Auto-generated from header fields for myBiz push.',
+            })
+
+    def _get_mybiz_service_options(self):
+        self.ensure_one()
+        return self.travel_option_ids.filtered(lambda o: o.option_type in ('flight', 'hotel'))
+
+    def _build_mybiz_payload(self, problems=None):
+        """Build the JSON payload for the myBiz Travel Request API (real contract).
+
+        When ``problems`` is a list, anything myBiz would reject (unknown
+        airport/city, missing email, ...) is appended to it as a message.
+        """
         self.ensure_one()
         rec = self
 
         services = {}
-
         flight_opts = rec.travel_option_ids.filtered(lambda o: o.option_type == 'flight')
-        if not flight_opts and rec.mode_of_travel == 'flight':
-            # No structured segment recorded — synthesize one from the header fields
-            # so the request is not silently dropped.
-            flight_opts = self.env['travel.request.option'].create([{
-                'travel_request_id': rec.id,
-                'option_type': 'flight',
-                'origin_code': rec.from_city,
-                'destination_code': rec.to_city,
-                'departure_datetime': rec.departure_date,
-                'travel_class': rec.travel_class,
-                'description': 'Auto-generated from header fields for myBiz push.',
-            }])
         if flight_opts:
-            services['FLIGHT'] = [rec._build_mybiz_flight_service(opt) for opt in flight_opts]
+            with_return = (len(flight_opts) == 1 and rec.trip_type == 'round_trip'
+                           and bool(rec.return_date))
+            services['FLIGHT'] = [
+                rec._build_mybiz_flight_service(opt, problems, with_return=with_return)
+                for opt in flight_opts]
 
         hotel_opts = rec.travel_option_ids.filtered(lambda o: o.option_type == 'hotel')
-        if not hotel_opts and rec.hotel_required:
-            hotel_opts = self.env['travel.request.option'].create([{
-                'travel_request_id': rec.id,
-                'option_type': 'hotel',
-                'hotel_city': rec.hotel_city or rec.to_city,
-                'hotel_grade': rec.hotel_grade,
-                'checkin_date': rec.hotel_checkin or rec.departure_date,
-                'checkout_date': rec.hotel_checkout or rec.return_date,
-                'rooms': rec.hotel_rooms or 1,
-                'description': 'Auto-generated from header fields for myBiz push.',
-            }])
         if hotel_opts:
-            services['HOTEL'] = [rec._build_mybiz_hotel_service(opt) for opt in hotel_opts]
+            services['HOTEL'] = [rec._build_mybiz_hotel_service(opt, problems)
+                                 for opt in hotel_opts]
 
         approver_details = []
         if rec.manager_id:
@@ -195,7 +255,7 @@ class TravelRequest(models.Model):
                 'platform': 'DESKTOP',
             },
             'travellerDetails': {
-                'paxDetails': rec._build_mybiz_pax_details(),
+                'paxDetails': rec._build_mybiz_pax_details(problems),
             },
             'services': services,
             'reasonForTravel': {
@@ -211,6 +271,26 @@ class TravelRequest(models.Model):
     # ──────────────────────────────────────────────────────────────
     # Push / Recall
     # ──────────────────────────────────────────────────────────────
+
+    def _record_mybiz_push_failure(self, err, raw_response=None):
+        """Mark the push as failed on the request and its segments, and say so
+        in the chatter so HR sees it without opening the myBiz tab."""
+        self.ensure_one()
+        vals = {
+            'mybiz_status': 'failed',
+            'mybiz_error': err,
+            'mybiz_sync_date': fields.Datetime.now(),
+        }
+        if raw_response is not None:
+            vals['mybiz_raw_response'] = raw_response
+        self.write(vals)
+        self._get_mybiz_service_options().filtered(
+            lambda o: o.mybiz_status not in ('confirmed', 'cancelled')
+        ).write({'mybiz_status': 'failed'})
+        self.message_post(
+            body=_('❌ myBiz Push Failed: %s') % err,
+            subtype_xmlid='mail.mt_note',
+        )
 
     def _push_to_mybiz(self):
         """Push the approved travel request to myBiz.
@@ -250,7 +330,15 @@ class TravelRequest(models.Model):
             ) % self.company_id.name)
             return
 
-        payload = self._build_mybiz_payload()
+        self._prepare_mybiz_options()
+        problems = []
+        payload = self._build_mybiz_payload(problems=problems)
+        if problems:
+            self._record_mybiz_push_failure(
+                _('Not sent — fix these and click Retry: %s') % '; '.join(problems))
+            _logger.warning('myBiz push blocked for %s: %s', self.name, problems)
+            return
+
         url = config._get_endpoint('travel_request_endpoint')
         headers = config._get_auth_headers()
 
@@ -261,76 +349,108 @@ class TravelRequest(models.Model):
             response = requests.post(url, json=payload, headers=headers, timeout=30)
             response.raise_for_status()
             resp_data = response.json()
-
-            is_success = str(resp_data.get('status', '')).lower() == 'success'
-            self.write({
-                'mybiz_travel_request_url': resp_data.get('travelRequestUrl') or False,
-                'mybiz_response_code': str(resp_data.get('responseCode') or ''),
-                'mybiz_response_message': resp_data.get('message') or '',
-                'mybiz_status': 'pending' if is_success else 'failed',
-                'mybiz_sync_date': fields.Datetime.now(),
-                'mybiz_error': False if is_success else (
-                    resp_data.get('message') or 'myBiz returned a non-success status.'),
-                'mybiz_raw_response': json.dumps(resp_data, indent=2),
-            })
-            if is_success:
-                body = _('✅ Successfully pushed to MakeMyTrip myBiz.')
-                if resp_data.get('travelRequestUrl'):
-                    body = Markup('%s<br/><a href="%s" target="_blank">%s</a>') % (
-                        body, resp_data['travelRequestUrl'], _('View on myBiz'))
-                self.message_post(body=body, subtype_xmlid='mail.mt_note')
-                _logger.info('myBiz push successful for %s', self.name)
-            else:
-                self.message_post(
-                    body=_('❌ myBiz Push Failed: %s') % (resp_data.get('message') or resp_data),
-                    subtype_xmlid='mail.mt_note',
-                )
-                _logger.error('myBiz push rejected for %s: %s', self.name, resp_data)
-
         except requests.exceptions.HTTPError as e:
-            err = f'HTTP {e.response.status_code}: {e.response.text[:500]}'
-            self.write({
-                'mybiz_status': 'failed',
-                'mybiz_error': err,
-                'mybiz_sync_date': fields.Datetime.now(),
-                'mybiz_raw_response': e.response.text[:2000] if e.response else '',
-            })
-            self.message_post(
-                body=_('❌ myBiz Push Failed: %s') %
-                err, subtype_xmlid='mail.mt_note')
+            # A Response is falsy for 4xx/5xx, so compare against None.
+            body = e.response.text if e.response is not None else ''
+            code = e.response.status_code if e.response is not None else '?'
+            err = f'HTTP {code}: {body[:500]}'
+            self._record_mybiz_push_failure(err, raw_response=body[:2000])
             _logger.error('myBiz push HTTP error for %s: %s', self.name, err)
-
+            return
+        except requests.exceptions.Timeout:
+            err = ('Request timed out — myBiz did not respond within 30 seconds. '
+                   'Check on myBiz whether the request was created before retrying.')
+            self._record_mybiz_push_failure(err)
+            _logger.error('myBiz timeout for %s', self.name)
+            return
         except requests.exceptions.ConnectionError:
             err = 'Connection error — myBiz API unreachable. Check IP whitelisting.'
-            self.write({'mybiz_status': 'failed', 'mybiz_error': err,
-                       'mybiz_sync_date': fields.Datetime.now()})
+            self._record_mybiz_push_failure(err)
             _logger.error('myBiz connection error for %s', self.name)
-
-        except requests.exceptions.Timeout:
-            err = 'Request timed out — myBiz API did not respond within 30 seconds.'
-            self.write({'mybiz_status': 'failed', 'mybiz_error': err,
-                       'mybiz_sync_date': fields.Datetime.now()})
-            _logger.error('myBiz timeout for %s', self.name)
-
+            return
         except Exception as e:
             err = str(e)
-            self.write({'mybiz_status': 'failed', 'mybiz_error': err,
-                       'mybiz_sync_date': fields.Datetime.now()})
+            self._record_mybiz_push_failure(err)
             _logger.error('myBiz unexpected error for %s: %s', self.name, err)
+            return
+
+        is_success = str(resp_data.get('status', '')).lower() == 'success'
+        self.write({
+            'mybiz_travel_request_url': resp_data.get('travelRequestUrl') or False,
+            'mybiz_response_code': str(resp_data.get('responseCode') or ''),
+            'mybiz_response_message': resp_data.get('message') or '',
+            'mybiz_sync_date': fields.Datetime.now(),
+            'mybiz_raw_response': json.dumps(resp_data, indent=2),
+        })
+        if not is_success:
+            self._record_mybiz_push_failure(
+                resp_data.get('message') or 'myBiz returned a non-success status.')
+            _logger.error('myBiz push rejected for %s: %s', self.name, resp_data)
+            return
+
+        self._get_mybiz_service_options().write({'mybiz_status': 'confirmed'})
+        # myBiz publishes no status endpoint, so Odoo's part ends here: the
+        # request is approved and the traveller books it on myBiz.
+        self.write({
+            'mybiz_status': 'pending',
+            'mybiz_error': False,
+            'state': 'approved',
+        })
+        body = _('✅ Successfully pushed to MakeMyTrip myBiz.')
+        if resp_data.get('travelRequestUrl'):
+            body = Markup('%s<br/><a href="%s" target="_blank">%s</a>') % (
+                body, resp_data['travelRequestUrl'], _('View on myBiz'))
+        self.message_post(body=body, subtype_xmlid='mail.mt_note')
+        _logger.info('myBiz push successful for %s', self.name)
+
+    def _update_mybiz_state_after_recall(self):
+        """Cancel the request once every service sent to myBiz is recalled."""
+        for rec in self:
+            sent = rec._get_mybiz_service_options().filtered(
+                lambda o: o.mybiz_status in ('confirmed', 'cancelled'))
+            if sent and all(o.mybiz_status == 'cancelled' for o in sent):
+                rec.write({'mybiz_status': 'cancelled', 'state': 'cancelled'})
 
     def action_recall_all_mybiz_services(self):
-        """Recall every flight/hotel service already pushed to myBiz for this request."""
+        """Recall every flight/hotel service sent to myBiz for this request.
+
+        Each recall is a separate call to myBiz. A failure on one service must
+        not roll back the services myBiz has already recalled, so errors are
+        collected and reported instead of raised.
+        """
+        failures = []
         for rec in self:
-            pushed_options = rec.travel_option_ids.filtered(
-                lambda o: o.mybiz_ref and o.mybiz_status != 'cancelled'
-            )
-            if not pushed_options:
+            sent = rec._get_mybiz_service_options().filtered(
+                lambda o: o.mybiz_status == 'confirmed')
+            if not sent:
                 raise UserError(_('No myBiz services have been pushed for this request yet.'))
-            for opt in pushed_options:
-                opt._recall_mybiz_service()
-            if all(o.mybiz_status == 'cancelled' for o in rec.travel_option_ids.filtered(
-                    lambda o: o.mybiz_ref)):
-                rec.write({'mybiz_status': 'cancelled', 'state': 'cancelled'})
+            rec_failures = []
+            for opt in sent:
+                try:
+                    opt._recall_mybiz_service()
+                except Exception as e:  # noqa: BLE001 — keep the recalls that succeeded
+                    msg = e.args[0] if isinstance(e, UserError) else str(e)
+                    rec_failures.append(f'{opt.option_type} {opt.mybiz_ref}: {msg}')
+            if rec_failures:
+                rec.message_post(
+                    body=_('⚠️ Some myBiz services could not be recalled: %s')
+                    % '; '.join(rec_failures),
+                    subtype_xmlid='mail.mt_note',
+                )
+                failures += [f'{rec.name} / {f}' for f in rec_failures]
+        if failures:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('myBiz Recall'),
+                    'message': '\n'.join(failures),
+                    'type': 'warning',
+                    'sticky': True,
+                    'next': {'type': 'ir.actions.client', 'tag': 'soft_reload'},
+                },
+            }
+        return True
 
     def _sync_mybiz_status(self):
         """
