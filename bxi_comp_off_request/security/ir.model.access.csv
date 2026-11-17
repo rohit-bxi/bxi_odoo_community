@@ -1,3 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_hr_comp_off_user,hr.comp.off.request user,model_hr_comp_off_request,bxi_comp_off_request.group_comp_off_user,1,1,1,0
-access_hr_comp_off_manager,hr.comp.off.request manager,model_hr_comp_off_request,bxi_comp_off_request.group_comp_off_manager,1,1,1,1
+access_hr_comp_off_manager,hr.comp.off.request team manager,model_hr_comp_off_request,bxi_comp_off_request.group_comp_off_manager,1,1,1,0
+access_hr_comp_off_admin,hr.comp.off.request admin,model_hr_comp_off_request,bxi_comp_off_request.group_comp_off_admin,1,1,1,1

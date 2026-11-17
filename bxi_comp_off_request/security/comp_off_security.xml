@@ -1,21 +1,28 @@
 <odoo>
+
     <!-- Comp-Off User Group -->
     <record id="group_comp_off_user" model="res.groups">
         <field name="name">Comp-Off User</field>
     </record>
 
-    <!-- Comp-Off Manager Group -->
+    <!-- Comp-Off Team Manager Group -->
     <record id="group_comp_off_manager" model="res.groups">
-        <field name="name">Comp-Off Manager</field>
+        <field name="name">Comp-Off Team Manager</field>
         <field name="implied_ids"
                eval="[(4, ref('group_comp_off_user'))]"/>
     </record>
 
-    <!-- Users can access their own requests -->
+    <!-- Comp-Off Administrator Group -->
+    <record id="group_comp_off_admin" model="res.groups">
+        <field name="name">Comp-Off Administrator</field>
+        <field name="implied_ids"
+               eval="[(4, ref('group_comp_off_user'))]"/>
+    </record>
+
+    <!-- Own Requests -->
     <record id="rule_comp_off_own_requests" model="ir.rule">
         <field name="name">Comp-Off: Own Requests</field>
-        <field name="model_id"
-               ref="model_hr_comp_off_request"/>
+        <field name="model_id" ref="model_hr_comp_off_request"/>
         <field name="domain_force">
             [('employee_id.user_id', '=', user.id)]
         </field>
@@ -23,18 +30,59 @@
                eval="[(4, ref('group_comp_off_user'))]"/>
     </record>
 
-    <!-- Managers can access all requests -->
-    <record id="rule_comp_off_manager_requests" model="ir.rule">
-        <field name="name">Comp-Off: Manager Requests</field>
-        <field name="model_id"
-               ref="model_hr_comp_off_request"/>
+    <!-- Team Requests -->
+    <record id="rule_comp_off_team_requests" model="ir.rule">
+        <field name="name">Comp-Off: Team Requests</field>
+        <field name="model_id" ref="model_hr_comp_off_request"/>
+        <field name="domain_force">
+            [('employee_id.parent_id.user_id', '=', user.id)]
+        </field>
+        <field name="groups"
+               eval="[(4, ref('group_comp_off_manager'))]"/>
+    </record>
+
+    <!-- Admin: All Requests -->
+    <record id="rule_comp_off_admin_requests" model="ir.rule">
+        <field name="name">Comp-Off: All Requests</field>
+        <field name="model_id" ref="model_hr_comp_off_request"/>
         <field name="domain_force">[(1, '=', 1)]</field>
         <field name="groups"
                eval="[
-                   (4, ref('group_comp_off_manager')),
+                   (4, ref('group_comp_off_admin')),
                    (4, ref('hr_holidays.group_hr_holidays_manager'))
                ]"/>
     </record>
+
+    <!-- My Comp-Off Requests -->
+    <record id="action_hr_comp_off_my_request" model="ir.actions.act_window">
+        <field name="name">My Comp-Off Requests</field>
+        <field name="res_model">hr.comp.off.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_hr_comp_off_request_list"/>
+        <field name="domain">[('employee_id.user_id', '=', uid)]</field>
+    </record>
+
+    <!-- Team Comp-Off Requests -->
+    <record id="action_hr_comp_off_team_request" model="ir.actions.act_window">
+        <field name="name">Team Comp-Off Requests</field>
+        <field name="res_model">hr.comp.off.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_hr_comp_off_request_list"/>
+        <field name="domain">
+            ['|',
+                ('employee_id.user_id', '=', uid),
+                ('employee_id.parent_id.user_id', '=', uid)
+            ]
+        </field>
+    </record>
+
+    <!-- All Comp-Off Requests -->
+    <record id="action_hr_comp_off_all_request" model="ir.actions.act_window">
+        <field name="name">All Comp-Off Requests</field>
+        <field name="res_model">hr.comp.off.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_hr_comp_off_request_list"/>
+    </record>
+
+
 </odoo>
-
-
