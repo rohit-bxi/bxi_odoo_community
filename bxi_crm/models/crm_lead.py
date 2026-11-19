@@ -11,6 +11,7 @@ class CrmLead(models.Model):
         compute="_compute_company_currency",
         compute_sudo=True,
         readonly=True,
+        precompute=False,
     )
 
     presales_poc_id = fields.Many2one(
@@ -177,6 +178,7 @@ class CrmLead(models.Model):
                 "default_currency_id": target_currency.id if target_currency else False,
                 "default_contract_amount": contract_amount,
                 "default_client_ids": [(6, 0, self.partner_id.ids)],
+                "default_company_id": company.id if company else False,
             },
         }
 

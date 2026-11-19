@@ -1,3 +1,4 @@
+from . import asset_category
 from . import asset_stage
 from . import asset_management
 from . import vendors

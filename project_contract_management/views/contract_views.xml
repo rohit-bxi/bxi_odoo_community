@@ -156,14 +156,6 @@
                         </button>
 
                         <button type="object"
-                                name="action_view_project_allocations"
-                                class="oe_stat_button"
-                                icon="fa-tasks">
-
-                            <field name="project_allocation_count" widget="statinfo" string="Allocations"/>
-                        </button>
-
-                        <button type="object"
                                 name="action_view_clients"
                                 class="oe_stat_button"
                                 icon="fa-users">

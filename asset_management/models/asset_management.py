@@ -22,6 +22,13 @@ class AssetType(models.Model):
     _description = 'Asset Type'
 
     name = fields.Char(string='Name', required=True)
+    category_id = fields.Many2one(
+        'asset.category',
+        string='Asset Category',
+        ondelete='restrict',
+        index=True,
+        help="Category this asset type belongs to"
+    )
     color = fields.Integer(string='Color Index', help="Color index for this asset type")
 
     # Depreciation Settings
@@ -29,7 +36,7 @@ class AssetType(models.Model):
         ('monthly', 'Monthly'),
         ('yearly', 'Yearly'),
         ('days', 'Days')
-    ], string='Depreciation Frequency', required=True,
+    ], string='Depreciation Frequency', required=True, default='monthly',
         help="How often depreciation is calculated (Yearly, Monthly, or Daily)")
 
     depreciation_method = fields.Selection([
@@ -37,17 +44,17 @@ class AssetType(models.Model):
         ('percentage', 'Percentage'),
         ('straight_line', 'Straight-Line (SLM)'),
         ('declining_balance', 'Declining Balance'),
-    ], string='Depreciation Method', required=True,
+    ], string='Depreciation Method', required=True, default='straight_line',
         help="Method used to calculate depreciation amount")
 
-    depreciation_rate = fields.Float(string='Depreciation Rate',
+    depreciation_rate = fields.Float(string='Depreciation Rate', default=0.0,
         help="The percentage or fixed amount used to calculate depreciation")
     depreciation_start_delay = fields.Integer(string='Depreciation Start Delay',
         help="Time duration before depreciation begins after asset acquisition")
     depreciation_basis = fields.Selection([
         ('real_value', 'Purchase Price'),
         ('depreciation_value', 'Book Price')
-    ], string='Depreciation Basis', required=True,
+    ], string='Depreciation Basis', required=True, default='real_value',
         help="Whether depreciation is applied to the adjusted or original value")
     maximum_depreciation_entries = fields.Integer(string="Maximum Depreciation Entries",
         help="Maximum number of depreciation entries allowed")
@@ -105,6 +112,9 @@ class Asset(models.Model):
                                   help="Select the product used in this asset")
     asset_type_id = fields.Many2one('asset.type', string="Asset Type", tracking=True,
                                      help="Classification of the asset")
+    category_id = fields.Many2one('asset.category', string="Asset Category",
+                                  related='asset_type_id.category_id', store=True, readonly=True,
+                                  index=True, help="Category inherited from the Asset Type")
     asset_image = fields.Image(string="Asset Photo", max_width=1024, max_height=1024)
 
     # ─── Asset Details ────────────────────────────────────────────────────────

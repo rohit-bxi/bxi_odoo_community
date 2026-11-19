@@ -11,11 +11,15 @@
             <form string="Asset Type">
                 <sheet>
                     <div class="oe_title">
+                        <label for="name" string="Asset Type Name"/>
                         <h1><field name="name" placeholder="Asset Type Name"/></h1>
                     </div>
                     <group>
-                        <group string="Depreciation Rules">
+                        <group string="General Information">
+                            <field name="category_id" required="1" options="{'no_create_edit': False}"/>
                             <field name="color" widget="color_picker"/>
+                        </group>
+                        <group string="Depreciation Rules">
                             <field name="depreciation_frequency"/>
                             <field name="depreciation_method"/>
                             <field name="depreciation_rate"
@@ -27,10 +31,14 @@
                             <field name="maximum_depreciation_entries"/>
                             <field name="salvage_value_rate"/>
                         </group>
-                        <group string="Default Accounting Accounts">
+                    </group>
+                    <group string="Default Accounting Accounts">
+                        <group>
                             <field name="fixed_asset_account_id"/>
                             <field name="asset_clearing_account_id"/>
                             <field name="depreciation_expense_account_id"/>
+                        </group>
+                        <group>
                             <field name="accumulated_depreciation_account_id"/>
                             <field name="asset_journal_id"/>
                         </group>
@@ -46,6 +54,7 @@
         <field name="arch" type="xml">
             <list>
                 <field name="name"/>
+                <field name="category_id"/>
                 <field name="color" widget="color_picker"/>
                 <field name="depreciation_frequency"/>
                 <field name="depreciation_method"/>
@@ -54,6 +63,20 @@
                 <field name="fixed_asset_account_id"/>
                 <field name="depreciation_expense_account_id"/>
             </list>
+        </field>
+    </record>
+
+    <record id="view_asset_type_search" model="ir.ui.view">
+        <field name="name">asset.type.search</field>
+        <field name="model">asset.type</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="category_id"/>
+                <group>
+                    <filter string="Asset Category" name="group_by_category" context="{'group_by': 'category_id'}"/>
+                </group>
+            </search>
         </field>
     </record>
 
@@ -172,6 +195,7 @@
                         <!-- Left: Asset Details -->
                         <group string="Asset Details">
                             <field name="asset_type_id"/>
+                            <field name="category_id"/>
                             <field name="product_id"/>
                             <field name="serial_number"/>
                             <field name="barcode"/>
@@ -388,6 +412,7 @@
                 <field name="name"/>
                 <field name="asset_name"/>
                 <field name="asset_type_id"/>
+                <field name="category_id" optional="show"/>
                 <field name="serial_number" optional="show"/>
                 <field name="department_id" optional="show"/>
                 <field name="employee_id" optional="show"/>
@@ -484,6 +509,8 @@
                             context="{'group_by': 'state'}"/>
                     <filter string="Operational Status" name="group_by_status"
                             context="{'group_by': 'status'}"/>
+                    <filter string="Asset Category" name="group_by_asset_category"
+                            context="{'group_by': 'category_id'}"/>
                     <filter string="Asset Type" name="group_by_asset_type"
                             context="{'group_by': 'asset_type_id'}"/>
                     <filter string="Department" name="group_by_dept"
@@ -820,6 +847,8 @@
         <field name="name">Asset Types</field>
         <field name="res_model">asset.type</field>
         <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_asset_type_search"/>
+        <field name="context">{'search_default_group_by_category': 1}</field>
     </record>
 
     <!-- Smart button sub-actions (for stat buttons on form) -->

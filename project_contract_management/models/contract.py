@@ -1,7 +1,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from odoo.tools import float_compare
-from datetime import date
+from datetime import date, timedelta
 import re
 
 
@@ -59,12 +59,6 @@ class ProjectContract(models.Model):
 
     project_count = fields.Integer(compute="_compute_counts")
     client_count = fields.Integer(compute="_compute_counts")
-    project_allocation_ids = fields.One2many(
-        'project.allocation',
-        'contract_id',
-        string="Project Allocations",
-    )
-    project_allocation_count = fields.Integer(compute="_compute_counts", string="Allocations Count")
 
     contract_start_date = fields.Date("Start Date", tracking=True)
 
@@ -516,36 +510,11 @@ class ProjectContract(models.Model):
 
         return res
 
-    @api.depends('project_ids', 'client_ids', 'project_allocation_ids')
+    @api.depends('project_ids', 'client_ids')
     def _compute_counts(self):
         for rec in self:
             rec.project_count = len(rec.project_ids)
             rec.client_count = len(rec.client_ids)
-            rec.project_allocation_count = len(rec.project_allocation_ids)
-
-    def action_view_project_allocations(self):
-        self.ensure_one()
-        context = {
-            'default_contract_id': self.id,
-            'default_partner_id': self.client_ids[0].id if self.client_ids else False,
-            'default_name': self.name,
-            'default_billing_amount': self.contract_amount,
-            'default_currency_id': self.currency_id.id if self.currency_id else False,
-            'default_date_start': self.contract_start_date,
-            'default_date': self.contract_end_date,
-            'default_company_id': self.company_id.id if self.company_id else False,
-        }
-        if self.sale_order_ids:
-            context['default_sale_order_id'] = self.sale_order_ids[0].id
-
-        return {
-            'name': _('Project Allocations'),
-            'type': 'ir.actions.act_window',
-            'res_model': 'project.allocation',
-            'view_mode': 'list,form',
-            'domain': [('contract_id', '=', self.id)],
-            'context': context,
-        }
 
     def action_view_projects(self):
         self.ensure_one()
@@ -716,23 +685,53 @@ class ProjectProject(models.Model):
     )
     account_lead_id = fields.Many2one(
         'hr.employee',
-        string="Account Lead",
+        string="Account Head",
         tracking=True,
     )
     delivery_lead_id = fields.Many2one(
         'hr.employee',
-        string="Delivery Lead",
+        string="Delivery Head",
         tracking=True,
     )
     practice_lead_id = fields.Many2one(
         'hr.employee',
-        string="Practice Lead",
+        string="Practice Head",
         tracking=True,
     )
     allocation_ids = fields.One2many(
         'project.resource.allocation',
         'project_id',
         string="Allocated Resources",
+    )
+    employee_allocation_ids = fields.One2many(
+        'project.resource.allocation',
+        'project_id',
+        string="Employee Allocations",
+        domain=[('resource_type', '=', 'employee')],
+    )
+    hardware_allocation_ids = fields.One2many(
+        'project.resource.allocation',
+        'project_id',
+        string="Hardware Allocations",
+        domain=[('resource_type', '=', 'hardwares')],
+    )
+    license_allocation_ids = fields.One2many(
+        'project.resource.allocation',
+        'project_id',
+        string="License Allocations",
+        domain=[('resource_type', '=', 'licenses')],
+    )
+    ssd_allocation_ids = fields.One2many(
+        'project.resource.allocation',
+        'project_id',
+        string="SSD Allocations",
+        domain=[('resource_type', '=', 'ssd')],
+    )
+    other_allocation_ids = fields.One2many(
+        'project.resource.allocation',
+        'project_id',
+        string="Other Allocations",
+        domain=[('resource_type', '=', 'others')],
     )
     total_allocation_amount = fields.Monetary(
         string="Total Allocated Amount",
@@ -747,26 +746,88 @@ class ProjectProject(models.Model):
         currency_field='currency_id',
     )
 
-    @api.depends('allocation_ids.amount')
+    @api.depends('allocation_ids.amount',
+                 'employee_allocation_ids.amount',
+                 'hardware_allocation_ids.amount',
+                 'license_allocation_ids.amount',
+                 'ssd_allocation_ids.amount',
+                 'other_allocation_ids.amount')
     def _compute_total_allocation_amount(self):
         for rec in self:
-            rec.total_allocation_amount = sum(rec.allocation_ids.mapped('amount'))
+            all_allocs = (
+                rec.employee_allocation_ids |
+                rec.hardware_allocation_ids |
+                rec.license_allocation_ids |
+                rec.ssd_allocation_ids |
+                rec.other_allocation_ids |
+                rec.allocation_ids
+            )
+            rec.total_allocation_amount = sum(all_allocs.mapped('amount'))
 
-    @api.depends('allocation_ids.margin')
+    @api.depends('billing_amount', 'total_allocation_amount',
+                 'allocation_ids.amount',
+                 'employee_allocation_ids.amount',
+                 'hardware_allocation_ids.amount',
+                 'license_allocation_ids.amount',
+                 'ssd_allocation_ids.amount',
+                 'other_allocation_ids.amount')
     def _compute_total_margin(self):
         for rec in self:
-            rec.total_margin = sum(rec.allocation_ids.mapped('margin'))
+            rec.total_margin = (rec.billing_amount or 0.0) - (rec.total_allocation_amount or 0.0)
 
-    @api.constrains('allocation_ids', 'billing_amount')
-    def _check_total_allocation_amount(self):
-        for rec in self:
-            if rec.billing_amount and rec.allocation_ids:
-                total = sum(rec.allocation_ids.mapped('amount'))
-                if float_compare(total, rec.billing_amount, precision_digits=2) > 0:
-                    raise ValidationError(
-                        _("The total allocated amount (%(total)s) cannot exceed the project's Billing Amount (%(billing)s).",
-                          total=f"{total:,.2f}", billing=f"{rec.billing_amount:,.2f}")
-                    )
+    @api.onchange('employee_allocation_ids', 'hardware_allocation_ids',
+                  'license_allocation_ids', 'ssd_allocation_ids',
+                  'other_allocation_ids', 'billing_amount', 'currency_id')
+    def _onchange_resequence_allocations_and_margins(self):
+        all_allocs = (
+            self.employee_allocation_ids |
+            self.hardware_allocation_ids |
+            self.license_allocation_ids |
+            self.ssd_allocation_ids |
+            self.other_allocation_ids
+        )
+        if not all_allocs:
+            self.total_allocation_amount = 0.0
+            self.total_margin = self.billing_amount or 0.0
+            return
+
+        # Assign sequence to unsequenced lines
+        existing_seqs = [a.sequence for a in all_allocs if a.sequence]
+        max_seq = max(existing_seqs) if existing_seqs else 0
+        for alloc in all_allocs:
+            if not alloc.sequence:
+                max_seq += 1
+                alloc.sequence = max_seq
+
+        # Sort allocations by sequence, then id
+        sorted_allocs = all_allocs.sorted(
+            key=lambda r: (r.sequence or 0, r.id if isinstance(r.id, int) else 9999999)
+        )
+
+        running_margin = self.billing_amount or 0.0
+        total_alloc = 0.0
+        target_curr = self.currency_id or self.company_id.currency_id or self.env.company.currency_id
+        for alloc in sorted_allocs:
+            if alloc.resource_type in ('hardwares', 'licenses'):
+                alloc.amount = (alloc.vendor_price or 0.0) * (alloc.qty or 0.0)
+            elif alloc.resource_type == 'ssd':
+                target_date = alloc.start_date or self.date_start
+                ssd_amt = self.env['project.resource.allocation']._convert_inr_to_target_currency(
+                    2500.0, target_curr, target_date, self.company_id
+                )
+                alloc.amount = ssd_amt
+                alloc.vendor_price = ssd_amt
+                alloc.allocation_percentage = 0.0
+            else:
+                billing = self.billing_amount or 0.0
+                alloc.amount = billing * ((alloc.allocation_percentage or 0.0) / 100.0)
+
+            total_alloc += (alloc.amount or 0.0)
+            running_margin -= (alloc.amount or 0.0)
+            alloc.margin = running_margin
+
+        self.total_allocation_amount = total_alloc
+        self.total_margin = (self.billing_amount or 0.0) - total_alloc
 
     @api.constrains('contract_ids')
     def _check_contract_ids_single(self):
@@ -1087,411 +1148,19 @@ class ProjectContractServiceLine(models.Model):
     sequence = fields.Integer("Sequence", default=10)
 
 
-class ProjectAllocation(models.Model):
-    _name = 'project.allocation'
-    _description = 'Project Allocation'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
-    _order = 'id desc'
-
-    name = fields.Char(string="Allocation / Project Title", required=True, tracking=True)
-    partner_id = fields.Many2one(
-        'res.partner',
-        string="Customer Name",
-        required=True,
-        tracking=True,
-    )
-    contract_id = fields.Many2one(
-        'project.contract.management',
-        string="Contract",
-        required=True,
-        tracking=True,
-    )
-    project_id = fields.Many2one(
-        'project.project',
-        string="Project",
-        tracking=True,
-    )
-    project_code = fields.Char(
-        string="Project Code",
-        related='project_id.project_code',
-        readonly=True,
-        store=True,
-    )
-    billing_amount = fields.Monetary(
-        string="Billing Amount",
-        currency_field='currency_id',
-        tracking=True,
-    )
-    currency_id = fields.Many2one(
-        'res.currency',
-        string="Currency",
-        default=lambda self: self.env.company.currency_id,
-        required=True,
-    )
-    company_id = fields.Many2one(
-        'res.company',
-        string="Company",
-        default=lambda self: self.env.company,
-        required=True,
-    )
-    label_tasks = fields.Char(
-        string="Name of the Tasks",
-        default="Tasks",
-        help="Label used for tasks of this project",
-    )
-    tag_ids = fields.Many2many(
-        'project.tags',
-        string="Tags",
-    )
-    user_id = fields.Many2one(
-        'res.users',
-        string="Project Manager",
-        default=lambda self: self.env.user,
-        required=True,
-        tracking=True,
-    )
-    account_lead_id = fields.Many2one(
-        'hr.employee',
-        string="Account Lead",
-        required=True,
-        tracking=True,
-    )
-    delivery_lead_id = fields.Many2one(
-        'hr.employee',
-        string="Delivery Lead",
-        required=True,
-        tracking=True,
-    )
-    practice_lead_id = fields.Many2one(
-        'hr.employee',
-        string="Practice Lead",
-        required=True,
-        tracking=True,
-    )
-    date_start = fields.Date(
-        string="Planned Start Date",
-        required=True,
-        tracking=True,
-    )
-    date = fields.Date(
-        string="Planned End Date",
-        required=True,
-        tracking=True,
-    )
-    active = fields.Boolean(
-        string="Active",
-        default=True,
-    )
-    state = fields.Selection([
-        ('draft', 'Draft'),
-        ('submitted', 'Submitted for Approval'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-    ], string="Status", default='draft', required=True, tracking=True, copy=False)
-
-    # Notebook Tabs
-    description = fields.Html(string="Description")
-
-    # Settings Tab
-    allow_milestones = fields.Boolean(string="Milestones", default=False)
-    allow_timesheets = fields.Boolean(string="Timesheets", default=True)
-    allow_billable = fields.Boolean(string="Billable", default=True)
-    billing_type = fields.Selection([
-        ('manually', 'Billed Manually'),
-        ('timesheet', 'Billed on Timesheets'),
-    ], string="Billing Type", default='manually')
-
-    # Invoicing Tab
-    sale_order_id = fields.Many2one(
-        'sale.order',
-        string="Sales Order",
-        tracking=True,
-    )
-    sale_line_id = fields.Many2one(
-        'sale.order.line',
-        string="Sales Order Item",
-    )
-
-    # Allocations Tab
-    allocation_ids = fields.One2many(
-        'project.resource.allocation',
-        'project_allocation_id',
-        string="Allocated Resources",
-    )
-    total_allocation_amount = fields.Monetary(
-        string="Total Allocated Amount",
-        compute='_compute_total_allocation_amount',
-        store=True,
-        currency_field='currency_id',
-    )
-    total_margin = fields.Monetary(
-        string="Total Margin",
-        compute='_compute_total_margin',
-        store=True,
-        currency_field='currency_id',
-    )
-
-    @api.depends('allocation_ids.amount')
-    def _compute_total_allocation_amount(self):
-        for rec in self:
-            rec.total_allocation_amount = sum(rec.allocation_ids.mapped('amount'))
-
-    @api.depends('allocation_ids.margin')
-    def _compute_total_margin(self):
-        for rec in self:
-            rec.total_margin = sum(rec.allocation_ids.mapped('margin'))
-
-    @api.constrains('date_start', 'date')
-    def _check_dates(self):
-        for rec in self:
-            if rec.date_start and rec.date and rec.date < rec.date_start:
-                raise ValidationError(_("The Planned End Date cannot be earlier than the Planned Start Date."))
-
-    @api.model
-    def default_get(self, fields_list):
-        res = super().default_get(fields_list)
-        contract_id = self.env.context.get('default_contract_id')
-        if not contract_id and self.env.context.get('active_model') == 'project.contract.management':
-            contract_id = self.env.context.get('active_id')
-
-        if contract_id:
-            contract = self.env['project.contract.management'].browse(contract_id)
-            if contract.exists():
-                res['contract_id'] = contract.id
-                if not res.get('name'):
-                    res['name'] = contract.name
-                if not res.get('partner_id') and contract.client_ids:
-                    res['partner_id'] = contract.client_ids[0].id
-                if not res.get('billing_amount'):
-                    res['billing_amount'] = contract.contract_amount
-                if not res.get('currency_id') and contract.currency_id:
-                    res['currency_id'] = contract.currency_id.id
-                if not res.get('date_start') and contract.contract_start_date:
-                    res['date_start'] = contract.contract_start_date
-                if not res.get('date') and contract.contract_end_date:
-                    res['date'] = contract.contract_end_date
-                if not res.get('company_id') and contract.company_id:
-                    res['company_id'] = contract.company_id.id
-                if 'sale_order_ids' in contract._fields and contract.sale_order_ids:
-                    res['sale_order_id'] = contract.sale_order_ids[0].id
-        return res
-
-    @api.onchange('contract_id')
-    def _onchange_contract_id(self):
-        if self.contract_id:
-            if not self.name:
-                self.name = self.contract_id.name
-            if self.contract_id.client_ids:
-                self.partner_id = self.contract_id.client_ids[0]
-            if self.contract_id.contract_amount:
-                self.billing_amount = self.contract_id.contract_amount
-            if self.contract_id.currency_id:
-                self.currency_id = self.contract_id.currency_id
-            if self.contract_id.contract_start_date:
-                self.date_start = self.contract_id.contract_start_date
-            if self.contract_id.contract_end_date:
-                self.date = self.contract_id.contract_end_date
-            if self.contract_id.company_id:
-                self.company_id = self.contract_id.company_id
-            if 'sale_order_id' in self._fields and self.contract_id.sale_order_ids:
-                self.sale_order_id = self.contract_id.sale_order_ids[0]
-            res = self._onchange_check_contract_consistency()
-            if res:
-                return res
-
-    @api.constrains('contract_id', 'billing_amount', 'company_id', 'partner_id')
-    def _check_contract_consistency(self):
-        for rec in self:
-            if not rec.contract_id:
-                continue
-            contract = rec.contract_id
-            messages = []
-            if rec.billing_amount and contract.contract_amount:
-                contract_amt = contract.contract_amount
-                if rec.currency_id and contract.currency_id and rec.currency_id != contract.currency_id:
-                    contract_amt = contract.currency_id._convert(
-                        contract_amt, rec.currency_id, rec.company_id or self.env.company, fields.Date.today()
-                    )
-                if float_compare(rec.billing_amount, contract_amt, precision_digits=2) > 0:
-                    messages.append(
-                        _("Billing amount (%(billing)s) cannot be more than the contract amount (%(contract_amt)s).",
-                          billing=f"{rec.billing_amount:,.2f}", contract_amt=f"{contract_amt:,.2f}")
-                    )
-            if rec.company_id and contract.company_id and rec.company_id != contract.company_id:
-                messages.append(
-                    _("Company of project allocation ('%(p_comp)s') and contract ('%(c_comp)s') must be the same.",
-                      p_comp=rec.company_id.name, c_comp=contract.company_id.name)
-                )
-            if rec.partner_id and contract.client_ids:
-                contract_partners = contract.client_ids | contract.client_ids.commercial_partner_id
-                proj_partners = rec.partner_id | rec.partner_id.commercial_partner_id
-                if not (proj_partners & contract_partners):
-                    client_names = ", ".join(contract.client_ids.mapped('name'))
-                    messages.append(
-                        _("Customer ('%(partner)s') and contract ('%(clients)s') must be the same.",
-                          partner=rec.partner_id.name, clients=client_names)
-                    )
-            if messages:
-                raise ValidationError("\n".join(messages))
-
-    @api.onchange('billing_amount', 'company_id', 'partner_id')
-    def _onchange_check_contract_consistency(self):
-        if not self.contract_id:
-            return
-        contract = self.contract_id
-        messages = []
-        if self.billing_amount and contract.contract_amount:
-            contract_amt = contract.contract_amount
-            if self.currency_id and contract.currency_id and self.currency_id != contract.currency_id:
-                contract_amt = contract.currency_id._convert(
-                    contract_amt, self.currency_id, self.company_id or self.env.company, fields.Date.today()
-                )
-            if float_compare(self.billing_amount, contract_amt, precision_digits=2) > 0:
-                messages.append(
-                    _("Billing amount (%(billing)s) cannot be more than the contract amount (%(contract_amt)s).",
-                      billing=f"{self.billing_amount:,.2f}", contract_amt=f"{contract_amt:,.2f}")
-                )
-        if self.company_id and contract.company_id and self.company_id != contract.company_id:
-            messages.append(
-                _("Company ('%(p_comp)s') and contract ('%(c_comp)s') must be the same.",
-                  p_comp=self.company_id.name, c_comp=contract.company_id.name)
-            )
-        if self.partner_id and contract.client_ids:
-            contract_partners = contract.client_ids | contract.client_ids.commercial_partner_id
-            proj_partners = self.partner_id | self.partner_id.commercial_partner_id
-            if not (proj_partners & contract_partners):
-                client_names = ", ".join(contract.client_ids.mapped('name'))
-                messages.append(
-                    _("Customer ('%(partner)s') and contract ('%(clients)s') must be the same.",
-                      partner=self.partner_id.name, clients=client_names)
-                )
-        if messages:
-            return {
-                'warning': {
-                    'title': _("Contract Validation Warning"),
-                    'message': "\n".join(f"• {m}" for m in messages)
-                }
-            }
-
-    @api.constrains('allocation_ids', 'billing_amount')
-    def _check_total_allocation_amount(self):
-        for rec in self:
-            if rec.billing_amount and rec.allocation_ids:
-                total = sum(rec.allocation_ids.mapped('amount'))
-                if float_compare(total, rec.billing_amount, precision_digits=2) > 0:
-                    raise ValidationError(
-                        _("The total allocated amount (%(total)s) cannot exceed the Billing Amount (%(billing)s).",
-                          total=f"{total:,.2f}", billing=f"{rec.billing_amount:,.2f}")
-                    )
-
-    def action_submit_for_approval(self):
-        for rec in self:
-            if rec.state != 'draft':
-                raise ValidationError(_("Only draft allocations can be submitted for approval."))
-            if not rec.allocation_ids:
-                raise ValidationError(_("Please add at least one allocated resource line before submitting."))
-            rec.write({'state': 'submitted'})
-
-    def action_approve(self):
-        for rec in self:
-            if rec.state != 'submitted':
-                raise ValidationError(_("Only submitted allocations can be approved."))
-            rec.write({'state': 'approved'})
-
-    def action_reject(self):
-        for rec in self:
-            if rec.state != 'submitted':
-                raise ValidationError(_("Only submitted allocations can be rejected."))
-            rec.write({'state': 'rejected'})
-
-    def action_reset_draft(self):
-        for rec in self:
-            if rec.project_id:
-                raise ValidationError(_("Cannot reset to draft because a project has already been created for this allocation."))
-            rec.write({'state': 'draft'})
-
-    def action_create_project(self):
-        self.ensure_one()
-        if self.state != 'approved':
-            raise ValidationError(_("A project can only be created when the allocation is in 'Approved' stage."))
-        if self.project_id:
-            return self.action_view_project()
-
-        Project = self.env['project.project']
-        project_vals = {
-            'name': self.name,
-            'partner_id': self.partner_id.id if self.partner_id else False,
-            'contract_id': self.contract_id.id if self.contract_id else False,
-            'contract_ids': [(4, self.contract_id.id)] if self.contract_id else [],
-            'billing_amount': self.billing_amount,
-            'currency_id': self.currency_id.id if self.currency_id else False,
-            'company_id': self.company_id.id if self.company_id else False,
-            'user_id': self.user_id.id if self.user_id else False,
-            'account_lead_id': self.account_lead_id.id if self.account_lead_id else False,
-            'delivery_lead_id': self.delivery_lead_id.id if self.delivery_lead_id else False,
-            'practice_lead_id': self.practice_lead_id.id if self.practice_lead_id else False,
-            'date_start': self.date_start,
-            'date': self.date,
-            'description': self.description,
-            'label_tasks': self.label_tasks or 'Tasks',
-        }
-        if self.tag_ids:
-            project_vals['tag_ids'] = [(6, 0, self.tag_ids.ids)]
-        if self.sale_order_id:
-            project_vals['sale_order_id'] = self.sale_order_id.id
-        if 'sale_line_id' in Project._fields and self.sale_line_id:
-            project_vals['sale_line_id'] = self.sale_line_id.id
-        if 'allow_milestones' in Project._fields:
-            project_vals['allow_milestones'] = self.allow_milestones
-        if 'allow_timesheets' in Project._fields:
-            project_vals['allow_timesheets'] = self.allow_timesheets
-        if 'allow_billable' in Project._fields:
-            project_vals['allow_billable'] = self.allow_billable
-
-        # project_code is intentionally omitted so project.project automatically generates it
-        project = Project.create(project_vals)
-        self.project_id = project.id
-        for alloc in self.allocation_ids:
-            alloc.project_id = project.id
-
-        return {
-            'type': 'ir.actions.act_window',
-            'name': project.name,
-            'res_model': 'project.project',
-            'res_id': project.id,
-            'view_mode': 'form',
-            'target': 'current',
-        }
-
-    def action_view_project(self):
-        self.ensure_one()
-        if not self.project_id:
-            return
-        return {
-            'type': 'ir.actions.act_window',
-            'name': self.project_id.name,
-            'res_model': 'project.project',
-            'res_id': self.project_id.id,
-            'view_mode': 'form',
-            'target': 'current',
-        }
-
-
 class ProjectResourceAllocation(models.Model):
     _name = 'project.resource.allocation'
     _description = 'Project Resource Allocation'
-    _order = 'id asc'
+    _order = 'sequence asc, id asc'
 
+    sequence = fields.Integer(
+        string="Sequence",
+        default=0,
+    )
     project_id = fields.Many2one(
         'project.project',
         string="Project",
-        required=False,
-        ondelete='cascade',
-    )
-    project_allocation_id = fields.Many2one(
-        'project.allocation',
-        string="Project Allocation",
-        required=False,
+        required=True,
         ondelete='cascade',
     )
     currency_id = fields.Many2one(
@@ -1502,15 +1171,16 @@ class ProjectResourceAllocation(models.Model):
         readonly=False,
     )
 
-    @api.depends('project_id.currency_id', 'project_allocation_id.currency_id')
+    @api.depends('project_id.currency_id')
     def _compute_currency_id(self):
         for rec in self:
-            rec.currency_id = rec.project_id.currency_id or rec.project_allocation_id.currency_id or self.env.company.currency_id
+            rec.currency_id = rec.project_id.currency_id or self.env.company.currency_id
 
     resource_type = fields.Selection([
-        ('licenses', 'Licenses'),
         ('employee', 'Employee'),
         ('hardwares', 'Hardwares'),
+        ('licenses', 'Licenses'),
+        ('ssd', 'SSD'),
         ('others', 'Others'),
     ], string="Type", required=True, default='employee')
 
@@ -1518,13 +1188,20 @@ class ProjectResourceAllocation(models.Model):
         'hr.employee',
         string="Employee",
     )
+    ssd_id = fields.Many2one(
+        'hr.employee',
+        string="SSD",
+    )
+    product_id = fields.Many2one(
+        'product.product',
+        string="Product",
+    )
     name = fields.Char(
         string="Based On Type",
     )
     vendor_id = fields.Many2one(
         'res.partner',
         string="Vendor",
-        domain="[('customer_type', 'in', ('vendor', 'customer_and_vendor'))]",
     )
     service_line_id = fields.Many2one(
         'project.contract.service.line',
@@ -1537,6 +1214,10 @@ class ProjectResourceAllocation(models.Model):
     end_date = fields.Date(
         string="End Date",
         required=True,
+    )
+    qty = fields.Float(
+        string="QTY",
+        default=1.0,
     )
     allocation_percentage = fields.Float(
         string="Allocation %",
@@ -1565,69 +1246,188 @@ class ProjectResourceAllocation(models.Model):
         readonly=True,
     )
 
-    @api.depends('allocation_percentage', 'project_id.billing_amount', 'project_allocation_id.billing_amount')
+    @api.model
+    def _convert_inr_to_target_currency(self, inr_amount, target_currency, target_date=None, company=None):
+        """Convert INR amount to target currency according to the rates defined in Financial Books:
+           AED - INR: FY (<2027): 24.5, CY (>=2027): 25.6
+           USD - INR: FY (<2027): 90.0, CY (>=2027): 93.0
+        """
+        if not inr_amount or not target_currency:
+            return inr_amount or 0.0
+
+        currency_code = (target_currency.name or "").upper().strip()
+        if currency_code == "INR":
+            return inr_amount
+
+        d = target_date or fields.Date.context_today(self)
+        if isinstance(d, str):
+            d = fields.Date.from_string(d)
+        year = d.year if hasattr(d, "year") else fields.Date.today().year
+
+        if year >= 2027:
+            rate_usd_inr = 93.0
+            rate_aed_inr = 25.6
+        else:
+            rate_usd_inr = 90.0
+            rate_aed_inr = 24.5
+
+        if currency_code == "USD":
+            converted = inr_amount / rate_usd_inr
+        elif currency_code == "AED":
+            converted = inr_amount / rate_aed_inr
+        else:
+            inr_curr = (
+                self.env.ref("base.INR", raise_if_not_found=False)
+                or self.env["res.currency"].search([("name", "=", "INR")], limit=1)
+            )
+            if inr_curr and inr_curr != target_currency:
+                converted = inr_curr._convert(
+                    inr_amount,
+                    target_currency,
+                    company or self.env.company,
+                    d or fields.Date.today(),
+                )
+            else:
+                converted = inr_amount
+
+        return target_currency.round(converted) if hasattr(target_currency, "round") else round(converted, 2)
+
+    @api.depends('resource_type', 'qty', 'vendor_price', 'allocation_percentage',
+                 'project_id.billing_amount', 'currency_id', 'start_date', 'end_date',
+                 'employee_id', 'employee_id.l10n_in_basic_salary_amount', 'employee_id.l10n_in_fixed_allowance')
     def _compute_amount(self):
         for rec in self:
-            billing = 0.0
-            if rec.project_id:
-                billing = rec.project_id.billing_amount or 0.0
-            elif rec.project_allocation_id:
-                billing = rec.project_allocation_id.billing_amount or 0.0
-            rec.amount = billing * (rec.allocation_percentage / 100.0)
-
-    @api.depends('resource_type', 'allocation_percentage', 'amount', 'customer_price', 'vendor_price',
-                 'employee_id', 'employee_id.l10n_in_basic_salary_amount',
-                 'employee_id.l10n_in_fixed_allowance', 'start_date', 'end_date')
-    def _compute_margin(self):
-        for rec in self:
-            if rec.resource_type in ('hardwares', 'licenses'):
-                rec.margin = (rec.customer_price or 0.0) - (rec.vendor_price or 0.0)
-            elif rec.resource_type == 'employee':
-                allocated_cost = rec._get_employee_allocated_cost()
-                rec.margin = (rec.amount or 0.0) - allocated_cost
+            if rec.resource_type == 'employee':
+                rec.amount = rec._get_employee_allocated_cost()
+            elif rec.resource_type in ('hardwares', 'licenses'):
+                rec.amount = (rec.vendor_price or 0.0) * (rec.qty or 0.0)
+            elif rec.resource_type == 'ssd':
+                target_curr = rec.currency_id or (rec.project_id.currency_id if rec.project_id else False) or self.env.company.currency_id
+                target_date = rec.start_date or (rec.project_id.date_start if rec.project_id else False)
+                comp = rec.project_id.company_id if rec.project_id else self.env.company
+                ssd_amt = self._convert_inr_to_target_currency(2500.0, target_curr, target_date, comp)
+                rec.amount = ssd_amt
+                if not rec.vendor_price:
+                    rec.vendor_price = ssd_amt
             else:
-                rec.margin = 0.0
+                billing = rec.project_id.billing_amount or 0.0 if rec.project_id else 0.0
+                rec.amount = rec.vendor_price if rec.vendor_price else billing * ((rec.allocation_percentage or 0.0) / 100.0)
+
+    @api.depends(
+        'sequence', 'amount', 'project_id.billing_amount',
+        'project_id.allocation_ids.amount', 'project_id.allocation_ids.sequence'
+    )
+    def _compute_margin(self):
+        for project in self.mapped('project_id'):
+            all_allocs = project.allocation_ids.sorted(
+                key=lambda r: (r.sequence or 0, r.id if isinstance(r.id, int) else 9999999)
+            )
+            running_margin = project.billing_amount or 0.0
+            for alloc in all_allocs:
+                running_margin -= (alloc.amount or 0.0)
+                if alloc in self:
+                    alloc.margin = running_margin
+        for rec in self.filtered(lambda r: not r.project_id):
+            rec.margin = 0.0
 
     def _get_employee_allocated_cost(self):
-        """Salary cost of the employee for the allocation period.
-
-        Monthly salary = Basic + Fixed (Flexible / Special) Allowance of the employee record.
-        It is spread over a 30 day month and multiplied by the allocated days
-        (start date to end date, both included) and the allocation %.
-        """
+        """Salary cost of the employee for the allocation period based on working days."""
         self.ensure_one()
-        if not (self.employee_id and self.start_date and self.end_date):
+        emp = self.employee_id
+        if not (emp and self.start_date and self.end_date):
             return 0.0
-        emp_sudo = self.employee_id.sudo()
-        monthly_salary = (emp_sudo.l10n_in_basic_salary_amount or 0.0) + (emp_sudo.l10n_in_fixed_allowance or 0.0)
-        days = (self.end_date - self.start_date).days + 1
-        if days <= 0:
+        if self.start_date > self.end_date:
             return 0.0
-        return monthly_salary / 30.0 * days * (self.allocation_percentage / 100.0)
 
-    @api.onchange('allocation_percentage', 'resource_type', 'customer_price', 'vendor_price', 'employee_id',
-                  'start_date', 'end_date')
-    def _onchange_allocation_percentage(self):
-        billing = 0.0
-        if self.project_id:
-            billing = self.project_id.billing_amount or 0.0
-        elif self.project_allocation_id:
-            billing = self.project_allocation_id.billing_amount or 0.0
+        emp_sudo = emp.sudo()
+        basic = getattr(emp_sudo, 'l10n_in_basic_salary_amount', 0.0) or 0.0
+        fixed_allowance = getattr(emp_sudo, 'l10n_in_fixed_allowance', 0.0) or 0.0
+        if not basic and getattr(emp_sudo, 'contract_id', False):
+            basic = emp_sudo.contract_id.wage or 0.0
+        if not basic and getattr(emp_sudo, 'version_id', False):
+            basic = emp_sudo.version_id.wage or 0.0
 
+        monthly_pay = basic + fixed_allowance
+        if not monthly_pay:
+            return 0.0
+
+        # Per day cost based on 22 working days in a month
+        per_day_cost = monthly_pay / 22.0
+
+        # Number of working days between start_date and end_date (inclusive)
+        work_days = {0, 1, 2, 3, 4}  # Monday to Friday default
+        if emp_sudo.resource_calendar_id and emp_sudo.resource_calendar_id.attendance_ids:
+            cal_days = {int(att.dayofweek) for att in emp_sudo.resource_calendar_id.attendance_ids if att.dayofweek.isdigit()}
+            if cal_days:
+                work_days = cal_days
+
+        cur_date = self.start_date
+        working_days = 0
+        while cur_date <= self.end_date:
+            if cur_date.weekday() in work_days:
+                working_days += 1
+            cur_date += timedelta(days=1)
+
+        amount_inr = per_day_cost * working_days * ((self.allocation_percentage or 0.0) / 100.0)
+
+        # Convert to project currency if different from INR
+        target_curr = self.currency_id or (self.project_id.currency_id if self.project_id else False) or self.env.company.currency_id
+        target_date = self.start_date or (self.project_id.date_start if self.project_id else False)
+        comp = self.project_id.company_id if self.project_id else self.env.company
+        return self._convert_inr_to_target_currency(amount_inr, target_curr, target_date, comp)
+
+    def _update_in_memory_margins(self):
+        if not self.project_id:
+            return
+        all_allocs = (
+            self.project_id.employee_allocation_ids |
+            self.project_id.hardware_allocation_ids |
+            self.project_id.license_allocation_ids |
+            self.project_id.ssd_allocation_ids |
+            self.project_id.other_allocation_ids
+        )
+        if not self.sequence:
+            existing_seqs = [a.sequence for a in all_allocs if a != self and a.sequence]
+            self.sequence = (max(existing_seqs) + 1) if existing_seqs else 1
+
+        sorted_allocs = all_allocs.sorted(
+            key=lambda r: (r.sequence or 0, r.id if isinstance(r.id, int) else 9999999)
+        )
+        running = self.project_id.billing_amount or 0.0
+        for alloc in sorted_allocs:
+            running -= (alloc.amount or 0.0)
+            alloc.margin = running
+
+    @api.onchange('qty', 'vendor_price')
+    def _onchange_qty_vendor_price(self):
+        if self.resource_type in ('hardwares', 'licenses'):
+            self.amount = (self.vendor_price or 0.0) * (self.qty or 0.0)
+            self._update_in_memory_margins()
+
+    @api.onchange('allocation_percentage', 'start_date', 'end_date')
+    def _onchange_allocation_dates_percentage(self):
         if self.allocation_percentage > 100:
             warning = {
                 'title': _("Invalid Allocation %"),
                 'message': _("Allocation % cannot be more than 100%.")
             }
             self.allocation_percentage = 100.0
-            self.amount = billing * (self.allocation_percentage / 100.0)
-            self._compute_margin()
+            if self.resource_type == 'employee':
+                self.amount = self._get_employee_allocated_cost()
+            else:
+                billing = self.project_id.billing_amount or 0.0 if self.project_id else 0.0
+                self.amount = billing * (self.allocation_percentage / 100.0)
+            self._update_in_memory_margins()
             return {'warning': warning}
         if self.allocation_percentage < 0:
             self.allocation_percentage = 0.0
 
-        self.amount = billing * (self.allocation_percentage / 100.0)
-        self._compute_margin()
+        if self.resource_type == 'employee':
+            self.amount = self._get_employee_allocated_cost()
+        elif self.resource_type == 'others':
+            billing = self.project_id.billing_amount or 0.0 if self.project_id else 0.0
+            self.amount = self.vendor_price if self.vendor_price else billing * (self.allocation_percentage / 100.0)
+        self._update_in_memory_margins()
 
     @api.constrains('start_date', 'end_date')
     def _check_dates(self):
@@ -1635,62 +1435,186 @@ class ProjectResourceAllocation(models.Model):
             if rec.start_date and rec.end_date and rec.end_date < rec.start_date:
                 raise ValidationError(_("The End Date cannot be earlier than the Start Date."))
 
-    @api.constrains('allocation_percentage', 'amount', 'project_id', 'project_allocation_id')
+    @api.constrains('allocation_percentage', 'resource_type')
     def _check_allocation_percentage(self):
         for rec in self:
-            if rec.allocation_percentage < 0 or rec.allocation_percentage > 100:
-                raise ValidationError(_("Allocation % cannot be more than 100%."))
-            if rec.project_id and rec.project_id.billing_amount:
-                total = sum(rec.project_id.allocation_ids.mapped('amount'))
-                if float_compare(total, rec.project_id.billing_amount, precision_digits=2) > 0:
-                    raise ValidationError(
-                        _("The total allocated amount (%(total)s) cannot exceed the project's Billing Amount (%(billing)s).",
-                          total=f"{total:,.2f}", billing=f"{rec.project_id.billing_amount:,.2f}")
-                    )
-            if rec.project_allocation_id and rec.project_allocation_id.billing_amount:
-                total = sum(rec.project_allocation_id.allocation_ids.mapped('amount'))
-                if float_compare(total, rec.project_allocation_id.billing_amount, precision_digits=2) > 0:
-                    raise ValidationError(
-                        _("The total allocated amount (%(total)s) cannot exceed the project allocation's Billing Amount (%(billing)s).",
-                          total=f"{total:,.2f}", billing=f"{rec.project_allocation_id.billing_amount:,.2f}")
-                    )
+            if rec.resource_type in ('employee', 'others'):
+                if rec.allocation_percentage < 0 or rec.allocation_percentage > 100:
+                    raise ValidationError(_("Allocation % cannot be more than 100%."))
 
-    @api.constrains('project_id', 'project_allocation_id')
+    @api.constrains('project_id')
     def _check_parent(self):
         for rec in self:
-            if not rec.project_id and not rec.project_allocation_id:
-                raise ValidationError(_("Resource allocation must be linked to either a Project or a Project Allocation."))
+            if not rec.project_id:
+                raise ValidationError(_("Resource allocation must be linked to a Project."))
 
     @api.onchange('resource_type')
     def _onchange_resource_type(self):
         if self.resource_type == 'employee':
             self.vendor_id = False
+            self.product_id = False
+            self.ssd_id = False
             if self.employee_id:
                 self.name = self.employee_id.name
+            self.amount = self._get_employee_allocated_cost()
+        elif self.resource_type == 'ssd':
+            self.vendor_id = False
+            self.product_id = False
+            self.customer_price = 0.0
+            target_curr = self.currency_id or (self.project_id.currency_id if self.project_id else False) or self.env.company.currency_id
+            target_date = self.start_date or (self.project_id.date_start if self.project_id else False)
+            comp = self.project_id.company_id if self.project_id else self.env.company
+            ssd_amt = self._convert_inr_to_target_currency(2500.0, target_curr, target_date, comp)
+            self.amount = ssd_amt
+            self.vendor_price = ssd_amt
+            if self.ssd_id:
+                self.name = self.ssd_id.name
+                self.employee_id = self.ssd_id
+        elif self.resource_type in ('hardwares', 'licenses'):
+            self.employee_id = False
+            self.ssd_id = False
+            if not self.qty:
+                self.qty = 1.0
+            self.amount = (self.vendor_price or 0.0) * (self.qty or 0.0)
+            if self.product_id:
+                self.name = self.product_id.display_name
         else:
             self.employee_id = False
+            self.ssd_id = False
+        self._update_in_memory_margins()
 
     @api.onchange('employee_id')
     def _onchange_employee_id(self):
         if self.employee_id:
             self.name = self.employee_id.name
+            if self.resource_type == 'employee':
+                self.amount = self._get_employee_allocated_cost()
+        self._update_in_memory_margins()
+
+    @api.onchange('ssd_id')
+    def _onchange_ssd_id(self):
+        if self.ssd_id:
+            self.name = self.ssd_id.name
+            self.employee_id = self.ssd_id
+            self.vendor_id = False
+            self.customer_price = 0.0
+            target_curr = self.currency_id or (self.project_id.currency_id if self.project_id else False) or self.env.company.currency_id
+            target_date = self.start_date or (self.project_id.date_start if self.project_id else False)
+            comp = self.project_id.company_id if self.project_id else self.env.company
+            ssd_amt = self._convert_inr_to_target_currency(2500.0, target_curr, target_date, comp)
+            self.amount = ssd_amt
+            self.vendor_price = ssd_amt
+        self._update_in_memory_margins()
+
+    @api.onchange('product_id')
+    def _onchange_product_id(self):
+        if self.product_id:
+            self.name = self.product_id.display_name
+            if not self.vendor_price and self.product_id.standard_price:
+                self.vendor_price = self.product_id.standard_price
+            if not self.customer_price and self.product_id.lst_price:
+                self.customer_price = self.product_id.lst_price
+            if self.resource_type in ('hardwares', 'licenses'):
+                if not self.qty:
+                    self.qty = 1.0
+                self.amount = (self.vendor_price or 0.0) * (self.qty or 0.0)
+        self._update_in_memory_margins()
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        if res.get('resource_type') == 'ssd':
+            target_curr = False
+            if 'currency_id' in res and res['currency_id']:
+                target_curr = self.env['res.currency'].browse(res['currency_id'])
+            elif self._context.get('default_project_id'):
+                proj = self.env['project.project'].browse(self._context['default_project_id'])
+                target_curr = proj.currency_id
+            if not target_curr:
+                target_curr = self.env.company.currency_id
+            ssd_amt = self._convert_inr_to_target_currency(2500.0, target_curr)
+            res['amount'] = ssd_amt
+            res['vendor_price'] = ssd_amt
+        elif res.get('resource_type') in ('hardwares', 'licenses'):
+            if 'qty' in fields_list:
+                res['qty'] = 1.0
+        return res
 
     @api.model_create_multi
     def create(self, vals_list):
+        max_seq_cache = {}
         for vals in vals_list:
             if vals.get('resource_type') == 'employee' and vals.get('employee_id') and not vals.get('name'):
                 employee = self.env['hr.employee'].browse(vals['employee_id'])
                 vals['name'] = employee.name
-            if not vals.get('project_id') and vals.get('project_allocation_id'):
-                parent_alloc = self.env['project.allocation'].browse(vals['project_allocation_id'])
-                if parent_alloc.project_id:
-                    vals['project_id'] = parent_alloc.project_id.id
+            elif vals.get('resource_type') == 'ssd':
+                if vals.get('ssd_id'):
+                    if not vals.get('employee_id'):
+                        vals['employee_id'] = vals['ssd_id']
+                    if not vals.get('name'):
+                        employee = self.env['hr.employee'].browse(vals['ssd_id'])
+                        vals['name'] = employee.name
+                proj = self.env['project.project'].browse(vals['project_id']) if vals.get('project_id') else False
+                target_curr = (
+                    self.env['res.currency'].browse(vals['currency_id']) if vals.get('currency_id')
+                    else (proj.currency_id if proj else self.env.company.currency_id)
+                )
+                target_date = vals.get('start_date') or (proj.date_start if proj else False)
+                comp = proj.company_id if proj else self.env.company
+                ssd_amt = self._convert_inr_to_target_currency(2500.0, target_curr, target_date, comp)
+                vals['amount'] = ssd_amt
+                vals['vendor_price'] = ssd_amt
+                vals['customer_price'] = 0.0
+                vals['vendor_id'] = False
+                vals['allocation_percentage'] = 0.0
+            elif vals.get('resource_type') in ('hardwares', 'licenses'):
+                qty = vals.get('qty', 1.0)
+                vprice = vals.get('vendor_price', 0.0)
+                vals['amount'] = qty * vprice
+                if vals.get('product_id') and not vals.get('name'):
+                    product = self.env['product.product'].browse(vals['product_id'])
+                    vals['name'] = product.display_name
+            elif vals.get('product_id') and not vals.get('name'):
+                product = self.env['product.product'].browse(vals['product_id'])
+                vals['name'] = product.display_name
+
+            # Sequence assignment
+            proj_id = vals.get('project_id')
+            if not vals.get('sequence') and proj_id:
+                if proj_id not in max_seq_cache:
+                    existing = self.search([('project_id', '=', proj_id)])
+                    max_seq_cache[proj_id] = max(existing.mapped('sequence') or [0])
+                max_seq_cache[proj_id] += 1
+                vals['sequence'] = max_seq_cache[proj_id]
+
         return super().create(vals_list)
 
     def write(self, vals):
         if vals.get('resource_type') == 'employee' and vals.get('employee_id') and not vals.get('name'):
             employee = self.env['hr.employee'].browse(vals['employee_id'])
             vals['name'] = employee.name
+        elif vals.get('resource_type') == 'ssd' or (len(self) == 1 and self.resource_type == 'ssd'):
+            if vals.get('ssd_id'):
+                if not vals.get('employee_id'):
+                    vals['employee_id'] = vals['ssd_id']
+                if not vals.get('name'):
+                    employee = self.env['hr.employee'].browse(vals['ssd_id'])
+                    vals['name'] = employee.name
+            if vals.get('resource_type') == 'ssd' or 'currency_id' in vals:
+                for rec in self:
+                    target_curr = (
+                        self.env['res.currency'].browse(vals['currency_id']) if vals.get('currency_id')
+                        else (rec.currency_id or (rec.project_id.currency_id if rec.project_id else self.env.company.currency_id))
+                    )
+                    target_date = vals.get('start_date') or rec.start_date or (rec.project_id.date_start if rec.project_id else False)
+                    comp = rec.project_id.company_id if rec.project_id else self.env.company
+                    ssd_amt = self._convert_inr_to_target_currency(2500.0, target_curr, target_date, comp)
+                    vals['amount'] = ssd_amt
+                    if 'vendor_price' not in vals:
+                        vals['vendor_price'] = ssd_amt
+        elif vals.get('product_id') and not vals.get('name'):
+            product = self.env['product.product'].browse(vals['product_id'])
+            vals['name'] = product.display_name
         return super().write(vals)
 
 
