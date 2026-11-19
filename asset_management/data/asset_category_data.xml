@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ASSET CATEGORIES
+    ══════════════════════════════════════════════════════════════════════════ -->
+
+    <record id="category_equity_funding" model="asset.category">
+        <field name="name">Equity Funding</field>
+        <field name="sequence">10</field>
+        <field name="description">Equity financing sources including share capital, founder capital, and investor funding.</field>
+    </record>
+
+    <record id="category_debt_funding" model="asset.category">
+        <field name="name">Debt Funding</field>
+        <field name="sequence">20</field>
+        <field name="description">Debt financing including bank loans, corporate loans, borrowings, and bonds/sukuk.</field>
+    </record>
+
+    <record id="category_banking_facilities" model="asset.category">
+        <field name="name">Banking Facilities</field>
+        <field name="sequence">30</field>
+        <field name="description">Short-term and trade facilities provided by banks (OD, CC, LC, BG, Trade Finance).</field>
+    </record>
+
+    <record id="category_grants_contributions" model="asset.category">
+        <field name="name">Grants &amp; Contributions</field>
+        <field name="sequence">40</field>
+        <field name="description">Non-repayable funding from grants, donations, endowments, foundations, and CSR initiatives.</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ASSET TYPES: EQUITY FUNDING
+    ══════════════════════════════════════════════════════════════════════════ -->
+
+    <record id="type_share_capital" model="asset.type">
+        <field name="name">Share Capital</field>
+        <field name="category_id" ref="category_equity_funding"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_paid_up_capital" model="asset.type">
+        <field name="name">Paid-up Capital</field>
+        <field name="category_id" ref="category_equity_funding"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_additional_paid_in_capital" model="asset.type">
+        <field name="name">Additional Paid-in Capital</field>
+        <field name="category_id" ref="category_equity_funding"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_preference_share_capital" model="asset.type">
+        <field name="name">Preference Share Capital</field>
+        <field name="category_id" ref="category_equity_funding"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_founder_capital" model="asset.type">
+        <field name="name">Founder Capital</field>
+        <field name="category_id" ref="category_equity_funding"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_strategic_investor_funding" model="asset.type">
+        <field name="name">Strategic Investor Funding</field>
+        <field name="category_id" ref="category_equity_funding"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_venture_capital_funding" model="asset.type">
+        <field name="name">Venture Capital Funding</field>
+        <field name="category_id" ref="category_equity_funding"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ASSET TYPES: DEBT FUNDING
+    ══════════════════════════════════════════════════════════════════════════ -->
+
+    <record id="type_bank_loans" model="asset.type">
+        <field name="name">Bank Loans</field>
+        <field name="category_id" ref="category_debt_funding"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_corporate_loans" model="asset.type">
+        <field name="name">Corporate Loans</field>
+        <field name="category_id" ref="category_debt_funding"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_shareholder_loans_received" model="asset.type">
+        <field name="name">Shareholder Loans Received</field>
+        <field name="category_id" ref="category_debt_funding"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_intercompany_borrowings" model="asset.type">
+        <field name="name">Intercompany Borrowings</field>
+        <field name="category_id" ref="category_debt_funding"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_bonds_issued" model="asset.type">
+        <field name="name">Bonds Issued</field>
+        <field name="category_id" ref="category_debt_funding"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_sukuk_issued" model="asset.type">
+        <field name="name">Sukuk Issued</field>
+        <field name="category_id" ref="category_debt_funding"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ASSET TYPES: BANKING FACILITIES
+    ══════════════════════════════════════════════════════════════════════════ -->
+
+    <record id="type_overdraft_od" model="asset.type">
+        <field name="name">Overdraft (OD)</field>
+        <field name="category_id" ref="category_banking_facilities"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_cash_credit_cc" model="asset.type">
+        <field name="name">Cash Credit (CC)</field>
+        <field name="category_id" ref="category_banking_facilities"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_trade_finance_facilities" model="asset.type">
+        <field name="name">Trade Finance Facilities</field>
+        <field name="category_id" ref="category_banking_facilities"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_letter_of_credit_lc" model="asset.type">
+        <field name="name">Letter of Credit (LC)</field>
+        <field name="category_id" ref="category_banking_facilities"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_bank_guarantee_bg" model="asset.type">
+        <field name="name">Bank Guarantee (BG)</field>
+        <field name="category_id" ref="category_banking_facilities"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ASSET TYPES: GRANTS & CONTRIBUTIONS
+    ══════════════════════════════════════════════════════════════════════════ -->
+
+    <record id="type_endowment_funds" model="asset.type">
+        <field name="name">Endowment Funds</field>
+        <field name="category_id" ref="category_grants_contributions"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_donations_received" model="asset.type">
+        <field name="name">Donations Received</field>
+        <field name="category_id" ref="category_grants_contributions"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_government_grants" model="asset.type">
+        <field name="name">Government Grants</field>
+        <field name="category_id" ref="category_grants_contributions"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_foundation_contributions" model="asset.type">
+        <field name="name">Foundation Contributions</field>
+        <field name="category_id" ref="category_grants_contributions"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+    <record id="type_csr_funding" model="asset.type">
+        <field name="name">CSR Funding</field>
+        <field name="category_id" ref="category_grants_contributions"/>
+        <field name="depreciation_frequency">monthly</field>
+        <field name="depreciation_method">straight_line</field>
+        <field name="depreciation_basis">real_value</field>
+        <field name="depreciation_rate">0.0</field>
+    </record>
+
+</odoo>
+

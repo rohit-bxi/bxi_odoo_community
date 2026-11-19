@@ -8,7 +8,7 @@
         <field name="placeholder">No</field>
     </record>
 
-    <!-- Contract Management / User Group (Read-Only) -->
+    <!-- Contract Management / User Group (Create, Read, Write) -->
     <record id="group_contract_user" model="res.groups">
         <field name="name">User</field>
         <field name="sequence">10</field>
@@ -30,5 +30,29 @@
         <field name="model_id" ref="model_project_contract_management"/>
         <field name="global" eval="True"/>
         <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- Contract Management User Record Rule: Read, Write, Create within company -->
+    <record id="project_contract_management_user_rule" model="ir.rule">
+        <field name="name">Project Contract User Rule</field>
+        <field name="model_id" ref="model_project_contract_management"/>
+        <field name="groups" eval="[(4, ref('group_contract_user'))]"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Contract Management Admin Record Rule: Full Access -->
+    <record id="project_contract_management_manager_rule" model="ir.rule">
+        <field name="name">Project Contract Manager Rule</field>
+        <field name="model_id" ref="model_project_contract_management"/>
+        <field name="groups" eval="[(4, ref('group_contract_manager'))]"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
     </record>
 </odoo>

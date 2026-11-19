@@ -22,6 +22,36 @@
             <field name="partner_id" position="attributes">
                 <attribute name="domain">[('customer_type', 'in', ['customer', 'customer_and_vendor'])]</attribute>
             </field>
+            <!-- Hardware Allocations vendor domain -->
+            <xpath expr="//field[@name='hardware_allocation_ids']//list//field[@name='vendor_id']" position="attributes">
+                <attribute name="domain">[('customer_type', 'in', ['vendor', 'customer_and_vendor'])]</attribute>
+                <attribute name="context">{'default_customer_type': 'vendor', 'default_supplier_rank': 1, 'default_is_company': True}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='hardware_allocation_ids']//form//field[@name='vendor_id']" position="attributes">
+                <attribute name="domain">[('customer_type', 'in', ['vendor', 'customer_and_vendor'])]</attribute>
+                <attribute name="context">{'default_customer_type': 'vendor', 'default_supplier_rank': 1, 'default_is_company': True}</attribute>
+            </xpath>
+
+            <!-- License Allocations vendor domain -->
+            <xpath expr="//field[@name='license_allocation_ids']//list//field[@name='vendor_id']" position="attributes">
+                <attribute name="domain">[('customer_type', 'in', ['vendor', 'customer_and_vendor'])]</attribute>
+                <attribute name="context">{'default_customer_type': 'vendor', 'default_supplier_rank': 1, 'default_is_company': True}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='license_allocation_ids']//form//field[@name='vendor_id']" position="attributes">
+                <attribute name="domain">[('customer_type', 'in', ['vendor', 'customer_and_vendor'])]</attribute>
+                <attribute name="context">{'default_customer_type': 'vendor', 'default_supplier_rank': 1, 'default_is_company': True}</attribute>
+            </xpath>
+
+
+            <!-- Other Allocations vendor domain -->
+            <xpath expr="//field[@name='other_allocation_ids']//list//field[@name='vendor_id']" position="attributes">
+                <attribute name="domain">[('customer_type', 'in', ['vendor', 'customer_and_vendor'])]</attribute>
+                <attribute name="context">{'default_customer_type': 'vendor', 'default_supplier_rank': 1, 'default_is_company': True}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='other_allocation_ids']//form//field[@name='vendor_id']" position="attributes">
+                <attribute name="domain">[('customer_type', 'in', ['vendor', 'customer_and_vendor'])]</attribute>
+                <attribute name="context">{'default_customer_type': 'vendor', 'default_supplier_rank': 1, 'default_is_company': True}</attribute>
+            </xpath>
         </field>
     </record>
 

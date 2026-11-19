@@ -36,6 +36,7 @@
         'security/security.xml',
         'security/ir.model.access.csv',
         'data/sequence.xml',
+        'data/asset_category_data.xml',
         # Wizards
         'wizard/asset_label_wizard_view.xml',
         'wizard/asset_disposal_wizard_view.xml',
@@ -46,6 +47,7 @@
         'report/depreciation_schedule_report.xml',
         # Views
         'views/asset_views.xml',
+        'views/asset_category_views.xml',
         'views/asset_stage_views.xml',
         'views/asset_vendor_views.xml',
         'views/asset_dashboard_views.xml',

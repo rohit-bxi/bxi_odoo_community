@@ -36,6 +36,8 @@ class FbookDashboard extends Component {
                 }
             },
             loaded: false,
+            show_all_vendors: false,
+            expanded_rows: {},
         });
 
         onWillStart(async () => {
@@ -119,6 +121,58 @@ class FbookDashboard extends Component {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+    }
+
+    /**
+     * Get vendor rows sorted descending by total billing value (highest billing first).
+     */
+    get sortedVendorRows() {
+        const rows = (this.state.report_data && this.state.report_data.vendor_rows) || [];
+        return [...rows].sort((a, b) => {
+            const billedA = (parseFloat(a.y1_billed) || 0) + (parseFloat(a.y2_billed) || 0);
+            const billedB = (parseFloat(b.y1_billed) || 0) + (parseFloat(b.y2_billed) || 0);
+            if (billedB !== billedA) {
+                return billedB - billedA;
+            }
+            const maxSingleA = Math.max(parseFloat(a.y1_billed) || 0, parseFloat(a.y2_billed) || 0);
+            const maxSingleB = Math.max(parseFloat(b.y1_billed) || 0, parseFloat(b.y2_billed) || 0);
+            if (maxSingleB !== maxSingleA) {
+                return maxSingleB - maxSingleA;
+            }
+            return (a.vendor || "").localeCompare(b.vendor || "");
+        });
+    }
+
+    /**
+     * Get vendor rows to display: top 5 with maximum billing value by default, or all if toggled.
+     */
+    get displayedVendorRows() {
+        const sorted = this.sortedVendorRows;
+        if (this.state.show_all_vendors || sorted.length <= 5) {
+            return sorted;
+        }
+        return sorted.slice(0, 5);
+    }
+
+    /**
+     * Toggle between top 5 and all vendor rows.
+     */
+    toggleShowAllVendors() {
+        this.state.show_all_vendors = !this.state.show_all_vendors;
+    }
+
+    /**
+     * Toggle drill-down state for a specific tree row/key.
+     */
+    toggleDrill(key) {
+        this.state.expanded_rows[key] = !this.state.expanded_rows[key];
+    }
+
+    /**
+     * Check if a specific tree row/key is currently expanded.
+     */
+    isExpanded(key) {
+        return !!this.state.expanded_rows[key];
     }
 
     /**

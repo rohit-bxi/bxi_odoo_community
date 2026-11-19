@@ -88,22 +88,21 @@ class FbookReportWizard(models.TransientModel):
                 return (c.country_id.country_code_3 or c.country_id.code or '').upper().strip()
             return ''
 
-        if len(companies) == 1:
-            comp = companies[0]
-            c_code = get_c_code(comp)
-            company_name_only = comp.name
-            country_code_str = c_code
-            display_company_name = f"{comp.name} ({c_code})" if c_code else comp.name
-        else:
-            country_codes = [get_c_code(c) for c in companies if get_c_code(c)]
-            unique_country_codes = list(dict.fromkeys(country_codes))
-            country_code_str = ", ".join(unique_country_codes)
-            if parent_company:
-                company_name_only = parent_company[0].name
-                display_company_name = f"{parent_company[0].name} ({country_code_str})" if country_code_str else parent_company[0].name
-            else:
-                company_name_only = ", ".join(c.name for c in companies)
-                display_company_name = ", ".join(f"{c.name} ({get_c_code(c)})" if get_c_code(c) else c.name for c in companies)
+        companies_info = []
+        for c in companies:
+            c_code = get_c_code(c)
+            disp = f"{c.name} ({c_code})" if c_code else c.name
+            companies_info.append({
+                'id': c.id,
+                'name': c.name,
+                'code': c_code,
+                'display': disp,
+            })
+
+        display_company_name = ", ".join(ci['display'] for ci in companies_info)
+        company_name_only = ", ".join(ci['name'] for ci in companies_info)
+        country_codes = [ci['code'] for ci in companies_info if ci['code']]
+        country_code_str = ", ".join(list(dict.fromkeys(country_codes)))
 
         if currency_id:
             target_currency = self.env['res.currency'].browse(currency_id)
@@ -1119,7 +1118,33 @@ class FbookReportWizard(models.TransientModel):
         y2_start_str = f"{y2_cy_start:04d}-04-01"
         y2_end_str = today_date.strftime('%Y-%m-%d') if today_date <= fields.Date.from_string(f"{y2_cy_start+1:04d}-03-31") else f"{y2_cy_start+1:04d}-03-31"
 
+        def get_investor_category(partner):
+            if not partner:
+                return 'Private Investor'
+            tags = [c.name.strip() for c in partner.category_id if c.name]
+            for tag in tags:
+                t_low = tag.lower()
+                if 'founder' in t_low:
+                    return 'Founder'
+                if 'venture' in t_low:
+                    return 'Ventures'
+                if 'promoter' in t_low:
+                    return 'Promoter'
+                if 'private' in t_low or 'investor' in t_low or 'angel' in t_low:
+                    return 'Private Investor'
+            if tags:
+                return tags[0]
+            p_name = (partner.name or '').lower()
+            if 'venture' in p_name:
+                return 'Ventures'
+            if 'founder' in p_name:
+                return 'Founder'
+            if 'promoter' in p_name:
+                return 'Promoter'
+            return 'Private Investor'
+
         investor_data_map = {}
+        investor_tx_map = {}
 
         if 'account.move.line' in self.env:
             # Query all posted entries under GL 112230 (Unsecured Loan Account)
@@ -1129,7 +1154,7 @@ class FbookReportWizard(models.TransientModel):
                 ('account_id.code', '=', '112230'),
                 ('date', '>=', min(y1_start_str, y2_start_str)),
                 ('date', '<=', max(y1_end_str, y2_end_str)),
-            ])
+            ], order='date asc')
 
             for line in loan_lines:
                 ldate = line.date
@@ -1141,14 +1166,15 @@ class FbookReportWizard(models.TransientModel):
                 if partner:
                     partner_key = partner.id
                     partner_name = partner.name.strip() if partner.name else 'Unknown Partner'
-                    category = ', '.join(partner.category_id.mapped('name')) if partner.category_id else 'General'
+                    category = get_investor_category(partner)
                 else:
                     partner_key = 'unsecured_loan_unassigned'
                     partner_name = 'Unsecured Loan'
-                    category = 'Unsecured Loan'
+                    category = 'Private Investor'
 
                 if partner_key not in investor_data_map:
                     investor_data_map[partner_key] = {
+                        'id': partner_key,
                         'name': partner_name,
                         'category': category,
                         'y1_credit': 0.0,
@@ -1156,34 +1182,53 @@ class FbookReportWizard(models.TransientModel):
                         'y2_credit': 0.0,
                         'y2_debit': 0.0,
                     }
+                    investor_tx_map[partner_key] = []
 
                 # Credit = Investment amount received from the investor
+                conv_credit = 0.0
+                conv_debit = 0.0
                 if line.credit > 0:
+                    conv_credit = custom_convert(
+                        line.credit, line.company_id.currency_id, target_currency,
+                        date_val=ldate, year_key='y1' if y1_start_str <= ldate_str <= y1_end_str else 'y2', record=line
+                    )
                     if y1_start_str <= ldate_str <= y1_end_str:
-                        investor_data_map[partner_key]['y1_credit'] += custom_convert(
-                            line.credit, line.company_id.currency_id, target_currency,
-                            date_val=ldate, year_key='y1', record=line
-                        )
+                        investor_data_map[partner_key]['y1_credit'] += conv_credit
                     if y2_start_str <= ldate_str <= y2_end_str:
-                        investor_data_map[partner_key]['y2_credit'] += custom_convert(
-                            line.credit, line.company_id.currency_id, target_currency,
-                            date_val=ldate, year_key='y2', record=line
-                        )
+                        investor_data_map[partner_key]['y2_credit'] += conv_credit
                 # Debit = Amount repaid / sent back to that same partner
                 elif line.debit > 0:
+                    conv_debit = custom_convert(
+                        line.debit, line.company_id.currency_id, target_currency,
+                        date_val=ldate, year_key='y1' if y1_start_str <= ldate_str <= y1_end_str else 'y2', record=line
+                    )
                     if y1_start_str <= ldate_str <= y1_end_str:
-                        investor_data_map[partner_key]['y1_debit'] += custom_convert(
-                            line.debit, line.company_id.currency_id, target_currency,
-                            date_val=ldate, year_key='y1', record=line
-                        )
+                        investor_data_map[partner_key]['y1_debit'] += conv_debit
                     if y2_start_str <= ldate_str <= y2_end_str:
-                        investor_data_map[partner_key]['y2_debit'] += custom_convert(
-                            line.debit, line.company_id.currency_id, target_currency,
-                            date_val=ldate, year_key='y2', record=line
-                        )
+                        investor_data_map[partner_key]['y2_debit'] += conv_debit
+
+                tx_y1_rec = conv_credit if (line.credit > 0 and y1_start_str <= ldate_str <= y1_end_str) else 0.0
+                tx_y1_rep = conv_debit if (line.debit > 0 and y1_start_str <= ldate_str <= y1_end_str) else 0.0
+                tx_y2_rec = conv_credit if (line.credit > 0 and y2_start_str <= ldate_str <= y2_end_str) else 0.0
+                tx_y2_rep = conv_debit if (line.debit > 0 and y2_start_str <= ldate_str <= y2_end_str) else 0.0
+
+                if tx_y1_rec or tx_y1_rep or tx_y2_rec or tx_y2_rep:
+                    investor_tx_map[partner_key].append({
+                        'id': line.id,
+                        'date': ldate_str,
+                        'ref': line.move_id.name or line.ref or '',
+                        'label': line.name or '',
+                        'y1_received': target_currency.round(tx_y1_rec),
+                        'y1_repaid': target_currency.round(tx_y1_rep),
+                        'y1_net': target_currency.round(tx_y1_rec - tx_y1_rep),
+                        'y2_received': target_currency.round(tx_y2_rec),
+                        'y2_repaid': target_currency.round(tx_y2_rep),
+                        'y2_net': target_currency.round(tx_y2_rec - tx_y2_rep),
+                        'total_net': target_currency.round((tx_y1_rec - tx_y1_rep) + (tx_y2_rec - tx_y2_rep)),
+                    })
 
         investor_rows = []
-        for inv_key in sorted(investor_data_map.keys(), key=lambda k: investor_data_map[k]['name']):
+        for inv_key in sorted(investor_data_map.keys(), key=lambda k: (investor_data_map[k].get('category', ''), investor_data_map[k]['name'])):
             inv_info = investor_data_map[inv_key]
 
             y1_credit = inv_info['y1_credit']
@@ -1232,6 +1277,61 @@ class FbookReportWizard(models.TransientModel):
             'y1_debit': target_currency.round(sum(r['y1_debit'] for r in investor_rows)),
             'y2_credit': target_currency.round(sum(r['y2_credit'] for r in investor_rows)),
             'y2_debit': target_currency.round(sum(r['y2_debit'] for r in investor_rows)),
+        }
+
+        # Build hierarchical structure for Investment Received: Category -> Partners -> Transactions
+        cat_order = ['Founder', 'Ventures', 'Promoter', 'Private Investor']
+        inv_by_cat = {}
+        for inv_key, inv_info in investor_data_map.items():
+            y1_c = inv_info['y1_credit']
+            y1_d = inv_info['y1_debit']
+            y2_c = inv_info['y2_credit']
+            y2_d = inv_info['y2_debit']
+            if abs(y1_c) < 0.01 and abs(y1_d) < 0.01 and abs(y2_c) < 0.01 and abs(y2_d) < 0.01:
+                continue
+            cat = inv_info['category']
+            if cat not in inv_by_cat:
+                inv_by_cat[cat] = []
+            inv_by_cat[cat].append({
+                'id': inv_key,
+                'name': inv_info['name'],
+                'y1_received': target_currency.round(y1_c),
+                'y1_repaid': target_currency.round(y1_d),
+                'y1_net': target_currency.round(y1_c - y1_d),
+                'y2_received': target_currency.round(y2_c),
+                'y2_repaid': target_currency.round(y2_d),
+                'y2_net': target_currency.round(y2_c - y2_d),
+                'total_net': target_currency.round((y1_c - y1_d) + (y2_c - y2_d)),
+                'transactions': investor_tx_map.get(inv_key, []),
+            })
+
+        def _cat_sort_key(c):
+            return cat_order.index(c) if c in cat_order else len(cat_order)
+
+        investment_received_categories = []
+        for cat_name in sorted(inv_by_cat.keys(), key=_cat_sort_key):
+            partners = sorted(inv_by_cat[cat_name], key=lambda p: p['name'].lower())
+            investment_received_categories.append({
+                'name': cat_name,
+                'y1_received': target_currency.round(sum(p['y1_received'] for p in partners)),
+                'y1_repaid': target_currency.round(sum(p['y1_repaid'] for p in partners)),
+                'y1_net': target_currency.round(sum(p['y1_net'] for p in partners)),
+                'y2_received': target_currency.round(sum(p['y2_received'] for p in partners)),
+                'y2_repaid': target_currency.round(sum(p['y2_repaid'] for p in partners)),
+                'y2_net': target_currency.round(sum(p['y2_net'] for p in partners)),
+                'total_net': target_currency.round(sum(p['total_net'] for p in partners)),
+                'partners': partners,
+            })
+
+        investment_received_hierarchy = {
+            'categories': investment_received_categories,
+            'y1_received': investor_totals['y1_received'],
+            'y1_repaid': investor_totals['y1_repaid'],
+            'y1_net': investor_totals['y1_net'],
+            'y2_received': investor_totals['y2_received'],
+            'y2_repaid': investor_totals['y2_repaid'],
+            'y2_net': investor_totals['y2_net'],
+            'total_net': investor_totals['total_net'],
         }
 
         # Vendor Report Calculation (Quarterly bill amounts for active billed vendors)
@@ -1472,10 +1572,14 @@ class FbookReportWizard(models.TransientModel):
                 'y2_total': target_currency.round(y2_billed),
             })
 
-        # Sort vendors alphabetically by vendor name
+        # Sort vendors by total billed value descending (highest billing vendors first)
         vendor_rows = sorted(
             vendor_rows,
-            key=lambda r: (r['vendor'] or '').strip().lower()
+            key=lambda r: (
+                -(r.get('y1_billed', 0.0) + r.get('y2_billed', 0.0)),
+                -max(r.get('y1_billed', 0.0), r.get('y2_billed', 0.0)),
+                (r['vendor'] or '').strip().lower()
+            )
         )
 
         vendor_totals = {
@@ -1489,8 +1593,23 @@ class FbookReportWizard(models.TransientModel):
             'y2_total': target_currency.round(sum(r['y2_billed'] for r in vendor_rows)),
         }
 
-        # Assets Value Section Calculation (Category, Description, In Store, In Use, Customer Loc, Scrapped for Count, Purchase, Depr)
-        asset_data_map = {}
+        # 7. Assets & Investment Section Calculation
+        # Buckets: Assets Count (Total, In Store, In Use, Cust. Loc, Scrapped)
+        #          Purchase / Depreciation (Purchase Value, Depreciation Value, Last Depreciated Amount)
+        type_stats = {}
+        type_assets_map = {}
+        uncategorized_assets = []
+        uncategorized_stats = {
+            'count_total': 0,
+            'count_in_store': 0,
+            'count_in_use': 0,
+            'count_customer': 0,
+            'count_scrapped': 0,
+            'purchase_total': 0.0,
+            'depr_total': 0.0,
+            'stop_depr_total': 0.0,
+        }
+
         if 'asset.management' in self.env:
             assets = self.env['asset.management'].sudo().search([])
             for asset in assets:
@@ -1500,17 +1619,6 @@ class FbookReportWizard(models.TransientModel):
                 )
                 if asset_comp_id and asset_comp_id not in company_ids:
                     continue
-
-                category_name = (
-                    (asset.asset_type_id.name if asset.asset_type_id else False) or
-                    (asset.product_id.categ_id.name if asset.product_id and asset.product_id.categ_id else False) or
-                    'General'
-                ).strip()
-
-                item_name = (
-                    (asset.product_id.display_name or asset.product_id.name if asset.product_id else False) or
-                    (asset.name or '')
-                ).strip()
 
                 curr = getattr(asset.invoice_id, 'currency_id', False) or self.env.company.currency_id
 
@@ -1595,85 +1703,101 @@ class FbookReportWizard(models.TransientModel):
                     else:
                         c_in_store = 1
 
-                unit_p = purchase_val / tot_cnt if tot_cnt > 0 else 0.0
-                unit_d = depr_val / tot_cnt if tot_cnt > 0 else 0.0
+                asset_status_label = ''
+                if hasattr(asset, 'status') and asset.status and 'status' in asset._fields:
+                    asset_status_label = dict(asset._fields['status'].selection).get(asset.status, asset.status)
 
-                type_desc = (asset.asset_type_id.description or '').strip() if (asset.asset_type_id and hasattr(asset.asset_type_id, 'description')) else ''
+                asset_item = {
+                    'id': asset.id,
+                    'code': asset.name or '',
+                    'name': asset.asset_name or asset.name or 'Asset',
+                    'serial_number': asset.serial_number or asset.barcode or '',
+                    'status': asset_status_label,
+                    'count_total': tot_cnt,
+                    'count_in_store': c_in_store,
+                    'count_in_use': c_in_use,
+                    'count_customer': c_customer,
+                    'count_scrapped': c_scrapped,
+                    'purchase_total': target_currency.round(purchase_val),
+                    'depr_total': target_currency.round(depr_val),
+                    'stop_depr_total': target_currency.round(stop_depr_val),
+                }
 
-                if category_name not in asset_data_map:
-                    asset_data_map[category_name] = {
-                        'category': category_name,
-                        'items': set(),
-                        'type_descriptions': set(),
-                        'count_total': 0,
-                        'count_in_store': 0,
-                        'count_in_use': 0,
-                        'count_customer': 0,
-                        'count_scrapped': 0,
-                        'purchase_total': 0.0,
-                        'purchase_in_store': 0.0,
-                        'purchase_in_use': 0.0,
-                        'purchase_customer': 0.0,
-                        'purchase_scrapped': 0.0,
-                        'depr_total': 0.0,
-                        'depr_in_store': 0.0,
-                        'depr_in_use': 0.0,
-                        'depr_customer': 0.0,
-                        'depr_scrapped': 0.0,
-                        'stop_depr_total': 0.0,
-                    }
+                if asset.asset_type_id:
+                    tid = asset.asset_type_id.id
+                    if tid not in type_stats:
+                        type_stats[tid] = {
+                            'count_total': 0,
+                            'count_in_store': 0,
+                            'count_in_use': 0,
+                            'count_customer': 0,
+                            'count_scrapped': 0,
+                            'purchase_total': 0.0,
+                            'depr_total': 0.0,
+                            'stop_depr_total': 0.0,
+                        }
+                    target_dict = type_stats[tid]
+                    if tid not in type_assets_map:
+                        type_assets_map[tid] = []
+                    type_assets_map[tid].append(asset_item)
+                else:
+                    target_dict = uncategorized_stats
+                    uncategorized_assets.append(asset_item)
 
-                adm = asset_data_map[category_name]
-                if item_name:
-                    adm['items'].add(item_name)
-                if type_desc:
-                    adm['type_descriptions'].add(type_desc)
-                adm['count_total'] += tot_cnt
-                adm['count_in_store'] += c_in_store
-                adm['count_in_use'] += c_in_use
-                adm['count_customer'] += c_customer
-                adm['count_scrapped'] += c_scrapped
-
-                adm['purchase_total'] += purchase_val
-                adm['purchase_in_store'] += unit_p * c_in_store
-                adm['purchase_in_use'] += unit_p * c_in_use
-                adm['purchase_customer'] += unit_p * c_customer
-                adm['purchase_scrapped'] += unit_p * c_scrapped
-
-                adm['depr_total'] += depr_val
-                adm['depr_in_store'] += unit_d * c_in_store
-                adm['depr_in_use'] += unit_d * c_in_use
-                adm['depr_customer'] += unit_d * c_customer
-                adm['depr_scrapped'] += unit_d * c_scrapped
-                adm['stop_depr_total'] += stop_depr_val
+                target_dict['count_total'] += tot_cnt
+                target_dict['count_in_store'] += c_in_store
+                target_dict['count_in_use'] += c_in_use
+                target_dict['count_customer'] += c_customer
+                target_dict['count_scrapped'] += c_scrapped
+                target_dict['purchase_total'] += purchase_val
+                target_dict['depr_total'] += depr_val
+                target_dict['stop_depr_total'] += stop_depr_val
 
         asset_rows = []
-        for cat_name in sorted(asset_data_map.keys()):
-            a_info = asset_data_map[cat_name]
-            if cat_name.strip().lower() == 'general':
-                desc_val = 'General Items'
-            else:
-                desc_val = ', '.join(sorted(a_info['type_descriptions'])) if a_info['type_descriptions'] else (', '.join(sorted(a_info['items'])) if a_info['items'] else '-')
-            asset_rows.append({
-                'category': a_info['category'],
-                'description': desc_val,
-                'count_total': a_info['count_total'],
-                'count_in_store': a_info['count_in_store'],
-                'count_in_use': a_info['count_in_use'],
-                'count_customer': a_info['count_customer'],
-                'count_scrapped': a_info['count_scrapped'],
-                'purchase_total': target_currency.round(a_info['purchase_total']),
-                'purchase_in_store': target_currency.round(a_info['purchase_in_store']),
-                'purchase_in_use': target_currency.round(a_info['purchase_in_use']),
-                'purchase_customer': target_currency.round(a_info['purchase_customer']),
-                'purchase_scrapped': target_currency.round(a_info['purchase_scrapped']),
-                'depr_total': target_currency.round(a_info['depr_total']),
-                'depr_in_store': target_currency.round(a_info['depr_in_store']),
-                'depr_in_use': target_currency.round(a_info['depr_in_use']),
-                'depr_customer': target_currency.round(a_info['depr_customer']),
-                'depr_scrapped': target_currency.round(a_info['depr_scrapped']),
-                'stop_depr_total': target_currency.round(a_info['stop_depr_total']),
-            })
+        seen_type_ids = set()
+
+        def _make_row(category_name, type_name, s):
+            return {
+                'category': category_name or '-',
+                'asset_type': type_name or '-',
+                'count_total': s.get('count_total', 0),
+                'count_in_store': s.get('count_in_store', 0),
+                'count_in_use': s.get('count_in_use', 0),
+                'count_customer': s.get('count_customer', 0),
+                'count_scrapped': s.get('count_scrapped', 0),
+                'purchase_total': target_currency.round(s.get('purchase_total', 0.0)),
+                'depr_total': target_currency.round(s.get('depr_total', 0.0)),
+                'stop_depr_total': target_currency.round(s.get('stop_depr_total', 0.0)),
+                'asset_count': s.get('count_total', 0),
+                'asset_depreciation': target_currency.round(s.get('depr_total', 0.0)),
+            }
+
+        # 1. Iterate all defined categories and their mapped asset types
+        if 'asset.category' in self.env:
+            categories = self.env['asset.category'].sudo().search([], order='sequence asc, id asc')
+            for cat in categories:
+                cat_types = cat.asset_type_ids.sorted(lambda t: (t.name or '').strip().lower())
+                if cat_types:
+                    for atype in cat_types:
+                        seen_type_ids.add(atype.id)
+                        s = type_stats.get(atype.id, {})
+                        asset_rows.append(_make_row(cat.name, atype.name, s))
+                else:
+                    asset_rows.append(_make_row(cat.name, '-', {}))
+
+        # 2. Include all asset types even if no category is mapped
+        if 'asset.type' in self.env:
+            all_types = self.env['asset.type'].sudo().search([], order='name asc')
+            for atype in all_types:
+                if atype.id not in seen_type_ids:
+                    seen_type_ids.add(atype.id)
+                    s = type_stats.get(atype.id, {})
+                    cat_name = atype.category_id.name if atype.category_id else '-'
+                    asset_rows.append(_make_row(cat_name, atype.name, s))
+
+        # 3. Assets without any asset_type assigned
+        if uncategorized_stats['count_total'] > 0 or uncategorized_stats['purchase_total'] > 0:
+            asset_rows.append(_make_row('-', 'Unassigned', uncategorized_stats))
 
         asset_totals = {
             'count_total': sum(r['count_total'] for r in asset_rows),
@@ -1682,16 +1806,115 @@ class FbookReportWizard(models.TransientModel):
             'count_customer': sum(r['count_customer'] for r in asset_rows),
             'count_scrapped': sum(r['count_scrapped'] for r in asset_rows),
             'purchase_total': target_currency.round(sum(r['purchase_total'] for r in asset_rows)),
-            'purchase_in_store': target_currency.round(sum(r['purchase_in_store'] for r in asset_rows)),
-            'purchase_in_use': target_currency.round(sum(r['purchase_in_use'] for r in asset_rows)),
-            'purchase_customer': target_currency.round(sum(r['purchase_customer'] for r in asset_rows)),
-            'purchase_scrapped': target_currency.round(sum(r['purchase_scrapped'] for r in asset_rows)),
             'depr_total': target_currency.round(sum(r['depr_total'] for r in asset_rows)),
-            'depr_in_store': target_currency.round(sum(r['depr_in_store'] for r in asset_rows)),
-            'depr_in_use': target_currency.round(sum(r['depr_in_use'] for r in asset_rows)),
-            'depr_customer': target_currency.round(sum(r['depr_customer'] for r in asset_rows)),
-            'depr_scrapped': target_currency.round(sum(r['depr_scrapped'] for r in asset_rows)),
             'stop_depr_total': target_currency.round(sum(r['stop_depr_total'] for r in asset_rows)),
+            'asset_count': sum(r['count_total'] for r in asset_rows),
+            'asset_depreciation': target_currency.round(sum(r['depr_total'] for r in asset_rows)),
+        }
+
+        # Build hierarchical structure for Investment Made: Category -> Asset Types -> Assets
+        investment_made_categories = []
+        seen_cat_type_ids = set()
+
+        if 'asset.category' in self.env:
+            categories = self.env['asset.category'].sudo().search([], order='sequence asc, id asc')
+            for cat in categories:
+                cat_types_list = []
+                cat_types = cat.asset_type_ids.sorted(lambda t: (t.name or '').strip().lower())
+                for atype in cat_types:
+                    seen_cat_type_ids.add(atype.id)
+                    s = type_stats.get(atype.id, {})
+                    assets_list = sorted(type_assets_map.get(atype.id, []), key=lambda a: (a['name'] or '').lower())
+                    cat_types_list.append({
+                        'id': atype.id,
+                        'name': atype.name or '-',
+                        'count_total': s.get('count_total', 0),
+                        'count_in_store': s.get('count_in_store', 0),
+                        'count_in_use': s.get('count_in_use', 0),
+                        'count_customer': s.get('count_customer', 0),
+                        'count_scrapped': s.get('count_scrapped', 0),
+                        'purchase_total': target_currency.round(s.get('purchase_total', 0.0)),
+                        'depr_total': target_currency.round(s.get('depr_total', 0.0)),
+                        'stop_depr_total': target_currency.round(s.get('stop_depr_total', 0.0)),
+                        'assets': assets_list,
+                    })
+
+                investment_made_categories.append({
+                    'id': cat.id,
+                    'name': cat.name,
+                    'count_total': sum(t['count_total'] for t in cat_types_list),
+                    'count_in_store': sum(t['count_in_store'] for t in cat_types_list),
+                    'count_in_use': sum(t['count_in_use'] for t in cat_types_list),
+                    'count_customer': sum(t['count_customer'] for t in cat_types_list),
+                    'count_scrapped': sum(t['count_scrapped'] for t in cat_types_list),
+                    'purchase_total': target_currency.round(sum(t['purchase_total'] for t in cat_types_list)),
+                    'depr_total': target_currency.round(sum(t['depr_total'] for t in cat_types_list)),
+                    'stop_depr_total': target_currency.round(sum(t['stop_depr_total'] for t in cat_types_list)),
+                    'asset_types': cat_types_list,
+                })
+
+        # Asset types without category
+        orphaned_types = []
+        if 'asset.type' in self.env:
+            all_types = self.env['asset.type'].sudo().search([], order='name asc')
+            for atype in all_types:
+                if atype.id not in seen_cat_type_ids and atype.id in type_stats:
+                    s = type_stats[atype.id]
+                    assets_list = sorted(type_assets_map.get(atype.id, []), key=lambda a: (a['name'] or '').lower())
+                    orphaned_types.append({
+                        'id': atype.id,
+                        'name': atype.name or '-',
+                        'count_total': s.get('count_total', 0),
+                        'count_in_store': s.get('count_in_store', 0),
+                        'count_in_use': s.get('count_in_use', 0),
+                        'count_customer': s.get('count_customer', 0),
+                        'count_scrapped': s.get('count_scrapped', 0),
+                        'purchase_total': target_currency.round(s.get('purchase_total', 0.0)),
+                        'depr_total': target_currency.round(s.get('depr_total', 0.0)),
+                        'stop_depr_total': target_currency.round(s.get('stop_depr_total', 0.0)),
+                        'assets': assets_list,
+                    })
+
+        if uncategorized_stats['count_total'] > 0 or uncategorized_stats['purchase_total'] > 0:
+            orphaned_types.append({
+                'id': 'unassigned',
+                'name': 'Unassigned',
+                'count_total': uncategorized_stats.get('count_total', 0),
+                'count_in_store': uncategorized_stats.get('count_in_store', 0),
+                'count_in_use': uncategorized_stats.get('count_in_use', 0),
+                'count_customer': uncategorized_stats.get('count_customer', 0),
+                'count_scrapped': uncategorized_stats.get('count_scrapped', 0),
+                'purchase_total': target_currency.round(uncategorized_stats.get('purchase_total', 0.0)),
+                'depr_total': target_currency.round(uncategorized_stats.get('depr_total', 0.0)),
+                'stop_depr_total': target_currency.round(uncategorized_stats.get('stop_depr_total', 0.0)),
+                'assets': uncategorized_assets,
+            })
+
+        if orphaned_types:
+            investment_made_categories.append({
+                'id': 'other',
+                'name': 'Other / Uncategorized',
+                'count_total': sum(t['count_total'] for t in orphaned_types),
+                'count_in_store': sum(t['count_in_store'] for t in orphaned_types),
+                'count_in_use': sum(t['count_in_use'] for t in orphaned_types),
+                'count_customer': sum(t['count_customer'] for t in orphaned_types),
+                'count_scrapped': sum(t['count_scrapped'] for t in orphaned_types),
+                'purchase_total': target_currency.round(sum(t['purchase_total'] for t in orphaned_types)),
+                'depr_total': target_currency.round(sum(t['depr_total'] for t in orphaned_types)),
+                'stop_depr_total': target_currency.round(sum(t['stop_depr_total'] for t in orphaned_types)),
+                'asset_types': orphaned_types,
+            })
+
+        investment_made_hierarchy = {
+            'categories': investment_made_categories,
+            'count_total': asset_totals['count_total'],
+            'count_in_store': asset_totals['count_in_store'],
+            'count_in_use': asset_totals['count_in_use'],
+            'count_customer': asset_totals['count_customer'],
+            'count_scrapped': asset_totals['count_scrapped'],
+            'purchase_total': asset_totals['purchase_total'],
+            'depr_total': asset_totals['depr_total'],
+            'stop_depr_total': asset_totals['stop_depr_total'],
         }
 
         # CSR Fund Section: entries under Chart of Accounts 'CSR Expense', grouped by partner name
@@ -1915,8 +2138,63 @@ class FbookReportWizard(models.TransientModel):
         y0_margin = (y0_profit / y0_revenue * 100) if y0_revenue > 0 else 0.0
         y0_margin = min(100.0, y0_margin)
 
-        # Investors calculation for Year 0 (3rd year back)
-        y0_investors = 0.0
+        # Investments Made (sum of purchase value of assets acquired in that respective year)
+        y0_investments_made = 0.0
+        y1_investments_made = 0.0
+        y2_investments_made = 0.0
+
+        if 'asset.management' in self.env:
+            assets = self.env['asset.management'].sudo().search([])
+            for asset in assets:
+                asset_comp_id = (
+                    (asset.invoice_id.company_id.id if asset.invoice_id and asset.invoice_id.company_id else False) or
+                    (asset.product_id.company_id.id if asset.product_id and asset.product_id.company_id else False)
+                )
+                if asset_comp_id and asset_comp_id not in company_ids:
+                    continue
+
+                curr = getattr(asset.invoice_id, 'currency_id', False) or self.env.company.currency_id
+
+                p_date = (
+                    asset.invoice_date or
+                    getattr(asset, 'capitalized_date', False) or
+                    (asset.invoice_id.invoice_date if asset.invoice_id else False) or
+                    (asset.create_date.date() if asset.create_date else False)
+                )
+                if not p_date:
+                    continue
+                p_date_str = p_date.strftime('%Y-%m-%d') if hasattr(p_date, 'strftime') else str(p_date)[:10]
+
+                if y0_start_str <= p_date_str <= y0_end_str:
+                    purchase_val = custom_convert(
+                        asset.amount or 0.0, curr, target_currency,
+                        date_val=p_date, year_key='y1', record=asset
+                    )
+                    y0_investments_made += purchase_val
+                elif y1_start_str <= p_date_str <= y1_end_str:
+                    purchase_val = custom_convert(
+                        asset.amount or 0.0, curr, target_currency,
+                        date_val=p_date, year_key='y1', record=asset
+                    )
+                    y1_investments_made += purchase_val
+                elif y2_start_str <= p_date_str <= y2_end_str:
+                    purchase_val = custom_convert(
+                        asset.amount or 0.0, curr, target_currency,
+                        date_val=p_date, year_key='y2', record=asset
+                    )
+                    y2_investments_made += purchase_val
+
+        total_3y_investments_made = y0_investments_made + y1_investments_made + y2_investments_made
+
+        # Investments Received calculation (sum of investments received from investors under GL 112230)
+        y0_investments_received = 0.0
+        category_year_map = {
+            'Founder': {'y0': 0.0, 'y1': 0.0, 'y2': 0.0},
+            'Ventures': {'y0': 0.0, 'y1': 0.0, 'y2': 0.0},
+            'Promoter': {'y0': 0.0, 'y1': 0.0, 'y2': 0.0},
+            'Private Investor': {'y0': 0.0, 'y1': 0.0, 'y2': 0.0},
+        }
+
         if 'account.move.line' in self.env:
             inv_lines_y0 = self.env['account.move.line'].sudo().search([
                 ('company_id', 'in', company_ids),
@@ -1927,20 +2205,79 @@ class FbookReportWizard(models.TransientModel):
             ])
             for line in inv_lines_y0:
                 if line.credit > 0:
-                    y0_investors += custom_convert(
+                    y0_investments_received += custom_convert(
                         line.credit, line.company_id.currency_id, target_currency,
                         date_val=line.date, year_key='y0', record=line
                     )
                 elif line.debit > 0:
-                    y0_investors -= custom_convert(
+                    y0_investments_received -= custom_convert(
                         line.debit, line.company_id.currency_id, target_currency,
                         date_val=line.date, year_key='y0', record=line
                     )
 
+            # Query all lines across the 3 years for category breakdown under Equity Capital
+            all_inv_lines = self.env['account.move.line'].sudo().search([
+                ('company_id', 'in', company_ids),
+                ('parent_state', '=', 'posted'),
+                ('account_id.code', '=', '112230'),
+                ('date', '>=', y0_start_str),
+                ('date', '<=', y2_end_str),
+            ])
+            for line in all_inv_lines:
+                if line.credit > 0:
+                    ldate = line.date
+                    if not ldate:
+                        continue
+                    ldate_str = ldate.strftime('%Y-%m-%d')
+                    cat = get_investor_category(line.partner_id)
+                    if cat not in category_year_map:
+                        category_year_map[cat] = {'y0': 0.0, 'y1': 0.0, 'y2': 0.0}
+
+                    if y0_start_str <= ldate_str <= y0_end_str:
+                        amt = custom_convert(
+                            line.credit, line.company_id.currency_id, target_currency,
+                            date_val=ldate, year_key='y0', record=line
+                        )
+                        category_year_map[cat]['y0'] += amt
+                    elif y1_start_str <= ldate_str <= y1_end_str:
+                        amt = custom_convert(
+                            line.credit, line.company_id.currency_id, target_currency,
+                            date_val=ldate, year_key='y1', record=line
+                        )
+                        category_year_map[cat]['y1'] += amt
+                    elif y2_start_str <= ldate_str <= y2_end_str:
+                        amt = custom_convert(
+                            line.credit, line.company_id.currency_id, target_currency,
+                            date_val=ldate, year_key='y2', record=line
+                        )
+                        category_year_map[cat]['y2'] += amt
+
+        # Build equity_categories list
+        equity_categories = []
+        ordered_cats = ['Founder', 'Ventures', 'Promoter', 'Private Investor']
+        for c in sorted(category_year_map.keys()):
+            if c not in ordered_cats:
+                ordered_cats.append(c)
+
+        for cat in ordered_cats:
+            c_data = category_year_map.get(cat, {'y0': 0.0, 'y1': 0.0, 'y2': 0.0})
+            tot = c_data['y0'] + c_data['y1'] + c_data['y2']
+            if tot > 0 or cat in ('Founder', 'Ventures', 'Promoter', 'Private Investor'):
+                equity_categories.append({
+                    'category': cat,
+                    'y0': target_currency.round(c_data['y0']),
+                    'y1': target_currency.round(c_data['y1']),
+                    'y2': target_currency.round(c_data['y2']),
+                    'total': target_currency.round(tot),
+                })
+
+        y1_investments_received = data['y1']['total'].get('calibration', 0.0)
+        y2_investments_received = data['y2']['total'].get('calibration', 0.0)
+        total_3y_investments_received = y0_investments_received + y1_investments_received + y2_investments_received
+
         y1_billed = data['y1']['total']['billed']
         y1_revenue = y1_billed + y1_other_income
         y1_expenses = data['y1']['total']['expenses']
-        y1_investors = data['y1']['total']['calibration']
         y1_profit = y1_revenue - y1_expenses
         y1_margin = (y1_profit / y1_revenue * 100) if y1_revenue > 0 else 0.0
         y1_margin = min(100.0, y1_margin)
@@ -1948,7 +2285,6 @@ class FbookReportWizard(models.TransientModel):
         y2_billed = data['y2']['total']['billed']
         y2_revenue = y2_billed + y2_other_income
         y2_expenses = data['y2']['total']['expenses']
-        y2_investors = data['y2']['total']['calibration']
         y2_profit = y2_revenue - y2_expenses
         y2_margin = (y2_profit / y2_revenue * 100) if y2_revenue > 0 else 0.0
         y2_margin = min(100.0, y2_margin)
@@ -1959,7 +2295,6 @@ class FbookReportWizard(models.TransientModel):
 
         total_3y_revenue = y0_revenue + y1_revenue + y2_revenue
         total_3y_expenses = y0_expenses + y1_expenses + y2_expenses
-        total_3y_investors = y0_investors + y1_investors + y2_investors
         total_3y_profit = total_3y_revenue - total_3y_expenses
         total_3y_margin = (total_3y_profit / total_3y_revenue * 100) if total_3y_revenue > 0 else 0.0
         total_3y_margin = min(100.0, total_3y_margin)
@@ -1972,7 +2307,9 @@ class FbookReportWizard(models.TransientModel):
                     'prefix': y0_prefix,
                     'revenue': target_currency.round(y0_revenue),
                     'expenses': target_currency.round(y0_expenses),
-                    'investors': target_currency.round(y0_investors),
+                    'investments_made': target_currency.round(y0_investments_made),
+                    'investments_received': target_currency.round(y0_investments_received),
+                    'investors': target_currency.round(y0_investments_received),
                     'profit': target_currency.round(y0_profit),
                     'margin': round(y0_margin, 2),
                 },
@@ -1982,7 +2319,9 @@ class FbookReportWizard(models.TransientModel):
                     'prefix': y1_prefix,
                     'revenue': target_currency.round(y1_revenue),
                     'expenses': target_currency.round(y1_expenses),
-                    'investors': target_currency.round(y1_investors),
+                    'investments_made': target_currency.round(y1_investments_made),
+                    'investments_received': target_currency.round(y1_investments_received),
+                    'investors': target_currency.round(y1_investments_received),
                     'profit': target_currency.round(y1_profit),
                     'margin': round(y1_margin, 2),
                 },
@@ -1992,16 +2331,22 @@ class FbookReportWizard(models.TransientModel):
                     'prefix': y2_prefix,
                     'revenue': target_currency.round(y2_revenue),
                     'expenses': target_currency.round(y2_expenses),
-                    'investors': target_currency.round(y2_investors),
+                    'investments_made': target_currency.round(y2_investments_made),
+                    'investments_received': target_currency.round(y2_investments_received),
+                    'investors': target_currency.round(y2_investments_received),
                     'profit': target_currency.round(y2_profit),
                     'margin': round(y2_margin, 2),
                 },
             ],
             'total_revenue': target_currency.round(total_3y_revenue),
             'total_expenses': target_currency.round(total_3y_expenses),
-            'total_investors': target_currency.round(total_3y_investors),
+            'total_investments_made': target_currency.round(total_3y_investments_made),
+            'total_investments_received': target_currency.round(total_3y_investments_received),
+            'total_investors': target_currency.round(total_3y_investments_received),
             'total_profit': target_currency.round(total_3y_profit),
             'total_margin': round(total_3y_margin, 2),
+            'equity_categories': equity_categories,
+            'total_equity_capital': target_currency.round(total_3y_investments_received),
         }
 
         y1_prefix = 'CY' if y1_start == current_fy_start else 'FY'
@@ -2010,6 +2355,7 @@ class FbookReportWizard(models.TransientModel):
         return {
             'company_name': display_company_name,
             'company_name_only': company_name_only,
+            'companies': companies_info,
             'country_code': country_code_str,
             'currency_symbol': f"{target_currency.symbol} {target_currency.name}" if target_currency.symbol else target_currency.name,
             'three_year_summary': three_year_summary,
@@ -2051,10 +2397,12 @@ class FbookReportWizard(models.TransientModel):
             'total_cf_y2_remaining': total_cf_y2_remaining,
             'investor_rows': investor_rows,
             'investor_totals': investor_totals,
+            'investment_received_hierarchy': investment_received_hierarchy,
             'vendor_rows': vendor_rows,
             'vendor_totals': vendor_totals,
             'asset_rows': asset_rows,
             'asset_totals': asset_totals,
+            'investment_made_hierarchy': investment_made_hierarchy,
             'csr_rows': csr_rows,
             'csr_totals': csr_totals,
         }
@@ -2160,16 +2508,23 @@ class FbookReportWizard(models.TransientModel):
             ws.write(row, 1 + len(years), t3.get('total_margin', 0.0) / 100.0, f_pct)
             ws.set_row(row, 20)
             row += 1
-            # Investors
-            ws.write(row, 0, "Investors", f_text_bold)
+            # Investments Made
+            ws.write(row, 0, "Investments Made", f_text_bold)
             for idx, yr in enumerate(years):
-                ws.write(row, 1 + idx, yr.get('investors', 0.0), f_amt)
-            ws.write(row, 1 + len(years), t3.get('total_investors', 0.0), f_tot_hi)
+                ws.write(row, 1 + idx, yr.get('investments_made', 0.0), f_amt)
+            ws.write(row, 1 + len(years), t3.get('total_investments_made', 0.0), f_tot_hi)
+            ws.set_row(row, 20)
+            row += 1
+            # Investment Received
+            ws.write(row, 0, "Investment Received", f_text_bold)
+            for idx, yr in enumerate(years):
+                ws.write(row, 1 + idx, yr.get('investments_received', 0.0), f_amt)
+            ws.write(row, 1 + len(years), t3.get('total_investments_received', 0.0), f_tot_hi)
             ws.set_row(row, 20)
             row += 3
 
-        # 2. Quarterly Financial Breakdown
-        ws.merge_range(row, 0, row, 10, "2. QUARTERLY FINANCIAL BREAKDOWN", f_sec_title)
+        # 2. Quarterly Business & Financial Overview
+        ws.merge_range(row, 0, row, 10, "2. QUARTERLY BUSINESS & FINANCIAL OVERVIEW", f_sec_title)
         ws.set_row(row, 24)
         row += 1
         ws.write(row, 0, data.get('currency_symbol', ''), f_main_header)
@@ -2198,7 +2553,6 @@ class FbookReportWizard(models.TransientModel):
             ('Profit', 'profit', f_amt, f_amt_hi),
             ('GM (%)', 'margin', f_pct, f_pct),
             ('Cash Flow', 'cash_flow', f_amt, f_amt_hi),
-            ('Calibration', 'calibration', f_amt, f_amt_hi),
         ]
         for label, m_key, f_val, f_tot in perf_metrics:
             ws.write(row, 0, label, f_text_bold)
@@ -2346,46 +2700,46 @@ class FbookReportWizard(models.TransientModel):
         ws.set_row(row, 22)
         row += 3
 
-        # 6. Cash Flow
-        ws.merge_range(row, 0, row, 6, "6. CASH FLOW", f_sec_title)
-        ws.set_row(row, 24)
-        row += 1
-        ws.write(row, 0, data.get('currency_symbol', ''), f_main_header)
-        ws.merge_range(row, 1, row, 3, data.get('year1_label', ''), f_y1)
-        ws.merge_range(row, 4, row, 6, data.get('year2_label', ''), f_y2)
-        ws.set_row(row, 22)
-        row += 1
-        ws.write(row, 0, "Month", f_sub_left)
-        ws.write(row, 1, "In", f_sub_right)
-        ws.write(row, 2, "Out", f_sub_right)
-        ws.write(row, 3, "Remaining", f_hi_header)
-        ws.write(row, 4, "In", f_sub_right)
-        ws.write(row, 5, "Out", f_sub_right)
-        ws.write(row, 6, "Remaining", f_hi_header)
-        ws.set_row(row, 22)
-        row += 1
-        for m in data.get('monthly_cashflow', []):
-            ws.write(row, 0, m.get('month', ''), f_text_bold)
-            ws.write(row, 1, m.get('y1_in', 0.0), f_amt)
-            ws.write(row, 2, m.get('y1_out', 0.0), f_amt)
-            ws.write(row, 3, m.get('y1_remaining', 0.0), f_tot_hi)
-            ws.write(row, 4, m.get('y2_in', 0.0), f_amt)
-            ws.write(row, 5, m.get('y2_out', 0.0), f_amt)
-            ws.write(row, 6, m.get('y2_remaining', 0.0), f_tot_hi)
-            ws.set_row(row, 20)
-            row += 1
-        ws.write(row, 0, "Total", f_tot_label)
-        ws.write(row, 1, data.get('total_cf_y1_in', 0.0), f_tot_amt)
-        ws.write(row, 2, data.get('total_cf_y1_out', 0.0), f_tot_amt)
-        ws.write(row, 3, data.get('total_cf_y1_remaining', 0.0), f_tot_hi)
-        ws.write(row, 4, data.get('total_cf_y2_in', 0.0), f_tot_amt)
-        ws.write(row, 5, data.get('total_cf_y2_out', 0.0), f_tot_amt)
-        ws.write(row, 6, data.get('total_cf_y2_remaining', 0.0), f_tot_hi)
-        ws.set_row(row, 22)
-        row += 3
+        # 6. Cash Flow (Commented out for now)
+        # ws.merge_range(row, 0, row, 6, "6. CASH FLOW", f_sec_title)
+        # ws.set_row(row, 24)
+        # row += 1
+        # ws.write(row, 0, data.get('currency_symbol', ''), f_main_header)
+        # ws.merge_range(row, 1, row, 3, data.get('year1_label', ''), f_y1)
+        # ws.merge_range(row, 4, row, 6, data.get('year2_label', ''), f_y2)
+        # ws.set_row(row, 22)
+        # row += 1
+        # ws.write(row, 0, "Month", f_sub_left)
+        # ws.write(row, 1, "In", f_sub_right)
+        # ws.write(row, 2, "Out", f_sub_right)
+        # ws.write(row, 3, "Remaining", f_hi_header)
+        # ws.write(row, 4, "In", f_sub_right)
+        # ws.write(row, 5, "Out", f_sub_right)
+        # ws.write(row, 6, "Remaining", f_hi_header)
+        # ws.set_row(row, 22)
+        # row += 1
+        # for m in data.get('monthly_cashflow', []):
+        #     ws.write(row, 0, m.get('month', ''), f_text_bold)
+        #     ws.write(row, 1, m.get('y1_in', 0.0), f_amt)
+        #     ws.write(row, 2, m.get('y1_out', 0.0), f_amt)
+        #     ws.write(row, 3, m.get('y1_remaining', 0.0), f_tot_hi)
+        #     ws.write(row, 4, m.get('y2_in', 0.0), f_amt)
+        #     ws.write(row, 5, m.get('y2_out', 0.0), f_amt)
+        #     ws.write(row, 6, m.get('y2_remaining', 0.0), f_tot_hi)
+        #     ws.set_row(row, 20)
+        #     row += 1
+        # ws.write(row, 0, "Total", f_tot_label)
+        # ws.write(row, 1, data.get('total_cf_y1_in', 0.0), f_tot_amt)
+        # ws.write(row, 2, data.get('total_cf_y1_out', 0.0), f_tot_amt)
+        # ws.write(row, 3, data.get('total_cf_y1_remaining', 0.0), f_tot_hi)
+        # ws.write(row, 4, data.get('total_cf_y2_in', 0.0), f_tot_amt)
+        # ws.write(row, 5, data.get('total_cf_y2_out', 0.0), f_tot_amt)
+        # ws.write(row, 6, data.get('total_cf_y2_remaining', 0.0), f_tot_hi)
+        # ws.set_row(row, 22)
+        # row += 3
 
-        # 7. Assets
-        ws.merge_range(row, 0, row, 9, "7. ASSETS", f_sec_title)
+        # 7. Assets & Investment
+        ws.merge_range(row, 0, row, 9, "7. ASSETS & INVESTMENT", f_sec_title)
         ws.set_row(row, 24)
         row += 1
         ws.merge_range(row, 0, row, 1, data.get('currency_symbol', ''), f_main_header)
@@ -2393,8 +2747,8 @@ class FbookReportWizard(models.TransientModel):
         ws.merge_range(row, 7, row, 9, "Purchase / Depreciation", f_fy_header)
         ws.set_row(row, 22)
         row += 1
-        ws.write(row, 0, "Category", f_sub_left)
-        ws.write(row, 1, "Description", f_sub_left)
+        ws.write(row, 0, "Asset Category", f_sub_left)
+        ws.write(row, 1, "Asset Type", f_sub_left)
         ws.write(row, 2, "Total", f_sub_center)
         ws.write(row, 3, "In Store", f_sub_center)
         ws.write(row, 4, "In Use", f_sub_center)
@@ -2407,15 +2761,15 @@ class FbookReportWizard(models.TransientModel):
         row += 1
         for a in data.get('asset_rows', []):
             ws.write(row, 0, a.get('category', ''), f_text_bold)
-            ws.write(row, 1, a.get('name', ''), f_text)
+            ws.write(row, 1, a.get('asset_type', ''), f_text)
             ws.write(row, 2, a.get('count_total', 0), f_int)
             ws.write(row, 3, a.get('count_in_store', 0), f_int)
             ws.write(row, 4, a.get('count_in_use', 0), f_int)
             ws.write(row, 5, a.get('count_customer', 0), f_int)
             ws.write(row, 6, a.get('count_scrapped', 0), f_int)
             ws.write(row, 7, a.get('purchase_total', 0.0), f_amt)
-            ws.write(row, 8, a.get('depreciation_total', 0.0), f_amt)
-            ws.write(row, 9, a.get('last_depreciated_amount', 0.0), f_amt)
+            ws.write(row, 8, a.get('depr_total', 0.0), f_amt)
+            ws.write(row, 9, a.get('stop_depr_total', 0.0), f_amt)
             ws.set_row(row, 20)
             row += 1
         a_t = data.get('asset_totals', {})
@@ -2426,51 +2780,53 @@ class FbookReportWizard(models.TransientModel):
         ws.write(row, 5, a_t.get('count_customer', 0), f_int)
         ws.write(row, 6, a_t.get('count_scrapped', 0), f_int)
         ws.write(row, 7, a_t.get('purchase_total', 0.0), f_tot_amt)
-        ws.write(row, 8, a_t.get('depreciation_total', 0.0), f_tot_amt)
-        ws.write(row, 9, a_t.get('last_depreciated_amount', 0.0), f_tot_amt)
+        ws.write(row, 8, a_t.get('depr_total', 0.0), f_tot_amt)
+        ws.write(row, 9, a_t.get('stop_depr_total', 0.0), f_tot_amt)
         ws.set_row(row, 22)
         row += 3
 
-        # 8. Investors
-        ws.merge_range(row, 0, row, 7, "8. INVESTORS", f_sec_title)
+        # 8. Investment Received (Equity Capital)
+        ws.merge_range(row, 0, row, 8, "8. INVESTMENT RECEIVED (EQUITY CAPITAL)", f_sec_title)
         ws.set_row(row, 24)
         row += 1
-        ws.write(row, 0, data.get('currency_symbol', ''), f_main_header)
-        ws.merge_range(row, 1, row, 3, data.get('year1_label', ''), f_y1)
-        ws.merge_range(row, 4, row, 6, data.get('year2_label', ''), f_y2)
-        ws.write(row, 7, "Total Net Invested", f_tot_net)
+        ws.merge_range(row, 0, row, 1, data.get('currency_symbol', ''), f_main_header)
+        ws.merge_range(row, 2, row, 4, data.get('year1_label', ''), f_y1)
+        ws.merge_range(row, 5, row, 7, data.get('year2_label', ''), f_y2)
+        ws.write(row, 8, "Total Net Invested", f_tot_net)
         ws.set_row(row, 22)
         row += 1
-        ws.write(row, 0, "Partner / Investor", f_sub_left)
-        ws.write(row, 1, "Received", f_received)
-        ws.write(row, 2, "Repaid", f_repaid)
-        ws.write(row, 3, "Net Invested", f_sub_right)
-        ws.write(row, 4, "Received", f_received)
-        ws.write(row, 5, "Repaid", f_repaid)
-        ws.write(row, 6, "Net Invested", f_sub_right)
-        ws.write(row, 7, "Cumulative Total", f_tot_net)
+        ws.write(row, 0, "Category", f_sub_left)
+        ws.write(row, 1, "Partner / Investor", f_sub_left)
+        ws.write(row, 2, "Received", f_received)
+        ws.write(row, 3, "Repaid", f_repaid)
+        ws.write(row, 4, "Net Invested", f_sub_right)
+        ws.write(row, 5, "Received", f_received)
+        ws.write(row, 6, "Repaid", f_repaid)
+        ws.write(row, 7, "Net Invested", f_sub_right)
+        ws.write(row, 8, "Cumulative Total", f_tot_net)
         ws.set_row(row, 22)
         row += 1
         for inv in data.get('investor_rows', []):
-            ws.write(row, 0, inv.get('investor', ''), f_text_bold)
-            ws.write(row, 1, inv.get('y1_received', 0.0), f_amt)
-            ws.write(row, 2, inv.get('y1_repaid', 0.0), f_amt)
-            ws.write(row, 3, inv.get('y1_net', 0.0), f_amt_hi)
-            ws.write(row, 4, inv.get('y2_received', 0.0), f_amt)
-            ws.write(row, 5, inv.get('y2_repaid', 0.0), f_amt)
-            ws.write(row, 6, inv.get('y2_net', 0.0), f_amt_hi)
-            ws.write(row, 7, inv.get('total_net', 0.0), f_tot_net_amt)
+            ws.write(row, 0, inv.get('category', ''), f_text)
+            ws.write(row, 1, inv.get('investor', ''), f_text_bold)
+            ws.write(row, 2, inv.get('y1_received', 0.0), f_amt)
+            ws.write(row, 3, inv.get('y1_repaid', 0.0), f_amt)
+            ws.write(row, 4, inv.get('y1_net', 0.0), f_amt_hi)
+            ws.write(row, 5, inv.get('y2_received', 0.0), f_amt)
+            ws.write(row, 6, inv.get('y2_repaid', 0.0), f_amt)
+            ws.write(row, 7, inv.get('y2_net', 0.0), f_amt_hi)
+            ws.write(row, 8, inv.get('total_net', 0.0), f_tot_net_amt)
             ws.set_row(row, 20)
             row += 1
         inv_t = data.get('investor_totals', {})
-        ws.write(row, 0, "Total", f_tot_label)
-        ws.write(row, 1, inv_t.get('y1_received', 0.0), f_tot_amt)
-        ws.write(row, 2, inv_t.get('y1_repaid', 0.0), f_tot_amt)
-        ws.write(row, 3, inv_t.get('y1_net', 0.0), f_tot_hi)
-        ws.write(row, 4, inv_t.get('y2_received', 0.0), f_tot_amt)
-        ws.write(row, 5, inv_t.get('y2_repaid', 0.0), f_tot_amt)
-        ws.write(row, 6, inv_t.get('y2_net', 0.0), f_tot_hi)
-        ws.write(row, 7, inv_t.get('total_net', 0.0), f_tot_hi)
+        ws.merge_range(row, 0, row, 1, "Total", f_tot_label)
+        ws.write(row, 2, inv_t.get('y1_received', 0.0), f_tot_amt)
+        ws.write(row, 3, inv_t.get('y1_repaid', 0.0), f_tot_amt)
+        ws.write(row, 4, inv_t.get('y1_net', 0.0), f_tot_hi)
+        ws.write(row, 5, inv_t.get('y2_received', 0.0), f_tot_amt)
+        ws.write(row, 6, inv_t.get('y2_repaid', 0.0), f_tot_amt)
+        ws.write(row, 7, inv_t.get('y2_net', 0.0), f_tot_hi)
+        ws.write(row, 8, inv_t.get('total_net', 0.0), f_tot_hi)
         ws.set_row(row, 22)
         row += 3
 

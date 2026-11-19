@@ -524,9 +524,15 @@
                     <button class="fbook-export-btn" t-on-click="exportToExcel">
                         <i class="fa fa-file-excel-o"/> <span>Export to Excel</span>
                     </button>
-                    <div class="fbook-meta">
+                    <div class="fbook-meta" style="max-width: 650px; text-align: right; line-height: 1.4;">
                         <i class="fa fa-building-o" style="margin-right: 6px; color: #64748b;"/>
-                        Company: <strong style="color: #0f172a; margin-left: 4px;"><t t-esc="state.report_data.company_name"/></strong>
+                        <t t-if="state.report_data.companies and state.report_data.companies.length > 1">
+                            Companies:
+                        </t>
+                        <t t-else="">
+                            Company:
+                        </t>
+                        <strong style="color: #0f172a; margin-left: 4px;"><t t-esc="state.report_data.company_name"/></strong>
                     </div>
                 </div>
             </div>
@@ -628,15 +634,26 @@
                                     </td>
                                 </tr>
 
-                                <!-- Row 4: Investors -->
+                                <!-- Row 4: Investments Made -->
                                 <tr class="metric-row">
                                     <td class="row-label" style="font-weight: 700; color: #0f172a;">
-                                        <i class="fa fa-users" style="color: #0284c7; margin-right: 6px;"></i> Investors
+                                        <i class="fa fa-cubes" style="color: #d97706; margin-right: 6px;"></i> Investments Made
                                     </td>
                                     <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
-                                        <td style="font-weight: 600; color: #0284c7;"><t t-out="formatAmt(yr.investors)"/></td>
+                                        <td style="font-weight: 600; color: #0f172a;"><t t-out="formatAmt(yr.investments_made)"/></td>
                                     </t>
-                                    <td class="total-cell" style="font-weight: 800; background: #f0f9ff; color: #0369a1;"><t t-out="formatAmt(state.report_data.three_year_summary.total_investors)"/></td>
+                                    <td class="total-cell" style="font-weight: 800; background: #fffbeb; color: #b45309;"><t t-out="formatAmt(state.report_data.three_year_summary.total_investments_made)"/></td>
+                                </tr>
+
+                                <!-- Row 5: Investment Received -->
+                                <tr class="metric-row">
+                                    <td class="row-label" style="font-weight: 700; color: #0f172a;">
+                                        <i class="fa fa-handshake-o" style="color: #0284c7; margin-right: 6px;"></i> Investment Received
+                                    </td>
+                                    <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
+                                        <td style="font-weight: 600; color: #0284c7;"><t t-out="formatAmt(yr.investments_received)"/></td>
+                                    </t>
+                                    <td class="total-cell" style="font-weight: 800; background: #f0f9ff; color: #0369a1;"><t t-out="formatAmt(state.report_data.three_year_summary.total_investments_received)"/></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -648,7 +665,7 @@
                  2. MAIN QUARTERLY PERFORMANCE TABLE
                  ═══════════════════════════════════════════════════════════ -->
             <div class="fbook-section-header" style="margin-top: 14px;">
-                <div class="fbook-title">Quarterly Financial Breakdown</div>
+                <div class="fbook-title">Quarterly Business &amp; Financial Overview</div>
                 <div class="fbook-scroll-hint"><i class="fa fa-arrows-h"/> Scroll horizontally</div>
             </div>
             <div class="fbook-table-wrapper">
@@ -878,23 +895,6 @@
                             <td><t t-out="formatAmt(state.report_data.data.y2.q4.cash_flow)"/></td>
                             <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.cash_flow)"/></td>
                         </tr>
-
-                        <!-- Investors -->
-                        <tr class="metric-row">
-                            <td class="row-label">Investors</td>
-                            <!-- Y1 -->
-                            <td><t t-out="formatAmt(state.report_data.data.y1.q1.calibration)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.data.y1.q2.calibration)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.data.y1.q3.calibration)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.data.y1.q4.calibration)"/></td>
-                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.calibration)"/></td>
-                            <!-- Y2 -->
-                            <td><t t-out="formatAmt(state.report_data.data.y2.q1.calibration)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.data.y2.q2.calibration)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.data.y2.q3.calibration)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.data.y2.q4.calibration)"/></td>
-                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.calibration)"/></td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -1060,7 +1060,7 @@
                     </thead>
                     <tbody>
                         <t t-if="state.report_data.vendor_rows and state.report_data.vendor_rows.length">
-                            <t t-foreach="state.report_data.vendor_rows" t-as="v" t-key="v.key or (v.vendor + '_' + (v.description or ''))">
+                            <t t-foreach="displayedVendorRows" t-as="v" t-key="v.key or (v.vendor + '_' + (v.description or ''))">
                                 <tr class="metric-row">
                                     <td class="fbook-sticky-col" t-att-title="v.vendor" style="text-align: left; font-weight: 600; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><t t-esc="v.vendor"/></td>
                                     <td t-att-title="v.description" style="text-align: left; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><t t-esc="v.description"/></td>
@@ -1072,6 +1072,24 @@
                                     <td><t t-out="formatAmt(v.y2_billed)"/></td>
                                     <td><t t-out="formatAmt(v.y2_actual)"/></td>
                                     <td class="total-cell"><t t-out="formatAmt(v.y2_remaining)"/></td>
+                                </tr>
+                            </t>
+                            <!-- 6th row: Show All / Show Top 5 toggle button -->
+                            <t t-if="state.report_data.vendor_rows.length > 5">
+                                <tr style="background: #f8fafc; border-top: 1px dashed #cbd5e1; border-bottom: 1px dashed #cbd5e1;">
+                                    <td colspan="8" class="text-center" style="padding: 10px 16px;">
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-primary"
+                                                style="font-weight: 600; font-size: 12px; padding: 5px 22px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;"
+                                                t-on-click="toggleShowAllVendors">
+                                            <t t-if="!state.show_all_vendors">
+                                                <i class="fa fa-chevron-down me-1"/> Show All (<t t-esc="state.report_data.vendor_rows.length"/> records)
+                                            </t>
+                                            <t t-else="">
+                                                <i class="fa fa-chevron-up me-1"/> Show Top 5
+                                            </t>
+                                        </button>
+                                    </td>
                                 </tr>
                             </t>
                             <!-- Totals row -->
@@ -1099,8 +1117,9 @@
             </div>
 
             <!-- ═══════════════════════════════════════════════════════════
-                 6. CASH FLOW REPORT
+                 6. CASH FLOW REPORT (COMMENTED OUT FOR NOW)
                  ═══════════════════════════════════════════════════════════ -->
+            <!--
             <div class="fbook-section-header">
                 <div class="fbook-title">Cash Flow</div>
                 <div class="fbook-scroll-hint"><i class="fa fa-arrows-h"/> Scroll horizontally</div>
@@ -1108,25 +1127,20 @@
             <div class="fbook-table-wrapper">
                 <table class="fbook-table" style="min-width: 960px; table-layout: fixed;">
                     <colgroup>
-                        <!-- Part 1: Month (33.33%) -->
                         <col style="width: 33.33%;"/>
-                        <!-- Part 2: Year 1 (33.33% total) -->
                         <col style="width: 11.11%;"/>
                         <col style="width: 11.11%;"/>
                         <col style="width: 11.11%;"/>
-                        <!-- Part 3: Year 2 (33.34% total) -->
                         <col style="width: 11.11%;"/>
                         <col style="width: 11.11%;"/>
                         <col style="width: 11.12%;"/>
                     </colgroup>
                     <thead>
-                        <!-- Row 1: FY Labels -->
                         <tr>
                             <th colspan="1" class="main-header" style="text-align: left; width: 33.33%;"><t t-esc="state.report_data.currency_symbol"/></th>
                             <th colspan="3" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'" style="width: 33.33%;"><t t-esc="state.report_data.year1_label"/></th>
                             <th colspan="3" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'" style="width: 33.34%;"><t t-esc="state.report_data.year2_label"/></th>
                         </tr>
-                        <!-- Row 2: Column names -->
                         <tr>
                             <th class="fbook-sticky-col" style="text-align: left;">Month</th>
                             <th style="text-align: right;">In</th>
@@ -1141,24 +1155,19 @@
                         <t t-foreach="state.report_data.monthly_cashflow" t-as="m" t-key="m.month">
                             <tr class="metric-row">
                                 <td class="fbook-sticky-col" style="text-align: left;"><t t-esc="m.month"/></td>
-                                <!-- Year 1 -->
                                 <td><t t-out="formatAmt(m.y1_in)"/></td>
                                 <td><t t-out="formatAmt(m.y1_out)"/></td>
                                 <td style="font-weight: 600;"><t t-out="formatAmt(m.y1_remaining)"/></td>
-                                <!-- Year 2 -->
                                 <td><t t-out="formatAmt(m.y2_in)"/></td>
                                 <td><t t-out="formatAmt(m.y2_out)"/></td>
                                 <td style="font-weight: 600;"><t t-out="formatAmt(m.y2_remaining)"/></td>
                             </tr>
                         </t>
-                        <!-- Totals row -->
                         <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
                             <td class="fbook-sticky-col" style="text-align: left;">Total</td>
-                            <!-- Year 1 -->
                             <td><t t-out="formatAmt(state.report_data.total_cf_y1_in)"/></td>
                             <td><t t-out="formatAmt(state.report_data.total_cf_y1_out)"/></td>
                             <td><t t-out="formatAmt(state.report_data.total_cf_y1_remaining)"/></td>
-                            <!-- Year 2 -->
                             <td><t t-out="formatAmt(state.report_data.total_cf_y2_in)"/></td>
                             <td><t t-out="formatAmt(state.report_data.total_cf_y2_out)"/></td>
                             <td><t t-out="formatAmt(state.report_data.total_cf_y2_remaining)"/></td>
@@ -1166,83 +1175,361 @@
                     </tbody>
                 </table>
             </div>
+            -->
 
             <!-- ═══════════════════════════════════════════════════════════
-                 7. ASSETS
+                 7. ASSETS & INVESTMENT (DRILL-DOWN TABLE)
                  ═══════════════════════════════════════════════════════════ -->
             <div class="fbook-section-header">
-                <div class="fbook-title">Assets</div>
+                <div class="fbook-title">Assets &amp; Investment</div>
                 <div class="fbook-scroll-hint"><i class="fa fa-arrows-h"/> Scroll horizontally</div>
             </div>
-            <div class="fbook-table-wrapper">
-                <table class="fbook-table" style="min-width: 1150px;">
-                    <thead>
-                        <!-- Row 1: Header with Currency and Main Metric Groups -->
-                        <tr>
-                            <th class="main-header" colspan="2" style="text-align: left; min-width: 250px;">
-                                <t t-esc="state.report_data.currency_symbol"/>
-                            </th>
-                            <th colspan="5" class="fbook-header-cy" style="text-align: center;">
-                                Assets Count
-                            </th>
-                            <th colspan="3" class="fbook-header-fy" style="text-align: center;">
-                                Purchase / Depreciation
-                            </th>
-                        </tr>
-                        <!-- Row 2: Sub-headers for each status bucket and metric -->
-                        <tr>
-                            <th class="fbook-sticky-col" style="text-align: left; min-width: 140px; background: #f8fafc; font-weight: 700;">Category</th>
-                            <th style="text-align: left; min-width: 200px; background: #f8fafc; font-weight: 700;">Description</th>
-                            <!-- Assets Count -->
-                            <th class="text-center" style="width: 70px; background: #f1f5f9; font-weight: 700;">Total</th>
-                            <th class="text-center" style="width: 75px; background: #f1f5f9; font-weight: 700;">In Store</th>
-                            <th class="text-center" style="width: 75px; background: #f1f5f9; font-weight: 700;">In Use</th>
-                            <th class="text-center" style="width: 90px; background: #f1f5f9; font-weight: 700;">Cust. Loc</th>
-                            <th class="text-center" style="width: 75px; background: #f1f5f9; font-weight: 700;">Scrapped</th>
-                            <!-- Purchase / Depreciation -->
-                            <th class="text-center" style="width: 130px; background: #fef3c7; font-weight: 700;">Purchase Value</th>
-                            <th class="text-center" style="width: 140px; background: #e0e7ff; font-weight: 700;">Depreciation Value</th>
-                            <th class="text-center" style="width: 170px; background: #f1f5f9; font-weight: 700;">Last Depreciated Amount</th>
-                        </tr>
-                    </thead>
+            <div class="fbook-table-wrapper" style="border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff;">
+                <table class="fbook-table" style="width: 100%; border-collapse: collapse; min-width: 1100px;">
                     <tbody>
-                        <t t-if="state.report_data.asset_rows and state.report_data.asset_rows.length">
-                            <t t-foreach="state.report_data.asset_rows" t-as="a" t-key="a.category">
-                                <tr class="metric-row">
-                                    <td class="fbook-sticky-col" style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="a.category"/></td>
-                                    <td style="text-align: left; color: #475569; font-size: 12px;"><t t-esc="a.description"/></td>
-                                    <!-- Assets Count -->
-                                    <td class="text-center total-cell"><t t-esc="a.count_total"/></td>
-                                    <td class="text-center"><t t-esc="a.count_in_store"/></td>
-                                    <td class="text-center"><t t-esc="a.count_in_use"/></td>
-                                    <td class="text-center"><t t-esc="a.count_customer"/></td>
-                                    <td class="text-center"><t t-esc="a.count_scrapped"/></td>
-                                    <!-- Purchase / Depreciation -->
-                                    <td class="total-cell"><t t-out="formatAmt(a.purchase_total)"/></td>
-                                    <td style="background: #eef2ff;"><t t-out="formatAmt(a.depr_total)"/></td>
-                                    <td><t t-out="formatAmt(a.stop_depr_total)"/></td>
-                                </tr>
-                            </t>
-                            <!-- Totals row -->
-                            <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
-                                <td class="fbook-sticky-col" style="text-align: left;">Total</td>
-                                <td></td>
-                                <!-- Assets Count Totals -->
-                                <td class="text-center total-cell"><t t-esc="state.report_data.asset_totals.count_total"/></td>
-                                <td class="text-center"><t t-esc="state.report_data.asset_totals.count_in_store"/></td>
-                                <td class="text-center"><t t-esc="state.report_data.asset_totals.count_in_use"/></td>
-                                <td class="text-center"><t t-esc="state.report_data.asset_totals.count_customer"/></td>
-                                <td class="text-center"><t t-esc="state.report_data.asset_totals.count_scrapped"/></td>
-                                <!-- Purchase / Depreciation Totals -->
-                                <td class="total-cell"><t t-out="formatAmt(state.report_data.asset_totals.purchase_total)"/></td>
-                                <td style="background: #e0e7ff;"><t t-out="formatAmt(state.report_data.asset_totals.depr_total)"/></td>
-                                <td><t t-out="formatAmt(state.report_data.asset_totals.stop_depr_total)"/></td>
+                        <!-- ─────────────────────────────────────────────────────────────
+                             ROW 1: INVESTMENT MADE (MASTER DRILL-DOWN ROW)
+                             ───────────────────────────────────────────────────────────── -->
+                        <tr class="fbook-drill-header-row"
+                            style="background: #f8fafc; cursor: pointer; border-bottom: 2px solid #e2e8f0; transition: background 0.15s ease;"
+                            t-on-click="() => this.toggleDrill('investment_made')">
+                            <td style="text-align: left; padding: 14px 18px; width: 35%; border-right: none;">
+                                <i t-att-class="isExpanded('investment_made') ? 'fa fa-chevron-down text-primary me-2' : 'fa fa-chevron-right text-muted me-2'"/>
+                                <i class="fa fa-cubes me-2" style="color: #d97706; font-size: 16px;"/>
+                                <span style="font-size: 15px; font-weight: 700; color: #0f172a;">Investment Made</span>
+                                <span class="badge ms-2" style="background: #fef3c7; color: #b45309; font-size: 11px; padding: 3px 8px; border-radius: 4px;">Assets &amp; CapEx</span>
+                            </td>
+                            <td style="text-align: right; padding: 14px 18px; color: #475569; font-size: 13px; border-left: none;">
+                                <span class="me-3">
+                                    <strong style="color: #64748b;">Total Assets:</strong>
+                                    <span class="badge bg-secondary ms-1" style="font-size: 12px;"><t t-esc="state.report_data.asset_totals.count_total"/></span>
+                                </span>
+                                <span class="me-3">
+                                    <strong style="color: #64748b;">Purchase Value:</strong>
+                                    <span style="font-weight: 700; color: #0f172a; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.asset_totals.purchase_total)"/></span>
+                                </span>
+                                <span class="me-3">
+                                    <strong style="color: #64748b;">Depreciation:</strong>
+                                    <span style="font-weight: 600; color: #64748b; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.asset_totals.depr_total)"/></span>
+                                </span>
+                                <span>
+                                    <strong style="color: #64748b;">Book Value / Stop Depr:</strong>
+                                    <span style="font-weight: 700; color: #d97706; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.asset_totals.stop_depr_total)"/></span>
+                                </span>
+                            </td>
+                        </tr>
+
+                        <!-- INVESTMENT MADE: SUB-TABLE DRILL-DOWN -->
+                        <t t-if="isExpanded('investment_made')">
+                            <tr>
+                                <td colspan="2" style="padding: 0; background: #ffffff; border-bottom: 2px solid #cbd5e1;">
+                                    <table class="fbook-table" style="width: 100%; border-collapse: collapse; margin: 0; min-width: 1150px;">
+                                        <thead>
+                                            <!-- Headers -->
+                                            <tr>
+                                                <th class="main-header" colspan="2" style="text-align: left; min-width: 250px;">
+                                                    <t t-esc="state.report_data.currency_symbol"/>
+                                                </th>
+                                                <th colspan="5" class="fbook-header-cy" style="text-align: center;">
+                                                    Assets Count
+                                                </th>
+                                                <th colspan="3" class="fbook-header-fy" style="text-align: center;">
+                                                    Purchase / Depreciation
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <th class="fbook-sticky-col" style="text-align: left; min-width: 180px; background: #f8fafc; font-weight: 700;">Asset Category / Type / Item</th>
+                                                <th style="text-align: left; min-width: 180px; background: #f8fafc; font-weight: 700;">Details / Status</th>
+                                                <th class="text-center" style="width: 70px; background: #f1f5f9; font-weight: 700;">Total</th>
+                                                <th class="text-center" style="width: 75px; background: #f1f5f9; font-weight: 700;">In Store</th>
+                                                <th class="text-center" style="width: 75px; background: #f1f5f9; font-weight: 700;">In Use</th>
+                                                <th class="text-center" style="width: 90px; background: #f1f5f9; font-weight: 700;">Cust. Loc</th>
+                                                <th class="text-center" style="width: 75px; background: #f1f5f9; font-weight: 700;">Scrapped</th>
+                                                <th class="text-center" style="width: 130px; background: #fef3c7; font-weight: 700;">Purchase Value</th>
+                                                <th class="text-center" style="width: 140px; background: #e0e7ff; font-weight: 700;">Depreciation Value</th>
+                                                <th class="text-center" style="width: 170px; background: #e0e7ff; font-weight: 700;">Last Depreciated Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-if="state.report_data.investment_made_hierarchy and state.report_data.investment_made_hierarchy.categories and state.report_data.investment_made_hierarchy.categories.length">
+                                                <t t-foreach="state.report_data.investment_made_hierarchy.categories" t-as="cat" t-key="cat.id">
+                                                    <!-- LEVEL 1: CATEGORY ROW -->
+                                                    <tr style="background: #f1f5f9; cursor: pointer; font-weight: 700; border-top: 1px solid #cbd5e1;"
+                                                        t-on-click="() => this.toggleDrill('cat_' + cat.id)">
+                                                        <td colspan="2" style="text-align: left; padding: 10px 14px; color: #0f172a;">
+                                                            <i t-att-class="isExpanded('cat_' + cat.id) ? 'fa fa-chevron-down text-primary me-2' : 'fa fa-chevron-right text-muted me-2'"/>
+                                                            <i class="fa fa-folder-open-o text-warning me-1"/>
+                                                            <span style="font-size: 13px;"><t t-esc="cat.name"/></span>
+                                                            <span class="badge ms-2" style="background: #e2e8f0; color: #475569; font-weight: 600; font-size: 10px;">
+                                                                <t t-esc="cat.asset_types.length"/> types
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-center total-cell"><t t-esc="cat.count_total"/></td>
+                                                        <td class="text-center"><t t-esc="cat.count_in_store"/></td>
+                                                        <td class="text-center"><t t-esc="cat.count_in_use"/></td>
+                                                        <td class="text-center"><t t-esc="cat.count_customer"/></td>
+                                                        <td class="text-center"><t t-esc="cat.count_scrapped"/></td>
+                                                        <td class="total-cell"><t t-out="formatAmt(cat.purchase_total)"/></td>
+                                                        <td style="background: #eef2ff;"><t t-out="formatAmt(cat.depr_total)"/></td>
+                                                        <td style="background: #eef2ff;"><t t-out="formatAmt(cat.stop_depr_total)"/></td>
+                                                    </tr>
+
+                                                    <!-- LEVEL 2: ASSET TYPES UNDER CATEGORY -->
+                                                    <t t-if="isExpanded('cat_' + cat.id)">
+                                                        <t t-foreach="cat.asset_types" t-as="atype" t-key="atype.id">
+                                                            <tr style="background: #f8fafc; cursor: pointer; font-weight: 600; border-top: 1px dashed #e2e8f0;"
+                                                                t-on-click="() => this.toggleDrill('type_' + atype.id)">
+                                                                <td style="text-align: left; padding-left: 36px; color: #1e293b;">
+                                                                    <i t-att-class="isExpanded('type_' + atype.id) ? 'fa fa-chevron-down text-primary me-2' : 'fa fa-chevron-right text-muted me-2'"/>
+                                                                    <i class="fa fa-cube text-secondary me-1"/>
+                                                                    <t t-esc="atype.name"/>
+                                                                </td>
+                                                                <td style="text-align: left; color: #64748b; font-size: 11px;">
+                                                                    <t t-if="atype.assets and atype.assets.length">
+                                                                        <span class="badge" style="background: #f1f5f9; color: #334155;"><t t-esc="atype.assets.length"/> items</span>
+                                                                    </t>
+                                                                    <t t-else="">
+                                                                        <span class="text-muted">No items</span>
+                                                                    </t>
+                                                                </td>
+                                                                <td class="text-center total-cell"><t t-esc="atype.count_total"/></td>
+                                                                <td class="text-center"><t t-esc="atype.count_in_store"/></td>
+                                                                <td class="text-center"><t t-esc="atype.count_in_use"/></td>
+                                                                <td class="text-center"><t t-esc="atype.count_customer"/></td>
+                                                                <td class="text-center"><t t-esc="atype.count_scrapped"/></td>
+                                                                <td class="total-cell"><t t-out="formatAmt(atype.purchase_total)"/></td>
+                                                                <td style="background: #eef2ff;"><t t-out="formatAmt(atype.depr_total)"/></td>
+                                                                <td style="background: #eef2ff;"><t t-out="formatAmt(atype.stop_depr_total)"/></td>
+                                                            </tr>
+
+                                                            <!-- LEVEL 3: INDIVIDUAL ASSETS UNDER ASSET TYPE -->
+                                                            <t t-if="isExpanded('type_' + atype.id)">
+                                                                <t t-if="atype.assets and atype.assets.length">
+                                                                    <t t-foreach="atype.assets" t-as="asset" t-key="asset.id">
+                                                                        <tr style="background: #ffffff; border-top: 1px dotted #e2e8f0; font-size: 12px;">
+                                                                            <td style="text-align: left; padding-left: 60px; color: #334155;">
+                                                                                <i class="fa fa-file-text-o text-muted me-1"/>
+                                                                                <span style="font-weight: 600;"><t t-esc="asset.name"/></span>
+                                                                                <t t-if="asset.code and asset.code != asset.name">
+                                                                                    <span class="text-muted ms-1">(<t t-esc="asset.code"/>)</span>
+                                                                                </t>
+                                                                            </td>
+                                                                            <td style="text-align: left; color: #64748b;">
+                                                                                <t t-if="asset.serial_number">
+                                                                                    <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 10px; margin-right: 4px;">SN: <t t-esc="asset.serial_number"/></span>
+                                                                                </t>
+                                                                                <t t-if="asset.status">
+                                                                                    <span class="badge" style="background: #ecfdf5; color: #047857; font-size: 10px;"><t t-esc="asset.status"/></span>
+                                                                                </t>
+                                                                            </td>
+                                                                            <td class="text-center total-cell"><t t-esc="asset.count_total"/></td>
+                                                                            <td class="text-center"><t t-esc="asset.count_in_store"/></td>
+                                                                            <td class="text-center"><t t-esc="asset.count_in_use"/></td>
+                                                                            <td class="text-center"><t t-esc="asset.count_customer"/></td>
+                                                                            <td class="text-center"><t t-esc="asset.count_scrapped"/></td>
+                                                                            <td class="total-cell"><t t-out="formatAmt(asset.purchase_total)"/></td>
+                                                                            <td style="background: #f8fafc;"><t t-out="formatAmt(asset.depr_total)"/></td>
+                                                                            <td style="background: #f8fafc;"><t t-out="formatAmt(asset.stop_depr_total)"/></td>
+                                                                        </tr>
+                                                                    </t>
+                                                                </t>
+                                                                <t t-else="">
+                                                                    <tr style="background: #ffffff; font-size: 12px;">
+                                                                        <td colspan="10" style="padding-left: 60px; color: #94a3b8; font-style: italic;">
+                                                                            No asset records found under this asset type.
+                                                                        </td>
+                                                                    </tr>
+                                                                </t>
+                                                            </t>
+                                                        </t>
+                                                    </t>
+                                                </t>
+                                                <!-- Total row for Investment Made -->
+                                                <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a; border-top: 2px solid #cbd5e1;">
+                                                    <td class="fbook-sticky-col" style="text-align: left; padding: 10px 14px;" colspan="2">Total Investment Made</td>
+                                                    <td class="text-center total-cell"><t t-esc="state.report_data.investment_made_hierarchy.count_total"/></td>
+                                                    <td class="text-center"><t t-esc="state.report_data.investment_made_hierarchy.count_in_store"/></td>
+                                                    <td class="text-center"><t t-esc="state.report_data.investment_made_hierarchy.count_in_use"/></td>
+                                                    <td class="text-center"><t t-esc="state.report_data.investment_made_hierarchy.count_customer"/></td>
+                                                    <td class="text-center"><t t-esc="state.report_data.investment_made_hierarchy.count_scrapped"/></td>
+                                                    <td class="total-cell"><t t-out="formatAmt(state.report_data.investment_made_hierarchy.purchase_total)"/></td>
+                                                    <td style="background: #e0e7ff;"><t t-out="formatAmt(state.report_data.investment_made_hierarchy.depr_total)"/></td>
+                                                    <td style="background: #e0e7ff;"><t t-out="formatAmt(state.report_data.investment_made_hierarchy.stop_depr_total)"/></td>
+                                                </tr>
+                                            </t>
+                                            <t t-else="">
+                                                <tr>
+                                                    <td colspan="10" class="text-center text-muted" style="padding: 16px;">
+                                                        No asset records found.
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </td>
                             </tr>
                         </t>
-                        <t t-else="">
+
+                        <!-- ─────────────────────────────────────────────────────────────
+                             ROW 2: INVESTMENT RECEIVED (MASTER DRILL-DOWN ROW)
+                             ───────────────────────────────────────────────────────────── -->
+                        <tr class="fbook-drill-header-row"
+                            style="background: #f8fafc; cursor: pointer; border-bottom: 2px solid #e2e8f0; border-top: 2px solid #cbd5e1; transition: background 0.15s ease;"
+                            t-on-click="() => this.toggleDrill('investment_received')">
+                            <td style="text-align: left; padding: 14px 18px; width: 35%; border-right: none;">
+                                <i t-att-class="isExpanded('investment_received') ? 'fa fa-chevron-down text-primary me-2' : 'fa fa-chevron-right text-muted me-2'"/>
+                                <i class="fa fa-handshake-o me-2" style="color: #0284c7; font-size: 16px;"/>
+                                <span style="font-size: 15px; font-weight: 700; color: #0f172a;">Investment Recieved</span>
+                                <span class="badge ms-2" style="background: #e0f2fe; color: #0284c7; font-size: 11px; padding: 3px 8px; border-radius: 4px;">Equity &amp; Debt Capital</span>
+                            </td>
+                            <td style="text-align: right; padding: 14px 18px; color: #475569; font-size: 13px; border-left: none;">
+                                <span class="me-3">
+                                    <strong style="color: #64748b;"><t t-esc="state.report_data.year1_label"/> Net:</strong>
+                                    <span style="font-weight: 600; color: #0284c7; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.investor_totals.y1_net)"/></span>
+                                </span>
+                                <span class="me-3">
+                                    <strong style="color: #64748b;"><t t-esc="state.report_data.year2_label"/> Net:</strong>
+                                    <span style="font-weight: 600; color: #0284c7; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.investor_totals.y2_net)"/></span>
+                                </span>
+                                <span>
+                                    <strong style="color: #64748b;">Cumulative Net Invested:</strong>
+                                    <span style="font-weight: 800; color: #0369a1; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.investor_totals.total_net)"/></span>
+                                </span>
+                            </td>
+                        </tr>
+
+                        <!-- INVESTMENT RECEIVED: SUB-TABLE DRILL-DOWN -->
+                        <t t-if="isExpanded('investment_received')">
                             <tr>
-                                <td colspan="10" class="text-center text-muted" style="padding: 16px;">
-                                    No assets found.
+                                <td colspan="2" style="padding: 0; background: #ffffff;">
+                                    <table class="fbook-table" style="width: 100%; border-collapse: collapse; margin: 0; min-width: 1050px;">
+                                        <thead>
+                                            <!-- Headers -->
+                                            <tr>
+                                                <th colspan="2" class="main-header" style="text-align: left; min-width: 300px;"><t t-esc="state.report_data.currency_symbol"/></th>
+                                                <th colspan="3" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year1_label"/></th>
+                                                <th colspan="3" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year2_label"/></th>
+                                                <th rowspan="2" style="text-align: right; width: 130px; background: #0284c7; color: white; font-weight: 700; vertical-align: middle;">Total Net Invested</th>
+                                            </tr>
+                                            <tr>
+                                                <th style="text-align: left; min-width: 200px; background: #f8fafc; font-weight: 700;">Category / Partner / Investor</th>
+                                                <th style="text-align: left; min-width: 160px; background: #f8fafc; font-weight: 700;">Reference / Label</th>
+                                                <th style="text-align: right; width: 110px; background: #f0fdf4; font-weight: 700; color: #166534;">Received</th>
+                                                <th style="text-align: right; width: 110px; background: #fef2f2; font-weight: 700; color: #991b1b;">Repaid</th>
+                                                <th style="text-align: right; width: 115px; background: #f1f5f9; font-weight: 700; color: #0f172a;">Net Invested</th>
+                                                <th style="text-align: right; width: 110px; background: #f0fdf4; font-weight: 700; color: #166534;">Received</th>
+                                                <th style="text-align: right; width: 110px; background: #fef2f2; font-weight: 700; color: #991b1b;">Repaid</th>
+                                                <th style="text-align: right; width: 115px; background: #f1f5f9; font-weight: 700; color: #0f172a;">Net Invested</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-if="state.report_data.investment_received_hierarchy and state.report_data.investment_received_hierarchy.categories and state.report_data.investment_received_hierarchy.categories.length">
+                                                <t t-foreach="state.report_data.investment_received_hierarchy.categories" t-as="cat" t-key="cat.name">
+                                                    <!-- LEVEL 1: CATEGORY ROW -->
+                                                    <tr style="background: #f0f9ff; cursor: pointer; font-weight: 700; border-top: 1px solid #bae6fd;"
+                                                        t-on-click="() => this.toggleDrill('rec_cat_' + cat.name)">
+                                                        <td colspan="2" style="text-align: left; padding: 10px 14px; color: #0369a1;">
+                                                            <i t-att-class="isExpanded('rec_cat_' + cat.name) ? 'fa fa-chevron-down text-primary me-2' : 'fa fa-chevron-right text-muted me-2'"/>
+                                                            <i class="fa fa-tag me-1"/>
+                                                            <span style="font-size: 13px;"><t t-esc="cat.name"/></span>
+                                                            <span class="badge ms-2" style="background: #e0f2fe; color: #0284c7; font-size: 10px; font-weight: 600;">
+                                                                <t t-esc="cat.partners.length"/> investors
+                                                            </span>
+                                                        </td>
+                                                        <td><t t-out="formatAmt(cat.y1_received)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y1_repaid)"/></td>
+                                                        <td class="total-cell"><t t-out="formatAmt(cat.y1_net)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y2_received)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y2_repaid)"/></td>
+                                                        <td class="total-cell"><t t-out="formatAmt(cat.y2_net)"/></td>
+                                                        <td style="font-weight: 700; background: #f0f9ff; color: #0369a1;"><t t-out="formatAmt(cat.total_net)"/></td>
+                                                    </tr>
+
+                                                    <!-- LEVEL 2: PARTNER / INVESTOR UNDER CATEGORY -->
+                                                    <t t-if="isExpanded('rec_cat_' + cat.name)">
+                                                        <t t-foreach="cat.partners" t-as="partner" t-key="partner.id">
+                                                            <tr style="background: #f8fafc; cursor: pointer; font-weight: 600; border-top: 1px dashed #e2e8f0;"
+                                                                t-on-click="() => this.toggleDrill('rec_partner_' + partner.id)">
+                                                                <td style="text-align: left; padding-left: 36px; color: #0f172a;">
+                                                                    <i t-att-class="isExpanded('rec_partner_' + partner.id) ? 'fa fa-chevron-down text-primary me-2' : 'fa fa-chevron-right text-muted me-2'"/>
+                                                                    <i class="fa fa-user-circle-o text-secondary me-1"/>
+                                                                    <t t-esc="partner.name"/>
+                                                                </td>
+                                                                <td style="text-align: left; color: #64748b; font-size: 11px;">
+                                                                    <t t-if="partner.transactions and partner.transactions.length">
+                                                                        <span class="badge" style="background: #f1f5f9; color: #334155;"><t t-esc="partner.transactions.length"/> transactions</span>
+                                                                    </t>
+                                                                    <t t-else="">
+                                                                        <span class="text-muted">No transactions</span>
+                                                                    </t>
+                                                                </td>
+                                                                <td><t t-out="formatAmt(partner.y1_received)"/></td>
+                                                                <td><t t-out="formatAmt(partner.y1_repaid)"/></td>
+                                                                <td class="total-cell"><t t-out="formatAmt(partner.y1_net)"/></td>
+                                                                <td><t t-out="formatAmt(partner.y2_received)"/></td>
+                                                                <td><t t-out="formatAmt(partner.y2_repaid)"/></td>
+                                                                <td class="total-cell"><t t-out="formatAmt(partner.y2_net)"/></td>
+                                                                <td style="font-weight: 700; background: #f0f9ff; color: #0369a1;"><t t-out="formatAmt(partner.total_net)"/></td>
+                                                            </tr>
+
+                                                            <!-- LEVEL 3: INDIVIDUAL TRANSACTIONS UNDER PARTNER -->
+                                                            <t t-if="isExpanded('rec_partner_' + partner.id)">
+                                                                <t t-if="partner.transactions and partner.transactions.length">
+                                                                    <t t-foreach="partner.transactions" t-as="tx" t-key="tx.id">
+                                                                        <tr style="background: #ffffff; border-top: 1px dotted #e2e8f0; font-size: 12px;">
+                                                                            <td style="text-align: left; padding-left: 60px; color: #334155;">
+                                                                                <i class="fa fa-exchange text-muted me-1"/>
+                                                                                <span style="font-weight: 600;"><t t-esc="tx.date"/></span>
+                                                                            </td>
+                                                                            <td style="text-align: left; color: #64748b; font-size: 11px;">
+                                                                                <t t-if="tx.ref">
+                                                                                    <span class="badge" style="background: #f1f5f9; color: #334155; margin-right: 4px;"><t t-esc="tx.ref"/></span>
+                                                                                </t>
+                                                                                <span t-att-title="tx.label"><t t-esc="tx.label"/></span>
+                                                                            </td>
+                                                                            <td><t t-out="formatAmt(tx.y1_received)"/></td>
+                                                                            <td><t t-out="formatAmt(tx.y1_repaid)"/></td>
+                                                                            <td class="total-cell"><t t-out="formatAmt(tx.y1_net)"/></td>
+                                                                            <td><t t-out="formatAmt(tx.y2_received)"/></td>
+                                                                            <td><t t-out="formatAmt(tx.y2_repaid)"/></td>
+                                                                            <td class="total-cell"><t t-out="formatAmt(tx.y2_net)"/></td>
+                                                                            <td style="font-weight: 600; color: #0f172a;"><t t-out="formatAmt(tx.total_net)"/></td>
+                                                                        </tr>
+                                                                    </t>
+                                                                </t>
+                                                                <t t-else="">
+                                                                    <tr style="background: #ffffff; font-size: 12px;">
+                                                                        <td colspan="9" style="padding-left: 60px; color: #94a3b8; font-style: italic;">
+                                                                            No transaction lines found for this partner.
+                                                                        </td>
+                                                                    </tr>
+                                                                </t>
+                                                            </t>
+                                                        </t>
+                                                    </t>
+                                                </t>
+
+                                                <!-- Total row for Investment Received -->
+                                                <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a; border-top: 2px solid #cbd5e1;">
+                                                    <td class="fbook-sticky-col" style="text-align: left; padding: 10px 14px;" colspan="2">Total Investment Recieved</td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y1_received)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y1_repaid)"/></td>
+                                                    <td class="total-cell"><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y1_net)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y2_received)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y2_repaid)"/></td>
+                                                    <td class="total-cell"><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y2_net)"/></td>
+                                                    <td style="font-weight: 700; background: #bae6fd; color: #0369a1;"><t t-out="formatAmt(state.report_data.investment_received_hierarchy.total_net)"/></td>
+                                                </tr>
+                                            </t>
+                                            <t t-else="">
+                                                <tr>
+                                                    <td colspan="9" class="text-center text-muted" style="padding: 16px;">
+                                                        No investment transactions found.
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
                                 </td>
                             </tr>
                         </t>
@@ -1251,30 +1538,31 @@
             </div>
 
             <!-- ═══════════════════════════════════════════════════════════
-                 8. INVESTORS REPORT
+                 8. INVESTMENT RECEIVED (COMMENTED OUT: INTEGRATED INTO ASSETS & INVESTMENT DRILL-DOWN ABOVE)
                  ═══════════════════════════════════════════════════════════ -->
+            <!--
             <div class="fbook-section-header">
-                <div class="fbook-title">Investors</div>
+                <div class="fbook-title">
+                    <span>Investment Received</span>
+                    <span class="badge ms-2" style="background: #e0f2fe; color: #0284c7; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 4px;">Equity Capital</span>
+                </div>
                 <div class="fbook-scroll-hint"><i class="fa fa-arrows-h"/> Scroll horizontally</div>
             </div>
             <div class="fbook-table-wrapper">
-                <table class="fbook-table" style="min-width: 950px;">
+                <table class="fbook-table" style="min-width: 1050px;">
                     <thead>
-                        <!-- Row 1: Main Headers -->
                         <tr>
-                            <th class="main-header" style="text-align: left; min-width: 240px;"><t t-esc="state.report_data.currency_symbol"/></th>
+                            <th colspan="2" class="main-header" style="text-align: left; min-width: 320px;"><t t-esc="state.report_data.currency_symbol"/></th>
                             <th colspan="3" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year1_label"/></th>
                             <th colspan="3" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year2_label"/></th>
                             <th rowspan="2" style="text-align: right; width: 130px; background: #0284c7; color: white; font-weight: 700; vertical-align: middle;">Total Net Invested</th>
                         </tr>
-                        <!-- Row 2: Sub Headers (Received / Repaid / Net Invested) -->
                         <tr>
-                            <th class="fbook-sticky-col" style="text-align: left; min-width: 240px; background: #f8fafc; font-weight: 700;">Partner / Investor</th>
-                            <!-- Year 1 -->
+                            <th style="text-align: left; min-width: 140px; background: #f8fafc; font-weight: 700;">Category</th>
+                            <th class="fbook-sticky-col" style="text-align: left; min-width: 200px; background: #f8fafc; font-weight: 700;">Partner / Investor</th>
                             <th style="text-align: right; width: 110px; background: #f0fdf4; font-weight: 700; color: #166534;">Received</th>
                             <th style="text-align: right; width: 110px; background: #fef2f2; font-weight: 700; color: #991b1b;">Repaid</th>
                             <th style="text-align: right; width: 115px; background: #f1f5f9; font-weight: 700; color: #0f172a;">Net Invested</th>
-                            <!-- Year 2 -->
                             <th style="text-align: right; width: 110px; background: #f0fdf4; font-weight: 700; color: #166534;">Received</th>
                             <th style="text-align: right; width: 110px; background: #fef2f2; font-weight: 700; color: #991b1b;">Repaid</th>
                             <th style="text-align: right; width: 115px; background: #f1f5f9; font-weight: 700; color: #0f172a;">Net Invested</th>
@@ -1284,44 +1572,39 @@
                         <t t-if="state.report_data.investor_rows and state.report_data.investor_rows.length">
                             <t t-foreach="state.report_data.investor_rows" t-as="inv" t-key="inv.investor">
                                 <tr class="metric-row">
+                                    <td style="text-align: left;"><span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 600; font-size: 11px; padding: 3px 8px; border-radius: 4px;"><t t-esc="inv.category"/></span></td>
                                     <td class="fbook-sticky-col" style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="inv.investor"/></td>
-                                    <!-- Year 1 -->
                                     <td><t t-out="formatAmt(inv.y1_received)"/></td>
                                     <td><t t-out="formatAmt(inv.y1_repaid)"/></td>
                                     <td class="total-cell"><t t-out="formatAmt(inv.y1_net)"/></td>
-                                    <!-- Year 2 -->
                                     <td><t t-out="formatAmt(inv.y2_received)"/></td>
                                     <td><t t-out="formatAmt(inv.y2_repaid)"/></td>
                                     <td class="total-cell"><t t-out="formatAmt(inv.y2_net)"/></td>
-                                    <!-- Cumulative Total -->
                                     <td style="font-weight: 700; background: #f0f9ff; color: #0369a1;"><t t-out="formatAmt(inv.total_net)"/></td>
                                 </tr>
                             </t>
-                            <!-- Totals row -->
                             <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
-                                <td class="fbook-sticky-col" style="text-align: left;">Total</td>
-                                <!-- Year 1 Totals -->
+                                <td class="fbook-sticky-col" style="text-align: left;" colspan="2">Total</td>
                                 <td><t t-out="formatAmt(state.report_data.investor_totals.y1_received)"/></td>
                                 <td><t t-out="formatAmt(state.report_data.investor_totals.y1_repaid)"/></td>
                                 <td class="total-cell"><t t-out="formatAmt(state.report_data.investor_totals.y1_net)"/></td>
-                                <!-- Year 2 Totals -->
                                 <td><t t-out="formatAmt(state.report_data.investor_totals.y2_received)"/></td>
                                 <td><t t-out="formatAmt(state.report_data.investor_totals.y2_repaid)"/></td>
                                 <td class="total-cell"><t t-out="formatAmt(state.report_data.investor_totals.y2_net)"/></td>
-                                <!-- Cumulative Total -->
                                 <td style="font-weight: 700; background: #bae6fd; color: #0369a1;"><t t-out="formatAmt(state.report_data.investor_totals.total_net)"/></td>
                             </tr>
                         </t>
                         <t t-else="">
                             <tr>
-                                <td colspan="8" class="text-center text-muted" style="padding: 16px;">
-                                    No investor transactions found.
+                                <td colspan="9" class="text-center text-muted" style="padding: 16px;">
+                                    No investment transactions found.
                                 </td>
                             </tr>
                         </t>
                     </tbody>
                 </table>
             </div>
+            -->
 
             <!-- ═══════════════════════════════════════════════════════════
                  9. CSR FUND
