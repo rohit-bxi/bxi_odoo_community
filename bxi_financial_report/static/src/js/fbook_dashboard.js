@@ -124,6 +124,36 @@ class FbookDashboard extends Component {
     }
 
     /**
+     * Get company names formatted into lines of 2 to 3 companies per line.
+     */
+    get companyLines() {
+        const data = this.state.report_data;
+        if (data && data.company_lines && data.company_lines.length) {
+            return data.company_lines;
+        }
+        if (data && data.companies && data.companies.length) {
+            const chunkSize = data.companies.length === 4 ? 2 : 3;
+            const lines = [];
+            for (let i = 0; i < data.companies.length; i += chunkSize) {
+                const chunk = data.companies.slice(i, i + chunkSize);
+                lines.push(chunk.map(c => c.name).join(", "));
+            }
+            return lines;
+        }
+        const compStr = (data && (data.company_name_only || data.company_name)) || '';
+        if (compStr.includes(",")) {
+            const parts = compStr.split(",").map(s => s.trim()).filter(Boolean);
+            const chunkSize = parts.length === 4 ? 2 : 3;
+            const lines = [];
+            for (let i = 0; i < parts.length; i += chunkSize) {
+                lines.push(parts.slice(i, i + chunkSize).join(", "));
+            }
+            return lines;
+        }
+        return compStr ? [compStr] : [];
+    }
+
+    /**
      * Get vendor rows sorted descending by total billing value (highest billing first).
      */
     get sortedVendorRows() {

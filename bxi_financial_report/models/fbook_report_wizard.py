@@ -104,6 +104,13 @@ class FbookReportWizard(models.TransientModel):
         country_codes = [ci['code'] for ci in companies_info if ci['code']]
         country_code_str = ", ".join(list(dict.fromkeys(country_codes)))
 
+        # Format company names into lines of 2 to 3 companies per line
+        chunk_size = 2 if len(companies_info) == 4 else 3
+        company_lines = []
+        for i in range(0, len(companies_info), chunk_size):
+            chunk = companies_info[i:i + chunk_size]
+            company_lines.append(", ".join(c['name'] for c in chunk))
+
         if currency_id:
             target_currency = self.env['res.currency'].browse(currency_id)
         else:
@@ -2355,6 +2362,7 @@ class FbookReportWizard(models.TransientModel):
         return {
             'company_name': display_company_name,
             'company_name_only': company_name_only,
+            'company_lines': company_lines,
             'companies': companies_info,
             'country_code': country_code_str,
             'currency_symbol': f"{target_currency.symbol} {target_currency.name}" if target_currency.symbol else target_currency.name,
