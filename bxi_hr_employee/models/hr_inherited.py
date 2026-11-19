@@ -42,8 +42,6 @@ class HrEmployee(models.Model):
         'attachment_id',
         string='BXI Offer Letter',
     )
-    # notice_period_start_date = fields.Date(string="Notice Period Start Date")
-    # notice_period_end_date = fields.Date(string="Notice Period End Date")
     employee_code = fields.Char(string="Employee Code")
     pa_name = fields.Char(string="PA Name")  
     psa = fields.Char(string="PSA")

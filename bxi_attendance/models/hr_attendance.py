@@ -448,10 +448,12 @@ class HrAttendance(models.Model):
         # --------------------------------------------------------
         # GPS is mandatory for actual check-in/check-out
         # --------------------------------------------------------
-        if latitude in (None, False, "") or longitude in (
-            None,
-            False,
-            "",
+        if (
+            not self.env.context.get("is_comp_off_attendance")
+            and (
+                latitude in (None, False, "")
+                or longitude in (None, False, "")
+            )
         ):
             raise UserError(
                 _(
@@ -463,21 +465,29 @@ class HrAttendance(models.Model):
         # --------------------------------------------------------
         # Convert GPS to float
         # --------------------------------------------------------
-        try:
-            latitude = float(latitude)
-            longitude = float(longitude)
-        except (TypeError, ValueError):
-            raise UserError(
-                _(
-                    "The GPS coordinates received from your "
-                    "browser are invalid. Please enable "
-                    "location access and try again."
+        if not self.env.context.get("is_comp_off_attendance"):
+            try:
+                latitude = float(latitude)
+                longitude = float(longitude)
+            except (TypeError, ValueError):
+                raise UserError(
+                    _(
+                        "The GPS coordinates received from your "
+                        "browser are invalid. Please enable "
+                        "location access and try again."
+                    )
                 )
-            )
+        else:
+            latitude = False
+            longitude = False
         # --------------------------------------------------------
         # Invalid GPS
         # --------------------------------------------------------
-        if latitude == 0.0 and longitude == 0.0:
+        if (
+            not self.env.context.get("is_comp_off_attendance")
+            and latitude == 0.0
+            and longitude == 0.0
+        ):
             raise UserError(
                 _(
                     "Invalid GPS coordinates received. "
@@ -720,7 +730,10 @@ class HrAttendance(models.Model):
         # --------------------------------------------------------
         # BLOCK if outside radius
         # --------------------------------------------------------
-        if distance_km > radius_km:
+        if (
+            not self.env.context.get("is_comp_off_attendance")
+            and distance_km > radius_km
+        ):
             operation = (
                 "check-in"
                 if is_checkin

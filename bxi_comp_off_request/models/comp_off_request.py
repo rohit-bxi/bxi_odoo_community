@@ -2,6 +2,8 @@ from datetime import timedelta
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
+from datetime import datetime, time, timedelta
+import pytz
 
 
 ACTIVE_STATES = (
@@ -90,6 +92,18 @@ class HrCompOffRequest(models.Model):
         copy=False,
         index=True,
     )
+    comp_off_days = fields.Float(
+        string="Comp-Off Days",
+        readonly=True,
+        copy=False,
+        tracking=True,
+    )
+    attendance_id = fields.Many2one(
+        "hr.attendance",
+        string="Comp-Off Attendance",
+        readonly=True,
+        copy=False,
+    )
     manager_approved_by = fields.Many2one("res.users", readonly=True, copy=False)
     manager_approved_on = fields.Datetime(readonly=True, copy=False)
     hr_approved_by = fields.Many2one("res.users", readonly=True, copy=False)
@@ -119,28 +133,67 @@ class HrCompOffRequest(models.Model):
 
     @api.constrains("employee_id", "work_date", "comp_off_date")
     def _check_request_dates(self):
-        today = fields.Date.context_today(self)
         for rec in self:
-            if rec.work_date:
-                if rec.work_date.weekday() not in (5, 6):
-                    raise ValidationError(
-                        _("Weekend Work Date must be a Saturday or Sunday.")
-                    )
-            if rec.comp_off_date:
-                if rec.comp_off_date.weekday() >= 5:
-                    raise ValidationError(
-                        _("Comp-Off Date must be Monday through Friday.")
-                    )
-            if rec.work_date and rec.comp_off_date and rec.work_date == rec.comp_off_date:
+            if rec.work_date and rec.work_date.weekday() not in (5, 6):
                 raise ValidationError(
-                    _("Weekend Work Date and Comp-Off Date cannot be the same.")
+                    _("Weekend Work Date must be a Saturday or Sunday.")
                 )
-            if rec.work_date and rec.work_date < today + timedelta(days=5):
+
+            if rec.comp_off_date and rec.comp_off_date.weekday() >= 5:
+                raise ValidationError(
+                    _("Comp-Off Date must be Monday through Friday.")
+                )
+
+            if rec.work_date and rec.comp_off_date:
+                if (
+                    rec.work_date.year != rec.comp_off_date.year
+                    or rec.work_date.month != rec.comp_off_date.month
+                ):
+                    raise ValidationError(
+                        _("Weekend Work Date and Comp-Off Date must be in the same month.")
+                    )
+                
+    def _check_submission_month(self):
+        today = fields.Date.context_today(self)
+
+        for rec in self:
+            if not rec.work_date or not rec.comp_off_date:
+                continue
+
+            if (
+                today.year != rec.work_date.year
+                or today.month != rec.work_date.month
+            ):
                 raise ValidationError(
                     _(
-                        "A Comp-Off request must be submitted at least 5 calendar "
-                        "days before the planned weekend work date."
+                        "You must submit the Comp-Off request in the same "
+                        "calendar month as the weekend work date."
                     )
+                )
+                    
+    def _check_employee_role_band(self):
+        for rec in self:
+            role_band = rec.employee_id.role_band
+
+            if not role_band:
+                raise ValidationError(
+                    _("Employee Role Band is not configured.")
+                )
+
+            try:
+                band_value = float(role_band.strip())
+            except (ValueError, AttributeError):
+                raise ValidationError(
+                    _("Employee Role Band must contain a numeric value.")
+                )
+
+            if not 0.0 <= band_value <= 3.9:
+                raise ValidationError(
+                    _(
+                        "Comp-Off is available only for employees whose "
+                        "Role Band is between 0 and 3.9. "
+                        "Current employee band: %s"
+                    ) % role_band
                 )
 
     def _check_employee_access(self):
@@ -184,6 +237,123 @@ class HrCompOffRequest(models.Model):
                 "or set its code to COMP-OFF."
             )
         )
+    def _get_completed_attendance_hours(self):
+        self.ensure_one()
+
+        if not self.employee_id or not self.work_date:
+            return 0.0
+
+        start_dt = fields.Datetime.to_datetime(self.work_date)
+        end_dt = start_dt + timedelta(days=1)
+
+        attendances = self.env["hr.attendance"].sudo().search([
+            ("employee_id", "=", self.employee_id.id),
+            ("check_in", ">=", fields.Datetime.to_string(start_dt)),
+            ("check_in", "<", fields.Datetime.to_string(end_dt)),
+            ("check_out", "!=", False),
+        ])
+
+        return sum(attendances.mapped("worked_hours"))
+
+    
+    def _create_comp_off_attendance(self):
+        self.ensure_one()
+
+        if self.attendance_id:
+            raise UserError(
+                _("Attendance has already been created for this Comp-Off request.")
+            )
+
+        total_hours = self._get_completed_attendance_hours()
+
+        if total_hours <= 0:
+            raise UserError(
+                _("No completed attendance was found for the selected work date.")
+            )
+
+        # Calculate the Comp-Off credit.
+        comp_off_days = 1.0 if total_hours >= 7.0 else 0.5
+
+        # One day = 8 attendance hours; half day = 4 attendance hours.
+        credited_hours = 8.0 * comp_off_days
+
+        # Use the employee's working calendar timezone.
+        timezone_name = (
+            self.employee_id.resource_calendar_id.tz
+            or self.env.user.tz
+            or "UTC"
+        )
+        employee_tz = pytz.timezone(timezone_name)
+
+        # Attendance starts at 9:00 AM on the Comp-Off date.
+        local_start = employee_tz.localize(
+            datetime.combine(self.comp_off_date, time(9, 0))
+        )
+        local_end = local_start + timedelta(hours=credited_hours)
+
+        # Odoo stores Datetime values in UTC.
+        check_in = local_start.astimezone(pytz.UTC).replace(tzinfo=None)
+        check_out = local_end.astimezone(pytz.UTC).replace(tzinfo=None)
+
+        # Prevent duplicate attendance on the Comp-Off date.
+        day_start = employee_tz.localize(
+            datetime.combine(self.comp_off_date, time.min)
+        ).astimezone(pytz.UTC).replace(tzinfo=None)
+
+        day_end = employee_tz.localize(
+            datetime.combine(
+                self.comp_off_date + timedelta(days=1), time.min
+            )
+        ).astimezone(pytz.UTC).replace(tzinfo=None)
+
+        existing_attendance = self.env["hr.attendance"].sudo().search([
+            ("employee_id", "=", self.employee_id.id),
+            ("check_in", "<", day_end),
+            "|",
+            ("check_out", "=", False),
+            ("check_out", ">", day_start),
+        ], limit=1)
+
+        if existing_attendance:
+            raise UserError(
+                _(
+                    "An attendance record already exists for this employee "
+                    "on the Comp-Off date (%s). Please check it before proceeding."
+                ) % self.comp_off_date
+            )
+
+        attendance = self.env["hr.attendance"].sudo().with_context(
+            is_comp_off_attendance=True
+        ).create({
+            "employee_id": self.employee_id.id,
+            "check_in": fields.Datetime.to_string(check_in),
+            "check_out": fields.Datetime.to_string(check_out),
+        })
+
+        self.write({
+            "attendance_hours": total_hours,
+            "comp_off_days": comp_off_days,
+            "attendance_id": attendance.id,
+            "attendance_verified_by": self.env.user.id,
+            "attendance_verified_on": fields.Datetime.now(),
+            "state": "credited",
+        })
+
+        self.message_post(
+            body=_(
+                "Weekend attendance verified: %.2f hours. "
+                "Comp-Off credited: %.1f day(s). "
+                "Attendance created on %s for %.2f hours."
+            ) % (
+                total_hours,
+                comp_off_days,
+                self.comp_off_date,
+                credited_hours,
+            )
+        )
+
+        return True
+
 
     def action_submit(self):
         for rec in self:
@@ -191,12 +361,16 @@ class HrCompOffRequest(models.Model):
                 raise UserError(_("Only draft requests can be submitted."))
             rec._check_employee_access()
             rec._check_request_dates()
+            rec._check_submission_month()
+            rec._check_employee_role_band()
             if not rec.employee_id.parent_id:
                 raise UserError(
                     _("Please set a Reporting Manager on the employee record before submitting.")
                 )
             rec.write({"state": "submitted"})
-            rec.message_post(body=_("Comp-Off request submitted for Reporting Manager approval."))
+            rec.message_post(
+                body=_("Comp-Off request submitted for Reporting Manager approval.")
+            )
         return True
 
     def action_manager_approve(self):
@@ -232,75 +406,62 @@ class HrCompOffRequest(models.Model):
             )
 
     def action_verify_attendance_and_credit(self):
-        if not self.env.user.has_group("hr_holidays.group_hr_holidays_manager"):
-            raise UserError(_("Only an HR Time Off Manager can verify weekend attendance and credit Comp-Off."))
-        Attendance = self.env["hr.attendance"].sudo()
-        for rec in self:
-            if rec.state not in ("hr_approved", "worked"):
-                raise UserError(_("Only HR-approved requests can have weekend attendance verified."))
-            if rec.work_date >= fields.Date.context_today(rec):
-                raise UserError(_("Weekend attendance can only be verified after the work date has passed."))
+        self.ensure_one()
 
-            start_dt = fields.Datetime.to_datetime(rec.work_date)
-            end_dt = start_dt + timedelta(days=1)
-            # Use Odoo's stored check-in/check-out records for the selected calendar date.
-            attendances = Attendance.search([
-                ("employee_id", "=", rec.employee_id.id),
-                ("check_in", ">=", fields.Datetime.to_string(start_dt)),
-                ("check_in", "<", fields.Datetime.to_string(end_dt)),
-                ("check_out", "!=", False),
-            ])
-            total_hours = sum(
-                max(0.0, (att.check_out - att.check_in).total_seconds() / 3600.0)
-                for att in attendances
-                if att.check_in and att.check_out
+        if not self.env.user.has_group(
+            "hr_holidays.group_hr_holidays_manager"
+        ):
+            raise UserError(
+                _("Only an HR Time Off Manager can verify weekend attendance.")
             )
-            if total_hours < 8.0:
-                raise UserError(
-                    _(
-                        "Verified weekend attendance is %.2f hours. At least 8 completed "
-                        "hours are required to earn one Comp-Off day."
-                    ) % total_hours
-                )
 
-            rec.write({
-                "attendance_hours": total_hours,
-                "attendance_verified_by": self.env.user.id,
-                "attendance_verified_on": fields.Datetime.now(),
-                "state": "worked",
-            })
-            rec.message_post(body=_("Weekend attendance verified: %.2f hours.") % total_hours)
-
-            leave_type = rec._get_comp_off_leave_type()
-            # Credit the existing leave type through Odoo's allocation mechanism.
-            allocation_vals = {
-                "name": _("Comp-Off earned for %s") % rec.work_date,
-                "employee_id": rec.employee_id.id,
-                "holiday_status_id": leave_type.id,
-                "allocation_type": "regular",
-                "number_of_days": 1.0,
-            }
-            if "date_from" in self.env["hr.leave.allocation"]._fields:
-                allocation_vals["date_from"] = fields.Date.context_today(rec)
-            if "date_to" in self.env["hr.leave.allocation"]._fields:
-                allocation_vals["date_to"] = rec.comp_off_date
-            allocation = self.env["hr.leave.allocation"].sudo().create(allocation_vals)
-            if hasattr(allocation, "action_validate"):
-                allocation.action_validate()
-            elif hasattr(allocation, "action_approve"):
-                allocation.action_approve()
-            else:
-                raise UserError(
-                    _("This Odoo build does not expose a supported allocation approval method. Please check the allocation manually.")
-                )
-            rec.write({
-                "allocation_id": allocation.id,
-                "state": "credited",
-            })
-            rec.message_post(
-                body=_("One day of Comp-Off was credited using allocation %s.") % allocation.display_name
+        if self.state not in ("hr_approved", "worked"):
+            raise UserError(
+                _("Only HR-approved requests can be verified.")
             )
-        return True
+
+        if self.work_date >= fields.Date.context_today(self):
+            raise UserError(
+                _("Weekend attendance can only be verified after the work date.")
+            )
+
+        self._check_employee_role_band()
+
+        if self.attendance_id:
+            raise UserError(
+                _("Attendance has already been created for this request.")
+            )
+
+        total_hours = self._get_completed_attendance_hours()
+
+        if total_hours <= 0:
+            raise UserError(
+                _("No completed attendance was found for the selected work date.")
+            )
+
+        self._create_comp_off_attendance()
+
+        if total_hours < 7.0:
+            message = _(
+                "Attendance is %.2f hours. Half-day Comp-Off (0.5 day) "
+                "has been credited because attendance is below 7 hours."
+            ) % total_hours
+        else:
+            message = _(
+                "Attendance is %.2f hours. Full-day Comp-Off (1 day) "
+                "has been credited."
+            ) % total_hours
+
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Comp-Off Attendance Verification"),
+                "message": message,
+                "type": "warning" if total_hours < 7.0 else "success",
+                "sticky": True,
+            },
+        }
 
     def action_refuse(self):
         for rec in self:

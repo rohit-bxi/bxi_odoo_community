@@ -41,7 +41,7 @@
                     <button name="action_reset_to_draft" type="object" string="Reset to Draft"
                             invisible="state not in ('refused', 'cancelled')"/>
                     <field name="state" widget="statusbar"
-                           statusbar_visible="draft,submitted,manager_approved,hr_approved,credited,refused"/>
+                           statusbar_visible="draft,submitted,manager_approved,hr_approved,worked,credited,refused"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
@@ -57,6 +57,7 @@
                             <field name="work_date" readonly="state != 'draft'"/>
                             <field name="comp_off_date" readonly="state != 'draft'"/>
                             <field name="attendance_hours" readonly="1"/>
+                            <field name="comp_off_days" readonly="1"/>
                             <field name="allocation_id" readonly="1" invisible="not allocation_id"/>
                         </group>
                     </group>
@@ -78,9 +79,13 @@
                         </group>
                     </group>
                     <div class="alert alert-info" role="alert">
-                        Submit at least 5 calendar days before the Saturday/Sunday work date.
-                        HR verifies completed attendance after the work date. At least 8 hours
-                        are required to credit one day of the existing Comp-Off leave type.
+                        <strong>Comp-Off Policy:</strong>
+                        <ul>
+                            <li>Weekend work date must be Saturday or Sunday.</li>
+                            <li>Comp-Off must be taken on a weekday in the same calendar month.</li>
+                            <li>Attendance of 8 hours or more earns 1 full day of Comp-Off.</li>
+                            <li>Attendance greater than 0 but below 8 hours earns 0.5 day of Comp-Off.</li>
+                        </ul>
                     </div>
                     <chatter/>
                 </sheet>
@@ -96,16 +101,37 @@
         <field name="context">{}</field>
     </record>
 
-    <menuitem id="menu_hr_comp_off_root"
-          name="Comp-Off"
-          parent="bxi_shift_management.menu_shift_management_root"
-          sequence="35"
-          groups="group_comp_off_user,group_comp_off_manager,hr_holidays.group_hr_holidays_manager"/>
+    <menuitem
+        id="menu_hr_comp_off_root"
+        name="Comp-Off"
+        parent="bxi_shift_management.menu_shift_management_root"
+        sequence="35"
+        groups="bxi_comp_off_request.group_comp_off_user,bxi_comp_off_request.group_comp_off_manager,bxi_comp_off_request.group_comp_off_admin,hr_holidays.group_hr_holidays_manager"
+    />
+    <menuitem
+        id="menu_hr_comp_off_my_request"
+        name="My Comp-Off Requests"
+        parent="menu_hr_comp_off_root"
+        action="action_hr_comp_off_my_request"
+        sequence="10"
+        groups="bxi_comp_off_request.group_comp_off_user"
+    />
+    <menuitem
+        id="menu_hr_comp_off_team_request"
+        name="Team Comp-Off Requests"
+        parent="menu_hr_comp_off_root"
+        action="action_hr_comp_off_team_request"
+        sequence="20"
+        groups="bxi_comp_off_request.group_comp_off_manager"
+    />
+    <menuitem
+        id="menu_hr_comp_off_all_request"
+        name="All Comp-Off Requests"
+        parent="menu_hr_comp_off_root"
+        action="action_hr_comp_off_all_request"
+        sequence="30"
+        groups="bxi_comp_off_request.group_comp_off_admin,hr_holidays.group_hr_holidays_manager"
+    />
 
-<menuitem id="menu_hr_comp_off_requests"
-          name="Comp-Off Requests"
-          parent="menu_hr_comp_off_root"
-          action="action_hr_comp_off_request"
-          sequence="10"
-          groups="group_comp_off_user,group_comp_off_manager,hr_holidays.group_hr_holidays_manager"/>
-        </odoo>
+
+</odoo>

@@ -37,7 +37,10 @@ import requests
 from azure.core.exceptions import ResourceExistsError
 from azure.storage.blob import BlobServiceClient
 from google.cloud import storage as gcs_storage
-from nextcloud import NextCloud
+try:
+    from nextcloud import NextCloud
+except ImportError:
+    NextCloud = None
 from requests.auth import HTTPBasicAuth
 from webdav3.client import Client as WebDavClient
 from werkzeug import urls

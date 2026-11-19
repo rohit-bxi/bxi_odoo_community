@@ -1440,7 +1440,7 @@ class HrEmployeeLeave(models.Model):
             # Validate completed attendance.
             attendance_hours = leave._get_hd_attendance_hours()
 
-            if attendance_hours < 5.0:
+            if attendance_hours < 3.5:
                 raise ValidationError(
                     _(
                         "Half-Day Leave requires at least 5 completed "
