@@ -1168,14 +1168,21 @@ class HrEmployeeLeave(models.Model):
                     vals.get('employee_id')
                 )
 
-                notice_values = self._get_notice_period_lwp_values(
-                    employee,
-                    vals.get('request_date_from') or vals.get('date_from'),
-                    vals.get('request_date_to') or vals.get('date_to'),
-                )
+                if not self.env.context.get('skip_notice_period_lwp'):
+                    for vals in vals_list:
+                        employee = self.env['hr.employee'].browse(
+                            vals.get('employee_id')
+                        )
+                        leave_type = self.env['hr.leave.type'].browse(
+                            vals.get('holiday_status_id')
+                        )
 
-                if notice_values:
-                    vals.update(notice_values)
+                        self._get_notice_period_lwp_values(
+                            employee,
+                            vals.get('request_date_from') or vals.get('date_from'),
+                            vals.get('request_date_to') or vals.get('date_to'),
+                            leave_type=leave_type,
+                        )
 
         # Existing Sick Leave duplicate validation.
         if not self.env.context.get("skip_sick_leave_policy"):
@@ -1227,6 +1234,11 @@ class HrEmployeeLeave(models.Model):
                 employee = self.env['hr.employee'].browse(
                     vals.get('employee_id', leave.employee_id.id)
                 )
+
+                leave_type = self.env['hr.leave.type'].browse(
+                    vals.get('holiday_status_id', leave.holiday_status_id.id)
+                )
+
                 date_from = vals.get(
                     'request_date_from',
                     vals.get('date_from', leave.request_date_from)
@@ -1235,13 +1247,13 @@ class HrEmployeeLeave(models.Model):
                     'request_date_to',
                     vals.get('date_to', leave.request_date_to)
                 )
-                notice_values = self._get_notice_period_lwp_values(
+
+                self._get_notice_period_lwp_values(
                     employee,
                     date_from,
                     date_to,
+                    leave_type=leave_type,
                 )
-                if notice_values:
-                    vals.update(notice_values)
 
         result = super(
             HrEmployeeLeave,
@@ -1540,6 +1552,28 @@ class HrEmployeeLeave(models.Model):
             # Do not reject request_unit_half=True here.
             # Keep any separate hourly-request restriction only if
             # your policy explicitly prohibits hourly EL/LWP requests.
+    def _get_approved_notice_period(self, employee, date_from=None, date_to=None):
+        """Find an approved resignation whose notice period overlaps the dates."""
+        if not employee:
+            return self.env["employee.resignation"]
+        date_from = (
+            fields.Date.to_date(date_from)
+            if date_from
+            else fields.Date.context_today(self)
+        )
+        date_to = (
+            fields.Date.to_date(date_to)
+            if date_to
+            else date_from
+        )
+        if date_from > date_to:
+            date_from, date_to = date_to, date_from
+        return self.env["employee.resignation"].sudo().search([
+            ("employee_id", "=", employee.id),
+            ("state", "=", "approved"),
+            ("notice_period_start_date", "<=", date_to),
+            ("notice_period_end_date", ">=", date_from),
+        ], limit=1)
     
     def _get_notice_period_lwp_type(self, employee):
         """Find the LWP leave type for the employee's company."""
@@ -1551,34 +1585,36 @@ class HrEmployeeLeave(models.Model):
         ], limit=1)
 
 
-    def _get_notice_period_lwp_values(self, employee, date_from, date_to):
-        """Return LWP values if the leave overlaps an approved notice period."""
-
+    def _get_notice_period_lwp_values(self, employee, date_from, date_to,leave_type=None):
         if not employee or not date_from or not date_to:
             return False
 
         date_from = fields.Date.to_date(date_from)
         date_to = fields.Date.to_date(date_to)
 
-        resignation = self.env['employee.resignation'].sudo().search([
-            ('employee_id', '=', employee.id),
-            ('state', '=', 'approved'),
-            ('notice_period_start_date', '<=', date_to),
-            ('notice_period_end_date', '>=', date_from),
+        resignation = self.env["employee.resignation"].sudo().search([
+            ("employee_id", "=", employee.id),
+            ("state", "=", "approved"),
+            ("notice_period_start_date", "<=", date_to),
+            ("notice_period_end_date", ">=", date_from),
         ], limit=1)
 
         if not resignation:
             return False
 
-        lwp_type = self._get_notice_period_lwp_type(employee)
+        if leave_type:
+            code = (
+                getattr(leave_type, "time_off_code", False)
+                or getattr(leave_type, "leave_code", False)
+                or getattr(leave_type, "code", False)
+                or ""
+            ).strip().upper()
 
-        if not lwp_type:
-            raise ValidationError(_("LWP Leave Type is not configured."))
-
-        return {
-            'holiday_status_id': lwp_type.id,
-            'name': _(
-                'Any leave applied during the notice period will be treated '
-                'as Leave Without Pay (LWP).'
-            ),
-        }
+            if code != "LWP":
+                raise ValidationError(_(
+                    "Notice Period Policy\n\n"
+                    "You are currently serving notice period. "
+                    "You are only allowed to apply for Leave Without Pay (LWP). "
+                    "Other leave types are not permitted."
+                ))
+        return True
