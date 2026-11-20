@@ -49,6 +49,7 @@
                                     <field name="service_line_id" options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_create_edit': True}"/>
                                     <field name="start_date" widget="daterange" options="{'end_date_field': 'end_date'}" string="Start Date" required="1"/>
                                     <field name="end_date" string="End Date" required="1"/>
+                                    <field name="allocation_days" readonly="1" force_save="1"/>
                                     <field name="allocation_percentage"/>
                                     <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" force_save="1" sum="Total Amount"/>
                                     <field name="margin" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" force_save="1"/>
@@ -66,6 +67,7 @@
                                         <group>
                                             <field name="start_date" required="1"/>
                                             <field name="end_date" required="1"/>
+                                            <field name="allocation_days" readonly="1" force_save="1"/>
                                             <field name="allocation_percentage"/>
                                             <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" force_save="1"/>
                                             <field name="margin" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" force_save="1"/>
@@ -175,6 +177,7 @@
                                     <field name="service_line_id" options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_create_edit': True}"/>
                                     <field name="start_date" widget="daterange" options="{'end_date_field': 'end_date'}" string="Start Date" required="1"/>
                                     <field name="end_date" string="End Date" required="1"/>
+                                    <field name="allocation_days" readonly="1" force_save="1"/>
                                     <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" force_save="1" sum="Total Amount"/>
                                     <field name="margin" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" force_save="1"/>
                                     <field name="currency_id" column_invisible="True"/>
@@ -191,6 +194,7 @@
                                         <group>
                                             <field name="start_date" required="1"/>
                                             <field name="end_date" required="1"/>
+                                            <field name="allocation_days" readonly="1" force_save="1"/>
                                             <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" force_save="1"/>
                                             <field name="margin" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" force_save="1"/>
                                             <field name="currency_id" invisible="1"/>
@@ -211,6 +215,7 @@
                                     <field name="service_line_id" options="{'no_create': True, 'no_open': True, 'no_edit': True, 'no_create_edit': True}"/>
                                     <field name="start_date" widget="daterange" options="{'end_date_field': 'end_date'}" string="Start Date" required="1"/>
                                     <field name="end_date" string="End Date" required="1"/>
+                                    <field name="allocation_days" readonly="1" force_save="1"/>
                                     <field name="allocation_percentage"/>
                                     <field name="vendor_price" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="customer_price" widget="monetary" options="{'currency_field': 'currency_id'}"/>
@@ -232,6 +237,7 @@
                                         <group>
                                             <field name="start_date" required="1"/>
                                             <field name="end_date" required="1"/>
+                                            <field name="allocation_days" readonly="1" force_save="1"/>
                                             <field name="allocation_percentage"/>
                                             <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" force_save="1"/>
                                             <field name="margin" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1" force_save="1"/>

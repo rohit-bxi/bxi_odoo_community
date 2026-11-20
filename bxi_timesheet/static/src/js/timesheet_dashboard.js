@@ -165,6 +165,14 @@ class BxiTimesheetDashboard extends Component {
 
     async onCellBlur(ev, line, dateStr) {
         const value = ev.target.value.trim();
+        const day = line.days_data && line.days_data.find(d => d.date_str === dateStr);
+        if (day && day.is_outside_allocation && value && value !== "0:00" && value !== "0") {
+            if (this.notification) {
+                this.notification.add("You can only fill timesheets for this project within your allocated duration.", { title: "Warning", type: "warning" });
+            }
+            ev.target.value = day.hours || "0:00";
+            return;
+        }
 
         try {
             await this.orm.call(
@@ -265,12 +273,14 @@ class BxiTimesheetDashboard extends Component {
                 l2_type: 'project',
                 l2_id: p.id,
                 name: p.name,
+                allocations: p.allocations || [],
             }));
             list.push({
                 id: 'other',
                 l2_type: 'activity',
                 l2_id: 'other',
                 name: 'Other',
+                allocations: [],
             });
             return list;
         }
@@ -373,6 +383,22 @@ class BxiTimesheetDashboard extends Component {
         const targetDateStr = this.state.new_row_date;
         if (!targetDateStr) {
             return "Date is required.";
+        }
+
+        // Validate project allocation duration
+        const cat = this.selectedCategory;
+        if (cat && (cat.is_project || cat.code === 'delivery_project')) {
+            const actVal = this.state.new_row_activity_id;
+            const selectedAct = this.availableActivities.find(a => String(a.id) === String(actVal));
+            if (selectedAct && selectedAct.l2_type === 'project' && selectedAct.allocations && selectedAct.allocations.length > 0) {
+                const matches = selectedAct.allocations.some(
+                    al => al.start_date <= targetDateStr && targetDateStr <= al.end_date
+                );
+                if (!matches) {
+                    const ranges = selectedAct.allocations.map(al => `${al.start_date} to ${al.end_date}`).join(', ');
+                    return `Selected date (${targetDateStr}) is outside your allocated duration (${ranges}) for this project.`;
+                }
+            }
         }
 
         const parts = targetDateStr.split('-');
