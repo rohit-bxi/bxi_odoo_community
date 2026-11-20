@@ -70,7 +70,7 @@ class FbookReportWizard(models.TransientModel):
         if not company_ids:
             company_ids = self.env.companies.ids or [self.env.company.id]
         elif isinstance(company_ids, int):
-            company_ids = [company_ids]
+            company_ids = [company_ids] 
         elif isinstance(company_ids, (list, tuple)):
             company_ids = [int(cid) for cid in company_ids if cid]
         if not company_ids:
@@ -500,11 +500,11 @@ class FbookReportWizard(models.TransientModel):
                         date_val=tline.date, year_key=year_key, record=tline
                     )
 
-            # 5. Other Income and Total Income (Actual + Other Income)
+            # 5. Other Income and Total Income (Billed + Other Income)
             other_income_val = compute_other_income(qdef['start'], qdef['end'], year_key)
-            total_income_val = actual_val + other_income_val
+            total_income_val = billed_val + other_income_val
 
-            # 6. Profit
+            # 6. Profit (calculated on billing/total income, not actual)
             profit_val = total_income_val - expenses_val
 
             # 7. Margin %
