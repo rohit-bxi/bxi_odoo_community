@@ -213,13 +213,15 @@
                                             <t t-set="d_idx" t-value="line.days_data.indexOf(day)"/>
                                             <t t-set="d_dict" t-value="state.dates[d_idx]"/>
                                             <td colspan="2" t-attf-class="day-cell p-0 text-center border-end #{
-                                                (day.hours_raw > 0.0) ? (
-                                                    day.state === 'approved' ? 'state-approved' : 
-                                                    day.state === 'submitted' ? 'state-submitted' : 
-                                                    day.state === 'refused' ? 'state-refused' : ''
-                                                ) : (
-                                                    (d_dict.day_name === 'Saturday' || d_dict.day_name === 'Sunday' || d_dict.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
-                                                    day.is_today ? 'today-column-cell' : ''
+                                                day.is_outside_allocation ? 'state-weekly-off bg-light opacity-50' : (
+                                                    (day.hours_raw > 0.0) ? (
+                                                        day.state === 'approved' ? 'state-approved' : 
+                                                        day.state === 'submitted' ? 'state-submitted' : 
+                                                        day.state === 'refused' ? 'state-refused' : ''
+                                                    ) : (
+                                                        (d_dict.day_name === 'Saturday' || d_dict.day_name === 'Sunday' || d_dict.shift_hours_raw === 0.0) ? 'state-weekly-off' : 
+                                                        day.is_today ? 'today-column-cell' : ''
+                                                    )
                                                 )
                                             }">
                                                 <t t-if="day.leave">
@@ -231,8 +233,9 @@
                                                     <input type="text" 
                                                            t-att-value="day.hours" 
                                                            class="cell-time-input fw-semibold" 
-                                                           t-att-placeholder="'0:00'"
-                                                           t-att-disabled="state.is_past_week or day.state === 'submitted' or day.state === 'approved' or day.state === 'refused'"
+                                                           t-att-placeholder="day.is_outside_allocation ? '-' : '0:00'"
+                                                           t-att-disabled="state.is_past_week or day.state === 'submitted' or day.state === 'approved' or day.state === 'refused' or day.is_outside_allocation"
+                                                           t-att-title="day.is_outside_allocation ? 'Date is outside allocated duration for this project' : ''"
                                                            t-on-blur="(ev) => this.onCellBlur(ev, line, day.date_str)"/>
                                                 </t>
                                             </td>

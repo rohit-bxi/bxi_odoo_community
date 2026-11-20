@@ -1245,6 +1245,16 @@ class ProjectResourceAllocation(models.Model):
         store=True,
         readonly=True,
     )
+    allocation_days = fields.Integer(
+        string="Allocation Days",
+        compute='_compute_allocation_days_and_hours',
+        store=True,
+    )
+    allocated_hours = fields.Float(
+        string="Allocated Hours",
+        compute='_compute_allocation_days_and_hours',
+        store=True,
+    )
 
     @api.model
     def _convert_inr_to_target_currency(self, inr_amount, target_currency, target_date=None, company=None):
@@ -1330,6 +1340,38 @@ class ProjectResourceAllocation(models.Model):
         for rec in self.filtered(lambda r: not r.project_id):
             rec.margin = 0.0
 
+    def _get_working_days(self):
+        """Calculate working days between start_date and end_date (inclusive) based on employee shift calendar."""
+        self.ensure_one()
+        if not (self.start_date and self.end_date and self.start_date <= self.end_date):
+            return 0
+        emp = (self.employee_id or self.ssd_id).sudo()
+        cal = (emp.resource_calendar_id if emp else False) or (self.project_id.company_id.resource_calendar_id if self.project_id else False) or self.env.company.resource_calendar_id
+        work_days = {0, 1, 2, 3, 4}  # Monday to Friday default
+        if cal and cal.attendance_ids:
+            cal_days = {int(att.dayofweek) for att in cal.attendance_ids if str(att.dayofweek).isdigit()}
+            if cal_days:
+                work_days = cal_days
+
+        cur_date = self.start_date
+        working_days = 0
+        while cur_date <= self.end_date:
+            if cur_date.weekday() in work_days:
+                working_days += 1
+            cur_date += timedelta(days=1)
+        return working_days
+
+    @api.depends('start_date', 'end_date', 'employee_id.resource_calendar_id', 'ssd_id.resource_calendar_id')
+    def _compute_allocation_days_and_hours(self):
+        for rec in self:
+            if rec.start_date and rec.end_date and rec.start_date <= rec.end_date:
+                rec.allocation_days = (rec.end_date - rec.start_date).days + 1
+                working_days = rec._get_working_days()
+                rec.allocated_hours = working_days * 9.0
+            else:
+                rec.allocation_days = 0
+                rec.allocated_hours = 0.0
+
     def _get_employee_allocated_cost(self):
         """Salary cost of the employee for the allocation period based on working days."""
         self.ensure_one()
@@ -1355,18 +1397,7 @@ class ProjectResourceAllocation(models.Model):
         per_day_cost = monthly_pay / 22.0
 
         # Number of working days between start_date and end_date (inclusive)
-        work_days = {0, 1, 2, 3, 4}  # Monday to Friday default
-        if emp_sudo.resource_calendar_id and emp_sudo.resource_calendar_id.attendance_ids:
-            cal_days = {int(att.dayofweek) for att in emp_sudo.resource_calendar_id.attendance_ids if att.dayofweek.isdigit()}
-            if cal_days:
-                work_days = cal_days
-
-        cur_date = self.start_date
-        working_days = 0
-        while cur_date <= self.end_date:
-            if cur_date.weekday() in work_days:
-                working_days += 1
-            cur_date += timedelta(days=1)
+        working_days = self._get_working_days()
 
         amount_inr = per_day_cost * working_days * ((self.allocation_percentage or 0.0) / 100.0)
 
@@ -1404,8 +1435,15 @@ class ProjectResourceAllocation(models.Model):
             self.amount = (self.vendor_price or 0.0) * (self.qty or 0.0)
             self._update_in_memory_margins()
 
-    @api.onchange('allocation_percentage', 'start_date', 'end_date')
+    @api.onchange('allocation_percentage', 'start_date', 'end_date', 'employee_id', 'ssd_id')
     def _onchange_allocation_dates_percentage(self):
+        if self.start_date and self.end_date and self.start_date <= self.end_date:
+            self.allocation_days = (self.end_date - self.start_date).days + 1
+            self.allocated_hours = self._get_working_days() * 9.0
+        else:
+            self.allocation_days = 0
+            self.allocated_hours = 0.0
+
         if self.allocation_percentage > 100:
             warning = {
                 'title': _("Invalid Allocation %"),

@@ -114,11 +114,32 @@ class AccountAnalyticLine(models.Model):
         #     if rec.date and rec.date < current_week_start:
         #         raise UserError(_("Timesheets for previous weeks (before %s) cannot be created, modified, or submitted.") % current_week_start.strftime('%Y-%m-%d'))
 
+    @api.onchange('employee_id')
+    def _onchange_employee_id_filter_projects(self):
+        """Filter project_id dropdown to only projects where employee is tagged in Employee Allocation or mapped in SSD Allocation."""
+        emp = self.employee_id or self.env['hr.employee'].sudo().search([('user_id', '=', self.env.user.id)], limit=1)
+        if emp and 'project.resource.allocation' in self.env:
+            allocs = self.env['project.resource.allocation'].sudo().search([
+                '|', ('employee_id', '=', emp.id), ('ssd_id', '=', emp.id)
+            ])
+            project_ids = allocs.mapped('project_id').ids
+            return {'domain': {'project_id': [('id', 'in', project_ids)]}}
+        return {'domain': {'project_id': []}}
+
     @api.constrains('timesheet_category_id', 'lead_id', 'project_id', 'employee_id')
     def _check_category_l2_allocation(self):
-        """Enforce salesperson mapping for Revenue Generation and project allocation for Delivery / Project Execution."""
+        """Enforce salesperson mapping for Revenue Generation and project allocation/SSD mapping for Delivery / Project Execution."""
         for rec in self:
             if not rec.timesheet_category_id:
+                if rec.project_id and 'project.resource.allocation' in self.env and self.env.user and not self.env.user.has_group('base.group_system'):
+                    emp = rec.employee_id or self.env['hr.employee'].sudo().search([('user_id', '=', self.env.user.id)], limit=1)
+                    if emp:
+                        has_alloc = self.env['project.resource.allocation'].sudo().search_count([
+                            '|', ('employee_id', '=', emp.id), ('ssd_id', '=', emp.id),
+                            ('project_id', '=', rec.project_id.id),
+                        ])
+                        if not has_alloc:
+                            raise ValidationError(_("For timesheets, you can only select projects where you are mapped under project resource allocation or SSD mapping."))
                 continue
             cat = rec.timesheet_category_id
             if (cat.is_crm or cat.code == 'revenue_generation') and rec.lead_id:
@@ -127,14 +148,91 @@ class AccountAnalyticLine(models.Model):
                         raise ValidationError(_("For Revenue Generation, you can only select leads/opportunities where you are mapped as the salesperson."))
             elif (cat.is_project or cat.code == 'delivery_project') and rec.project_id:
                 if 'project.resource.allocation' in self.env and self.env.user and not self.env.user.has_group('base.group_system'):
-                    emp = self.env['hr.employee'].sudo().search([('user_id', '=', self.env.user.id)], limit=1) or rec.employee_id
+                    emp = rec.employee_id or self.env['hr.employee'].sudo().search([('user_id', '=', self.env.user.id)], limit=1)
                     if emp:
                         has_alloc = self.env['project.resource.allocation'].sudo().search_count([
-                            ('employee_id', '=', emp.id),
+                            '|', ('employee_id', '=', emp.id), ('ssd_id', '=', emp.id),
                             ('project_id', '=', rec.project_id.id),
                         ])
                         if not has_alloc:
-                            raise ValidationError(_("For Delivery / Project Execution, you can only select projects where you are mapped under project resource allocation."))
+                            raise ValidationError(_("For Delivery / Project Execution, you can only select projects where you are mapped under project resource allocation or SSD mapping."))
+
+    @api.constrains('project_id', 'employee_id', 'date', 'unit_amount')
+    def _check_project_allocation_duration_and_hours(self):
+        """
+        Validate that timesheet entries for a project:
+        1. Fall within the allocated start_date and end_date of the employee.
+        2. Do not exceed the allocated hours (working days * 9) for that allocation window.
+        """
+        for rec in self:
+            if not rec.project_id or not rec.employee_id or not rec.date or rec.unit_amount <= 0.0:
+                continue
+            if 'holiday_id' in self.env['account.analytic.line']._fields and rec.holiday_id:
+                continue
+            if 'project.resource.allocation' not in self.env:
+                continue
+
+            emp = rec.employee_id
+            allocs = self.env['project.resource.allocation'].sudo().search([
+                ('project_id', '=', rec.project_id.id),
+                '|', ('employee_id', '=', emp.id), ('ssd_id', '=', emp.id),
+            ])
+            if not allocs:
+                if self.env.user and not self.env.user.has_group('base.group_system'):
+                    raise ValidationError(_(
+                        "You can only fill timesheets for projects where you are allocated under Employee Allocation or SSD Mapping.\n"
+                        "Employee '%s' has no resource allocation on project '%s'."
+                    ) % (emp.name, rec.project_id.display_name or rec.project_id.name))
+                continue
+
+            # 1. Date Range Check: not allowed before start date or after end date
+            matching_allocs = allocs.filtered(
+                lambda a: a.start_date and a.end_date and a.start_date <= rec.date <= a.end_date
+            )
+            if not matching_allocs:
+                date_ranges = ", ".join([
+                    f"{a.start_date.strftime('%d-%b-%Y')} to {a.end_date.strftime('%d-%b-%Y')}"
+                    for a in allocs if a.start_date and a.end_date
+                ])
+                raise ValidationError(_(
+                    "You can only fill timesheets for project '%s' within your allocated duration (%s).\n"
+                    "The system does not allow filling timesheets on %s (outside allocated start and end dates)."
+                ) % (rec.project_id.display_name or rec.project_id.name, date_ranges, rec.date.strftime('%d-%b-%Y')))
+
+            # 2. Total Allocated Hours Check for the matching allocation window
+            min_start = min(matching_allocs.mapped('start_date'))
+            max_end = max(matching_allocs.mapped('end_date'))
+            total_allocated_hours = sum(
+                (a.allocated_hours if a.allocated_hours else (a._get_working_days() * 9.0 if hasattr(a, '_get_working_days') else 0.0))
+                for a in matching_allocs
+            )
+            if total_allocated_hours > 0:
+                line_domain = [
+                    ('project_id', '=', rec.project_id.id),
+                    ('employee_id', '=', emp.id),
+                    ('date', '>=', min_start),
+                    ('date', '<=', max_end),
+                ]
+                if rec.id:
+                    line_domain.append(('id', '!=', rec.id))
+                if 'holiday_id' in self.env['account.analytic.line']._fields:
+                    line_domain.append(('holiday_id', '=', False))
+
+                existing_lines = self.env['account.analytic.line'].sudo().search(line_domain)
+                existing_hours = sum(existing_lines.mapped('unit_amount'))
+                if existing_hours + rec.unit_amount > total_allocated_hours + 0.001:
+                    raise ValidationError(_(
+                        "Total timesheet hours for project '%s' from %s to %s cannot exceed the allocated %.2f hours.\n"
+                        "Already logged: %.2f hrs, Attempting to save: %.2f hrs (Total: %.2f hrs)."
+                    ) % (
+                        rec.project_id.display_name or rec.project_id.name,
+                        min_start.strftime('%d-%b-%Y'),
+                        max_end.strftime('%d-%b-%Y'),
+                        total_allocated_hours,
+                        existing_hours,
+                        rec.unit_amount,
+                        existing_hours + rec.unit_amount
+                    ))
 
     @api.constrains("unit_amount", "employee_id", "date")
     def _check_max_hours_per_day(self):

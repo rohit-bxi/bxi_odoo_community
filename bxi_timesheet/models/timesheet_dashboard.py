@@ -116,18 +116,18 @@ class BxiTimesheetDashboard(models.AbstractModel):
             '|', ('company_id', '=', False), ('company_id', 'in', allowed_company_ids)
         ]
 
-        # Allocation filter commented out to allow all projects as before:
-        # if target_employee:
-        #     allocated_project_ids = []
-        #     if 'project.resource.allocation' in self.env:
-        #         allocations = self.env['project.resource.allocation'].sudo().search([
-        #             ('employee_id', '=', target_employee.id),
-        #         ])
-        #         allocated_project_ids = allocations.mapped('project_id').ids
-        #
-        #     project_domain.append(('id', 'in', allocated_project_ids))
-        # else:
-        #     project_domain.append(('id', 'in', []))
+        # Filter projects: only those where employee is tagged in Employee Allocation or mapped in SSD Allocation
+        if target_employee:
+            allocated_project_ids = []
+            if 'project.resource.allocation' in self.env:
+                allocations = self.env['project.resource.allocation'].sudo().search([
+                    '|', ('employee_id', '=', target_employee.id), ('ssd_id', '=', target_employee.id)
+                ])
+                allocated_project_ids = allocations.mapped('project_id').ids
+
+            project_domain.append(('id', 'in', allocated_project_ids))
+        else:
+            project_domain.append(('id', 'in', []))
 
         project_records = self.env['project.project'].sudo().search(project_domain)
         _logger.info(f"BXI Timesheet: Found {len(project_records)} projects for dashboard")
@@ -148,8 +148,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
             task_domain = [
                 '|', ('project_id', '=', False), '|', ('project_id.company_id', '=', False), ('project_id.company_id', 'in', allowed_company_ids)
             ]
-        # if target_employee:
-        #     task_domain.append(('project_id', 'in', project_records.ids))
+        if target_employee:
+            task_domain.append(('project_id', 'in', project_records.ids))
 
         task_records = self.env['project.task'].sudo().search(task_domain)
         _logger.info(f"BXI Timesheet: Found {len(task_records)} tasks for dashboard")
@@ -217,17 +217,20 @@ class BxiTimesheetDashboard(models.AbstractModel):
 
         # 3d. Fetch Assigned Projects based on Allocations for Delivery / Project Execution
         allocated_projects = []
-        # Current logged-in user's employee
-        logged_in_emp = current_employee or self.env['hr.employee'].sudo().search([('user_id', '=', self.env.user.id)], limit=1)
-        if logged_in_emp and 'project.resource.allocation' in self.env:
+        # Target employee whose timesheet is being viewed/logged (fallback to current employee)
+        emp_for_alloc = target_employee or current_employee or self.env['hr.employee'].sudo().search([('user_id', '=', self.env.user.id)], limit=1)
+        if emp_for_alloc and 'project.resource.allocation' in self.env:
             allocs = self.env['project.resource.allocation'].sudo().search([
-                ('employee_id', '=', logged_in_emp.id)
+                '|', ('employee_id', '=', emp_for_alloc.id), ('ssd_id', '=', emp_for_alloc.id)
             ])
             for p in allocs.mapped('project_id').filtered(lambda pr: pr.active):
                 if p.id not in [x['id'] for x in allocated_projects]:
+                    p_allocs = allocs.filtered(lambda a: a.project_id == p and a.start_date and a.end_date)
+                    ranges = [{'start_date': a.start_date.strftime('%Y-%m-%d'), 'end_date': a.end_date.strftime('%Y-%m-%d')} for a in p_allocs]
                     allocated_projects.append({
                         'id': p.id,
                         'name': p.display_name or p.name,
+                        'allocations': ranges,
                     })
 
         # 4. Fetch attendances and desktime logs for target employee
@@ -453,8 +456,22 @@ class BxiTimesheetDashboard(models.AbstractModel):
             row_total = sum(val['days'])
             row_total_str = self._float_to_time(row_total)
 
+            p_id = val.get('project_id')
+            alloc_ranges = []
+            if p_id and target_employee and 'project.resource.allocation' in self.env:
+                p_allocs = self.env['project.resource.allocation'].sudo().search([
+                    '|', ('employee_id', '=', target_employee.id), ('ssd_id', '=', target_employee.id),
+                    ('project_id', '=', p_id),
+                ])
+                alloc_ranges = [(a.start_date, a.end_date) for a in p_allocs if a.start_date and a.end_date]
+
             days_data = []
             for i, d_dict in enumerate(dates_list):
+                d_obj = start_date + timedelta(days=i)
+                is_outside_alloc = False
+                if p_id and alloc_ranges:
+                    is_outside_alloc = not any(s <= d_obj <= e for s, e in alloc_ranges)
+
                 days_data.append({
                     'hours': days_str[i],
                     'hours_raw': val['days'][i],
@@ -462,6 +479,7 @@ class BxiTimesheetDashboard(models.AbstractModel):
                     'is_today': d_dict['is_today'],
                     'state': val['states'][i],
                     'leave': d_dict.get('leave') if d_dict else False,
+                    'is_outside_allocation': is_outside_alloc,
                 })
 
             grid_lines.append({
@@ -882,14 +900,14 @@ class BxiTimesheetDashboard(models.AbstractModel):
                     if lead.exists() and lead.user_id != self.env.user:
                         raise UserError(_("For Revenue Generation, you can only select leads/opportunities where you are mapped as the salesperson."))
                 elif (category.is_project or category.code == 'delivery_project') and proj_id:
-                    logged_in_emp = current_employee or self.env['hr.employee'].sudo().search([('user_id', '=', self.env.user.id)], limit=1)
-                    if logged_in_emp and 'project.resource.allocation' in self.env:
+                    emp_to_check_id = target_emp_id or (current_employee.id if current_employee else False)
+                    if emp_to_check_id and 'project.resource.allocation' in self.env:
                         has_alloc = self.env['project.resource.allocation'].sudo().search_count([
-                            ('employee_id', '=', logged_in_emp.id),
+                            '|', ('employee_id', '=', emp_to_check_id), ('ssd_id', '=', emp_to_check_id),
                             ('project_id', '=', proj_id),
                         ])
                         if not has_alloc:
-                            raise UserError(_("For Delivery / Project Execution, you can only select projects where you are mapped under project resource allocation."))
+                            raise UserError(_("For Delivery / Project Execution, you can only select projects where you are mapped under project resource allocation or SSD mapping."))
 
         domain = [
             ('employee_id', '=', target_emp_id),
@@ -909,6 +927,79 @@ class BxiTimesheetDashboard(models.AbstractModel):
             domain.append(('name', '=', description))
 
         existing_line = self.env['account.analytic.line'].search(domain, limit=1)
+
+        # Fallback to resolve proj_id if not explicitly provided
+        if not proj_id and existing_line and existing_line.project_id:
+            proj_id = existing_line.project_id.id
+        elif not proj_id and tsk_id:
+            task = self.env['project.task'].sudo().browse(tsk_id)
+            if task.exists() and task.project_id:
+                proj_id = task.project_id.id
+
+        # Enforce project allocation date duration and hours cap
+        if proj_id and amount > 0.0 and 'project.resource.allocation' in self.env:
+            emp_to_check_id = target_emp_id or (current_employee.id if current_employee else False)
+            if emp_to_check_id:
+                allocs = self.env['project.resource.allocation'].sudo().search([
+                    '|', ('employee_id', '=', emp_to_check_id), ('ssd_id', '=', emp_to_check_id),
+                    ('project_id', '=', proj_id),
+                ])
+                project = self.env['project.project'].sudo().browse(proj_id)
+                project_name = project.display_name or project.name or _("Project")
+                if not allocs:
+                    raise UserError(_(
+                        "You can only fill timesheets for projects where you are allocated under Employee Allocation or SSD Mapping.\n"
+                        "No resource allocation found for this employee on project '%s'."
+                    ) % project_name)
+
+                # 1. Date Range Check: system will not allow to fill timesheets before start date or after end date
+                matching_allocs = allocs.filtered(
+                    lambda a: a.start_date and a.end_date and a.start_date <= target_date <= a.end_date
+                )
+                if not matching_allocs:
+                    date_ranges = ", ".join([
+                        f"{a.start_date.strftime('%d-%b-%Y')} to {a.end_date.strftime('%d-%b-%Y')}"
+                        for a in allocs if a.start_date and a.end_date
+                    ])
+                    raise UserError(_(
+                        "You can only fill timesheets for project '%s' within your allocated duration (%s).\n"
+                        "The system does not allow filling timesheets on %s (outside allocated start and end dates)."
+                    ) % (project_name, date_ranges, target_date.strftime('%d-%b-%Y')))
+
+                    # 2. Total Allocated Hours Check for the matching allocation window
+                    min_start = min(matching_allocs.mapped('start_date'))
+                    max_end = max(matching_allocs.mapped('end_date'))
+                    total_allocated_hours = sum(
+                        (a.allocated_hours if a.allocated_hours else (a._get_working_days() * 9.0 if hasattr(a, '_get_working_days') else 0.0))
+                        for a in matching_allocs
+                    )
+                    if total_allocated_hours > 0:
+                        line_domain = [
+                            ('project_id', '=', proj_id),
+                            ('employee_id', '=', emp_to_check_id),
+                            ('date', '>=', min_start),
+                            ('date', '<=', max_end),
+                        ]
+                        if existing_line:
+                            line_domain.append(('id', '!=', existing_line.id))
+                        if 'holiday_id' in self.env['account.analytic.line']._fields:
+                            line_domain.append(('holiday_id', '=', False))
+
+                        other_lines = self.env['account.analytic.line'].sudo().search(line_domain)
+                        existing_logged_hours = sum(other_lines.mapped('unit_amount'))
+                        if existing_logged_hours + amount > total_allocated_hours + 0.001:
+                            raise UserError(_(
+                                "Total timesheet hours for project '%s' from %s to %s cannot exceed the allocated %.2f hours.\n"
+                                "Already logged: %.2f hrs, Attempting to save: %.2f hrs (Total: %.2f hrs)."
+                            ) % (
+                                project_name,
+                                min_start.strftime('%d-%b-%Y'),
+                                max_end.strftime('%d-%b-%Y'),
+                                total_allocated_hours,
+                                existing_logged_hours,
+                                amount,
+                                existing_logged_hours + amount
+                            ))
 
         if existing_line:
             # Block edits on approved or submitted timesheets for non-managers
