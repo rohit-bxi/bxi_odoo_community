@@ -156,7 +156,7 @@
                         role="alert"
                         invisible="not is_regularization or state != 'draft'"
                     >
-                        The request must be submitted and approved on <strong>21th</strong> of the attendance
+                        The request must be submitted and approved on <strong>23rd to 25TH </strong> of the attendance
                         cycle. Days without an approved request by then are marked
                         as <strong>Loss of Pay (LOP)</strong>.
                     </div>

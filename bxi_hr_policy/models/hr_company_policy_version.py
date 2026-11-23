@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import mimetypes
 from datetime import timedelta
+from markupsafe import escape
+
 
 from odoo import models, fields, api
 from odoo.exceptions import AccessError, UserError, ValidationError
@@ -108,17 +110,110 @@ class HrCompanyPolicyVersion(models.Model):
     # ── Workflow ─────────────────────────────────────────────────────────
     def action_submit(self):
         if not self._is_policy_manager():
-            raise AccessError(self.env._("Only HR managers can submit policy versions."))
+            raise AccessError(
+                self.env._("Only HR managers can submit policy versions.")
+            )
+
+        # Get Pallavi's user
+        reviewer = self.env['res.users'].sudo().search([
+            ('partner_id.email', '=', 'pallavi.paliwal@bxitech.com')
+        ], limit=1)
+
+        if not reviewer:
+            raise UserError(
+                self.env._("Pallavi's user account was not found.")
+            )
+
         for rec in self:
             if rec.state not in ('draft', 'rejected'):
-                raise UserError(self.env._("Only draft versions can be submitted."))
-            rec.write({'state': 'submitted', 'reject_reason': False})
-            for user in self.env.ref('bxi_hr_policy.group_policy_cpo').sudo().user_ids:
-                rec.activity_schedule(
-                    'mail.mail_activity_data_todo',
-                    user_id=user.id,
-                    summary=self.env._("Approve %(version)s", version=rec.display_name),
+                raise UserError(
+                    self.env._("Only draft versions can be submitted.")
                 )
+
+            rec.write({
+                'state': 'submitted',
+                'reject_reason': False,
+            })
+
+            # Create Todo activity for Pallavi
+            activity = rec.activity_schedule(
+                'mail.mail_activity_data_todo',
+                user_id=reviewer.id,
+                summary=self.env._(
+                    "Approve %(version)s",
+                    version=rec.display_name
+                ),
+                note=self.env._(
+                    "Please review the submitted policy version and approve or reject it."
+                ),
+            )
+
+            # Generate policy review URL
+            base_url = self.env['ir.config_parameter'].sudo().get_param(
+                'web.base.url'
+            )
+
+            policy_url = (
+                f"{base_url}/web#id={rec.id}"
+                f"&model={rec._name}"
+                f"&view_type=form"
+            )
+
+            # Prepare email
+            subject = f"Policy Review Required: {rec.display_name}"
+
+            body_html = f"""
+                <div style="font-family: Arial, sans-serif; font-size: 14px;">
+                    <p>Dear Pallavi,</p>
+
+                    <p>
+                        A new policy version has been submitted and requires
+                        your review and approval.
+                    </p>
+
+                    <p><b>Policy:</b> {escape(rec.display_name)}</p>
+                    <p><b>Status:</b> Submitted</p>
+
+                    <p>
+                        A Todo activity has also been assigned to you in Odoo.
+                        Please review the policy and take the necessary action.
+                    </p>
+
+                    <p style="margin-top: 20px;">
+                        <a href="{escape(policy_url)}"
+                        style="
+                            background-color: #714B67;
+                            color: white;
+                            padding: 10px 20px;
+                            text-decoration: none;
+                            border-radius: 4px;
+                            display: inline-block;
+                        ">
+                            Review Policy in Odoo
+                        </a>
+                    </p>
+
+                    <p>
+                        Please complete the assigned Todo activity after
+                        reviewing the policy.
+                    </p>
+
+                    <p>Regards,<br/>HR Team</p>
+                </div>
+            """
+
+            # Send email from HR Support
+            mail = self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'email_from': 'hrsupport@bxitech.com',
+                'email_to': 'pallavi.paliwal@bxitech.com',
+                'body_html': body_html,
+                'auto_delete': False,
+            })
+
+            mail.send()
+
+        return True
 
     def action_approve(self):
         if not self._is_cpo():
