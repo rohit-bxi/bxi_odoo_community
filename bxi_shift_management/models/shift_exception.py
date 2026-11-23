@@ -374,26 +374,28 @@ class BxiShiftException(models.Model):
     @api.model
     def _check_regularization_window_open(self):
         """
-        Window closes on the 22nd of every month at 07:00 IST.
-        It reopens on the 1st of the next month.
+        Attendance regularization window:
+        Opens: 22nd at 12:00 PM IST.
+        Closes: 25th at 12:00 PM IST.
         """
         now_ist = self._get_ist_now()
 
-        is_after_cutoff = (
-            now_ist.day > 22
-            or (
-                now_ist.day == 22
-                and (now_ist.hour, now_ist.minute) >= (7, 0)
-            )
+        window_start = (22, 12, 0)
+        window_end = (25, 12, 0)
+
+        current_time = (
+            now_ist.day,
+            now_ist.hour,
+            now_ist.minute,
         )
 
-        if is_after_cutoff:
+        if not (window_start <= current_time < window_end):
             raise UserError(_(
-                "The attendance regularization window is closed. "
-                "Requests for Missing Timesheet, Late Checkout, and "
-                "Attendance Regularization can only be raised before "
-                "the 22nd of the month at 7:00 AM IST. "
-                "The window will reopen on the 1st of next month."
+                "The attendance regularization window is currently closed.\n\n"
+                "You can submit Missing Timesheet, Late Checkout, and "
+                "Attendance Regularization requests from the "
+                "22nd at 12:00 PM until the 25th at 12:00 PM IST "
+                "of every month."
             ))
 
     @api.model

@@ -55,7 +55,7 @@
             <field name="active">True</field>
         </record>
 
-        <!-- 26th 01:00 IST: LWP for the days of the closed cycle not regularized -->
+        <!-- 25th 12:00 PM IST: Apply LOP after regularization closes -->
         <record id="ir_cron_attendance_regularization_lop" model="ir.cron">
             <field name="name">Attendance Regularization: Apply LOP at Cutoff</field>
             <field name="model_id" ref="model_bxi_shift_exception"/>
@@ -63,7 +63,8 @@
             <field name="code">model._cron_apply_regularization_lop()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">months</field>
-            <field name="nextcall" eval="(DateTime.now() + relativedelta(months=1 if DateTime.now().day >= 25 else 0, day=25)).strftime('%Y-%m-%d 19:30:00')"/>
+            <field name="nextcall"
+                eval="(DateTime.now() + relativedelta(months=1 if DateTime.now().day >= 25 else 0, day=25)).strftime('%Y-%m-%d 06:30:00')"/>
             <field name="active">True</field>
         </record>
     </data>
