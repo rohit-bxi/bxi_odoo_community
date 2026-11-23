@@ -45,7 +45,7 @@
             </field>
             <field name="travel_request_endpoint" position="after">
                 <field name="travel_request_recall_endpoint"
-                       placeholder="/internal/corporate/v1/update/partner/travel-request"/>
+                       placeholder="/corporate/v1/update/partner/travel-request"/>
             </field>
             <field name="fetch_status_endpoint" position="replace"/>
 

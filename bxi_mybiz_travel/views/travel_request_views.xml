@@ -90,7 +90,7 @@
         <field name="model">mybiz.travel.request</field>
         <field name="arch" type="xml">
             <form string="Travel Request">
-                <header>ZZZ
+                <header>
                     <!-- Employee: Submit for Manager Approval -->
                     <button name="action_submit"
                             string="Submit for Approval"

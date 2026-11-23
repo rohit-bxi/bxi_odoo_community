@@ -12,6 +12,8 @@ class TestMybizConfigIntegration(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # Real DBs already hold a config; get_active_config must find this one.
+        cls.env['bxi.mybiz.config'].search([]).write({'active': False})
         cls.config = cls.env['bxi.mybiz.config'].create({
             'name': 'Real Contract Config',
             'partner_api_key': 'PARTNER-KEY-1',
@@ -25,7 +27,7 @@ class TestMybizConfigIntegration(TransactionCase):
             '/corporate/v1/create/partner/travel-request')
         self.assertEqual(
             self.config.travel_request_recall_endpoint,
-            '/internal/corporate/v1/update/partner/travel-request')
+            '/corporate/v1/update/partner/travel-request')
 
     def test_auth_headers_use_partner_apikey_and_client_code(self):
         headers = self.config._get_auth_headers()
@@ -55,7 +57,7 @@ class TestMybizConfigIntegration(TransactionCase):
         url = self.config._get_endpoint('travel_request_recall_endpoint')
         self.assertEqual(
             url,
-            'https://mybiz.makemytrip.com/internal/corporate/v1/update/partner/travel-request')
+            'https://mybiz.makemytrip.com/corporate/v1/update/partner/travel-request')
 
     @patch('odoo.addons.bxi_mybiz_integration.models.mybiz_config.requests.head')
     def test_action_test_connection_success(self, mock_head):

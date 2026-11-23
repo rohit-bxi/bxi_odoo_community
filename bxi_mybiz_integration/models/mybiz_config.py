@@ -10,7 +10,7 @@ class BxiMyBizConfig(models.Model):
     Corrects bxi_travel_request's config to the real myBiz contract:
     auth is via the `partner-apikey` / `client-code` headers (not
     clientId/orgId/apiKey), and the create/recall paths are fixed
-    endpoints under /corporate/v1 and /internal/corporate/v1.
+    endpoints under /corporate/v1 (create and recall).
     """
     _inherit = 'bxi.mybiz.config'
 
@@ -40,7 +40,7 @@ class BxiMyBizConfig(models.Model):
     )
     travel_request_recall_endpoint = fields.Char(
         string='Recall Endpoint',
-        default='/internal/corporate/v1/update/partner/travel-request',
+        default='/corporate/v1/update/partner/travel-request',
         help='POST endpoint used to recall (cancel) a previously pushed flight/hotel service.',
     )
 
@@ -81,7 +81,11 @@ class BxiMyBizConfig(models.Model):
             # reached. myBiz validates the payload before the credentials, so
             # those are only proven by the first real push.
             if resp.status_code in (200, 201, 204, 405):
-                status = f'✅ Connection successful (HTTP {resp.status_code})'
+                status = (
+                    f'✅ Connection successful (HTTP {resp.status_code}) — myBiz is '
+                    'reachable. The Partner API Key / Client Code are only verified '
+                    'by the first real push.'
+                )
                 msg_type = 'success'
             elif resp.status_code in (401, 403):
                 status = (

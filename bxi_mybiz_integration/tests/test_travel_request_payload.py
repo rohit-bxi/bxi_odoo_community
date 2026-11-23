@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import calendar
 import datetime
+import uuid
 from unittest.mock import MagicMock, patch
 
 from odoo.tests.common import TransactionCase, tagged
@@ -40,12 +41,16 @@ class TestMybizPayload(TransactionCase):
             'parent_id': cls.manager.id,
             'work_email': 'payload.employee@example.com',
         })
+        # Real DBs already hold a config; get_active_config must find this one.
+        cls.env['bxi.mybiz.config'].search([]).write({'active': False})
         cls.config = cls.env['bxi.mybiz.config'].create({
             'name': 'Payload Config',
             'partner_api_key': 'KEY',
             'client_code': 'CODE',
         })
         cls.request = cls.env['travel.request'].create({
+            # Own number: a reset sequence on a real DB would reuse existing ones.
+            'name': f'TEST/MYBIZ/{uuid.uuid4().hex[:10]}',
             'employee_id': cls.employee.id,
             'manager_id': cls.manager.id,
             'travel_purpose': 'Quarterly review',
@@ -106,6 +111,11 @@ class TestMybizPayload(TransactionCase):
         self.assertEqual(journey['from']['countryCode'], self.india.code)
         self.assertEqual(journey['to']['airportCode'], 'DEL')
         self.assertIsInstance(journey['departureDate'], int)
+        # Round trip with a single flight segment carries the return leg too.
+        self.assertEqual(len(flight['journeyDetails']), 2)
+        back = flight['journeyDetails'][1]
+        self.assertEqual(back['from']['airportCode'], 'DEL')
+        self.assertEqual(back['to']['airportCode'], 'BLR')
 
     def test_hotel_service_has_room_details_per_room(self):
         payload = self.request._build_mybiz_payload()
@@ -157,6 +167,9 @@ class TestMybizPayload(TransactionCase):
         self.request._push_to_mybiz()
 
         self.assertEqual(self.request.mybiz_status, 'pending')
+        self.assertEqual(self.request.state, 'approved')
+        self.assertEqual(
+            set(self.request.travel_option_ids.mapped('mybiz_status')), {'confirmed'})
         self.assertEqual(
             self.request.mybiz_travel_request_url, 'https://mybiz.example.com/trf/123')
         self.assertEqual(self.request.mybiz_response_code, '600')
@@ -180,6 +193,8 @@ class TestMybizPayload(TransactionCase):
 
         self.assertEqual(self.request.mybiz_status, 'failed')
         self.assertEqual(self.request.mybiz_error, 'Invalid pax details.')
+        self.assertEqual(
+            set(self.request.travel_option_ids.mapped('mybiz_status')), {'failed'})
 
     def test_sync_mybiz_status_is_disabled(self):
         self.request.mybiz_service_id = 'SVC-1'
@@ -200,6 +215,8 @@ class TestMybizPushWithoutServices(TransactionCase):
             'name': 'Bus Traveller',
             'work_email': 'bus.traveller@example.com',
         })
+        # Real DBs already hold a config; get_active_config must find this one.
+        cls.env['bxi.mybiz.config'].search([]).write({'active': False})
         cls.env['bxi.mybiz.config'].create({
             'name': 'No Services Config',
             'partner_api_key': 'KEY',
@@ -208,6 +225,8 @@ class TestMybizPushWithoutServices(TransactionCase):
 
     def _bus_request(self, **overrides):
         vals = {
+            # Own number: a reset sequence on a real DB would reuse existing ones.
+            'name': f'TEST/MYBIZ/{uuid.uuid4().hex[:10]}',
             'employee_id': self.employee.id,
             'travel_purpose': 'Meeting with OEM',
             'from_city': 'Jaipur',
@@ -266,5 +285,6 @@ class TestMybizPushWithoutServices(TransactionCase):
         mock_post.assert_called_once()
         services = mock_post.call_args.kwargs['json']['services']
         self.assertEqual(list(services), ['HOTEL'])
-        self.assertEqual(request.state, 'mybiz_pending')
+        self.assertEqual(services['HOTEL'][0]['cityCode'], 'CTNOI')
+        self.assertEqual(request.state, 'approved')
         self.assertEqual(request.mybiz_status, 'pending')

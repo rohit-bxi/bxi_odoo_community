@@ -20,7 +20,7 @@
                         class="btn-secondary"
                         icon="fa-undo"
                         invisible="mybiz_status not in ('pending', 'approved', 'booked')"
-                        confirm="This will recall (cancel) every flight/hotel service already pushed to myBiz for this request. Continue?"/>
+                        confirm="This will recall (cancel) this request in myBiz, including every flight and hotel in it. Continue?"/>
             </button>
 
             <!-- myBiz Booking tab: surface the real response fields -->
@@ -38,8 +38,8 @@
                         type="object"
                         icon="fa-undo"
                         class="btn-link"
-                        invisible="not mybiz_ref or mybiz_status == 'cancelled'"
-                        confirm="Recall this service from myBiz?"/>
+                        invisible="not mybiz_ref or mybiz_status != 'confirmed'"
+                        confirm="myBiz recalls the whole request, not just this segment: every flight and hotel of this travel request will be cancelled in myBiz. Continue?"/>
             </xpath>
 
         </field>

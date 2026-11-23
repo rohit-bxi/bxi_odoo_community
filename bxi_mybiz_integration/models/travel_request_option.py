@@ -46,18 +46,21 @@ class TravelRequestOption(models.Model):
         return True
 
     def action_recall_service(self):
-        """Recall (cancel) this single flight/hotel service already pushed to myBiz."""
+        """Recall this request from myBiz. myBiz cancels the whole request, not
+        just this service, so every flight/hotel segment is marked cancelled."""
         for rec in self:
             rec._recall_mybiz_service()
         return True
 
     def _recall_mybiz_service(self):
         self.ensure_one()
-        if not self.mybiz_ref:
-            raise UserError(
-                _('This segment has not been pushed to myBiz yet — nothing to recall.'))
         if self.mybiz_status == 'cancelled':
             raise UserError(_('This segment is already recalled/cancelled.'))
+        # mybiz_ref is assigned while the payload is built, before myBiz
+        # answers; only 'confirmed' means myBiz accepted this service.
+        if not self.mybiz_ref or self.mybiz_status != 'confirmed':
+            raise UserError(
+                _('This segment has not been pushed to myBiz yet — nothing to recall.'))
 
         # sudo: any HR/manager approver must be able to trigger a recall even
         # if they don't personally have access to the myBiz Configuration model.
@@ -82,18 +85,43 @@ class TravelRequestOption(models.Model):
             response = requests.post(url, json=payload, headers=headers, timeout=20)
             response.raise_for_status()
             resp_data = response.json()
+        except requests.exceptions.HTTPError as e:
+            resp = e.response
+            status = resp.status_code if resp is not None else None
+            body = resp.text if resp is not None else ''
+            if status == 403 and 'Access Denied' in body:
+                raise UserError(_(
+                    'MakeMyTrip blocked the recall (HTTP 403 Access Denied) at %s. Check the '
+                    'Recall Endpoint in myBiz Configuration: it must be '
+                    '/corporate/v1/update/partner/travel-request (not /internal/...). '
+                    'If it is, ask the MMT myBiz team to whitelist this server\'s IP.'
+                ) % url) from e
+            raise UserError(_('myBiz recall failed: HTTP %(status)s %(body)s',
+                              status=status, body=body[:300])) from e
         except requests.exceptions.RequestException as e:
-            raise UserError(_('myBiz recall request failed: %s') % str(e))
+            raise UserError(_('myBiz recall request failed: %s') % str(e)) from e
 
-        if str(resp_data.get('status', '')).lower() != 'success':
-            raise UserError(_('myBiz recall failed: %s') % (resp_data.get('message') or resp_data))
+        message = str(resp_data.get('message') or '')
+        # Recalled already (e.g. by MMT in the myBiz portal): Odoo just catches up.
+        already_recalled = 'cannot change the status of recalled request' in message.lower()
+        if str(resp_data.get('status', '')).lower() != 'success' and not already_recalled:
+            raise UserError(_('myBiz recall failed: %s') % (message or resp_data))
 
-        self.write({'mybiz_status': 'cancelled'})
-        self.travel_request_id.message_post(
-            body=Markup(_('🔁 myBiz service <b>%s</b> (%s) was recalled: %s')) % (
-                self.mybiz_ref, self.option_type, resp_data.get(
-                    'message') or 'Operation executed successfully.'
-            ),
-            subtype_xmlid='mail.mt_note',
-        )
-        _logger.info('myBiz recall successful for service %s', self.mybiz_ref)
+        # myBiz recalls the whole requisition (trfId), not just this serviceId:
+        # recalling one service of BXI/TR/0060 made myBiz answer "already
+        # recalled" for its other service. Mirror that on every sent segment.
+        request = self.travel_request_id
+        recalled = request._get_mybiz_service_options().filtered(
+            lambda o: o.mybiz_status == 'confirmed')
+        recalled.write({'mybiz_status': 'cancelled'})
+        request._update_mybiz_state_after_recall()
+        services = ', '.join(recalled.mapped('option_type'))
+        if already_recalled:
+            body = Markup(_('🔁 myBiz request <b>%s</b> was already recalled in myBiz; '
+                            'Odoo now shows it as cancelled (%s).')) % (request.name, services)
+        else:
+            body = Markup(_('🔁 myBiz request <b>%s</b> was recalled (%s): %s')) % (
+                request.name, services, message or 'Operation executed successfully.')
+        request.message_post(body=body, subtype_xmlid='mail.mt_note')
+        _logger.info('myBiz recall successful for %s (via service %s)',
+                     request.name, self.mybiz_ref)

@@ -100,6 +100,23 @@ class TestMybizDashboard(TransactionCase):
         self.assertGreaterEqual(data['state_counts']['manager_approval'], 1)
         self.assertGreaterEqual(data['pending_manager'], 1)
 
+    def test_success_rate_counts_recalled_pushes_as_successful(self):
+        # A request myBiz accepted and that was recalled later is a successful push.
+        self.env['travel.request'].create({
+            'employee_id': self.employee.id,
+            'department_id': self.department.id,
+            'travel_purpose': 'Recalled trip',
+            'from_city': 'Mumbai',
+            'to_city': 'Delhi',
+            'departure_date': '2030-06-20',
+            'state': 'cancelled',
+            'mybiz_status': 'cancelled',
+        })
+        data = self.dashboard.get_dashboard_data(days=365)
+        pushed, failed = data['pushed_count'], data['failed_count']
+        self.assertGreater(data['success_rate'], 0)
+        self.assertEqual(data['success_rate'], round((pushed - failed) / pushed * 100, 1))
+
     def test_dashboard_lists_recent_failure(self):
         data = self.dashboard.get_dashboard_data(days=365)
         failure_names = [f['name'] for f in data['recent_failures']]
