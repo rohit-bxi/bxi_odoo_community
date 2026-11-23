@@ -100,8 +100,11 @@ class TravelRequestOption(models.Model):
         except requests.exceptions.RequestException as e:
             raise UserError(_('myBiz recall request failed: %s') % str(e)) from e
 
-        if str(resp_data.get('status', '')).lower() != 'success':
-            raise UserError(_('myBiz recall failed: %s') % (resp_data.get('message') or resp_data))
+        message = str(resp_data.get('message') or '')
+        # Recalled already (e.g. by MMT in the myBiz portal): Odoo just catches up.
+        already_recalled = 'cannot change the status of recalled request' in message.lower()
+        if str(resp_data.get('status', '')).lower() != 'success' and not already_recalled:
+            raise UserError(_('myBiz recall failed: %s') % (message or resp_data))
 
         self.write({'mybiz_status': 'cancelled'})
         self.travel_request_id._update_mybiz_state_after_recall()

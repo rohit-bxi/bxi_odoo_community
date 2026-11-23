@@ -251,6 +251,17 @@ class TestMybizRecallFixes(_MybizRequestCase):
         self.assertEqual(request.state, 'cancelled')
 
     @patch(RECALL_POST)
+    def test_already_recalled_at_mmt_syncs_odoo(self, mock_post):
+        # Real myBiz answer when the service was already recalled in the portal.
+        request, _options = self._pushed_request()
+        mock_post.return_value = _ok({
+            'status': 'FAILURE', 'message': 'Cannot change the status of recalled request.'})
+        result = request.action_recall_all_mybiz_services()
+        self.assertIs(result, True)
+        self.assertEqual(request.mybiz_status, 'cancelled')
+        self.assertEqual(request.state, 'cancelled')
+
+    @patch(RECALL_POST)
     def test_akamai_403_explains_endpoint(self, mock_post):
         _request, options = self._pushed_request(n=1)
         mock_post.return_value = _http_error(
