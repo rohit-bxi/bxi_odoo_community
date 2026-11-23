@@ -109,7 +109,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
             start_date = current_week_start
 
         end_date = start_date + timedelta(days=6)
-        is_past_week = start_date < current_week_start
+        # is_past_week = start_date < current_week_start (temporarily disabled per user request)
+        is_past_week = False
 
         # 3. Retrieve projects and tasks (using sudo with company_id = False or company_id in allowed_company_ids)
         project_domain = [
@@ -833,8 +834,8 @@ class BxiTimesheetDashboard(models.AbstractModel):
         except Exception:
             target_rb = None
 
-        if target_date < current_week_start and target_rb is not None and target_rb < ROLE_BAND_THRESHOLD:
-            raise UserError(_("Once a week is crossed, timesheets for the previous week cannot be modified or submitted."))
+        # if target_date < current_week_start and target_rb is not None and target_rb < ROLE_BAND_THRESHOLD:
+        #     raise UserError(_("Once a week is crossed, timesheets for the previous week cannot be modified or submitted."))
 
         # Check if timesheet for this employee and date is already submitted or approved
         # Validate L3 task description word count (max 100 words)
