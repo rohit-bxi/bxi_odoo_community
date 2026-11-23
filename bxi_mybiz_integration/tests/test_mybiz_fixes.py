@@ -251,10 +251,10 @@ class TestMybizRecallFixes(_MybizRequestCase):
         self.assertEqual(request.state, 'cancelled')
 
     @patch(RECALL_POST)
-    def test_akamai_403_explains_whitelist(self, mock_post):
+    def test_akamai_403_explains_endpoint(self, mock_post):
         _request, options = self._pushed_request(n=1)
         mock_post.return_value = _http_error(
             403, '<HTML><HEAD><TITLE>Access Denied</TITLE></HEAD></HTML>')
-        with self.assertRaisesRegex(UserError, 'whitelist'):
+        with self.assertRaisesRegex(UserError, 'Recall Endpoint'):
             options._recall_mybiz_service()
         self.assertEqual(options.mybiz_status, 'confirmed')

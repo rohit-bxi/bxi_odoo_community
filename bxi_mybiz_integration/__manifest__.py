@@ -2,7 +2,7 @@
 {
     'name': 'MakeMyTrip myBiz Integration',
     'category': 'Human Resources',
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.2.0',
     'sequence': 5,
     'author': 'BXI',
     'license': 'LGPL-3',

@@ -90,9 +90,10 @@ class TravelRequestOption(models.Model):
             body = resp.text if resp is not None else ''
             if status == 403 and 'Access Denied' in body:
                 raise UserError(_(
-                    'MakeMyTrip blocked the recall (HTTP 403 Access Denied). MMT has not '
-                    'whitelisted this Odoo server\'s IP for the recall API '
-                    '(%s). Ask the MMT myBiz team to whitelist it.'
+                    'MakeMyTrip blocked the recall (HTTP 403 Access Denied) at %s. Check the '
+                    'Recall Endpoint in myBiz Configuration: it must be '
+                    '/corporate/v1/update/partner/travel-request (not /internal/...). '
+                    'If it is, ask the MMT myBiz team to whitelist this server\'s IP.'
                 ) % url) from e
             raise UserError(_('myBiz recall failed: HTTP %(status)s %(body)s',
                               status=status, body=body[:300])) from e
