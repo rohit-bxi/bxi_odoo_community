@@ -67,13 +67,10 @@ class BxiMybizDashboard(models.AbstractModel):
             mybiz_counts[r.mybiz_status] = mybiz_counts.get(r.mybiz_status, 0) + 1
 
         pushed = requests_recent.filtered(lambda r: r.mybiz_status != 'not_pushed')
-        success_count = len(
-            pushed.filtered(
-                lambda r: r.mybiz_status in (
-                    'pending',
-                    'approved',
-                    'booked')))
         failed_count = mybiz_counts.get('failed', 0)
+        # Every push that did not fail was accepted by myBiz, including those
+        # recalled afterwards (cancelled).
+        success_count = len(pushed) - failed_count
         success_rate = round((success_count / len(pushed) * 100), 1) if pushed else 0.0
 
         pending_manager = TravelRequest.search_count(domain + [('state', '=', 'manager_approval')])

@@ -188,7 +188,9 @@ class TestTravelRequest(TransactionCase):
         record = self._hr_pending_request()
         record.with_user(self.hr_user).hr_action_approve()
 
-        self.assertEqual(record.state, 'mybiz_pending')
+        # myBiz has no status endpoint, so with the override a successful push
+        # approves the request; the base module waits in mybiz_pending.
+        self.assertEqual(record.state, 'approved' if self.has_override else 'mybiz_pending')
         self.assertEqual(record.mybiz_status, 'pending')
         if self.has_override:
             self.assertEqual(
@@ -259,3 +261,24 @@ class TestTravelRequest(TransactionCase):
             self.assertIn('flightDetails', payload)
             self.assertEqual(payload['flightDetails']['travelClass'], 'ECONOMY')
             self.assertEqual(payload['internalReference'], record.name)
+
+    # ── Approval email ────────────────────────────────────────────────
+
+    def _approved_email_body(self, record):
+        template = self.env.ref('bxi_travel_request.email_template_approved')
+        return str(template._render_field('body_html', record.ids)[record.id])
+
+    def test_approved_email_for_mybiz_request_mentions_mybiz(self):
+        record = self._create_travel_request(state='approved', mybiz_status='pending')
+        body = self._approved_email_body(record)
+        self.assertIn('submitted to MakeMyTrip myBiz for booking', body)
+        self.assertIn('myBiz Service ID', body)
+
+    def test_approved_email_for_request_not_sent_to_mybiz(self):
+        # A train/bus/cab-only request is approved without being sent to myBiz.
+        record = self._create_travel_request(
+            mode_of_travel='train', state='approved', mybiz_status='not_pushed')
+        body = self._approved_email_body(record)
+        self.assertNotIn('submitted to MakeMyTrip myBiz', body)
+        self.assertNotIn('myBiz Service ID', body)
+        self.assertIn('arranged outside myBiz', body)

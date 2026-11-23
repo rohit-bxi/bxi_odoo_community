@@ -46,7 +46,8 @@ class TravelRequestOption(models.Model):
         return True
 
     def action_recall_service(self):
-        """Recall (cancel) this single flight/hotel service already pushed to myBiz."""
+        """Recall this request from myBiz. myBiz cancels the whole request, not
+        just this service, so every flight/hotel segment is marked cancelled."""
         for rec in self:
             rec._recall_mybiz_service()
         return True
@@ -106,13 +107,21 @@ class TravelRequestOption(models.Model):
         if str(resp_data.get('status', '')).lower() != 'success' and not already_recalled:
             raise UserError(_('myBiz recall failed: %s') % (message or resp_data))
 
-        self.write({'mybiz_status': 'cancelled'})
-        self.travel_request_id._update_mybiz_state_after_recall()
-        self.travel_request_id.message_post(
-            body=Markup(_('🔁 myBiz service <b>%s</b> (%s) was recalled: %s')) % (
-                self.mybiz_ref, self.option_type, resp_data.get(
-                    'message') or 'Operation executed successfully.'
-            ),
-            subtype_xmlid='mail.mt_note',
-        )
-        _logger.info('myBiz recall successful for service %s', self.mybiz_ref)
+        # myBiz recalls the whole requisition (trfId), not just this serviceId:
+        # recalling one service of BXI/TR/0060 made myBiz answer "already
+        # recalled" for its other service. Mirror that on every sent segment.
+        request = self.travel_request_id
+        recalled = request._get_mybiz_service_options().filtered(
+            lambda o: o.mybiz_status == 'confirmed')
+        recalled.write({'mybiz_status': 'cancelled'})
+        request._update_mybiz_state_after_recall()
+        services = ', '.join(recalled.mapped('option_type'))
+        if already_recalled:
+            body = Markup(_('🔁 myBiz request <b>%s</b> was already recalled in myBiz; '
+                            'Odoo now shows it as cancelled (%s).')) % (request.name, services)
+        else:
+            body = Markup(_('🔁 myBiz request <b>%s</b> was recalled (%s): %s')) % (
+                request.name, services, message or 'Operation executed successfully.')
+        request.message_post(body=body, subtype_xmlid='mail.mt_note')
+        _logger.info('myBiz recall successful for %s (via service %s)',
+                     request.name, self.mybiz_ref)

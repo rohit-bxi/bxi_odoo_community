@@ -228,27 +228,44 @@ class TestMybizRecallFixes(_MybizRequestCase):
         return request, options
 
     @patch(RECALL_POST)
-    def test_recall_all_keeps_successes_when_one_fails(self, mock_post):
-        request, options = self._pushed_request()
+    def test_recall_all_keeps_successes_when_one_request_fails(self, mock_post):
+        ok_request, ok_options = self._pushed_request()
+        bad_request, bad_options = self._pushed_request()
         mock_post.side_effect = [
             _ok({'status': 'success', 'message': 'OK'}),
             _ok({'status': 'failure', 'message': 'Unknown serviceId'}),
         ]
-        result = request.action_recall_all_mybiz_services()
-        self.assertEqual(options.mapped('mybiz_status'), ['cancelled', 'confirmed'])
+        result = (ok_request | bad_request).action_recall_all_mybiz_services()
+        self.assertEqual(mock_post.call_count, 2)  # one call per request
+        self.assertEqual(set(ok_options.mapped('mybiz_status')), {'cancelled'})
+        self.assertEqual(ok_request.state, 'cancelled')
+        self.assertEqual(set(bad_options.mapped('mybiz_status')), {'confirmed'})
+        self.assertEqual(bad_request.state, 'approved')
         self.assertEqual(result['params']['type'], 'warning')
         self.assertIn('Unknown serviceId', result['params']['message'])
-        self.assertEqual(request.state, 'approved')
 
     @patch(RECALL_POST)
-    def test_recalling_last_segment_cancels_request(self, mock_post):
+    def test_recall_all_makes_one_call_per_request(self, mock_post):
+        request, options = self._pushed_request(n=2)
+        mock_post.return_value = _ok({'status': 'success', 'message': 'OK'})
+        self.assertIs(request.action_recall_all_mybiz_services(), True)
+        mock_post.assert_called_once()
+        self.assertEqual(set(options.mapped('mybiz_status')), {'cancelled'})
+        self.assertEqual(request.state, 'cancelled')
+
+    @patch(RECALL_POST)
+    def test_recalling_one_segment_cancels_whole_request(self, mock_post):
+        # myBiz recalls the whole trfId: after recalling the flight of
+        # BXI/TR/0060, its hotel answered "already recalled".
         request, options = self._pushed_request()
         mock_post.return_value = _ok({'status': 'success', 'message': 'OK'})
         options[0].action_recall_service()
-        self.assertEqual(request.state, 'approved')
-        options[1].action_recall_service()
+        mock_post.assert_called_once()
+        self.assertEqual(set(options.mapped('mybiz_status')), {'cancelled'})
         self.assertEqual(request.mybiz_status, 'cancelled')
         self.assertEqual(request.state, 'cancelled')
+        with self.assertRaises(UserError):
+            options[1].action_recall_service()
 
     @patch(RECALL_POST)
     def test_already_recalled_at_mmt_syncs_odoo(self, mock_post):
@@ -260,6 +277,8 @@ class TestMybizRecallFixes(_MybizRequestCase):
         self.assertIs(result, True)
         self.assertEqual(request.mybiz_status, 'cancelled')
         self.assertEqual(request.state, 'cancelled')
+        self.assertTrue(any('already recalled in myBiz' in (m.body or '')
+                            for m in request.message_ids))
 
     @patch(RECALL_POST)
     def test_akamai_403_explains_endpoint(self, mock_post):

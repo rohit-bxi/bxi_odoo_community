@@ -446,11 +446,12 @@ class TravelRequest(models.Model):
                 rec.write({'mybiz_status': 'cancelled', 'state': 'cancelled'})
 
     def action_recall_all_mybiz_services(self):
-        """Recall every flight/hotel service sent to myBiz for this request.
+        """Recall this request from myBiz.
 
-        Each recall is a separate call to myBiz. A failure on one service must
-        not roll back the services myBiz has already recalled, so errors are
-        collected and reported instead of raised.
+        myBiz recalls the whole requisition on one call, so one call per request
+        is made and every sent segment is marked cancelled. With several
+        requests selected, a failure on one must not roll back the requests
+        myBiz has already recalled, so errors are collected, not raised.
         """
         failures = []
         for rec in self:
@@ -458,20 +459,15 @@ class TravelRequest(models.Model):
                 lambda o: o.mybiz_status == 'confirmed')
             if not sent:
                 raise UserError(_('No myBiz services have been pushed for this request yet.'))
-            rec_failures = []
-            for opt in sent:
-                try:
-                    opt._recall_mybiz_service()
-                except Exception as e:  # noqa: BLE001 — keep the recalls that succeeded
-                    msg = e.args[0] if isinstance(e, UserError) else str(e)
-                    rec_failures.append(f'{opt.option_type} {opt.mybiz_ref}: {msg}')
-            if rec_failures:
+            try:
+                sent[0]._recall_mybiz_service()
+            except Exception as e:  # noqa: BLE001 — keep the requests already recalled
+                msg = e.args[0] if isinstance(e, UserError) else str(e)
                 rec.message_post(
-                    body=_('⚠️ Some myBiz services could not be recalled: %s')
-                    % '; '.join(rec_failures),
+                    body=_('⚠️ The request could not be recalled from myBiz: %s') % msg,
                     subtype_xmlid='mail.mt_note',
                 )
-                failures += [f'{rec.name} / {f}' for f in rec_failures]
+                failures.append(f'{rec.name}: {msg}')
         if failures:
             return {
                 'type': 'ir.actions.client',
