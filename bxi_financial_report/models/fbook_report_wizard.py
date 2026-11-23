@@ -1188,6 +1188,8 @@ class FbookReportWizard(models.TransientModel):
                         'y1_debit': 0.0,
                         'y2_credit': 0.0,
                         'y2_debit': 0.0,
+                        'y1_q1': 0.0, 'y1_q2': 0.0, 'y1_q3': 0.0, 'y1_q4': 0.0,
+                        'y2_q1': 0.0, 'y2_q2': 0.0, 'y2_q3': 0.0, 'y2_q4': 0.0,
                     }
                     investor_tx_map[partner_key] = []
 
@@ -1214,24 +1216,72 @@ class FbookReportWizard(models.TransientModel):
                     if y2_start_str <= ldate_str <= y2_end_str:
                         investor_data_map[partner_key]['y2_debit'] += conv_debit
 
+                q_y1 = get_q_num(ldate_str, y1_fy_start)
+                q_y2 = get_q_num(ldate_str, y2_cy_start)
+                net_line = conv_credit - conv_debit
+
+                if q_y1 == 1:
+                    investor_data_map[partner_key]['y1_q1'] += net_line
+                elif q_y1 == 2:
+                    investor_data_map[partner_key]['y1_q2'] += net_line
+                elif q_y1 == 3:
+                    investor_data_map[partner_key]['y1_q3'] += net_line
+                elif q_y1 == 4:
+                    investor_data_map[partner_key]['y1_q4'] += net_line
+
+                if q_y2 == 1:
+                    investor_data_map[partner_key]['y2_q1'] += net_line
+                elif q_y2 == 2:
+                    investor_data_map[partner_key]['y2_q2'] += net_line
+                elif q_y2 == 3:
+                    investor_data_map[partner_key]['y2_q3'] += net_line
+                elif q_y2 == 4:
+                    investor_data_map[partner_key]['y2_q4'] += net_line
+
                 tx_y1_rec = conv_credit if (line.credit > 0 and y1_start_str <= ldate_str <= y1_end_str) else 0.0
                 tx_y1_rep = conv_debit if (line.debit > 0 and y1_start_str <= ldate_str <= y1_end_str) else 0.0
                 tx_y2_rec = conv_credit if (line.credit > 0 and y2_start_str <= ldate_str <= y2_end_str) else 0.0
                 tx_y2_rep = conv_debit if (line.debit > 0 and y2_start_str <= ldate_str <= y2_end_str) else 0.0
 
-                if tx_y1_rec or tx_y1_rep or tx_y2_rec or tx_y2_rep:
+                tx_y1_q1 = net_line if q_y1 == 1 else 0.0
+                tx_y1_q2 = net_line if q_y1 == 2 else 0.0
+                tx_y1_q3 = net_line if q_y1 == 3 else 0.0
+                tx_y1_q4 = net_line if q_y1 == 4 else 0.0
+                tx_y1_total = tx_y1_q1 + tx_y1_q2 + tx_y1_q3 + tx_y1_q4
+
+                tx_y2_q1 = net_line if q_y2 == 1 else 0.0
+                tx_y2_q2 = net_line if q_y2 == 2 else 0.0
+                tx_y2_q3 = net_line if q_y2 == 3 else 0.0
+                tx_y2_q4 = net_line if q_y2 == 4 else 0.0
+                tx_y2_total = tx_y2_q1 + tx_y2_q2 + tx_y2_q3 + tx_y2_q4
+
+                tx_total_net = (tx_y1_rec - tx_y1_rep) + (tx_y2_rec - tx_y2_rep) if (tx_y1_rec or tx_y1_rep or tx_y2_rec or tx_y2_rep) else net_line
+
+                if tx_y1_rec or tx_y1_rep or tx_y2_rec or tx_y2_rep or tx_y1_total or tx_y2_total:
                     investor_tx_map[partner_key].append({
                         'id': line.id,
                         'date': ldate_str,
                         'ref': line.move_id.name or line.ref or '',
                         'label': line.name or '',
+                        'tx_type': 'received' if line.credit > 0 else 'repaid',
+                        'amount': target_currency.round(conv_credit if line.credit > 0 else conv_debit),
+                        'y1_q1': target_currency.round(tx_y1_q1),
+                        'y1_q2': target_currency.round(tx_y1_q2),
+                        'y1_q3': target_currency.round(tx_y1_q3),
+                        'y1_q4': target_currency.round(tx_y1_q4),
+                        'y1_total': target_currency.round(tx_y1_total),
+                        'y2_q1': target_currency.round(tx_y2_q1),
+                        'y2_q2': target_currency.round(tx_y2_q2),
+                        'y2_q3': target_currency.round(tx_y2_q3),
+                        'y2_q4': target_currency.round(tx_y2_q4),
+                        'y2_total': target_currency.round(tx_y2_total),
+                        'total_net': target_currency.round(tx_total_net),
                         'y1_received': target_currency.round(tx_y1_rec),
                         'y1_repaid': target_currency.round(tx_y1_rep),
                         'y1_net': target_currency.round(tx_y1_rec - tx_y1_rep),
                         'y2_received': target_currency.round(tx_y2_rec),
                         'y2_repaid': target_currency.round(tx_y2_rep),
                         'y2_net': target_currency.round(tx_y2_rec - tx_y2_rep),
-                        'total_net': target_currency.round((tx_y1_rec - tx_y1_rep) + (tx_y2_rec - tx_y2_rep)),
                     })
 
         investor_rows = []
@@ -1250,9 +1300,31 @@ class FbookReportWizard(models.TransientModel):
             y2_net = y2_credit - y2_debit
             total_net = y1_net + y2_net
 
+            y1_q1 = target_currency.round(inv_info.get('y1_q1', 0.0))
+            y1_q2 = target_currency.round(inv_info.get('y1_q2', 0.0))
+            y1_q3 = target_currency.round(inv_info.get('y1_q3', 0.0))
+            y1_q4 = target_currency.round(inv_info.get('y1_q4', 0.0))
+            y1_tot = target_currency.round(y1_q1 + y1_q2 + y1_q3 + y1_q4)
+
+            y2_q1 = target_currency.round(inv_info.get('y2_q1', 0.0))
+            y2_q2 = target_currency.round(inv_info.get('y2_q2', 0.0))
+            y2_q3 = target_currency.round(inv_info.get('y2_q3', 0.0))
+            y2_q4 = target_currency.round(inv_info.get('y2_q4', 0.0))
+            y2_tot = target_currency.round(y2_q1 + y2_q2 + y2_q3 + y2_q4)
+
             row = {
                 'investor': inv_info['name'],
                 'category': inv_info['category'],
+                'y1_q1': y1_q1,
+                'y1_q2': y1_q2,
+                'y1_q3': y1_q3,
+                'y1_q4': y1_q4,
+                'y1_total': y1_tot,
+                'y2_q1': y2_q1,
+                'y2_q2': y2_q2,
+                'y2_q3': y2_q3,
+                'y2_q4': y2_q4,
+                'y2_total': y2_tot,
                 # Received = Investment Received into company (Credits)
                 'y1_received': target_currency.round(y1_credit),
                 'y2_received': target_currency.round(y2_credit),
@@ -1273,6 +1345,16 @@ class FbookReportWizard(models.TransientModel):
             investor_rows.append(row)
 
         investor_totals = {
+            'y1_q1': target_currency.round(sum(r['y1_q1'] for r in investor_rows)),
+            'y1_q2': target_currency.round(sum(r['y1_q2'] for r in investor_rows)),
+            'y1_q3': target_currency.round(sum(r['y1_q3'] for r in investor_rows)),
+            'y1_q4': target_currency.round(sum(r['y1_q4'] for r in investor_rows)),
+            'y1_total': target_currency.round(sum(r['y1_total'] for r in investor_rows)),
+            'y2_q1': target_currency.round(sum(r['y2_q1'] for r in investor_rows)),
+            'y2_q2': target_currency.round(sum(r['y2_q2'] for r in investor_rows)),
+            'y2_q3': target_currency.round(sum(r['y2_q3'] for r in investor_rows)),
+            'y2_q4': target_currency.round(sum(r['y2_q4'] for r in investor_rows)),
+            'y2_total': target_currency.round(sum(r['y2_total'] for r in investor_rows)),
             'y1_received': target_currency.round(sum(r['y1_received'] for r in investor_rows)),
             'y1_repaid': target_currency.round(sum(r['y1_repaid'] for r in investor_rows)),
             'y1_net': target_currency.round(sum(r['y1_net'] for r in investor_rows)),
@@ -1299,9 +1381,32 @@ class FbookReportWizard(models.TransientModel):
             cat = inv_info['category']
             if cat not in inv_by_cat:
                 inv_by_cat[cat] = []
+
+            p_y1_q1 = target_currency.round(inv_info.get('y1_q1', 0.0))
+            p_y1_q2 = target_currency.round(inv_info.get('y1_q2', 0.0))
+            p_y1_q3 = target_currency.round(inv_info.get('y1_q3', 0.0))
+            p_y1_q4 = target_currency.round(inv_info.get('y1_q4', 0.0))
+            p_y1_tot = target_currency.round(p_y1_q1 + p_y1_q2 + p_y1_q3 + p_y1_q4)
+
+            p_y2_q1 = target_currency.round(inv_info.get('y2_q1', 0.0))
+            p_y2_q2 = target_currency.round(inv_info.get('y2_q2', 0.0))
+            p_y2_q3 = target_currency.round(inv_info.get('y2_q3', 0.0))
+            p_y2_q4 = target_currency.round(inv_info.get('y2_q4', 0.0))
+            p_y2_tot = target_currency.round(p_y2_q1 + p_y2_q2 + p_y2_q3 + p_y2_q4)
+
             inv_by_cat[cat].append({
                 'id': inv_key,
                 'name': inv_info['name'],
+                'y1_q1': p_y1_q1,
+                'y1_q2': p_y1_q2,
+                'y1_q3': p_y1_q3,
+                'y1_q4': p_y1_q4,
+                'y1_total': p_y1_tot,
+                'y2_q1': p_y2_q1,
+                'y2_q2': p_y2_q2,
+                'y2_q3': p_y2_q3,
+                'y2_q4': p_y2_q4,
+                'y2_total': p_y2_tot,
                 'y1_received': target_currency.round(y1_c),
                 'y1_repaid': target_currency.round(y1_d),
                 'y1_net': target_currency.round(y1_c - y1_d),
@@ -1320,6 +1425,16 @@ class FbookReportWizard(models.TransientModel):
             partners = sorted(inv_by_cat[cat_name], key=lambda p: p['name'].lower())
             investment_received_categories.append({
                 'name': cat_name,
+                'y1_q1': target_currency.round(sum(p['y1_q1'] for p in partners)),
+                'y1_q2': target_currency.round(sum(p['y1_q2'] for p in partners)),
+                'y1_q3': target_currency.round(sum(p['y1_q3'] for p in partners)),
+                'y1_q4': target_currency.round(sum(p['y1_q4'] for p in partners)),
+                'y1_total': target_currency.round(sum(p['y1_total'] for p in partners)),
+                'y2_q1': target_currency.round(sum(p['y2_q1'] for p in partners)),
+                'y2_q2': target_currency.round(sum(p['y2_q2'] for p in partners)),
+                'y2_q3': target_currency.round(sum(p['y2_q3'] for p in partners)),
+                'y2_q4': target_currency.round(sum(p['y2_q4'] for p in partners)),
+                'y2_total': target_currency.round(sum(p['y2_total'] for p in partners)),
                 'y1_received': target_currency.round(sum(p['y1_received'] for p in partners)),
                 'y1_repaid': target_currency.round(sum(p['y1_repaid'] for p in partners)),
                 'y1_net': target_currency.round(sum(p['y1_net'] for p in partners)),
@@ -1332,6 +1447,16 @@ class FbookReportWizard(models.TransientModel):
 
         investment_received_hierarchy = {
             'categories': investment_received_categories,
+            'y1_q1': target_currency.round(sum(c['y1_q1'] for c in investment_received_categories)),
+            'y1_q2': target_currency.round(sum(c['y1_q2'] for c in investment_received_categories)),
+            'y1_q3': target_currency.round(sum(c['y1_q3'] for c in investment_received_categories)),
+            'y1_q4': target_currency.round(sum(c['y1_q4'] for c in investment_received_categories)),
+            'y1_total': target_currency.round(sum(c['y1_total'] for c in investment_received_categories)),
+            'y2_q1': target_currency.round(sum(c['y2_q1'] for c in investment_received_categories)),
+            'y2_q2': target_currency.round(sum(c['y2_q2'] for c in investment_received_categories)),
+            'y2_q3': target_currency.round(sum(c['y2_q3'] for c in investment_received_categories)),
+            'y2_q4': target_currency.round(sum(c['y2_q4'] for c in investment_received_categories)),
+            'y2_total': target_currency.round(sum(c['y2_total'] for c in investment_received_categories)),
             'y1_received': investor_totals['y1_received'],
             'y1_repaid': investor_totals['y1_repaid'],
             'y1_net': investor_totals['y1_net'],
@@ -1615,6 +1740,9 @@ class FbookReportWizard(models.TransientModel):
             'purchase_total': 0.0,
             'depr_total': 0.0,
             'stop_depr_total': 0.0,
+            'y1_q1': 0.0, 'y1_q2': 0.0, 'y1_q3': 0.0, 'y1_q4': 0.0, 'y1_total': 0.0,
+            'y2_q1': 0.0, 'y2_q2': 0.0, 'y2_q3': 0.0, 'y2_q4': 0.0, 'y2_total': 0.0,
+            'total_val': 0.0,
         }
 
         if 'asset.management' in self.env:
@@ -1714,11 +1842,37 @@ class FbookReportWizard(models.TransientModel):
                 if hasattr(asset, 'status') and asset.status and 'status' in asset._fields:
                     asset_status_label = dict(asset._fields['status'].selection).get(asset.status, asset.status)
 
+                p_date = (
+                    asset.invoice_date or
+                    getattr(asset, 'capitalized_date', False) or
+                    (asset.invoice_id.invoice_date if asset.invoice_id and asset.invoice_id.invoice_date else False) or
+                    (asset.create_date.date() if asset.create_date else False)
+                )
+                p_date_str = p_date.strftime('%Y-%m-%d') if p_date else ''
+
+                q_y1 = get_q_num(p_date_str, y1_fy_start) if p_date_str else None
+                q_y2 = get_q_num(p_date_str, y2_cy_start) if p_date_str else None
+
+                a_y1_q1 = purchase_val if q_y1 == 1 else 0.0
+                a_y1_q2 = purchase_val if q_y1 == 2 else 0.0
+                a_y1_q3 = purchase_val if q_y1 == 3 else 0.0
+                a_y1_q4 = purchase_val if q_y1 == 4 else 0.0
+                a_y1_total = a_y1_q1 + a_y1_q2 + a_y1_q3 + a_y1_q4
+
+                a_y2_q1 = purchase_val if q_y2 == 1 else 0.0
+                a_y2_q2 = purchase_val if q_y2 == 2 else 0.0
+                a_y2_q3 = purchase_val if q_y2 == 3 else 0.0
+                a_y2_q4 = purchase_val if q_y2 == 4 else 0.0
+                a_y2_total = a_y2_q1 + a_y2_q2 + a_y2_q3 + a_y2_q4
+
+                a_total_val = purchase_val
+
                 asset_item = {
                     'id': asset.id,
                     'code': asset.name or '',
                     'name': asset.asset_name or asset.name or 'Asset',
                     'serial_number': asset.serial_number or asset.barcode or '',
+                    'date': p_date_str,
                     'status': asset_status_label,
                     'count_total': tot_cnt,
                     'count_in_store': c_in_store,
@@ -1728,6 +1882,17 @@ class FbookReportWizard(models.TransientModel):
                     'purchase_total': target_currency.round(purchase_val),
                     'depr_total': target_currency.round(depr_val),
                     'stop_depr_total': target_currency.round(stop_depr_val),
+                    'y1_q1': target_currency.round(a_y1_q1),
+                    'y1_q2': target_currency.round(a_y1_q2),
+                    'y1_q3': target_currency.round(a_y1_q3),
+                    'y1_q4': target_currency.round(a_y1_q4),
+                    'y1_total': target_currency.round(a_y1_total),
+                    'y2_q1': target_currency.round(a_y2_q1),
+                    'y2_q2': target_currency.round(a_y2_q2),
+                    'y2_q3': target_currency.round(a_y2_q3),
+                    'y2_q4': target_currency.round(a_y2_q4),
+                    'y2_total': target_currency.round(a_y2_total),
+                    'total_val': target_currency.round(a_total_val),
                 }
 
                 if asset.asset_type_id:
@@ -1742,6 +1907,9 @@ class FbookReportWizard(models.TransientModel):
                             'purchase_total': 0.0,
                             'depr_total': 0.0,
                             'stop_depr_total': 0.0,
+                            'y1_q1': 0.0, 'y1_q2': 0.0, 'y1_q3': 0.0, 'y1_q4': 0.0, 'y1_total': 0.0,
+                            'y2_q1': 0.0, 'y2_q2': 0.0, 'y2_q3': 0.0, 'y2_q4': 0.0, 'y2_total': 0.0,
+                            'total_val': 0.0,
                         }
                     target_dict = type_stats[tid]
                     if tid not in type_assets_map:
@@ -1759,6 +1927,17 @@ class FbookReportWizard(models.TransientModel):
                 target_dict['purchase_total'] += purchase_val
                 target_dict['depr_total'] += depr_val
                 target_dict['stop_depr_total'] += stop_depr_val
+                target_dict['y1_q1'] += a_y1_q1
+                target_dict['y1_q2'] += a_y1_q2
+                target_dict['y1_q3'] += a_y1_q3
+                target_dict['y1_q4'] += a_y1_q4
+                target_dict['y1_total'] += a_y1_total
+                target_dict['y2_q1'] += a_y2_q1
+                target_dict['y2_q2'] += a_y2_q2
+                target_dict['y2_q3'] += a_y2_q3
+                target_dict['y2_q4'] += a_y2_q4
+                target_dict['y2_total'] += a_y2_total
+                target_dict['total_val'] += a_total_val
 
         asset_rows = []
         seen_type_ids = set()
@@ -1775,6 +1954,17 @@ class FbookReportWizard(models.TransientModel):
                 'purchase_total': target_currency.round(s.get('purchase_total', 0.0)),
                 'depr_total': target_currency.round(s.get('depr_total', 0.0)),
                 'stop_depr_total': target_currency.round(s.get('stop_depr_total', 0.0)),
+                'y1_q1': target_currency.round(s.get('y1_q1', 0.0)),
+                'y1_q2': target_currency.round(s.get('y1_q2', 0.0)),
+                'y1_q3': target_currency.round(s.get('y1_q3', 0.0)),
+                'y1_q4': target_currency.round(s.get('y1_q4', 0.0)),
+                'y1_total': target_currency.round(s.get('y1_total', 0.0)),
+                'y2_q1': target_currency.round(s.get('y2_q1', 0.0)),
+                'y2_q2': target_currency.round(s.get('y2_q2', 0.0)),
+                'y2_q3': target_currency.round(s.get('y2_q3', 0.0)),
+                'y2_q4': target_currency.round(s.get('y2_q4', 0.0)),
+                'y2_total': target_currency.round(s.get('y2_total', 0.0)),
+                'total_val': target_currency.round(s.get('total_val', 0.0)),
                 'asset_count': s.get('count_total', 0),
                 'asset_depreciation': target_currency.round(s.get('depr_total', 0.0)),
             }
@@ -1815,6 +2005,17 @@ class FbookReportWizard(models.TransientModel):
             'purchase_total': target_currency.round(sum(r['purchase_total'] for r in asset_rows)),
             'depr_total': target_currency.round(sum(r['depr_total'] for r in asset_rows)),
             'stop_depr_total': target_currency.round(sum(r['stop_depr_total'] for r in asset_rows)),
+            'y1_q1': target_currency.round(sum(r['y1_q1'] for r in asset_rows)),
+            'y1_q2': target_currency.round(sum(r['y1_q2'] for r in asset_rows)),
+            'y1_q3': target_currency.round(sum(r['y1_q3'] for r in asset_rows)),
+            'y1_q4': target_currency.round(sum(r['y1_q4'] for r in asset_rows)),
+            'y1_total': target_currency.round(sum(r['y1_total'] for r in asset_rows)),
+            'y2_q1': target_currency.round(sum(r['y2_q1'] for r in asset_rows)),
+            'y2_q2': target_currency.round(sum(r['y2_q2'] for r in asset_rows)),
+            'y2_q3': target_currency.round(sum(r['y2_q3'] for r in asset_rows)),
+            'y2_q4': target_currency.round(sum(r['y2_q4'] for r in asset_rows)),
+            'y2_total': target_currency.round(sum(r['y2_total'] for r in asset_rows)),
+            'total_val': target_currency.round(sum(r['total_val'] for r in asset_rows)),
             'asset_count': sum(r['count_total'] for r in asset_rows),
             'asset_depreciation': target_currency.round(sum(r['depr_total'] for r in asset_rows)),
         }
@@ -1843,6 +2044,17 @@ class FbookReportWizard(models.TransientModel):
                         'purchase_total': target_currency.round(s.get('purchase_total', 0.0)),
                         'depr_total': target_currency.round(s.get('depr_total', 0.0)),
                         'stop_depr_total': target_currency.round(s.get('stop_depr_total', 0.0)),
+                        'y1_q1': target_currency.round(s.get('y1_q1', 0.0)),
+                        'y1_q2': target_currency.round(s.get('y1_q2', 0.0)),
+                        'y1_q3': target_currency.round(s.get('y1_q3', 0.0)),
+                        'y1_q4': target_currency.round(s.get('y1_q4', 0.0)),
+                        'y1_total': target_currency.round(s.get('y1_total', 0.0)),
+                        'y2_q1': target_currency.round(s.get('y2_q1', 0.0)),
+                        'y2_q2': target_currency.round(s.get('y2_q2', 0.0)),
+                        'y2_q3': target_currency.round(s.get('y2_q3', 0.0)),
+                        'y2_q4': target_currency.round(s.get('y2_q4', 0.0)),
+                        'y2_total': target_currency.round(s.get('y2_total', 0.0)),
+                        'total_val': target_currency.round(s.get('total_val', 0.0)),
                         'assets': assets_list,
                     })
 
@@ -1857,6 +2069,17 @@ class FbookReportWizard(models.TransientModel):
                     'purchase_total': target_currency.round(sum(t['purchase_total'] for t in cat_types_list)),
                     'depr_total': target_currency.round(sum(t['depr_total'] for t in cat_types_list)),
                     'stop_depr_total': target_currency.round(sum(t['stop_depr_total'] for t in cat_types_list)),
+                    'y1_q1': target_currency.round(sum(t['y1_q1'] for t in cat_types_list)),
+                    'y1_q2': target_currency.round(sum(t['y1_q2'] for t in cat_types_list)),
+                    'y1_q3': target_currency.round(sum(t['y1_q3'] for t in cat_types_list)),
+                    'y1_q4': target_currency.round(sum(t['y1_q4'] for t in cat_types_list)),
+                    'y1_total': target_currency.round(sum(t['y1_total'] for t in cat_types_list)),
+                    'y2_q1': target_currency.round(sum(t['y2_q1'] for t in cat_types_list)),
+                    'y2_q2': target_currency.round(sum(t['y2_q2'] for t in cat_types_list)),
+                    'y2_q3': target_currency.round(sum(t['y2_q3'] for t in cat_types_list)),
+                    'y2_q4': target_currency.round(sum(t['y2_q4'] for t in cat_types_list)),
+                    'y2_total': target_currency.round(sum(t['y2_total'] for t in cat_types_list)),
+                    'total_val': target_currency.round(sum(t['total_val'] for t in cat_types_list)),
                     'asset_types': cat_types_list,
                 })
 
@@ -1879,6 +2102,17 @@ class FbookReportWizard(models.TransientModel):
                         'purchase_total': target_currency.round(s.get('purchase_total', 0.0)),
                         'depr_total': target_currency.round(s.get('depr_total', 0.0)),
                         'stop_depr_total': target_currency.round(s.get('stop_depr_total', 0.0)),
+                        'y1_q1': target_currency.round(s.get('y1_q1', 0.0)),
+                        'y1_q2': target_currency.round(s.get('y1_q2', 0.0)),
+                        'y1_q3': target_currency.round(s.get('y1_q3', 0.0)),
+                        'y1_q4': target_currency.round(s.get('y1_q4', 0.0)),
+                        'y1_total': target_currency.round(s.get('y1_total', 0.0)),
+                        'y2_q1': target_currency.round(s.get('y2_q1', 0.0)),
+                        'y2_q2': target_currency.round(s.get('y2_q2', 0.0)),
+                        'y2_q3': target_currency.round(s.get('y2_q3', 0.0)),
+                        'y2_q4': target_currency.round(s.get('y2_q4', 0.0)),
+                        'y2_total': target_currency.round(s.get('y2_total', 0.0)),
+                        'total_val': target_currency.round(s.get('total_val', 0.0)),
                         'assets': assets_list,
                     })
 
@@ -1894,6 +2128,17 @@ class FbookReportWizard(models.TransientModel):
                 'purchase_total': target_currency.round(uncategorized_stats.get('purchase_total', 0.0)),
                 'depr_total': target_currency.round(uncategorized_stats.get('depr_total', 0.0)),
                 'stop_depr_total': target_currency.round(uncategorized_stats.get('stop_depr_total', 0.0)),
+                'y1_q1': target_currency.round(uncategorized_stats.get('y1_q1', 0.0)),
+                'y1_q2': target_currency.round(uncategorized_stats.get('y1_q2', 0.0)),
+                'y1_q3': target_currency.round(uncategorized_stats.get('y1_q3', 0.0)),
+                'y1_q4': target_currency.round(uncategorized_stats.get('y1_q4', 0.0)),
+                'y1_total': target_currency.round(uncategorized_stats.get('y1_total', 0.0)),
+                'y2_q1': target_currency.round(uncategorized_stats.get('y2_q1', 0.0)),
+                'y2_q2': target_currency.round(uncategorized_stats.get('y2_q2', 0.0)),
+                'y2_q3': target_currency.round(uncategorized_stats.get('y2_q3', 0.0)),
+                'y2_q4': target_currency.round(uncategorized_stats.get('y2_q4', 0.0)),
+                'y2_total': target_currency.round(uncategorized_stats.get('y2_total', 0.0)),
+                'total_val': target_currency.round(uncategorized_stats.get('total_val', 0.0)),
                 'assets': uncategorized_assets,
             })
 
@@ -1909,6 +2154,17 @@ class FbookReportWizard(models.TransientModel):
                 'purchase_total': target_currency.round(sum(t['purchase_total'] for t in orphaned_types)),
                 'depr_total': target_currency.round(sum(t['depr_total'] for t in orphaned_types)),
                 'stop_depr_total': target_currency.round(sum(t['stop_depr_total'] for t in orphaned_types)),
+                'y1_q1': target_currency.round(sum(t['y1_q1'] for t in orphaned_types)),
+                'y1_q2': target_currency.round(sum(t['y1_q2'] for t in orphaned_types)),
+                'y1_q3': target_currency.round(sum(t['y1_q3'] for t in orphaned_types)),
+                'y1_q4': target_currency.round(sum(t['y1_q4'] for t in orphaned_types)),
+                'y1_total': target_currency.round(sum(t['y1_total'] for t in orphaned_types)),
+                'y2_q1': target_currency.round(sum(t['y2_q1'] for t in orphaned_types)),
+                'y2_q2': target_currency.round(sum(t['y2_q2'] for t in orphaned_types)),
+                'y2_q3': target_currency.round(sum(t['y2_q3'] for t in orphaned_types)),
+                'y2_q4': target_currency.round(sum(t['y2_q4'] for t in orphaned_types)),
+                'y2_total': target_currency.round(sum(t['y2_total'] for t in orphaned_types)),
+                'total_val': target_currency.round(sum(t['total_val'] for t in orphaned_types)),
                 'asset_types': orphaned_types,
             })
 
@@ -1922,6 +2178,17 @@ class FbookReportWizard(models.TransientModel):
             'purchase_total': asset_totals['purchase_total'],
             'depr_total': asset_totals['depr_total'],
             'stop_depr_total': asset_totals['stop_depr_total'],
+            'y1_q1': asset_totals['y1_q1'],
+            'y1_q2': asset_totals['y1_q2'],
+            'y1_q3': asset_totals['y1_q3'],
+            'y1_q4': asset_totals['y1_q4'],
+            'y1_total': asset_totals['y1_total'],
+            'y2_q1': asset_totals['y2_q1'],
+            'y2_q2': asset_totals['y2_q2'],
+            'y2_q3': asset_totals['y2_q3'],
+            'y2_q4': asset_totals['y2_q4'],
+            'y2_total': asset_totals['y2_total'],
+            'total_val': asset_totals['total_val'],
         }
 
         # CSR Fund Section: entries under Chart of Accounts 'CSR Expense', grouped by partner name
@@ -2747,94 +3014,116 @@ class FbookReportWizard(models.TransientModel):
         # row += 3
 
         # 7. Assets & Investment
-        ws.merge_range(row, 0, row, 9, "7. ASSETS & INVESTMENT", f_sec_title)
+        ws.merge_range(row, 0, row, 12, "7. ASSETS & INVESTMENT", f_sec_title)
         ws.set_row(row, 24)
         row += 1
         ws.merge_range(row, 0, row, 1, data.get('currency_symbol', ''), f_main_header)
-        ws.merge_range(row, 2, row, 6, "Assets Count", f_cy_header)
-        ws.merge_range(row, 7, row, 9, "Purchase / Depreciation", f_fy_header)
+        ws.merge_range(row, 2, row, 6, data.get('year1_label', ''), f_y1)
+        ws.merge_range(row, 7, row, 11, data.get('year2_label', ''), f_y2)
+        ws.write(row, 12, "Total Purchase Value", f_tot_net)
         ws.set_row(row, 22)
         row += 1
         ws.write(row, 0, "Asset Category", f_sub_left)
         ws.write(row, 1, "Asset Type", f_sub_left)
-        ws.write(row, 2, "Total", f_sub_center)
-        ws.write(row, 3, "In Store", f_sub_center)
-        ws.write(row, 4, "In Use", f_sub_center)
-        ws.write(row, 5, "Cust. Loc", f_sub_center)
-        ws.write(row, 6, "Scrapped", f_sub_center)
-        ws.write(row, 7, "Purchase Value", f_purchase)
-        ws.write(row, 8, "Depreciation Value", f_depr)
-        ws.write(row, 9, "Last Depreciated Amount", f_sub_center)
+        ws.write(row, 2, "Q1", f_sub_center)
+        ws.write(row, 3, "Q2", f_sub_center)
+        ws.write(row, 4, "Q3", f_sub_center)
+        ws.write(row, 5, "Q4", f_sub_center)
+        ws.write(row, 6, "Total", f_sub_right)
+        ws.write(row, 7, "Q1", f_sub_center)
+        ws.write(row, 8, "Q2", f_sub_center)
+        ws.write(row, 9, "Q3", f_sub_center)
+        ws.write(row, 10, "Q4", f_sub_center)
+        ws.write(row, 11, "Total", f_sub_right)
+        ws.write(row, 12, "Total Value", f_tot_net)
         ws.set_row(row, 22)
         row += 1
         for a in data.get('asset_rows', []):
             ws.write(row, 0, a.get('category', ''), f_text_bold)
             ws.write(row, 1, a.get('asset_type', ''), f_text)
-            ws.write(row, 2, a.get('count_total', 0), f_int)
-            ws.write(row, 3, a.get('count_in_store', 0), f_int)
-            ws.write(row, 4, a.get('count_in_use', 0), f_int)
-            ws.write(row, 5, a.get('count_customer', 0), f_int)
-            ws.write(row, 6, a.get('count_scrapped', 0), f_int)
-            ws.write(row, 7, a.get('purchase_total', 0.0), f_amt)
-            ws.write(row, 8, a.get('depr_total', 0.0), f_amt)
-            ws.write(row, 9, a.get('stop_depr_total', 0.0), f_amt)
+            ws.write(row, 2, a.get('y1_q1', 0.0), f_amt)
+            ws.write(row, 3, a.get('y1_q2', 0.0), f_amt)
+            ws.write(row, 4, a.get('y1_q3', 0.0), f_amt)
+            ws.write(row, 5, a.get('y1_q4', 0.0), f_amt)
+            ws.write(row, 6, a.get('y1_total', 0.0), f_amt_hi)
+            ws.write(row, 7, a.get('y2_q1', 0.0), f_amt)
+            ws.write(row, 8, a.get('y2_q2', 0.0), f_amt)
+            ws.write(row, 9, a.get('y2_q3', 0.0), f_amt)
+            ws.write(row, 10, a.get('y2_q4', 0.0), f_amt)
+            ws.write(row, 11, a.get('y2_total', 0.0), f_amt_hi)
+            ws.write(row, 12, a.get('total_val', 0.0), f_tot_net_amt)
             ws.set_row(row, 20)
             row += 1
         a_t = data.get('asset_totals', {})
         ws.merge_range(row, 0, row, 1, "Total", f_tot_label)
-        ws.write(row, 2, a_t.get('count_total', 0), f_int)
-        ws.write(row, 3, a_t.get('count_in_store', 0), f_int)
-        ws.write(row, 4, a_t.get('count_in_use', 0), f_int)
-        ws.write(row, 5, a_t.get('count_customer', 0), f_int)
-        ws.write(row, 6, a_t.get('count_scrapped', 0), f_int)
-        ws.write(row, 7, a_t.get('purchase_total', 0.0), f_tot_amt)
-        ws.write(row, 8, a_t.get('depr_total', 0.0), f_tot_amt)
-        ws.write(row, 9, a_t.get('stop_depr_total', 0.0), f_tot_amt)
+        ws.write(row, 2, a_t.get('y1_q1', 0.0), f_tot_amt)
+        ws.write(row, 3, a_t.get('y1_q2', 0.0), f_tot_amt)
+        ws.write(row, 4, a_t.get('y1_q3', 0.0), f_tot_amt)
+        ws.write(row, 5, a_t.get('y1_q4', 0.0), f_tot_amt)
+        ws.write(row, 6, a_t.get('y1_total', 0.0), f_tot_amt)
+        ws.write(row, 7, a_t.get('y2_q1', 0.0), f_tot_amt)
+        ws.write(row, 8, a_t.get('y2_q2', 0.0), f_tot_amt)
+        ws.write(row, 9, a_t.get('y2_q3', 0.0), f_tot_amt)
+        ws.write(row, 10, a_t.get('y2_q4', 0.0), f_tot_amt)
+        ws.write(row, 11, a_t.get('y2_total', 0.0), f_tot_amt)
+        ws.write(row, 12, a_t.get('total_val', 0.0), f_tot_net_amt)
         ws.set_row(row, 22)
         row += 3
 
         # 8. Investment Received (Equity Capital)
-        ws.merge_range(row, 0, row, 8, "8. INVESTMENT RECEIVED (EQUITY CAPITAL)", f_sec_title)
+        ws.merge_range(row, 0, row, 12, "8. INVESTMENT RECEIVED (EQUITY CAPITAL)", f_sec_title)
         ws.set_row(row, 24)
         row += 1
         ws.merge_range(row, 0, row, 1, data.get('currency_symbol', ''), f_main_header)
-        ws.merge_range(row, 2, row, 4, data.get('year1_label', ''), f_y1)
-        ws.merge_range(row, 5, row, 7, data.get('year2_label', ''), f_y2)
-        ws.write(row, 8, "Total Net Invested", f_tot_net)
+        ws.merge_range(row, 2, row, 6, data.get('year1_label', ''), f_y1)
+        ws.merge_range(row, 7, row, 11, data.get('year2_label', ''), f_y2)
+        ws.write(row, 12, "Total Net Invested", f_tot_net)
         ws.set_row(row, 22)
         row += 1
         ws.write(row, 0, "Category", f_sub_left)
         ws.write(row, 1, "Partner / Investor", f_sub_left)
-        ws.write(row, 2, "Received", f_received)
-        ws.write(row, 3, "Repaid", f_repaid)
-        ws.write(row, 4, "Net Invested", f_sub_right)
-        ws.write(row, 5, "Received", f_received)
-        ws.write(row, 6, "Repaid", f_repaid)
-        ws.write(row, 7, "Net Invested", f_sub_right)
-        ws.write(row, 8, "Cumulative Total", f_tot_net)
+        ws.write(row, 2, "Q1", f_sub_center)
+        ws.write(row, 3, "Q2", f_sub_center)
+        ws.write(row, 4, "Q3", f_sub_center)
+        ws.write(row, 5, "Q4", f_sub_center)
+        ws.write(row, 6, "Total", f_sub_right)
+        ws.write(row, 7, "Q1", f_sub_center)
+        ws.write(row, 8, "Q2", f_sub_center)
+        ws.write(row, 9, "Q3", f_sub_center)
+        ws.write(row, 10, "Q4", f_sub_center)
+        ws.write(row, 11, "Total", f_sub_right)
+        ws.write(row, 12, "Cumulative Total", f_tot_net)
         ws.set_row(row, 22)
         row += 1
         for inv in data.get('investor_rows', []):
             ws.write(row, 0, inv.get('category', ''), f_text)
             ws.write(row, 1, inv.get('investor', ''), f_text_bold)
-            ws.write(row, 2, inv.get('y1_received', 0.0), f_amt)
-            ws.write(row, 3, inv.get('y1_repaid', 0.0), f_amt)
-            ws.write(row, 4, inv.get('y1_net', 0.0), f_amt_hi)
-            ws.write(row, 5, inv.get('y2_received', 0.0), f_amt)
-            ws.write(row, 6, inv.get('y2_repaid', 0.0), f_amt)
-            ws.write(row, 7, inv.get('y2_net', 0.0), f_amt_hi)
-            ws.write(row, 8, inv.get('total_net', 0.0), f_tot_net_amt)
+            ws.write(row, 2, inv.get('y1_q1', 0.0), f_amt)
+            ws.write(row, 3, inv.get('y1_q2', 0.0), f_amt)
+            ws.write(row, 4, inv.get('y1_q3', 0.0), f_amt)
+            ws.write(row, 5, inv.get('y1_q4', 0.0), f_amt)
+            ws.write(row, 6, inv.get('y1_total', 0.0), f_amt_hi)
+            ws.write(row, 7, inv.get('y2_q1', 0.0), f_amt)
+            ws.write(row, 8, inv.get('y2_q2', 0.0), f_amt)
+            ws.write(row, 9, inv.get('y2_q3', 0.0), f_amt)
+            ws.write(row, 10, inv.get('y2_q4', 0.0), f_amt)
+            ws.write(row, 11, inv.get('y2_total', 0.0), f_amt_hi)
+            ws.write(row, 12, inv.get('total_net', 0.0), f_tot_net_amt)
             ws.set_row(row, 20)
             row += 1
         inv_t = data.get('investor_totals', {})
         ws.merge_range(row, 0, row, 1, "Total", f_tot_label)
-        ws.write(row, 2, inv_t.get('y1_received', 0.0), f_tot_amt)
-        ws.write(row, 3, inv_t.get('y1_repaid', 0.0), f_tot_amt)
-        ws.write(row, 4, inv_t.get('y1_net', 0.0), f_tot_hi)
-        ws.write(row, 5, inv_t.get('y2_received', 0.0), f_tot_amt)
-        ws.write(row, 6, inv_t.get('y2_repaid', 0.0), f_tot_amt)
-        ws.write(row, 7, inv_t.get('y2_net', 0.0), f_tot_hi)
-        ws.write(row, 8, inv_t.get('total_net', 0.0), f_tot_hi)
+        ws.write(row, 2, inv_t.get('y1_q1', 0.0), f_tot_amt)
+        ws.write(row, 3, inv_t.get('y1_q2', 0.0), f_tot_amt)
+        ws.write(row, 4, inv_t.get('y1_q3', 0.0), f_tot_amt)
+        ws.write(row, 5, inv_t.get('y1_q4', 0.0), f_tot_amt)
+        ws.write(row, 6, inv_t.get('y1_total', 0.0), f_tot_amt)
+        ws.write(row, 7, inv_t.get('y2_q1', 0.0), f_tot_amt)
+        ws.write(row, 8, inv_t.get('y2_q2', 0.0), f_tot_amt)
+        ws.write(row, 9, inv_t.get('y2_q3', 0.0), f_tot_amt)
+        ws.write(row, 10, inv_t.get('y2_q4', 0.0), f_tot_amt)
+        ws.write(row, 11, inv_t.get('y2_total', 0.0), f_tot_amt)
+        ws.write(row, 12, inv_t.get('total_net', 0.0), f_tot_hi)
         ws.set_row(row, 22)
         row += 3
 

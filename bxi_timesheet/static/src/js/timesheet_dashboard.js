@@ -218,7 +218,15 @@ class BxiTimesheetDashboard extends Component {
         this.resetDefaultActivity();
 
         this.state.new_row_description = "";
-        this.state.new_row_date = this.formatDateStr(new Date());
+        const todayStr = this.formatDateStr(new Date());
+        const weekDates = (this.state.dates || []).map(d => d.date_str);
+        if (weekDates.includes(todayStr)) {
+            this.state.new_row_date = todayStr;
+        } else if (this.state.start_date_str) {
+            this.state.new_row_date = this.state.start_date_str;
+        } else {
+            this.state.new_row_date = todayStr;
+        }
         this.state.new_row_hours = "";
         this.state.show_add_row_modal = true;
     }

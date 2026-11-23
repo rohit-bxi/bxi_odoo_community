@@ -1276,20 +1276,16 @@
                             </td>
                             <td style="text-align: right; padding: 14px 18px; color: #475569; font-size: 13px; border-left: none;">
                                 <span class="me-3">
-                                    <strong style="color: #64748b;">Total Assets:</strong>
-                                    <span class="badge bg-secondary ms-1" style="font-size: 12px;"><t t-esc="state.report_data.asset_totals.count_total"/></span>
+                                    <strong style="color: #64748b;"><t t-esc="state.report_data.year1_label"/>:</strong>
+                                    <span style="font-weight: 600; color: #d97706; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.asset_totals.y1_total)"/></span>
                                 </span>
                                 <span class="me-3">
-                                    <strong style="color: #64748b;">Purchase Value:</strong>
-                                    <span style="font-weight: 700; color: #0f172a; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.asset_totals.purchase_total)"/></span>
-                                </span>
-                                <span class="me-3">
-                                    <strong style="color: #64748b;">Depreciation:</strong>
-                                    <span style="font-weight: 600; color: #64748b; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.asset_totals.depr_total)"/></span>
+                                    <strong style="color: #64748b;"><t t-esc="state.report_data.year2_label"/>:</strong>
+                                    <span style="font-weight: 600; color: #d97706; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.asset_totals.y2_total)"/></span>
                                 </span>
                                 <span>
-                                    <strong style="color: #64748b;">Book Value / Stop Depr:</strong>
-                                    <span style="font-weight: 700; color: #d97706; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.asset_totals.stop_depr_total)"/></span>
+                                    <strong style="color: #64748b;">Total Purchase Value:</strong>
+                                    <span style="font-weight: 800; color: #b45309; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.asset_totals.total_val)"/></span>
                                 </span>
                             </td>
                         </tr>
@@ -1298,49 +1294,40 @@
                         <t t-if="isExpanded('investment_made')">
                             <tr>
                                 <td colspan="2" style="padding: 0; background: #ffffff; border-bottom: 2px solid #cbd5e1;">
-                                    <table class="fbook-table" style="width: 100%; border-collapse: collapse; margin: 0; min-width: 1150px;">
+                                    <table class="fbook-table" style="width: 100%; border-collapse: collapse; margin: 0; min-width: 1250px;">
                                         <thead>
                                             <!-- Headers -->
                                             <tr>
-                                                <th class="main-header" colspan="2" style="text-align: left; min-width: 250px;">
+                                                <th class="main-header" colspan="2" style="text-align: left; min-width: 280px;">
                                                     <t t-esc="state.report_data.currency_symbol"/>
                                                 </th>
-                                                <th colspan="5" class="fbook-header-cy" style="text-align: center;">
-                                                    Assets Count
+                                                <th colspan="5" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'" style="text-align: center;">
+                                                    <t t-esc="state.report_data.year1_label"/>
                                                 </th>
-                                                <th colspan="3" class="fbook-header-fy" style="text-align: center;">
-                                                    Purchase / Depreciation
+                                                <th colspan="5" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'" style="text-align: center;">
+                                                    <t t-esc="state.report_data.year2_label"/>
+                                                </th>
+                                                <th rowspan="2" class="sortable-th" style="text-align: right; width: 130px; background: #0f172a; color: white; font-weight: 700; vertical-align: middle;" t-on-click="() => this.setSort('investment_made', 'total_val')">
+                                                    Total Purchase Value <i t-att-class="getSortIcon('investment_made', 'total_val')"/>
                                                 </th>
                                             </tr>
                                              <tr>
-                                                <th class="fbook-sticky-col sortable-th" style="text-align: left; min-width: 180px; background: #f8fafc; font-weight: 700;" t-on-click="() => this.setSort('investment_made', 'name')">
+                                                <th class="fbook-sticky-col sortable-th" style="text-align: left; min-width: 200px; background: #f8fafc; font-weight: 700;" t-on-click="() => this.setSort('investment_made', 'name')">
                                                     Asset Category / Type / Item <i t-att-class="getSortIcon('investment_made', 'name')"/>
                                                 </th>
-                                                <th style="text-align: left; min-width: 180px; background: #f8fafc; font-weight: 700;">Details / Status</th>
-                                                <th class="text-center sortable-th" style="width: 70px; background: #f1f5f9; font-weight: 700;" t-on-click="() => this.setSort('investment_made', 'count_total')">
-                                                    Total <i t-att-class="getSortIcon('investment_made', 'count_total')"/>
-                                                </th>
-                                                <th class="text-center sortable-th" style="width: 75px; background: #f1f5f9; font-weight: 700;" t-on-click="() => this.setSort('investment_made', 'count_in_store')">
-                                                    In Store <i t-att-class="getSortIcon('investment_made', 'count_in_store')"/>
-                                                </th>
-                                                <th class="text-center sortable-th" style="width: 75px; background: #f1f5f9; font-weight: 700;" t-on-click="() => this.setSort('investment_made', 'count_in_use')">
-                                                    In Use <i t-att-class="getSortIcon('investment_made', 'count_in_use')"/>
-                                                </th>
-                                                <th class="text-center sortable-th" style="width: 90px; background: #f1f5f9; font-weight: 700;" t-on-click="() => this.setSort('investment_made', 'count_customer')">
-                                                    Cust. Loc <i t-att-class="getSortIcon('investment_made', 'count_customer')"/>
-                                                </th>
-                                                <th class="text-center sortable-th" style="width: 75px; background: #f1f5f9; font-weight: 700;" t-on-click="() => this.setSort('investment_made', 'count_scrapped')">
-                                                    Scrapped <i t-att-class="getSortIcon('investment_made', 'count_scrapped')"/>
-                                                </th>
-                                                <th class="text-center sortable-th" style="width: 130px; background: #fef3c7; font-weight: 700;" t-on-click="() => this.setSort('investment_made', 'purchase_total')">
-                                                    Purchase Value <i t-att-class="getSortIcon('investment_made', 'purchase_total')"/>
-                                                </th>
-                                                <th class="text-center sortable-th" style="width: 140px; background: #e0e7ff; font-weight: 700;" t-on-click="() => this.setSort('investment_made', 'depr_total')">
-                                                    Depreciation Value <i t-att-class="getSortIcon('investment_made', 'depr_total')"/>
-                                                </th>
-                                                <th class="text-center sortable-th" style="width: 170px; background: #e0e7ff; font-weight: 700;" t-on-click="() => this.setSort('investment_made', 'stop_depr_total')">
-                                                    Last Depreciated Amount <i t-att-class="getSortIcon('investment_made', 'stop_depr_total')"/>
-                                                </th>
+                                                <th style="text-align: left; min-width: 160px; background: #f8fafc; font-weight: 700;">Details / Status</th>
+                                                <!-- Y1 Quarters -->
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_made', 'y1_q1')">Q1 <i t-att-class="getSortIcon('investment_made', 'y1_q1')"/></th>
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_made', 'y1_q2')">Q2 <i t-att-class="getSortIcon('investment_made', 'y1_q2')"/></th>
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_made', 'y1_q3')">Q3 <i t-att-class="getSortIcon('investment_made', 'y1_q3')"/></th>
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_made', 'y1_q4')">Q4 <i t-att-class="getSortIcon('investment_made', 'y1_q4')"/></th>
+                                                <th class="text-center sortable-th" style="width: 95px; background: #bae6fd; font-weight: 700;" t-on-click="() => this.setSort('investment_made', 'y1_total')">Total <i t-att-class="getSortIcon('investment_made', 'y1_total')"/></th>
+                                                <!-- Y2 Quarters -->
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_made', 'y2_q1')">Q1 <i t-att-class="getSortIcon('investment_made', 'y2_q1')"/></th>
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_made', 'y2_q2')">Q2 <i t-att-class="getSortIcon('investment_made', 'y2_q2')"/></th>
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_made', 'y2_q3')">Q3 <i t-att-class="getSortIcon('investment_made', 'y2_q3')"/></th>
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_made', 'y2_q4')">Q4 <i t-att-class="getSortIcon('investment_made', 'y2_q4')"/></th>
+                                                <th class="text-center sortable-th" style="width: 95px; background: #bae6fd; font-weight: 700;" t-on-click="() => this.setSort('investment_made', 'y2_total')">Total <i t-att-class="getSortIcon('investment_made', 'y2_total')"/></th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1357,14 +1344,20 @@
                                                                 <t t-esc="cat.asset_types.length"/> types
                                                             </span>
                                                         </td>
-                                                        <td class="text-center total-cell"><t t-esc="cat.count_total"/></td>
-                                                        <td class="text-center"><t t-esc="cat.count_in_store"/></td>
-                                                        <td class="text-center"><t t-esc="cat.count_in_use"/></td>
-                                                        <td class="text-center"><t t-esc="cat.count_customer"/></td>
-                                                        <td class="text-center"><t t-esc="cat.count_scrapped"/></td>
-                                                        <td class="total-cell"><t t-out="formatAmt(cat.purchase_total)"/></td>
-                                                        <td style="background: #eef2ff;"><t t-out="formatAmt(cat.depr_total)"/></td>
-                                                        <td style="background: #eef2ff;"><t t-out="formatAmt(cat.stop_depr_total)"/></td>
+                                                        <!-- Y1 Quarters -->
+                                                        <td><t t-out="formatAmt(cat.y1_q1)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y1_q2)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y1_q3)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y1_q4)"/></td>
+                                                        <td class="total-cell" style="background: #f1f5f9;"><t t-out="formatAmt(cat.y1_total)"/></td>
+                                                        <!-- Y2 Quarters -->
+                                                        <td><t t-out="formatAmt(cat.y2_q1)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y2_q2)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y2_q3)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y2_q4)"/></td>
+                                                        <td class="total-cell" style="background: #f1f5f9;"><t t-out="formatAmt(cat.y2_total)"/></td>
+                                                        <!-- Total Purchase Value -->
+                                                        <td style="font-weight: 700; background: #e2e8f0; color: #0f172a;"><t t-out="formatAmt(cat.total_val)"/></td>
                                                     </tr>
 
                                                     <!-- LEVEL 2: ASSET TYPES UNDER CATEGORY -->
@@ -1385,14 +1378,20 @@
                                                                         <span class="text-muted">No items</span>
                                                                     </t>
                                                                 </td>
-                                                                <td class="text-center total-cell"><t t-esc="atype.count_total"/></td>
-                                                                <td class="text-center"><t t-esc="atype.count_in_store"/></td>
-                                                                <td class="text-center"><t t-esc="atype.count_in_use"/></td>
-                                                                <td class="text-center"><t t-esc="atype.count_customer"/></td>
-                                                                <td class="text-center"><t t-esc="atype.count_scrapped"/></td>
-                                                                <td class="total-cell"><t t-out="formatAmt(atype.purchase_total)"/></td>
-                                                                <td style="background: #eef2ff;"><t t-out="formatAmt(atype.depr_total)"/></td>
-                                                                <td style="background: #eef2ff;"><t t-out="formatAmt(atype.stop_depr_total)"/></td>
+                                                                <!-- Y1 Quarters -->
+                                                                <td><t t-out="formatAmt(atype.y1_q1)"/></td>
+                                                                <td><t t-out="formatAmt(atype.y1_q2)"/></td>
+                                                                <td><t t-out="formatAmt(atype.y1_q3)"/></td>
+                                                                <td><t t-out="formatAmt(atype.y1_q4)"/></td>
+                                                                <td class="total-cell" style="background: #f8fafc;"><t t-out="formatAmt(atype.y1_total)"/></td>
+                                                                <!-- Y2 Quarters -->
+                                                                <td><t t-out="formatAmt(atype.y2_q1)"/></td>
+                                                                <td><t t-out="formatAmt(atype.y2_q2)"/></td>
+                                                                <td><t t-out="formatAmt(atype.y2_q3)"/></td>
+                                                                <td><t t-out="formatAmt(atype.y2_q4)"/></td>
+                                                                <td class="total-cell" style="background: #f8fafc;"><t t-out="formatAmt(atype.y2_total)"/></td>
+                                                                <!-- Total Purchase Value -->
+                                                                <td style="font-weight: 700; color: #0f172a;"><t t-out="formatAmt(atype.total_val)"/></td>
                                                             </tr>
 
                                                             <!-- LEVEL 3: INDIVIDUAL ASSETS UNDER ASSET TYPE -->
@@ -1408,6 +1407,9 @@
                                                                                 </t>
                                                                             </td>
                                                                             <td style="text-align: left; color: #64748b;">
+                                                                                <t t-if="asset.date">
+                                                                                    <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 10px; margin-right: 4px;"><i class="fa fa-calendar me-1"/> <t t-esc="asset.date"/></span>
+                                                                                </t>
                                                                                 <t t-if="asset.serial_number">
                                                                                     <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 10px; margin-right: 4px;">SN: <t t-esc="asset.serial_number"/></span>
                                                                                 </t>
@@ -1415,20 +1417,26 @@
                                                                                     <span class="badge" style="background: #ecfdf5; color: #047857; font-size: 10px;"><t t-esc="asset.status"/></span>
                                                                                 </t>
                                                                             </td>
-                                                                            <td class="text-center total-cell"><t t-esc="asset.count_total"/></td>
-                                                                            <td class="text-center"><t t-esc="asset.count_in_store"/></td>
-                                                                            <td class="text-center"><t t-esc="asset.count_in_use"/></td>
-                                                                            <td class="text-center"><t t-esc="asset.count_customer"/></td>
-                                                                            <td class="text-center"><t t-esc="asset.count_scrapped"/></td>
-                                                                            <td class="total-cell"><t t-out="formatAmt(asset.purchase_total)"/></td>
-                                                                            <td style="background: #f8fafc;"><t t-out="formatAmt(asset.depr_total)"/></td>
-                                                                            <td style="background: #f8fafc;"><t t-out="formatAmt(asset.stop_depr_total)"/></td>
+                                                                            <!-- Y1 Quarters -->
+                                                                            <td><t t-out="formatAmt(asset.y1_q1)"/></td>
+                                                                            <td><t t-out="formatAmt(asset.y1_q2)"/></td>
+                                                                            <td><t t-out="formatAmt(asset.y1_q3)"/></td>
+                                                                            <td><t t-out="formatAmt(asset.y1_q4)"/></td>
+                                                                            <td class="total-cell"><t t-out="formatAmt(asset.y1_total)"/></td>
+                                                                            <!-- Y2 Quarters -->
+                                                                            <td><t t-out="formatAmt(asset.y2_q1)"/></td>
+                                                                            <td><t t-out="formatAmt(asset.y2_q2)"/></td>
+                                                                            <td><t t-out="formatAmt(asset.y2_q3)"/></td>
+                                                                            <td><t t-out="formatAmt(asset.y2_q4)"/></td>
+                                                                            <td class="total-cell"><t t-out="formatAmt(asset.y2_total)"/></td>
+                                                                            <!-- Total Purchase Value -->
+                                                                            <td style="font-weight: 600; color: #0f172a;"><t t-out="formatAmt(asset.total_val)"/></td>
                                                                         </tr>
                                                                     </t>
                                                                 </t>
                                                                 <t t-else="">
                                                                     <tr style="background: #ffffff; font-size: 12px;">
-                                                                        <td colspan="10" style="padding-left: 60px; color: #94a3b8; font-style: italic;">
+                                                                        <td colspan="13" style="padding-left: 60px; color: #94a3b8; font-style: italic;">
                                                                             No asset records found under this asset type.
                                                                         </td>
                                                                     </tr>
@@ -1440,19 +1448,25 @@
                                                 <!-- Total row for Investment Made -->
                                                 <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a; border-top: 2px solid #cbd5e1;">
                                                     <td class="fbook-sticky-col" style="text-align: left; padding: 10px 14px;" colspan="2">Total Investment Made</td>
-                                                    <td class="text-center total-cell"><t t-esc="state.report_data.investment_made_hierarchy.count_total"/></td>
-                                                    <td class="text-center"><t t-esc="state.report_data.investment_made_hierarchy.count_in_store"/></td>
-                                                    <td class="text-center"><t t-esc="state.report_data.investment_made_hierarchy.count_in_use"/></td>
-                                                    <td class="text-center"><t t-esc="state.report_data.investment_made_hierarchy.count_customer"/></td>
-                                                    <td class="text-center"><t t-esc="state.report_data.investment_made_hierarchy.count_scrapped"/></td>
-                                                    <td class="total-cell"><t t-out="formatAmt(state.report_data.investment_made_hierarchy.purchase_total)"/></td>
-                                                    <td style="background: #e0e7ff;"><t t-out="formatAmt(state.report_data.investment_made_hierarchy.depr_total)"/></td>
-                                                    <td style="background: #e0e7ff;"><t t-out="formatAmt(state.report_data.investment_made_hierarchy.stop_depr_total)"/></td>
+                                                    <!-- Y1 Quarters -->
+                                                    <td><t t-out="formatAmt(state.report_data.investment_made_hierarchy.y1_q1)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_made_hierarchy.y1_q2)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_made_hierarchy.y1_q3)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_made_hierarchy.y1_q4)"/></td>
+                                                    <td class="total-cell" style="background: #bae6fd;"><t t-out="formatAmt(state.report_data.investment_made_hierarchy.y1_total)"/></td>
+                                                    <!-- Y2 Quarters -->
+                                                    <td><t t-out="formatAmt(state.report_data.investment_made_hierarchy.y2_q1)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_made_hierarchy.y2_q2)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_made_hierarchy.y2_q3)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_made_hierarchy.y2_q4)"/></td>
+                                                    <td class="total-cell" style="background: #bae6fd;"><t t-out="formatAmt(state.report_data.investment_made_hierarchy.y2_total)"/></td>
+                                                    <!-- Total Purchase Value -->
+                                                    <td style="font-weight: 800; background: #0f172a; color: white;"><t t-out="formatAmt(state.report_data.investment_made_hierarchy.total_val)"/></td>
                                                 </tr>
                                             </t>
                                             <t t-else="">
                                                 <tr>
-                                                    <td colspan="10" class="text-center text-muted" style="padding: 16px;">
+                                                    <td colspan="13" class="text-center text-muted" style="padding: 16px;">
                                                         No asset records found.
                                                     </td>
                                                 </tr>
@@ -1478,11 +1492,11 @@
                             <td style="text-align: right; padding: 14px 18px; color: #475569; font-size: 13px; border-left: none;">
                                 <span class="me-3">
                                     <strong style="color: #64748b;"><t t-esc="state.report_data.year1_label"/> Net:</strong>
-                                    <span style="font-weight: 600; color: #0284c7; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.investor_totals.y1_net)"/></span>
+                                    <span style="font-weight: 600; color: #0284c7; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.investor_totals.y1_total)"/></span>
                                 </span>
                                 <span class="me-3">
                                     <strong style="color: #64748b;"><t t-esc="state.report_data.year2_label"/> Net:</strong>
-                                    <span style="font-weight: 600; color: #0284c7; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.investor_totals.y2_net)"/></span>
+                                    <span style="font-weight: 600; color: #0284c7; margin-left: 4px;"><t t-esc="state.report_data.currency_symbol"/> <t t-out="formatAmt(state.report_data.investor_totals.y2_total)"/></span>
                                 </span>
                                 <span>
                                     <strong style="color: #64748b;">Cumulative Net Invested:</strong>
@@ -1495,24 +1509,30 @@
                         <t t-if="isExpanded('investment_received')">
                             <tr>
                                 <td colspan="2" style="padding: 0; background: #ffffff;">
-                                    <table class="fbook-table" style="width: 100%; border-collapse: collapse; margin: 0; min-width: 1050px;">
+                                    <table class="fbook-table" style="width: 100%; border-collapse: collapse; margin: 0; min-width: 1250px;">
                                         <thead>
                                             <!-- Headers -->
                                             <tr>
-                                                <th colspan="2" class="main-header" style="text-align: left; min-width: 300px;"><t t-esc="state.report_data.currency_symbol"/></th>
-                                                <th colspan="3" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year1_label"/></th>
-                                                <th colspan="3" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'"><t t-esc="state.report_data.year2_label"/></th>
+                                                <th colspan="2" class="main-header" style="text-align: left; min-width: 280px;"><t t-esc="state.report_data.currency_symbol"/></th>
+                                                <th colspan="5" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'" style="text-align: center;"><t t-esc="state.report_data.year1_label"/></th>
+                                                <th colspan="5" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'" style="text-align: center;"><t t-esc="state.report_data.year2_label"/></th>
                                                 <th rowspan="2" class="sortable-th" style="text-align: right; width: 130px; background: #0284c7; color: white; font-weight: 700; vertical-align: middle;" t-on-click="() => this.setSort('investment_received', 'total_net')">Total Net Invested <i t-att-class="getSortIcon('investment_received', 'total_net')"/></th>
                                             </tr>
                                             <tr>
                                                 <th class="sortable-th" style="text-align: left; min-width: 200px; background: #f8fafc; font-weight: 700;" t-on-click="() => this.setSort('investment_received', 'name')">Category / Partner / Investor <i t-att-class="getSortIcon('investment_received', 'name')"/></th>
-                                                <th style="text-align: left; min-width: 160px; background: #f8fafc; font-weight: 700;">Reference / Label</th>
-                                                <th class="text-center sortable-th" style="text-align: right; width: 110px; background: #f0fdf4; font-weight: 700; color: #166534;" t-on-click="() => this.setSort('investment_received', 'y1_received')">Received <i t-att-class="getSortIcon('investment_received', 'y1_received')"/></th>
-                                                <th class="text-center sortable-th" style="text-align: right; width: 110px; background: #fef2f2; font-weight: 700; color: #991b1b;" t-on-click="() => this.setSort('investment_received', 'y1_repaid')">Repaid <i t-att-class="getSortIcon('investment_received', 'y1_repaid')"/></th>
-                                                <th class="text-center sortable-th" style="text-align: right; width: 115px; background: #f1f5f9; font-weight: 700; color: #0f172a;" t-on-click="() => this.setSort('investment_received', 'y1_net')">Net Invested <i t-att-class="getSortIcon('investment_received', 'y1_net')"/></th>
-                                                <th class="text-center sortable-th" style="text-align: right; width: 110px; background: #f0fdf4; font-weight: 700; color: #166534;" t-on-click="() => this.setSort('investment_received', 'y2_received')">Received <i t-att-class="getSortIcon('investment_received', 'y2_received')"/></th>
-                                                <th class="text-center sortable-th" style="text-align: right; width: 110px; background: #fef2f2; font-weight: 700; color: #991b1b;" t-on-click="() => this.setSort('investment_received', 'y2_repaid')">Repaid <i t-att-class="getSortIcon('investment_received', 'y2_repaid')"/></th>
-                                                <th class="text-center sortable-th" style="text-align: right; width: 115px; background: #f1f5f9; font-weight: 700; color: #0f172a;" t-on-click="() => this.setSort('investment_received', 'y2_net')">Net Invested <i t-att-class="getSortIcon('investment_received', 'y2_net')"/></th>
+                                                <th style="text-align: left; min-width: 160px; background: #f8fafc; font-weight: 700;">Reference / Label / Details</th>
+                                                <!-- Y1 Quarters -->
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_received', 'y1_q1')">Q1 <i t-att-class="getSortIcon('investment_received', 'y1_q1')"/></th>
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_received', 'y1_q2')">Q2 <i t-att-class="getSortIcon('investment_received', 'y1_q2')"/></th>
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_received', 'y1_q3')">Q3 <i t-att-class="getSortIcon('investment_received', 'y1_q3')"/></th>
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_received', 'y1_q4')">Q4 <i t-att-class="getSortIcon('investment_received', 'y1_q4')"/></th>
+                                                <th class="text-center sortable-th" style="width: 95px; background: #bae6fd; font-weight: 700;" t-on-click="() => this.setSort('investment_received', 'y1_total')">Total <i t-att-class="getSortIcon('investment_received', 'y1_total')"/></th>
+                                                <!-- Y2 Quarters -->
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_received', 'y2_q1')">Q1 <i t-att-class="getSortIcon('investment_received', 'y2_q1')"/></th>
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_received', 'y2_q2')">Q2 <i t-att-class="getSortIcon('investment_received', 'y2_q2')"/></th>
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_received', 'y2_q3')">Q3 <i t-att-class="getSortIcon('investment_received', 'y2_q3')"/></th>
+                                                <th class="text-center sortable-th" style="width: 80px;" t-on-click="() => this.setSort('investment_received', 'y2_q4')">Q4 <i t-att-class="getSortIcon('investment_received', 'y2_q4')"/></th>
+                                                <th class="text-center sortable-th" style="width: 95px; background: #bae6fd; font-weight: 700;" t-on-click="() => this.setSort('investment_received', 'y2_total')">Total <i t-att-class="getSortIcon('investment_received', 'y2_total')"/></th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1529,13 +1549,17 @@
                                                                 <t t-esc="cat.partners.length"/> investors
                                                             </span>
                                                         </td>
-                                                        <td><t t-out="formatAmt(cat.y1_received)"/></td>
-                                                        <td><t t-out="formatAmt(cat.y1_repaid)"/></td>
-                                                        <td class="total-cell"><t t-out="formatAmt(cat.y1_net)"/></td>
-                                                        <td><t t-out="formatAmt(cat.y2_received)"/></td>
-                                                        <td><t t-out="formatAmt(cat.y2_repaid)"/></td>
-                                                        <td class="total-cell"><t t-out="formatAmt(cat.y2_net)"/></td>
-                                                        <td style="font-weight: 700; background: #f0f9ff; color: #0369a1;"><t t-out="formatAmt(cat.total_net)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y1_q1)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y1_q2)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y1_q3)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y1_q4)"/></td>
+                                                        <td class="total-cell" style="background: #f0f9ff;"><t t-out="formatAmt(cat.y1_total)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y2_q1)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y2_q2)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y2_q3)"/></td>
+                                                        <td><t t-out="formatAmt(cat.y2_q4)"/></td>
+                                                        <td class="total-cell" style="background: #f0f9ff;"><t t-out="formatAmt(cat.y2_total)"/></td>
+                                                        <td style="font-weight: 700; background: #e0f2fe; color: #0369a1;"><t t-out="formatAmt(cat.total_net)"/></td>
                                                     </tr>
 
                                                     <!-- LEVEL 2: PARTNER / INVESTOR UNDER CATEGORY -->
@@ -1556,12 +1580,16 @@
                                                                         <span class="text-muted">No transactions</span>
                                                                     </t>
                                                                 </td>
-                                                                <td><t t-out="formatAmt(partner.y1_received)"/></td>
-                                                                <td><t t-out="formatAmt(partner.y1_repaid)"/></td>
-                                                                <td class="total-cell"><t t-out="formatAmt(partner.y1_net)"/></td>
-                                                                <td><t t-out="formatAmt(partner.y2_received)"/></td>
-                                                                <td><t t-out="formatAmt(partner.y2_repaid)"/></td>
-                                                                <td class="total-cell"><t t-out="formatAmt(partner.y2_net)"/></td>
+                                                                <td><t t-out="formatAmt(partner.y1_q1)"/></td>
+                                                                <td><t t-out="formatAmt(partner.y1_q2)"/></td>
+                                                                <td><t t-out="formatAmt(partner.y1_q3)"/></td>
+                                                                <td><t t-out="formatAmt(partner.y1_q4)"/></td>
+                                                                <td class="total-cell" style="background: #f8fafc;"><t t-out="formatAmt(partner.y1_total)"/></td>
+                                                                <td><t t-out="formatAmt(partner.y2_q1)"/></td>
+                                                                <td><t t-out="formatAmt(partner.y2_q2)"/></td>
+                                                                <td><t t-out="formatAmt(partner.y2_q3)"/></td>
+                                                                <td><t t-out="formatAmt(partner.y2_q4)"/></td>
+                                                                <td class="total-cell" style="background: #f8fafc;"><t t-out="formatAmt(partner.y2_total)"/></td>
                                                                 <td style="font-weight: 700; background: #f0f9ff; color: #0369a1;"><t t-out="formatAmt(partner.total_net)"/></td>
                                                             </tr>
 
@@ -1575,24 +1603,34 @@
                                                                                 <span style="font-weight: 600;"><t t-esc="tx.date"/></span>
                                                                             </td>
                                                                             <td style="text-align: left; color: #64748b; font-size: 11px;">
+                                                                                <t t-if="tx.tx_type == 'received' or tx.tx_type == 'Received'">
+                                                                                    <span class="badge" style="background: #dcfce7; color: #166534; margin-right: 4px;">Received</span>
+                                                                                </t>
+                                                                                <t t-else="">
+                                                                                    <span class="badge" style="background: #fee2e2; color: #991b1b; margin-right: 4px;">Repaid</span>
+                                                                                </t>
                                                                                 <t t-if="tx.ref">
                                                                                     <span class="badge" style="background: #f1f5f9; color: #334155; margin-right: 4px;"><t t-esc="tx.ref"/></span>
                                                                                 </t>
                                                                                 <span t-att-title="tx.label"><t t-esc="tx.label"/></span>
                                                                             </td>
-                                                                            <td><t t-out="formatAmt(tx.y1_received)"/></td>
-                                                                            <td><t t-out="formatAmt(tx.y1_repaid)"/></td>
-                                                                            <td class="total-cell"><t t-out="formatAmt(tx.y1_net)"/></td>
-                                                                            <td><t t-out="formatAmt(tx.y2_received)"/></td>
-                                                                            <td><t t-out="formatAmt(tx.y2_repaid)"/></td>
-                                                                            <td class="total-cell"><t t-out="formatAmt(tx.y2_net)"/></td>
+                                                                            <td><t t-out="formatAmt(tx.y1_q1)"/></td>
+                                                                            <td><t t-out="formatAmt(tx.y1_q2)"/></td>
+                                                                            <td><t t-out="formatAmt(tx.y1_q3)"/></td>
+                                                                            <td><t t-out="formatAmt(tx.y1_q4)"/></td>
+                                                                            <td class="total-cell"><t t-out="formatAmt(tx.y1_total)"/></td>
+                                                                            <td><t t-out="formatAmt(tx.y2_q1)"/></td>
+                                                                            <td><t t-out="formatAmt(tx.y2_q2)"/></td>
+                                                                            <td><t t-out="formatAmt(tx.y2_q3)"/></td>
+                                                                            <td><t t-out="formatAmt(tx.y2_q4)"/></td>
+                                                                            <td class="total-cell"><t t-out="formatAmt(tx.y2_total)"/></td>
                                                                             <td style="font-weight: 600; color: #0f172a;"><t t-out="formatAmt(tx.total_net)"/></td>
                                                                         </tr>
                                                                     </t>
                                                                 </t>
                                                                 <t t-else="">
                                                                     <tr style="background: #ffffff; font-size: 12px;">
-                                                                        <td colspan="9" style="padding-left: 60px; color: #94a3b8; font-style: italic;">
+                                                                        <td colspan="13" style="padding-left: 60px; color: #94a3b8; font-style: italic;">
                                                                             No transaction lines found for this partner.
                                                                         </td>
                                                                     </tr>
@@ -1605,18 +1643,22 @@
                                                 <!-- Total row for Investment Received -->
                                                 <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a; border-top: 2px solid #cbd5e1;">
                                                     <td class="fbook-sticky-col" style="text-align: left; padding: 10px 14px;" colspan="2">Total Investment Recieved</td>
-                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y1_received)"/></td>
-                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y1_repaid)"/></td>
-                                                    <td class="total-cell"><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y1_net)"/></td>
-                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y2_received)"/></td>
-                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y2_repaid)"/></td>
-                                                    <td class="total-cell"><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y2_net)"/></td>
-                                                    <td style="font-weight: 700; background: #bae6fd; color: #0369a1;"><t t-out="formatAmt(state.report_data.investment_received_hierarchy.total_net)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y1_q1)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y1_q2)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y1_q3)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y1_q4)"/></td>
+                                                    <td class="total-cell" style="background: #bae6fd;"><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y1_total)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y2_q1)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y2_q2)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y2_q3)"/></td>
+                                                    <td><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y2_q4)"/></td>
+                                                    <td class="total-cell" style="background: #bae6fd;"><t t-out="formatAmt(state.report_data.investment_received_hierarchy.y2_total)"/></td>
+                                                    <td style="font-weight: 700; background: #0284c7; color: white;"><t t-out="formatAmt(state.report_data.investment_received_hierarchy.total_net)"/></td>
                                                 </tr>
                                             </t>
                                             <t t-else="">
                                                 <tr>
-                                                    <td colspan="9" class="text-center text-muted" style="padding: 16px;">
+                                                    <td colspan="13" class="text-center text-muted" style="padding: 16px;">
                                                         No investment transactions found.
                                                     </td>
                                                 </tr>
