@@ -13,6 +13,8 @@
     'depends': ['base', 'account', 'sale', 'project_contract_management', 'l10n_in'],
     'data': [
         'security/ir.model.access.csv',
+        'data/reporting_category_data.xml',
+        'views/reporting_category_views.xml',
         'views/res_partner_views.xml',
         'views/res_country_views.xml',
         'views/fbook_report_wizard_views.xml',

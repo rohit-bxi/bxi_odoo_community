@@ -150,4 +150,80 @@
         action="action_bxi_timesheet_admin_approvals"
         groups="base.group_system,hr_timesheet.group_timesheet_manager"
         sequence="20"/>
+
+    <!-- ============================================================
+         Standard Odoo hr_timesheet View Inheritances
+         - Add Category (L1) and Sub Category (L2) before Project
+         - Make project_id optional across tree/form
+    ============================================================ -->
+
+    <!-- Inherit standard hr_timesheet tree view (My Timesheets / All Timesheets) -->
+    <record id="hr_timesheet_line_tree_inherit_bxi" model="ir.ui.view">
+        <field name="name">account.analytic.line.list.bxi.l2</field>
+        <field name="model">account.analytic.line</field>
+        <field name="inherit_id" ref="hr_timesheet.hr_timesheet_line_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='project_id']" position="before">
+                <field name="timesheet_category_id" string="Category (L1)" optional="show"/>
+                <field name="timesheet_activity_id" string="Sub Category (L2)" optional="show"/>
+            </xpath>
+            <xpath expr="//field[@name='project_id']" position="attributes">
+                <attribute name="required">0</attribute>
+                <attribute name="optional">show</attribute>
+            </xpath>
+            <xpath expr="//field[@name='task_id']" position="attributes">
+                <attribute name="optional">show</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit standard hr_timesheet form view -->
+    <record id="hr_timesheet_line_form_inherit_bxi" model="ir.ui.view">
+        <field name="name">account.analytic.line.form.bxi.l2</field>
+        <field name="model">account.analytic.line</field>
+        <field name="inherit_id" ref="hr_timesheet.hr_timesheet_line_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='project_id']" position="before">
+                <field name="timesheet_category_id" string="Category (L1)"/>
+                <field name="timesheet_activity_id" string="Sub Category (L2)"/>
+            </xpath>
+            <xpath expr="//field[@name='project_id']" position="attributes">
+                <attribute name="required">0</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inherit standard hr_timesheet search view -->
+    <record id="hr_timesheet_line_search_inherit_bxi" model="ir.ui.view">
+        <field name="name">account.analytic.line.search.bxi.l2</field>
+        <field name="model">account.analytic.line</field>
+        <field name="inherit_id" ref="hr_timesheet.hr_timesheet_line_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='project_id']" position="before">
+                <field name="timesheet_category_id" string="Category (L1)"/>
+                <field name="timesheet_activity_id" string="Sub Category (L2)"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         Standard Odoo hr_timesheet Action Overrides
+         - Remove project_id != False restrictions
+         - Allow matching by user_id or employee_id.user_id
+    ============================================================ -->
+
+    <!-- My Timesheets (act_hr_timesheet_line) -->
+    <record id="hr_timesheet.act_hr_timesheet_line" model="ir.actions.act_window">
+        <field name="domain">['|', ('user_id', '=', uid), ('employee_id.user_id', '=', uid)]</field>
+    </record>
+
+    <!-- All Timesheets (timesheet_action_all) -->
+    <record id="hr_timesheet.timesheet_action_all" model="ir.actions.act_window">
+        <field name="domain">[]</field>
+    </record>
+
+    <!-- Timesheets from Employee (timesheet_action_from_employee) -->
+    <record id="hr_timesheet.timesheet_action_from_employee" model="ir.actions.act_window">
+        <field name="domain">[('employee_id', '=', active_id)]</field>
+    </record>
 </odoo>

@@ -22,13 +22,6 @@ class AssetType(models.Model):
     _description = 'Asset Type'
 
     name = fields.Char(string='Name', required=True)
-    category_id = fields.Many2one(
-        'asset.category',
-        string='Asset Category',
-        ondelete='restrict',
-        index=True,
-        help="Category this asset type belongs to"
-    )
     color = fields.Integer(string='Color Index', help="Color index for this asset type")
 
     # Depreciation Settings
@@ -112,9 +105,6 @@ class Asset(models.Model):
                                   help="Select the product used in this asset")
     asset_type_id = fields.Many2one('asset.type', string="Asset Type", tracking=True,
                                      help="Classification of the asset")
-    category_id = fields.Many2one('asset.category', string="Asset Category",
-                                  related='asset_type_id.category_id', store=True, readonly=True,
-                                  index=True, help="Category inherited from the Asset Type")
     asset_image = fields.Image(string="Asset Photo", max_width=1024, max_height=1024)
 
     # ─── Asset Details ────────────────────────────────────────────────────────

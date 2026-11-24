@@ -3,4 +3,6 @@ access_fbook_report_user,fbook.report.user,model_fbook_report,base.group_user,1,
 access_fbook_report_wizard_user,fbook.report.wizard.user,model_fbook_report_wizard,base.group_user,1,1,1,1
 access_epf_report_wizard_user,epf.report.wizard.user,model_epf_report_wizard,base.group_user,1,1,1,1
 access_tds_report_wizard_user,tds.report.wizard.user,model_tds_report_wizard,base.group_user,1,1,1,1
+access_reporting_category_user,reporting.category.user,model_reporting_category,base.group_user,1,1,1,1
+access_reporting_sub_category_user,reporting.sub.category.user,model_reporting_sub_category,base.group_user,1,1,1,1
 

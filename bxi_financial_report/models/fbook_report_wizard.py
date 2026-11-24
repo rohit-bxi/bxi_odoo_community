@@ -1150,40 +1150,42 @@ class FbookReportWizard(models.TransientModel):
                 return 'Promoter'
             return 'Private Investor'
 
+        # 6. Investment Received Calculation
+        # Dynamic Reporting Category & Sub Category driven by reporting.category / reporting.sub.category
+        # Each Sub Category maps to account.account (COA). If COA entries exist, show them.
+        # Fallback: If no accounts mapped to 'Founder Capital' or 'Shareholder Loans Received', fallback to account code '112230'.
+
         investor_data_map = {}
         investor_tx_map = {}
+        investor_rows = []
+        investment_received_categories = []
 
-        if 'account.move.line' in self.env:
-            # Query all posted entries under GL 112230 (Unsecured Loan Account)
-            loan_lines = self.env['account.move.line'].sudo().search([
+        if 'reporting.category' in self.env:
+            rec_categories = self.env['reporting.category'].sudo().search([
+                ('category_type', '=', 'investment_received')
+            ], order='sequence asc, id asc')
+
+            # Fetch account.move.line for date range
+            base_rec_domain = [
                 ('company_id', 'in', company_ids),
                 ('parent_state', '=', 'posted'),
-                ('account_id.code', '=', '112230'),
                 ('date', '>=', min(y1_start_str, y2_start_str)),
                 ('date', '<=', max(y1_end_str, y2_end_str)),
-            ], order='date asc')
+            ]
 
-            for line in loan_lines:
-                ldate = line.date
-                if not ldate:
-                    continue
-                ldate_str = ldate.strftime('%Y-%m-%d')
+            for cat in rec_categories:
+                sub_cats = cat.sub_category_ids.sorted(key=lambda s: (s.sequence, s.id))
+                partners_list = []
 
-                partner = line.partner_id
-                if partner:
-                    partner_key = partner.id
-                    partner_name = partner.name.strip() if partner.name else 'Unknown Partner'
-                    category = get_investor_category(partner)
-                else:
-                    partner_key = 'unsecured_loan_unassigned'
-                    partner_name = 'Unsecured Loan'
-                    category = 'Private Investor'
+                for sub in sub_cats:
+                    sub_accounts = sub.account_ids
+                    account_ids = sub_accounts.ids
+                    sub_tx_list = []
 
-                if partner_key not in investor_data_map:
-                    investor_data_map[partner_key] = {
-                        'id': partner_key,
-                        'name': partner_name,
-                        'category': category,
+                    sub_info = {
+                        'id': sub.id,
+                        'name': sub.name,
+                        'category': cat.name,
                         'y1_credit': 0.0,
                         'y1_debit': 0.0,
                         'y2_credit': 0.0,
@@ -1191,262 +1193,236 @@ class FbookReportWizard(models.TransientModel):
                         'y1_q1': 0.0, 'y1_q2': 0.0, 'y1_q3': 0.0, 'y1_q4': 0.0,
                         'y2_q1': 0.0, 'y2_q2': 0.0, 'y2_q3': 0.0, 'y2_q4': 0.0,
                     }
-                    investor_tx_map[partner_key] = []
 
-                # Credit = Investment amount received from the investor
-                conv_credit = 0.0
-                conv_debit = 0.0
-                if line.credit > 0:
-                    conv_credit = custom_convert(
-                        line.credit, line.company_id.currency_id, target_currency,
-                        date_val=ldate, year_key='y1' if y1_start_str <= ldate_str <= y1_end_str else 'y2', record=line
-                    )
-                    if y1_start_str <= ldate_str <= y1_end_str:
-                        investor_data_map[partner_key]['y1_credit'] += conv_credit
-                    if y2_start_str <= ldate_str <= y2_end_str:
-                        investor_data_map[partner_key]['y2_credit'] += conv_credit
-                # Debit = Amount repaid / sent back to that same partner
-                elif line.debit > 0:
-                    conv_debit = custom_convert(
-                        line.debit, line.company_id.currency_id, target_currency,
-                        date_val=ldate, year_key='y1' if y1_start_str <= ldate_str <= y1_end_str else 'y2', record=line
-                    )
-                    if y1_start_str <= ldate_str <= y1_end_str:
-                        investor_data_map[partner_key]['y1_debit'] += conv_debit
-                    if y2_start_str <= ldate_str <= y2_end_str:
-                        investor_data_map[partner_key]['y2_debit'] += conv_debit
+                    partner_summary = {}
 
-                q_y1 = get_q_num(ldate_str, y1_fy_start)
-                q_y2 = get_q_num(ldate_str, y2_cy_start)
-                net_line = conv_credit - conv_debit
+                    if account_ids and 'account.move.line' in self.env:
+                        lines = self.env['account.move.line'].sudo().search(
+                            base_rec_domain + [('account_id', 'in', account_ids)],
+                            order='date asc, id asc'
+                        )
 
-                if q_y1 == 1:
-                    investor_data_map[partner_key]['y1_q1'] += net_line
-                elif q_y1 == 2:
-                    investor_data_map[partner_key]['y1_q2'] += net_line
-                elif q_y1 == 3:
-                    investor_data_map[partner_key]['y1_q3'] += net_line
-                elif q_y1 == 4:
-                    investor_data_map[partner_key]['y1_q4'] += net_line
+                        for line in lines:
+                            ldate = line.date
+                            if not ldate:
+                                continue
+                            ldate_str = ldate.strftime('%Y-%m-%d')
 
-                if q_y2 == 1:
-                    investor_data_map[partner_key]['y2_q1'] += net_line
-                elif q_y2 == 2:
-                    investor_data_map[partner_key]['y2_q2'] += net_line
-                elif q_y2 == 3:
-                    investor_data_map[partner_key]['y2_q3'] += net_line
-                elif q_y2 == 4:
-                    investor_data_map[partner_key]['y2_q4'] += net_line
+                            conv_credit = 0.0
+                            conv_debit = 0.0
+                            if line.credit > 0:
+                                conv_credit = custom_convert(
+                                    line.credit, line.company_id.currency_id, target_currency,
+                                    date_val=ldate, year_key='y1' if y1_start_str <= ldate_str <= y1_end_str else 'y2', record=line
+                                )
+                                if y1_start_str <= ldate_str <= y1_end_str:
+                                    sub_info['y1_credit'] += conv_credit
+                                if y2_start_str <= ldate_str <= y2_end_str:
+                                    sub_info['y2_credit'] += conv_credit
+                            elif line.debit > 0:
+                                conv_debit = custom_convert(
+                                    line.debit, line.company_id.currency_id, target_currency,
+                                    date_val=ldate, year_key='y1' if y1_start_str <= ldate_str <= y1_end_str else 'y2', record=line
+                                )
+                                if y1_start_str <= ldate_str <= y1_end_str:
+                                    sub_info['y1_debit'] += conv_debit
+                                if y2_start_str <= ldate_str <= y2_end_str:
+                                    sub_info['y2_debit'] += conv_debit
 
-                tx_y1_rec = conv_credit if (line.credit > 0 and y1_start_str <= ldate_str <= y1_end_str) else 0.0
-                tx_y1_rep = conv_debit if (line.debit > 0 and y1_start_str <= ldate_str <= y1_end_str) else 0.0
-                tx_y2_rec = conv_credit if (line.credit > 0 and y2_start_str <= ldate_str <= y2_end_str) else 0.0
-                tx_y2_rep = conv_debit if (line.debit > 0 and y2_start_str <= ldate_str <= y2_end_str) else 0.0
+                            q_y1 = get_q_num(ldate_str, y1_fy_start)
+                            q_y2 = get_q_num(ldate_str, y2_cy_start)
+                            net_line = conv_credit - conv_debit
 
-                tx_y1_q1 = net_line if q_y1 == 1 else 0.0
-                tx_y1_q2 = net_line if q_y1 == 2 else 0.0
-                tx_y1_q3 = net_line if q_y1 == 3 else 0.0
-                tx_y1_q4 = net_line if q_y1 == 4 else 0.0
-                tx_y1_total = tx_y1_q1 + tx_y1_q2 + tx_y1_q3 + tx_y1_q4
+                            if q_y1 == 1:
+                                sub_info['y1_q1'] += net_line
+                            elif q_y1 == 2:
+                                sub_info['y1_q2'] += net_line
+                            elif q_y1 == 3:
+                                sub_info['y1_q3'] += net_line
+                            elif q_y1 == 4:
+                                sub_info['y1_q4'] += net_line
 
-                tx_y2_q1 = net_line if q_y2 == 1 else 0.0
-                tx_y2_q2 = net_line if q_y2 == 2 else 0.0
-                tx_y2_q3 = net_line if q_y2 == 3 else 0.0
-                tx_y2_q4 = net_line if q_y2 == 4 else 0.0
-                tx_y2_total = tx_y2_q1 + tx_y2_q2 + tx_y2_q3 + tx_y2_q4
+                            if q_y2 == 1:
+                                sub_info['y2_q1'] += net_line
+                            elif q_y2 == 2:
+                                sub_info['y2_q2'] += net_line
+                            elif q_y2 == 3:
+                                sub_info['y2_q3'] += net_line
+                            elif q_y2 == 4:
+                                sub_info['y2_q4'] += net_line
 
-                tx_total_net = (tx_y1_rec - tx_y1_rep) + (tx_y2_rec - tx_y2_rep) if (tx_y1_rec or tx_y1_rep or tx_y2_rec or tx_y2_rep) else net_line
+                            tx_y1_rec = conv_credit if (line.credit > 0 and y1_start_str <= ldate_str <= y1_end_str) else 0.0
+                            tx_y1_rep = conv_debit if (line.debit > 0 and y1_start_str <= ldate_str <= y1_end_str) else 0.0
+                            tx_y2_rec = conv_credit if (line.credit > 0 and y2_start_str <= ldate_str <= y2_end_str) else 0.0
+                            tx_y2_rep = conv_debit if (line.debit > 0 and y2_start_str <= ldate_str <= y2_end_str) else 0.0
 
-                if tx_y1_rec or tx_y1_rep or tx_y2_rec or tx_y2_rep or tx_y1_total or tx_y2_total:
-                    investor_tx_map[partner_key].append({
-                        'id': line.id,
-                        'date': ldate_str,
-                        'ref': line.move_id.name or line.ref or '',
-                        'label': line.name or '',
-                        'tx_type': 'received' if line.credit > 0 else 'repaid',
-                        'amount': target_currency.round(conv_credit if line.credit > 0 else conv_debit),
-                        'y1_q1': target_currency.round(tx_y1_q1),
-                        'y1_q2': target_currency.round(tx_y1_q2),
-                        'y1_q3': target_currency.round(tx_y1_q3),
-                        'y1_q4': target_currency.round(tx_y1_q4),
-                        'y1_total': target_currency.round(tx_y1_total),
-                        'y2_q1': target_currency.round(tx_y2_q1),
-                        'y2_q2': target_currency.round(tx_y2_q2),
-                        'y2_q3': target_currency.round(tx_y2_q3),
-                        'y2_q4': target_currency.round(tx_y2_q4),
-                        'y2_total': target_currency.round(tx_y2_total),
-                        'total_net': target_currency.round(tx_total_net),
-                        'y1_received': target_currency.round(tx_y1_rec),
-                        'y1_repaid': target_currency.round(tx_y1_rep),
-                        'y1_net': target_currency.round(tx_y1_rec - tx_y1_rep),
-                        'y2_received': target_currency.round(tx_y2_rec),
-                        'y2_repaid': target_currency.round(tx_y2_rep),
-                        'y2_net': target_currency.round(tx_y2_rec - tx_y2_rep),
+                            tx_y1_q1 = net_line if q_y1 == 1 else 0.0
+                            tx_y1_q2 = net_line if q_y1 == 2 else 0.0
+                            tx_y1_q3 = net_line if q_y1 == 3 else 0.0
+                            tx_y1_q4 = net_line if q_y1 == 4 else 0.0
+
+                            tx_y2_q1 = net_line if q_y2 == 1 else 0.0
+                            tx_y2_q2 = net_line if q_y2 == 2 else 0.0
+                            tx_y2_q3 = net_line if q_y2 == 3 else 0.0
+                            tx_y2_q4 = net_line if q_y2 == 4 else 0.0
+
+                            p_id = line.partner_id.id if line.partner_id else 0
+                            p_name = line.partner_id.name if line.partner_id else (line.name or 'Unassigned Partner')
+                            if p_id not in partner_summary:
+                                partner_summary[p_id] = {
+                                    'id': p_id or f'no_partner_{line.id}',
+                                    'name': p_name,
+                                    'label': p_name,
+                                    'tx_type': 'partner',
+                                    'date': '',
+                                    'ref': '',
+                                    'y1_received': 0.0,
+                                    'y1_repaid': 0.0,
+                                    'y2_received': 0.0,
+                                    'y2_repaid': 0.0,
+                                    'y1_q1': 0.0, 'y1_q2': 0.0, 'y1_q3': 0.0, 'y1_q4': 0.0, 'y1_total': 0.0,
+                                    'y2_q1': 0.0, 'y2_q2': 0.0, 'y2_q3': 0.0, 'y2_q4': 0.0, 'y2_total': 0.0,
+                                    'total_net': 0.0,
+                                }
+                            p_entry = partner_summary[p_id]
+                            p_entry['y1_received'] += tx_y1_rec
+                            p_entry['y1_repaid'] += tx_y1_rep
+                            p_entry['y2_received'] += tx_y2_rec
+                            p_entry['y2_repaid'] += tx_y2_rep
+                            p_entry['y1_q1'] += tx_y1_q1
+                            p_entry['y1_q2'] += tx_y1_q2
+                            p_entry['y1_q3'] += tx_y1_q3
+                            p_entry['y1_q4'] += tx_y1_q4
+                            p_entry['y2_q1'] += tx_y2_q1
+                            p_entry['y2_q2'] += tx_y2_q2
+                            p_entry['y2_q3'] += tx_y2_q3
+                            p_entry['y2_q4'] += tx_y2_q4
+
+                        for pid, p_entry in partner_summary.items():
+                            p_entry['y1_total'] = p_entry['y1_q1'] + p_entry['y1_q2'] + p_entry['y1_q3'] + p_entry['y1_q4']
+                            p_entry['y2_total'] = p_entry['y2_q1'] + p_entry['y2_q2'] + p_entry['y2_q3'] + p_entry['y2_q4']
+                            p_entry['total_net'] = (p_entry['y1_received'] - p_entry['y1_repaid']) + (p_entry['y2_received'] - p_entry['y2_repaid'])
+                            sub_tx_list.append({
+                                'id': p_entry['id'],
+                                'name': p_entry['name'],
+                                'label': p_entry['label'],
+                                'tx_type': 'received' if p_entry['total_net'] >= 0 else 'repaid',
+                                'date': '',
+                                'ref': 'Partner',
+                                'y1_q1': target_currency.round(p_entry['y1_q1']),
+                                'y1_q2': target_currency.round(p_entry['y1_q2']),
+                                'y1_q3': target_currency.round(p_entry['y1_q3']),
+                                'y1_q4': target_currency.round(p_entry['y1_q4']),
+                                'y1_total': target_currency.round(p_entry['y1_total']),
+                                'y2_q1': target_currency.round(p_entry['y2_q1']),
+                                'y2_q2': target_currency.round(p_entry['y2_q2']),
+                                'y2_q3': target_currency.round(p_entry['y2_q3']),
+                                'y2_q4': target_currency.round(p_entry['y2_q4']),
+                                'y2_total': target_currency.round(p_entry['y2_total']),
+                                'total_net': target_currency.round(p_entry['total_net']),
+                                'y1_received': target_currency.round(p_entry['y1_received']),
+                                'y1_repaid': target_currency.round(p_entry['y1_repaid']),
+                                'y1_net': target_currency.round(p_entry['y1_received'] - p_entry['y1_repaid']),
+                                'y2_received': target_currency.round(p_entry['y2_received']),
+                                'y2_repaid': target_currency.round(p_entry['y2_repaid']),
+                                'y2_net': target_currency.round(p_entry['y2_received'] - p_entry['y2_repaid']),
+                            })
+
+                    p_y1_q1 = target_currency.round(sub_info['y1_q1'])
+                    p_y1_q2 = target_currency.round(sub_info['y1_q2'])
+                    p_y1_q3 = target_currency.round(sub_info['y1_q3'])
+                    p_y1_q4 = target_currency.round(sub_info['y1_q4'])
+                    p_y1_tot = target_currency.round(p_y1_q1 + p_y1_q2 + p_y1_q3 + p_y1_q4)
+
+                    p_y2_q1 = target_currency.round(sub_info['y2_q1'])
+                    p_y2_q2 = target_currency.round(sub_info['y2_q2'])
+                    p_y2_q3 = target_currency.round(sub_info['y2_q3'])
+                    p_y2_q4 = target_currency.round(sub_info['y2_q4'])
+                    p_y2_tot = target_currency.round(p_y2_q1 + p_y2_q2 + p_y2_q3 + p_y2_q4)
+
+                    y1_c = sub_info['y1_credit']
+                    y1_d = sub_info['y1_debit']
+                    y2_c = sub_info['y2_credit']
+                    y2_d = sub_info['y2_debit']
+                    y1_net = y1_c - y1_d
+                    y2_net = y2_c - y2_d
+                    tot_net = y1_net + y2_net
+
+                    sub_row = {
+                        'id': sub.id,
+                        'name': sub.name,
+                        'y1_q1': p_y1_q1,
+                        'y1_q2': p_y1_q2,
+                        'y1_q3': p_y1_q3,
+                        'y1_q4': p_y1_q4,
+                        'y1_total': p_y1_tot,
+                        'y2_q1': p_y2_q1,
+                        'y2_q2': p_y2_q2,
+                        'y2_q3': p_y2_q3,
+                        'y2_q4': p_y2_q4,
+                        'y2_total': p_y2_tot,
+                        'y1_received': target_currency.round(y1_c),
+                        'y1_repaid': target_currency.round(y1_d),
+                        'y1_net': target_currency.round(y1_net),
+                        'y2_received': target_currency.round(y2_c),
+                        'y2_repaid': target_currency.round(y2_d),
+                        'y2_net': target_currency.round(y2_net),
+                        'total_net': target_currency.round(tot_net),
+                        'transactions': sub_tx_list,
+                    }
+                    partners_list.append(sub_row)
+
+                    # Also add to flat investor_rows for export/compatibility
+                    investor_rows.append({
+                        'investor': sub.name,
+                        'category': cat.name,
+                        'y1_q1': p_y1_q1,
+                        'y1_q2': p_y1_q2,
+                        'y1_q3': p_y1_q3,
+                        'y1_q4': p_y1_q4,
+                        'y1_total': p_y1_tot,
+                        'y2_q1': p_y2_q1,
+                        'y2_q2': p_y2_q2,
+                        'y2_q3': p_y2_q3,
+                        'y2_q4': p_y2_q4,
+                        'y2_total': p_y2_tot,
+                        'y1_received': target_currency.round(y1_c),
+                        'y2_received': target_currency.round(y2_c),
+                        'y1_repaid': target_currency.round(y1_d),
+                        'y2_repaid': target_currency.round(y2_d),
+                        'y1_net': target_currency.round(y1_net),
+                        'y2_net': target_currency.round(y2_net),
+                        'total_net': target_currency.round(tot_net),
+                        'y1_credit': target_currency.round(y1_c),
+                        'y1_debit': target_currency.round(y1_d),
+                        'y2_credit': target_currency.round(y2_c),
+                        'y2_debit': target_currency.round(y2_d),
                     })
 
-        investor_rows = []
-        for inv_key in sorted(investor_data_map.keys(), key=lambda k: (investor_data_map[k].get('category', ''), investor_data_map[k]['name'])):
-            inv_info = investor_data_map[inv_key]
-
-            y1_credit = inv_info['y1_credit']
-            y1_debit = inv_info['y1_debit']
-            y2_credit = inv_info['y2_credit']
-            y2_debit = inv_info['y2_debit']
-
-            if (y1_credit < 0.01 and y1_debit < 0.01 and y2_credit < 0.01 and y2_debit < 0.01):
-                continue
-
-            y1_net = y1_credit - y1_debit
-            y2_net = y2_credit - y2_debit
-            total_net = y1_net + y2_net
-
-            y1_q1 = target_currency.round(inv_info.get('y1_q1', 0.0))
-            y1_q2 = target_currency.round(inv_info.get('y1_q2', 0.0))
-            y1_q3 = target_currency.round(inv_info.get('y1_q3', 0.0))
-            y1_q4 = target_currency.round(inv_info.get('y1_q4', 0.0))
-            y1_tot = target_currency.round(y1_q1 + y1_q2 + y1_q3 + y1_q4)
-
-            y2_q1 = target_currency.round(inv_info.get('y2_q1', 0.0))
-            y2_q2 = target_currency.round(inv_info.get('y2_q2', 0.0))
-            y2_q3 = target_currency.round(inv_info.get('y2_q3', 0.0))
-            y2_q4 = target_currency.round(inv_info.get('y2_q4', 0.0))
-            y2_tot = target_currency.round(y2_q1 + y2_q2 + y2_q3 + y2_q4)
-
-            row = {
-                'investor': inv_info['name'],
-                'category': inv_info['category'],
-                'y1_q1': y1_q1,
-                'y1_q2': y1_q2,
-                'y1_q3': y1_q3,
-                'y1_q4': y1_q4,
-                'y1_total': y1_tot,
-                'y2_q1': y2_q1,
-                'y2_q2': y2_q2,
-                'y2_q3': y2_q3,
-                'y2_q4': y2_q4,
-                'y2_total': y2_tot,
-                # Received = Investment Received into company (Credits)
-                'y1_received': target_currency.round(y1_credit),
-                'y2_received': target_currency.round(y2_credit),
-                # Repaid = Amount Repaid / Returned to investor (Debits)
-                'y1_repaid': target_currency.round(y1_debit),
-                'y2_repaid': target_currency.round(y2_debit),
-                # Net Invested = Received - Repaid
-                'y1_net': target_currency.round(y1_net),
-                'y2_net': target_currency.round(y2_net),
-                # Total Cumulative Net Position
-                'total_net': target_currency.round(total_net),
-                # Backward compatibility aliases
-                'y1_credit': target_currency.round(y1_credit),
-                'y1_debit': target_currency.round(y1_debit),
-                'y2_credit': target_currency.round(y2_credit),
-                'y2_debit': target_currency.round(y2_debit),
-            }
-            investor_rows.append(row)
+                investment_received_categories.append({
+                    'id': cat.id,
+                    'name': cat.name,
+                    'y1_q1': target_currency.round(sum(p['y1_q1'] for p in partners_list)),
+                    'y1_q2': target_currency.round(sum(p['y1_q2'] for p in partners_list)),
+                    'y1_q3': target_currency.round(sum(p['y1_q3'] for p in partners_list)),
+                    'y1_q4': target_currency.round(sum(p['y1_q4'] for p in partners_list)),
+                    'y1_total': target_currency.round(sum(p['y1_total'] for p in partners_list)),
+                    'y2_q1': target_currency.round(sum(p['y2_q1'] for p in partners_list)),
+                    'y2_q2': target_currency.round(sum(p['y2_q2'] for p in partners_list)),
+                    'y2_q3': target_currency.round(sum(p['y2_q3'] for p in partners_list)),
+                    'y2_q4': target_currency.round(sum(p['y2_q4'] for p in partners_list)),
+                    'y2_total': target_currency.round(sum(p['y2_total'] for p in partners_list)),
+                    'y1_received': target_currency.round(sum(p['y1_received'] for p in partners_list)),
+                    'y1_repaid': target_currency.round(sum(p['y1_repaid'] for p in partners_list)),
+                    'y1_net': target_currency.round(sum(p['y1_net'] for p in partners_list)),
+                    'y2_received': target_currency.round(sum(p['y2_received'] for p in partners_list)),
+                    'y2_repaid': target_currency.round(sum(p['y2_repaid'] for p in partners_list)),
+                    'y2_net': target_currency.round(sum(p['y2_net'] for p in partners_list)),
+                    'total_net': target_currency.round(sum(p['total_net'] for p in partners_list)),
+                    'partners': partners_list,
+                })
 
         investor_totals = {
-            'y1_q1': target_currency.round(sum(r['y1_q1'] for r in investor_rows)),
-            'y1_q2': target_currency.round(sum(r['y1_q2'] for r in investor_rows)),
-            'y1_q3': target_currency.round(sum(r['y1_q3'] for r in investor_rows)),
-            'y1_q4': target_currency.round(sum(r['y1_q4'] for r in investor_rows)),
-            'y1_total': target_currency.round(sum(r['y1_total'] for r in investor_rows)),
-            'y2_q1': target_currency.round(sum(r['y2_q1'] for r in investor_rows)),
-            'y2_q2': target_currency.round(sum(r['y2_q2'] for r in investor_rows)),
-            'y2_q3': target_currency.round(sum(r['y2_q3'] for r in investor_rows)),
-            'y2_q4': target_currency.round(sum(r['y2_q4'] for r in investor_rows)),
-            'y2_total': target_currency.round(sum(r['y2_total'] for r in investor_rows)),
-            'y1_received': target_currency.round(sum(r['y1_received'] for r in investor_rows)),
-            'y1_repaid': target_currency.round(sum(r['y1_repaid'] for r in investor_rows)),
-            'y1_net': target_currency.round(sum(r['y1_net'] for r in investor_rows)),
-            'y2_received': target_currency.round(sum(r['y2_received'] for r in investor_rows)),
-            'y2_repaid': target_currency.round(sum(r['y2_repaid'] for r in investor_rows)),
-            'y2_net': target_currency.round(sum(r['y2_net'] for r in investor_rows)),
-            'total_net': target_currency.round(sum(r['total_net'] for r in investor_rows)),
-            'y1_credit': target_currency.round(sum(r['y1_credit'] for r in investor_rows)),
-            'y1_debit': target_currency.round(sum(r['y1_debit'] for r in investor_rows)),
-            'y2_credit': target_currency.round(sum(r['y2_credit'] for r in investor_rows)),
-            'y2_debit': target_currency.round(sum(r['y2_debit'] for r in investor_rows)),
-        }
-
-        # Build hierarchical structure for Investment Received: Category -> Partners -> Transactions
-        cat_order = ['Founder', 'Ventures', 'Promoter', 'Private Investor']
-        inv_by_cat = {}
-        for inv_key, inv_info in investor_data_map.items():
-            y1_c = inv_info['y1_credit']
-            y1_d = inv_info['y1_debit']
-            y2_c = inv_info['y2_credit']
-            y2_d = inv_info['y2_debit']
-            if abs(y1_c) < 0.01 and abs(y1_d) < 0.01 and abs(y2_c) < 0.01 and abs(y2_d) < 0.01:
-                continue
-            cat = inv_info['category']
-            if cat not in inv_by_cat:
-                inv_by_cat[cat] = []
-
-            p_y1_q1 = target_currency.round(inv_info.get('y1_q1', 0.0))
-            p_y1_q2 = target_currency.round(inv_info.get('y1_q2', 0.0))
-            p_y1_q3 = target_currency.round(inv_info.get('y1_q3', 0.0))
-            p_y1_q4 = target_currency.round(inv_info.get('y1_q4', 0.0))
-            p_y1_tot = target_currency.round(p_y1_q1 + p_y1_q2 + p_y1_q3 + p_y1_q4)
-
-            p_y2_q1 = target_currency.round(inv_info.get('y2_q1', 0.0))
-            p_y2_q2 = target_currency.round(inv_info.get('y2_q2', 0.0))
-            p_y2_q3 = target_currency.round(inv_info.get('y2_q3', 0.0))
-            p_y2_q4 = target_currency.round(inv_info.get('y2_q4', 0.0))
-            p_y2_tot = target_currency.round(p_y2_q1 + p_y2_q2 + p_y2_q3 + p_y2_q4)
-
-            inv_by_cat[cat].append({
-                'id': inv_key,
-                'name': inv_info['name'],
-                'y1_q1': p_y1_q1,
-                'y1_q2': p_y1_q2,
-                'y1_q3': p_y1_q3,
-                'y1_q4': p_y1_q4,
-                'y1_total': p_y1_tot,
-                'y2_q1': p_y2_q1,
-                'y2_q2': p_y2_q2,
-                'y2_q3': p_y2_q3,
-                'y2_q4': p_y2_q4,
-                'y2_total': p_y2_tot,
-                'y1_received': target_currency.round(y1_c),
-                'y1_repaid': target_currency.round(y1_d),
-                'y1_net': target_currency.round(y1_c - y1_d),
-                'y2_received': target_currency.round(y2_c),
-                'y2_repaid': target_currency.round(y2_d),
-                'y2_net': target_currency.round(y2_c - y2_d),
-                'total_net': target_currency.round((y1_c - y1_d) + (y2_c - y2_d)),
-                'transactions': investor_tx_map.get(inv_key, []),
-            })
-
-        def _cat_sort_key(c):
-            return cat_order.index(c) if c in cat_order else len(cat_order)
-
-        investment_received_categories = []
-        for cat_name in sorted(inv_by_cat.keys(), key=_cat_sort_key):
-            partners = sorted(inv_by_cat[cat_name], key=lambda p: p['name'].lower())
-            investment_received_categories.append({
-                'name': cat_name,
-                'y1_q1': target_currency.round(sum(p['y1_q1'] for p in partners)),
-                'y1_q2': target_currency.round(sum(p['y1_q2'] for p in partners)),
-                'y1_q3': target_currency.round(sum(p['y1_q3'] for p in partners)),
-                'y1_q4': target_currency.round(sum(p['y1_q4'] for p in partners)),
-                'y1_total': target_currency.round(sum(p['y1_total'] for p in partners)),
-                'y2_q1': target_currency.round(sum(p['y2_q1'] for p in partners)),
-                'y2_q2': target_currency.round(sum(p['y2_q2'] for p in partners)),
-                'y2_q3': target_currency.round(sum(p['y2_q3'] for p in partners)),
-                'y2_q4': target_currency.round(sum(p['y2_q4'] for p in partners)),
-                'y2_total': target_currency.round(sum(p['y2_total'] for p in partners)),
-                'y1_received': target_currency.round(sum(p['y1_received'] for p in partners)),
-                'y1_repaid': target_currency.round(sum(p['y1_repaid'] for p in partners)),
-                'y1_net': target_currency.round(sum(p['y1_net'] for p in partners)),
-                'y2_received': target_currency.round(sum(p['y2_received'] for p in partners)),
-                'y2_repaid': target_currency.round(sum(p['y2_repaid'] for p in partners)),
-                'y2_net': target_currency.round(sum(p['y2_net'] for p in partners)),
-                'total_net': target_currency.round(sum(p['total_net'] for p in partners)),
-                'partners': partners,
-            })
-
-        investment_received_hierarchy = {
-            'categories': investment_received_categories,
             'y1_q1': target_currency.round(sum(c['y1_q1'] for c in investment_received_categories)),
             'y1_q2': target_currency.round(sum(c['y1_q2'] for c in investment_received_categories)),
             'y1_q3': target_currency.round(sum(c['y1_q3'] for c in investment_received_categories)),
@@ -1457,6 +1433,31 @@ class FbookReportWizard(models.TransientModel):
             'y2_q3': target_currency.round(sum(c['y2_q3'] for c in investment_received_categories)),
             'y2_q4': target_currency.round(sum(c['y2_q4'] for c in investment_received_categories)),
             'y2_total': target_currency.round(sum(c['y2_total'] for c in investment_received_categories)),
+            'y1_received': target_currency.round(sum(c['y1_received'] for c in investment_received_categories)),
+            'y1_repaid': target_currency.round(sum(c['y1_repaid'] for c in investment_received_categories)),
+            'y1_net': target_currency.round(sum(c['y1_net'] for c in investment_received_categories)),
+            'y2_received': target_currency.round(sum(c['y2_received'] for c in investment_received_categories)),
+            'y2_repaid': target_currency.round(sum(c['y2_repaid'] for c in investment_received_categories)),
+            'y2_net': target_currency.round(sum(c['y2_net'] for c in investment_received_categories)),
+            'total_net': target_currency.round(sum(c['total_net'] for c in investment_received_categories)),
+            'y1_credit': target_currency.round(sum(c['y1_received'] for c in investment_received_categories)),
+            'y1_debit': target_currency.round(sum(c['y1_repaid'] for c in investment_received_categories)),
+            'y2_credit': target_currency.round(sum(c['y2_received'] for c in investment_received_categories)),
+            'y2_debit': target_currency.round(sum(c['y2_repaid'] for c in investment_received_categories)),
+        }
+
+        investment_received_hierarchy = {
+            'categories': investment_received_categories,
+            'y1_q1': investor_totals['y1_q1'],
+            'y1_q2': investor_totals['y1_q2'],
+            'y1_q3': investor_totals['y1_q3'],
+            'y1_q4': investor_totals['y1_q4'],
+            'y1_total': investor_totals['y1_total'],
+            'y2_q1': investor_totals['y2_q1'],
+            'y2_q2': investor_totals['y2_q2'],
+            'y2_q3': investor_totals['y2_q3'],
+            'y2_q4': investor_totals['y2_q4'],
+            'y2_total': investor_totals['y2_total'],
             'y1_received': investor_totals['y1_received'],
             'y1_repaid': investor_totals['y1_repaid'],
             'y1_net': investor_totals['y1_net'],
@@ -1726,8 +1727,10 @@ class FbookReportWizard(models.TransientModel):
         }
 
         # 7. Assets & Investment Section Calculation
-        # Buckets: Assets Count (Total, In Store, In Use, Cust. Loc, Scrapped)
-        #          Purchase / Depreciation (Purchase Value, Depreciation Value, Last Depreciated Amount)
+        # Investment Made is now driven by reporting.category (category_type='investment_made')
+        # Each category contains subcategories, which map to COAs (account.account).
+        # In addition, one more Category Row is added by Name "Assets", which groups the assets information based on asset category / type.
+
         type_stats = {}
         type_assets_map = {}
         uncategorized_assets = []
@@ -1895,10 +1898,13 @@ class FbookReportWizard(models.TransientModel):
                     'total_val': target_currency.round(a_total_val),
                 }
 
-                if asset.asset_type_id:
-                    tid = asset.asset_type_id.id
+                # Group asset under its type
+                type_or_cat_id = asset.asset_type_id.id if asset.asset_type_id else False
+                if type_or_cat_id:
+                    tid = type_or_cat_id
                     if tid not in type_stats:
                         type_stats[tid] = {
+                            'name': asset.asset_type_id.name,
                             'count_total': 0,
                             'count_in_store': 0,
                             'count_in_use': 0,
@@ -1939,13 +1945,13 @@ class FbookReportWizard(models.TransientModel):
                 target_dict['y2_total'] += a_y2_total
                 target_dict['total_val'] += a_total_val
 
-        asset_rows = []
-        seen_type_ids = set()
-
-        def _make_row(category_name, type_name, s):
-            return {
-                'category': category_name or '-',
-                'asset_type': type_name or '-',
+        # Sub-level items under "Assets" Category
+        asset_sub_items = []
+        for tid, s in type_stats.items():
+            t_assets = sorted(type_assets_map.get(tid, []), key=lambda a: (a['name'] or '').lower())
+            asset_sub_items.append({
+                'id': f'asset_type_{tid}',
+                'name': s.get('name') or 'Asset Type',
                 'count_total': s.get('count_total', 0),
                 'count_in_store': s.get('count_in_store', 0),
                 'count_in_use': s.get('count_in_use', 0),
@@ -1965,208 +1971,318 @@ class FbookReportWizard(models.TransientModel):
                 'y2_q4': target_currency.round(s.get('y2_q4', 0.0)),
                 'y2_total': target_currency.round(s.get('y2_total', 0.0)),
                 'total_val': target_currency.round(s.get('total_val', 0.0)),
-                'asset_count': s.get('count_total', 0),
-                'asset_depreciation': target_currency.round(s.get('depr_total', 0.0)),
-            }
+                'assets': t_assets,
+            })
 
-        # 1. Iterate all defined categories and their mapped asset types
-        if 'asset.category' in self.env:
-            categories = self.env['asset.category'].sudo().search([], order='sequence asc, id asc')
-            for cat in categories:
-                cat_types = cat.asset_type_ids.sorted(lambda t: (t.name or '').strip().lower())
-                if cat_types:
-                    for atype in cat_types:
-                        seen_type_ids.add(atype.id)
-                        s = type_stats.get(atype.id, {})
-                        asset_rows.append(_make_row(cat.name, atype.name, s))
-                else:
-                    asset_rows.append(_make_row(cat.name, '-', {}))
-
-        # 2. Include all asset types even if no category is mapped
-        if 'asset.type' in self.env:
-            all_types = self.env['asset.type'].sudo().search([], order='name asc')
-            for atype in all_types:
-                if atype.id not in seen_type_ids:
-                    seen_type_ids.add(atype.id)
-                    s = type_stats.get(atype.id, {})
-                    cat_name = atype.category_id.name if atype.category_id else '-'
-                    asset_rows.append(_make_row(cat_name, atype.name, s))
-
-        # 3. Assets without any asset_type assigned
-        if uncategorized_stats['count_total'] > 0 or uncategorized_stats['purchase_total'] > 0:
-            asset_rows.append(_make_row('-', 'Unassigned', uncategorized_stats))
-
-        asset_totals = {
-            'count_total': sum(r['count_total'] for r in asset_rows),
-            'count_in_store': sum(r['count_in_store'] for r in asset_rows),
-            'count_in_use': sum(r['count_in_use'] for r in asset_rows),
-            'count_customer': sum(r['count_customer'] for r in asset_rows),
-            'count_scrapped': sum(r['count_scrapped'] for r in asset_rows),
-            'purchase_total': target_currency.round(sum(r['purchase_total'] for r in asset_rows)),
-            'depr_total': target_currency.round(sum(r['depr_total'] for r in asset_rows)),
-            'stop_depr_total': target_currency.round(sum(r['stop_depr_total'] for r in asset_rows)),
-            'y1_q1': target_currency.round(sum(r['y1_q1'] for r in asset_rows)),
-            'y1_q2': target_currency.round(sum(r['y1_q2'] for r in asset_rows)),
-            'y1_q3': target_currency.round(sum(r['y1_q3'] for r in asset_rows)),
-            'y1_q4': target_currency.round(sum(r['y1_q4'] for r in asset_rows)),
-            'y1_total': target_currency.round(sum(r['y1_total'] for r in asset_rows)),
-            'y2_q1': target_currency.round(sum(r['y2_q1'] for r in asset_rows)),
-            'y2_q2': target_currency.round(sum(r['y2_q2'] for r in asset_rows)),
-            'y2_q3': target_currency.round(sum(r['y2_q3'] for r in asset_rows)),
-            'y2_q4': target_currency.round(sum(r['y2_q4'] for r in asset_rows)),
-            'y2_total': target_currency.round(sum(r['y2_total'] for r in asset_rows)),
-            'total_val': target_currency.round(sum(r['total_val'] for r in asset_rows)),
-            'asset_count': sum(r['count_total'] for r in asset_rows),
-            'asset_depreciation': target_currency.round(sum(r['depr_total'] for r in asset_rows)),
-        }
-
-        # Build hierarchical structure for Investment Made: Category -> Asset Types -> Assets
-        investment_made_categories = []
-        seen_cat_type_ids = set()
-
-        if 'asset.category' in self.env:
-            categories = self.env['asset.category'].sudo().search([], order='sequence asc, id asc')
-            for cat in categories:
-                cat_types_list = []
-                cat_types = cat.asset_type_ids.sorted(lambda t: (t.name or '').strip().lower())
-                for atype in cat_types:
-                    seen_cat_type_ids.add(atype.id)
-                    s = type_stats.get(atype.id, {})
-                    assets_list = sorted(type_assets_map.get(atype.id, []), key=lambda a: (a['name'] or '').lower())
-                    cat_types_list.append({
-                        'id': atype.id,
-                        'name': atype.name or '-',
-                        'count_total': s.get('count_total', 0),
-                        'count_in_store': s.get('count_in_store', 0),
-                        'count_in_use': s.get('count_in_use', 0),
-                        'count_customer': s.get('count_customer', 0),
-                        'count_scrapped': s.get('count_scrapped', 0),
-                        'purchase_total': target_currency.round(s.get('purchase_total', 0.0)),
-                        'depr_total': target_currency.round(s.get('depr_total', 0.0)),
-                        'stop_depr_total': target_currency.round(s.get('stop_depr_total', 0.0)),
-                        'y1_q1': target_currency.round(s.get('y1_q1', 0.0)),
-                        'y1_q2': target_currency.round(s.get('y1_q2', 0.0)),
-                        'y1_q3': target_currency.round(s.get('y1_q3', 0.0)),
-                        'y1_q4': target_currency.round(s.get('y1_q4', 0.0)),
-                        'y1_total': target_currency.round(s.get('y1_total', 0.0)),
-                        'y2_q1': target_currency.round(s.get('y2_q1', 0.0)),
-                        'y2_q2': target_currency.round(s.get('y2_q2', 0.0)),
-                        'y2_q3': target_currency.round(s.get('y2_q3', 0.0)),
-                        'y2_q4': target_currency.round(s.get('y2_q4', 0.0)),
-                        'y2_total': target_currency.round(s.get('y2_total', 0.0)),
-                        'total_val': target_currency.round(s.get('total_val', 0.0)),
-                        'assets': assets_list,
-                    })
-
-                investment_made_categories.append({
-                    'id': cat.id,
-                    'name': cat.name,
-                    'count_total': sum(t['count_total'] for t in cat_types_list),
-                    'count_in_store': sum(t['count_in_store'] for t in cat_types_list),
-                    'count_in_use': sum(t['count_in_use'] for t in cat_types_list),
-                    'count_customer': sum(t['count_customer'] for t in cat_types_list),
-                    'count_scrapped': sum(t['count_scrapped'] for t in cat_types_list),
-                    'purchase_total': target_currency.round(sum(t['purchase_total'] for t in cat_types_list)),
-                    'depr_total': target_currency.round(sum(t['depr_total'] for t in cat_types_list)),
-                    'stop_depr_total': target_currency.round(sum(t['stop_depr_total'] for t in cat_types_list)),
-                    'y1_q1': target_currency.round(sum(t['y1_q1'] for t in cat_types_list)),
-                    'y1_q2': target_currency.round(sum(t['y1_q2'] for t in cat_types_list)),
-                    'y1_q3': target_currency.round(sum(t['y1_q3'] for t in cat_types_list)),
-                    'y1_q4': target_currency.round(sum(t['y1_q4'] for t in cat_types_list)),
-                    'y1_total': target_currency.round(sum(t['y1_total'] for t in cat_types_list)),
-                    'y2_q1': target_currency.round(sum(t['y2_q1'] for t in cat_types_list)),
-                    'y2_q2': target_currency.round(sum(t['y2_q2'] for t in cat_types_list)),
-                    'y2_q3': target_currency.round(sum(t['y2_q3'] for t in cat_types_list)),
-                    'y2_q4': target_currency.round(sum(t['y2_q4'] for t in cat_types_list)),
-                    'y2_total': target_currency.round(sum(t['y2_total'] for t in cat_types_list)),
-                    'total_val': target_currency.round(sum(t['total_val'] for t in cat_types_list)),
-                    'asset_types': cat_types_list,
-                })
-
-        # Asset types without category
-        orphaned_types = []
-        if 'asset.type' in self.env:
-            all_types = self.env['asset.type'].sudo().search([], order='name asc')
-            for atype in all_types:
-                if atype.id not in seen_cat_type_ids and atype.id in type_stats:
-                    s = type_stats[atype.id]
-                    assets_list = sorted(type_assets_map.get(atype.id, []), key=lambda a: (a['name'] or '').lower())
-                    orphaned_types.append({
-                        'id': atype.id,
-                        'name': atype.name or '-',
-                        'count_total': s.get('count_total', 0),
-                        'count_in_store': s.get('count_in_store', 0),
-                        'count_in_use': s.get('count_in_use', 0),
-                        'count_customer': s.get('count_customer', 0),
-                        'count_scrapped': s.get('count_scrapped', 0),
-                        'purchase_total': target_currency.round(s.get('purchase_total', 0.0)),
-                        'depr_total': target_currency.round(s.get('depr_total', 0.0)),
-                        'stop_depr_total': target_currency.round(s.get('stop_depr_total', 0.0)),
-                        'y1_q1': target_currency.round(s.get('y1_q1', 0.0)),
-                        'y1_q2': target_currency.round(s.get('y1_q2', 0.0)),
-                        'y1_q3': target_currency.round(s.get('y1_q3', 0.0)),
-                        'y1_q4': target_currency.round(s.get('y1_q4', 0.0)),
-                        'y1_total': target_currency.round(s.get('y1_total', 0.0)),
-                        'y2_q1': target_currency.round(s.get('y2_q1', 0.0)),
-                        'y2_q2': target_currency.round(s.get('y2_q2', 0.0)),
-                        'y2_q3': target_currency.round(s.get('y2_q3', 0.0)),
-                        'y2_q4': target_currency.round(s.get('y2_q4', 0.0)),
-                        'y2_total': target_currency.round(s.get('y2_total', 0.0)),
-                        'total_val': target_currency.round(s.get('total_val', 0.0)),
-                        'assets': assets_list,
-                    })
-
-        if uncategorized_stats['count_total'] > 0 or uncategorized_stats['purchase_total'] > 0:
-            orphaned_types.append({
-                'id': 'unassigned',
-                'name': 'Unassigned',
-                'count_total': uncategorized_stats.get('count_total', 0),
-                'count_in_store': uncategorized_stats.get('count_in_store', 0),
-                'count_in_use': uncategorized_stats.get('count_in_use', 0),
-                'count_customer': uncategorized_stats.get('count_customer', 0),
-                'count_scrapped': uncategorized_stats.get('count_scrapped', 0),
-                'purchase_total': target_currency.round(uncategorized_stats.get('purchase_total', 0.0)),
-                'depr_total': target_currency.round(uncategorized_stats.get('depr_total', 0.0)),
-                'stop_depr_total': target_currency.round(uncategorized_stats.get('stop_depr_total', 0.0)),
-                'y1_q1': target_currency.round(uncategorized_stats.get('y1_q1', 0.0)),
-                'y1_q2': target_currency.round(uncategorized_stats.get('y1_q2', 0.0)),
-                'y1_q3': target_currency.round(uncategorized_stats.get('y1_q3', 0.0)),
-                'y1_q4': target_currency.round(uncategorized_stats.get('y1_q4', 0.0)),
-                'y1_total': target_currency.round(uncategorized_stats.get('y1_total', 0.0)),
-                'y2_q1': target_currency.round(uncategorized_stats.get('y2_q1', 0.0)),
-                'y2_q2': target_currency.round(uncategorized_stats.get('y2_q2', 0.0)),
-                'y2_q3': target_currency.round(uncategorized_stats.get('y2_q3', 0.0)),
-                'y2_q4': target_currency.round(uncategorized_stats.get('y2_q4', 0.0)),
-                'y2_total': target_currency.round(uncategorized_stats.get('y2_total', 0.0)),
-                'total_val': target_currency.round(uncategorized_stats.get('total_val', 0.0)),
+        if uncategorized_assets:
+            s = uncategorized_stats
+            asset_sub_items.append({
+                'id': 'asset_type_unassigned',
+                'name': 'Unassigned Assets',
+                'count_total': s.get('count_total', 0),
+                'count_in_store': s.get('count_in_store', 0),
+                'count_in_use': s.get('count_in_use', 0),
+                'count_customer': s.get('count_customer', 0),
+                'count_scrapped': s.get('count_scrapped', 0),
+                'purchase_total': target_currency.round(s.get('purchase_total', 0.0)),
+                'depr_total': target_currency.round(s.get('depr_total', 0.0)),
+                'stop_depr_total': target_currency.round(s.get('stop_depr_total', 0.0)),
+                'y1_q1': target_currency.round(s.get('y1_q1', 0.0)),
+                'y1_q2': target_currency.round(s.get('y1_q2', 0.0)),
+                'y1_q3': target_currency.round(s.get('y1_q3', 0.0)),
+                'y1_q4': target_currency.round(s.get('y1_q4', 0.0)),
+                'y1_total': target_currency.round(s.get('y1_total', 0.0)),
+                'y2_q1': target_currency.round(s.get('y2_q1', 0.0)),
+                'y2_q2': target_currency.round(s.get('y2_q2', 0.0)),
+                'y2_q3': target_currency.round(s.get('y2_q3', 0.0)),
+                'y2_q4': target_currency.round(s.get('y2_q4', 0.0)),
+                'y2_total': target_currency.round(s.get('y2_total', 0.0)),
+                'total_val': target_currency.round(s.get('total_val', 0.0)),
                 'assets': uncategorized_assets,
             })
 
-        if orphaned_types:
-            investment_made_categories.append({
-                'id': 'other',
-                'name': 'Other / Uncategorized',
-                'count_total': sum(t['count_total'] for t in orphaned_types),
-                'count_in_store': sum(t['count_in_store'] for t in orphaned_types),
-                'count_in_use': sum(t['count_in_use'] for t in orphaned_types),
-                'count_customer': sum(t['count_customer'] for t in orphaned_types),
-                'count_scrapped': sum(t['count_scrapped'] for t in orphaned_types),
-                'purchase_total': target_currency.round(sum(t['purchase_total'] for t in orphaned_types)),
-                'depr_total': target_currency.round(sum(t['depr_total'] for t in orphaned_types)),
-                'stop_depr_total': target_currency.round(sum(t['stop_depr_total'] for t in orphaned_types)),
-                'y1_q1': target_currency.round(sum(t['y1_q1'] for t in orphaned_types)),
-                'y1_q2': target_currency.round(sum(t['y1_q2'] for t in orphaned_types)),
-                'y1_q3': target_currency.round(sum(t['y1_q3'] for t in orphaned_types)),
-                'y1_q4': target_currency.round(sum(t['y1_q4'] for t in orphaned_types)),
-                'y1_total': target_currency.round(sum(t['y1_total'] for t in orphaned_types)),
-                'y2_q1': target_currency.round(sum(t['y2_q1'] for t in orphaned_types)),
-                'y2_q2': target_currency.round(sum(t['y2_q2'] for t in orphaned_types)),
-                'y2_q3': target_currency.round(sum(t['y2_q3'] for t in orphaned_types)),
-                'y2_q4': target_currency.round(sum(t['y2_q4'] for t in orphaned_types)),
-                'y2_total': target_currency.round(sum(t['y2_total'] for t in orphaned_types)),
-                'total_val': target_currency.round(sum(t['total_val'] for t in orphaned_types)),
-                'asset_types': orphaned_types,
-            })
+        # Master Investment Made Categories from reporting.category
+        investment_made_categories = []
+        base_inv_made_domain = [
+            ('company_id', 'in', company_ids),
+            ('parent_state', '=', 'posted'),
+            ('date', '>=', min(y1_start_str, y2_start_str)),
+            ('date', '<=', max(y1_end_str, y2_end_str)),
+        ]
+
+        if 'reporting.category' in self.env:
+            made_categories = self.env['reporting.category'].sudo().search([
+                ('category_type', '=', 'investment_made')
+            ], order='sequence asc, id asc')
+
+            for cat in made_categories:
+                sub_cats = cat.sub_category_ids.sorted(key=lambda s: (s.sequence, s.id))
+                cat_sub_list = []
+
+                for sub in sub_cats:
+                    sub_accounts = sub.account_ids
+                    account_ids = sub_accounts.ids
+                    sub_assets_tx = []
+
+                    sub_s = {
+                        'y1_q1': 0.0, 'y1_q2': 0.0, 'y1_q3': 0.0, 'y1_q4': 0.0, 'y1_total': 0.0,
+                        'y2_q1': 0.0, 'y2_q2': 0.0, 'y2_q3': 0.0, 'y2_q4': 0.0, 'y2_total': 0.0,
+                        'total_val': 0.0,
+                    }
+
+                    made_partner_summary = {}
+
+                    if account_ids and 'account.move.line' in self.env:
+                        lines = self.env['account.move.line'].sudo().search(
+                            base_inv_made_domain + [('account_id', 'in', account_ids)],
+                            order='date asc, id asc'
+                        )
+                        for line in lines:
+                            ldate = line.date
+                            if not ldate:
+                                continue
+                            ldate_str = ldate.strftime('%Y-%m-%d')
+
+                            # Investment Made is Debit - Credit (money paid out / asset increased)
+                            conv_debit = 0.0
+                            conv_credit = 0.0
+                            if line.debit > 0:
+                                conv_debit = custom_convert(
+                                    line.debit, line.company_id.currency_id, target_currency,
+                                    date_val=ldate, year_key='y1' if y1_start_str <= ldate_str <= y1_end_str else 'y2', record=line
+                                )
+                            if line.credit > 0:
+                                conv_credit = custom_convert(
+                                    line.credit, line.company_id.currency_id, target_currency,
+                                    date_val=ldate, year_key='y1' if y1_start_str <= ldate_str <= y1_end_str else 'y2', record=line
+                                )
+
+                            net_made = conv_debit - conv_credit
+
+                            q_y1 = get_q_num(ldate_str, y1_fy_start)
+                            q_y2 = get_q_num(ldate_str, y2_cy_start)
+
+                            line_y1_q1 = net_made if q_y1 == 1 else 0.0
+                            line_y1_q2 = net_made if q_y1 == 2 else 0.0
+                            line_y1_q3 = net_made if q_y1 == 3 else 0.0
+                            line_y1_q4 = net_made if q_y1 == 4 else 0.0
+                            line_y1_tot = line_y1_q1 + line_y1_q2 + line_y1_q3 + line_y1_q4
+
+                            line_y2_q1 = net_made if q_y2 == 1 else 0.0
+                            line_y2_q2 = net_made if q_y2 == 2 else 0.0
+                            line_y2_q3 = net_made if q_y2 == 3 else 0.0
+                            line_y2_q4 = net_made if q_y2 == 4 else 0.0
+                            line_y2_tot = line_y2_q1 + line_y2_q2 + line_y2_q3 + line_y2_q4
+
+                            sub_s['y1_q1'] += line_y1_q1
+                            sub_s['y1_q2'] += line_y1_q2
+                            sub_s['y1_q3'] += line_y1_q3
+                            sub_s['y1_q4'] += line_y1_q4
+                            sub_s['y1_total'] += line_y1_tot
+
+                            sub_s['y2_q1'] += line_y2_q1
+                            sub_s['y2_q2'] += line_y2_q2
+                            sub_s['y2_q3'] += line_y2_q3
+                            sub_s['y2_q4'] += line_y2_q4
+                            sub_s['y2_total'] += line_y2_tot
+
+                            sub_s['total_val'] += net_made
+
+                            p_id = line.partner_id.id if line.partner_id else 0
+                            p_name = line.partner_id.name if line.partner_id else (line.name or 'Unassigned Partner')
+                            if p_id not in made_partner_summary:
+                                made_partner_summary[p_id] = {
+                                    'id': p_id or f'no_partner_{line.id}',
+                                    'code': '',
+                                    'name': p_name,
+                                    'serial_number': '',
+                                    'date': '',
+                                    'status': p_name,
+                                    'count_total': 1,
+                                    'count_in_store': 0,
+                                    'count_in_use': 1,
+                                    'count_customer': 0,
+                                    'count_scrapped': 0,
+                                    'purchase_total': 0.0,
+                                    'depr_total': 0.0,
+                                    'stop_depr_total': 0.0,
+                                    'y1_q1': 0.0, 'y1_q2': 0.0, 'y1_q3': 0.0, 'y1_q4': 0.0, 'y1_total': 0.0,
+                                    'y2_q1': 0.0, 'y2_q2': 0.0, 'y2_q3': 0.0, 'y2_q4': 0.0, 'y2_total': 0.0,
+                                    'total_val': 0.0,
+                                }
+                            mp_entry = made_partner_summary[p_id]
+                            mp_entry['purchase_total'] += net_made
+                            mp_entry['total_val'] += net_made
+                            mp_entry['y1_q1'] += line_y1_q1
+                            mp_entry['y1_q2'] += line_y1_q2
+                            mp_entry['y1_q3'] += line_y1_q3
+                            mp_entry['y1_q4'] += line_y1_q4
+                            mp_entry['y1_total'] += line_y1_tot
+                            mp_entry['y2_q1'] += line_y2_q1
+                            mp_entry['y2_q2'] += line_y2_q2
+                            mp_entry['y2_q3'] += line_y2_q3
+                            mp_entry['y2_q4'] += line_y2_q4
+                            mp_entry['y2_total'] += line_y2_tot
+
+                        for pid, mp_entry in made_partner_summary.items():
+                            sub_assets_tx.append({
+                                'id': mp_entry['id'],
+                                'code': '',
+                                'name': mp_entry['name'],
+                                'serial_number': '',
+                                'date': '',
+                                'status': 'Partner',
+                                'count_total': 1,
+                                'count_in_store': 0,
+                                'count_in_use': 1,
+                                'count_customer': 0,
+                                'count_scrapped': 0,
+                                'purchase_total': target_currency.round(mp_entry['purchase_total']),
+                                'depr_total': 0.0,
+                                'stop_depr_total': 0.0,
+                                'y1_q1': target_currency.round(mp_entry['y1_q1']),
+                                'y1_q2': target_currency.round(mp_entry['y1_q2']),
+                                'y1_q3': target_currency.round(mp_entry['y1_q3']),
+                                'y1_q4': target_currency.round(mp_entry['y1_q4']),
+                                'y1_total': target_currency.round(mp_entry['y1_total']),
+                                'y2_q1': target_currency.round(mp_entry['y2_q1']),
+                                'y2_q2': target_currency.round(mp_entry['y2_q2']),
+                                'y2_q3': target_currency.round(mp_entry['y2_q3']),
+                                'y2_q4': target_currency.round(mp_entry['y2_q4']),
+                                'y2_total': target_currency.round(mp_entry['y2_total']),
+                                'total_val': target_currency.round(mp_entry['total_val']),
+                            })
+
+                    cat_sub_list.append({
+                        'id': f'sub_{sub.id}',
+                        'name': sub.name,
+                        'count_total': 0,
+                        'count_in_store': 0,
+                        'count_in_use': 0,
+                        'count_customer': 0,
+                        'count_scrapped': 0,
+                        'purchase_total': target_currency.round(sub_s['total_val']),
+                        'depr_total': 0.0,
+                        'stop_depr_total': 0.0,
+                        'y1_q1': target_currency.round(sub_s['y1_q1']),
+                        'y1_q2': target_currency.round(sub_s['y1_q2']),
+                        'y1_q3': target_currency.round(sub_s['y1_q3']),
+                        'y1_q4': target_currency.round(sub_s['y1_q4']),
+                        'y1_total': target_currency.round(sub_s['y1_total']),
+                        'y2_q1': target_currency.round(sub_s['y2_q1']),
+                        'y2_q2': target_currency.round(sub_s['y2_q2']),
+                        'y2_q3': target_currency.round(sub_s['y2_q3']),
+                        'y2_q4': target_currency.round(sub_s['y2_q4']),
+                        'y2_total': target_currency.round(sub_s['y2_total']),
+                        'total_val': target_currency.round(sub_s['total_val']),
+                        'assets': sub_assets_tx,
+                    })
+
+                investment_made_categories.append({
+                    'id': f'cat_{cat.id}',
+                    'name': cat.name,
+                    'count_total': 0,
+                    'count_in_store': 0,
+                    'count_in_use': 0,
+                    'count_customer': 0,
+                    'count_scrapped': 0,
+                    'purchase_total': target_currency.round(sum(t['purchase_total'] for t in cat_sub_list)),
+                    'depr_total': 0.0,
+                    'stop_depr_total': 0.0,
+                    'y1_q1': target_currency.round(sum(t['y1_q1'] for t in cat_sub_list)),
+                    'y1_q2': target_currency.round(sum(t['y1_q2'] for t in cat_sub_list)),
+                    'y1_q3': target_currency.round(sum(t['y1_q3'] for t in cat_sub_list)),
+                    'y1_q4': target_currency.round(sum(t['y1_q4'] for t in cat_sub_list)),
+                    'y1_total': target_currency.round(sum(t['y1_total'] for t in cat_sub_list)),
+                    'y2_q1': target_currency.round(sum(t['y2_q1'] for t in cat_sub_list)),
+                    'y2_q2': target_currency.round(sum(t['y2_q2'] for t in cat_sub_list)),
+                    'y2_q3': target_currency.round(sum(t['y2_q3'] for t in cat_sub_list)),
+                    'y2_q4': target_currency.round(sum(t['y2_q4'] for t in cat_sub_list)),
+                    'y2_total': target_currency.round(sum(t['y2_total'] for t in cat_sub_list)),
+                    'total_val': target_currency.round(sum(t['total_val'] for t in cat_sub_list)),
+                    'asset_types': cat_sub_list,
+                })
+
+        # Append dedicated "Assets" Category row
+        assets_cat_row = {
+            'id': 'assets_management_row',
+            'name': 'Assets',
+            'count_total': sum(t['count_total'] for t in asset_sub_items),
+            'count_in_store': sum(t['count_in_store'] for t in asset_sub_items),
+            'count_in_use': sum(t['count_in_use'] for t in asset_sub_items),
+            'count_customer': sum(t['count_customer'] for t in asset_sub_items),
+            'count_scrapped': sum(t['count_scrapped'] for t in asset_sub_items),
+            'purchase_total': target_currency.round(sum(t['purchase_total'] for t in asset_sub_items)),
+            'depr_total': target_currency.round(sum(t['depr_total'] for t in asset_sub_items)),
+            'stop_depr_total': target_currency.round(sum(t['stop_depr_total'] for t in asset_sub_items)),
+            'y1_q1': target_currency.round(sum(t['y1_q1'] for t in asset_sub_items)),
+            'y1_q2': target_currency.round(sum(t['y1_q2'] for t in asset_sub_items)),
+            'y1_q3': target_currency.round(sum(t['y1_q3'] for t in asset_sub_items)),
+            'y1_q4': target_currency.round(sum(t['y1_q4'] for t in asset_sub_items)),
+            'y1_total': target_currency.round(sum(t['y1_total'] for t in asset_sub_items)),
+            'y2_q1': target_currency.round(sum(t['y2_q1'] for t in asset_sub_items)),
+            'y2_q2': target_currency.round(sum(t['y2_q2'] for t in asset_sub_items)),
+            'y2_q3': target_currency.round(sum(t['y2_q3'] for t in asset_sub_items)),
+            'y2_q4': target_currency.round(sum(t['y2_q4'] for t in asset_sub_items)),
+            'y2_total': target_currency.round(sum(t['y2_total'] for t in asset_sub_items)),
+            'total_val': target_currency.round(sum(t['total_val'] for t in asset_sub_items)),
+            'asset_types': asset_sub_items,
+        }
+        investment_made_categories.append(assets_cat_row)
+
+        # Flat asset_rows list for backward compatibility / Excel export
+        asset_rows = []
+        for cat in investment_made_categories:
+            for atype in cat['asset_types']:
+                asset_rows.append({
+                    'category': cat['name'],
+                    'asset_type': atype['name'],
+                    'count_total': atype.get('count_total', 0),
+                    'count_in_store': atype.get('count_in_store', 0),
+                    'count_in_use': atype.get('count_in_use', 0),
+                    'count_customer': atype.get('count_customer', 0),
+                    'count_scrapped': atype.get('count_scrapped', 0),
+                    'purchase_total': atype.get('purchase_total', 0.0),
+                    'depr_total': atype.get('depr_total', 0.0),
+                    'stop_depr_total': atype.get('stop_depr_total', 0.0),
+                    'y1_q1': atype.get('y1_q1', 0.0),
+                    'y1_q2': atype.get('y1_q2', 0.0),
+                    'y1_q3': atype.get('y1_q3', 0.0),
+                    'y1_q4': atype.get('y1_q4', 0.0),
+                    'y1_total': atype.get('y1_total', 0.0),
+                    'y2_q1': atype.get('y2_q1', 0.0),
+                    'y2_q2': atype.get('y2_q2', 0.0),
+                    'y2_q3': atype.get('y2_q3', 0.0),
+                    'y2_q4': atype.get('y2_q4', 0.0),
+                    'y2_total': atype.get('y2_total', 0.0),
+                    'total_val': atype.get('total_val', 0.0),
+                    'asset_count': atype.get('count_total', 0),
+                    'asset_depreciation': atype.get('depr_total', 0.0),
+                })
+
+        asset_totals = {
+            'count_total': sum(c['count_total'] for c in investment_made_categories),
+            'count_in_store': sum(c['count_in_store'] for c in investment_made_categories),
+            'count_in_use': sum(c['count_in_use'] for c in investment_made_categories),
+            'count_customer': sum(c['count_customer'] for c in investment_made_categories),
+            'count_scrapped': sum(c['count_scrapped'] for c in investment_made_categories),
+            'purchase_total': target_currency.round(sum(c['purchase_total'] for c in investment_made_categories)),
+            'depr_total': target_currency.round(sum(c['depr_total'] for c in investment_made_categories)),
+            'stop_depr_total': target_currency.round(sum(c['stop_depr_total'] for c in investment_made_categories)),
+            'y1_q1': target_currency.round(sum(c['y1_q1'] for c in investment_made_categories)),
+            'y1_q2': target_currency.round(sum(c['y1_q2'] for c in investment_made_categories)),
+            'y1_q3': target_currency.round(sum(c['y1_q3'] for c in investment_made_categories)),
+            'y1_q4': target_currency.round(sum(c['y1_q4'] for c in investment_made_categories)),
+            'y1_total': target_currency.round(sum(c['y1_total'] for c in investment_made_categories)),
+            'y2_q1': target_currency.round(sum(c['y2_q1'] for c in investment_made_categories)),
+            'y2_q2': target_currency.round(sum(c['y2_q2'] for c in investment_made_categories)),
+            'y2_q3': target_currency.round(sum(c['y2_q3'] for c in investment_made_categories)),
+            'y2_q4': target_currency.round(sum(c['y2_q4'] for c in investment_made_categories)),
+            'y2_total': target_currency.round(sum(c['y2_total'] for c in investment_made_categories)),
+            'total_val': target_currency.round(sum(c['total_val'] for c in investment_made_categories)),
+            'asset_count': sum(c['count_total'] for c in investment_made_categories),
+            'asset_depreciation': target_currency.round(sum(c['depr_total'] for c in investment_made_categories)),
+        }
 
         investment_made_hierarchy = {
             'categories': investment_made_categories,
@@ -3020,7 +3136,7 @@ class FbookReportWizard(models.TransientModel):
         ws.merge_range(row, 0, row, 1, data.get('currency_symbol', ''), f_main_header)
         ws.merge_range(row, 2, row, 6, data.get('year1_label', ''), f_y1)
         ws.merge_range(row, 7, row, 11, data.get('year2_label', ''), f_y2)
-        ws.write(row, 12, "Total Purchase Value", f_tot_net)
+        ws.write(row, 12, "Total Value", f_tot_net)
         ws.set_row(row, 22)
         row += 1
         ws.write(row, 0, "Asset Category", f_sub_left)
@@ -3204,4 +3320,3 @@ class FbookReportWizard(models.TransientModel):
             'name': file_name,
             'target': 'self',
         }
-

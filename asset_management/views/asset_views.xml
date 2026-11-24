@@ -16,7 +16,6 @@
                     </div>
                     <group>
                         <group string="General Information">
-                            <field name="category_id" required="1" options="{'no_create_edit': False}"/>
                             <field name="color" widget="color_picker"/>
                         </group>
                         <group string="Depreciation Rules">
@@ -54,7 +53,6 @@
         <field name="arch" type="xml">
             <list>
                 <field name="name"/>
-                <field name="category_id"/>
                 <field name="color" widget="color_picker"/>
                 <field name="depreciation_frequency"/>
                 <field name="depreciation_method"/>
@@ -72,10 +70,6 @@
         <field name="arch" type="xml">
             <search>
                 <field name="name"/>
-                <field name="category_id"/>
-                <group>
-                    <filter string="Asset Category" name="group_by_category" context="{'group_by': 'category_id'}"/>
-                </group>
             </search>
         </field>
     </record>
@@ -195,7 +189,6 @@
                         <!-- Left: Asset Details -->
                         <group string="Asset Details">
                             <field name="asset_type_id"/>
-                            <field name="category_id"/>
                             <field name="product_id"/>
                             <field name="serial_number"/>
                             <field name="barcode"/>
@@ -412,7 +405,6 @@
                 <field name="name"/>
                 <field name="asset_name"/>
                 <field name="asset_type_id"/>
-                <field name="category_id" optional="show"/>
                 <field name="serial_number" optional="show"/>
                 <field name="department_id" optional="show"/>
                 <field name="employee_id" optional="show"/>
@@ -509,8 +501,6 @@
                             context="{'group_by': 'state'}"/>
                     <filter string="Operational Status" name="group_by_status"
                             context="{'group_by': 'status'}"/>
-                    <filter string="Asset Category" name="group_by_asset_category"
-                            context="{'group_by': 'category_id'}"/>
                     <filter string="Asset Type" name="group_by_asset_type"
                             context="{'group_by': 'asset_type_id'}"/>
                     <filter string="Department" name="group_by_dept"
