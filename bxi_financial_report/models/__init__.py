@@ -7,5 +7,6 @@ from . import epf_report_wizard
 from . import tds_report_wizard
 from . import res_country
 from . import res_company
+from . import reporting_category
 
 

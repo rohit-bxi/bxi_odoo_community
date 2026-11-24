@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         REPORTING CATEGORY VIEWS
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Reporting Category List View -->
+    <record id="view_reporting_category_list" model="ir.ui.view">
+        <field name="name">reporting.category.list</field>
+        <field name="model">reporting.category</field>
+        <field name="arch" type="xml">
+            <list string="Reporting Categories" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="category_type" widget="badge"
+                       decoration-info="category_type == 'investment_made'"
+                       decoration-success="category_type == 'investment_received'"/>
+                <field name="sub_category_count" string="Sub Categories"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Reporting Category Form View -->
+    <record id="view_reporting_category_form" model="ir.ui.view">
+        <field name="name">reporting.category.form</field>
+        <field name="model">reporting.category</field>
+        <field name="arch" type="xml">
+            <form string="Reporting Category">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_sub_categories" type="object" class="oe_stat_button" icon="fa-list-ul">
+                            <field name="sub_category_count" widget="statinfo" string="Sub Categories"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" string="Category Name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Equity Capital"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="category_type" widget="selection"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Sub Categories" name="sub_categories_page">
+                            <field name="sub_category_ids" context="{'default_category_id': id}">
+                                <list string="Sub Categories" editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="account_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                                    <field name="account_count" string="Accounts"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Reporting Category Search View -->
+    <record id="view_reporting_category_search" model="ir.ui.view">
+        <field name="name">reporting.category.search</field>
+        <field name="model">reporting.category</field>
+        <field name="arch" type="xml">
+            <search string="Reporting Categories">
+                <field name="name" string="Category"/>
+                <filter string="Investments Made" name="filter_made" domain="[('category_type', '=', 'investment_made')]"/>
+                <filter string="Investments Received" name="filter_received" domain="[('category_type', '=', 'investment_received')]"/>
+                <separator/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter string="Category Type" name="group_category_type" context="{'group_by': 'category_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Reporting Category Action -->
+    <record id="action_reporting_category" model="ir.actions.act_window">
+        <field name="name">Reporting Category</field>
+        <field name="res_model">reporting.category</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_reporting_category_search"/>
+        <field name="context">{'search_default_group_category_type': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Reporting Category!
+            </p>
+            <p>
+                Define categories for Investments Made and Investments Received.
+            </p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         REPORTING SUB CATEGORY VIEWS
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Reporting Sub Category List View -->
+    <record id="view_reporting_sub_category_list" model="ir.ui.view">
+        <field name="name">reporting.sub.category.list</field>
+        <field name="model">reporting.sub.category</field>
+        <field name="arch" type="xml">
+            <list string="Sub Categories" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="category_type" widget="badge"
+                       decoration-info="category_type == 'investment_made'"
+                       decoration-success="category_type == 'investment_received'"/>
+                <field name="account_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                <field name="account_count" string="Accounts"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Reporting Sub Category Form View -->
+    <record id="view_reporting_sub_category_form" model="ir.ui.view">
+        <field name="name">reporting.sub.category.form</field>
+        <field name="model">reporting.sub.category</field>
+        <field name="arch" type="xml">
+            <form string="Sub Category">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Sub Category Name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Share Capital"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="category_id"/>
+                            <field name="category_type"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Chart of Accounts (COA)" name="coa_page">
+                            <field name="account_ids">
+                                <list string="Chart of Accounts">
+                                    <field name="code"/>
+                                    <field name="name"/>
+                                    <field name="account_type"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Reporting Sub Category Search View -->
+    <record id="view_reporting_sub_category_search" model="ir.ui.view">
+        <field name="name">reporting.sub.category.search</field>
+        <field name="model">reporting.sub.category</field>
+        <field name="arch" type="xml">
+            <search string="Sub Categories">
+                <field name="name" string="Sub Category"/>
+                <field name="category_id" string="Reporting Category"/>
+                <filter string="Investments Made" name="filter_made" domain="[('category_type', '=', 'investment_made')]"/>
+                <filter string="Investments Received" name="filter_received" domain="[('category_type', '=', 'investment_received')]"/>
+                <separator/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter string="Reporting Category" name="group_category" context="{'group_by': 'category_id'}"/>
+                    <filter string="Category Type" name="group_category_type" context="{'group_by': 'category_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Reporting Sub Category Action -->
+    <record id="action_reporting_sub_category" model="ir.actions.act_window">
+        <field name="name">Sub Category</field>
+        <field name="res_model">reporting.sub.category</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_reporting_sub_category_search"/>
+        <field name="context">{'search_default_group_category': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Sub Category!
+            </p>
+            <p>
+                Link sub categories to reporting categories and map Chart of Accounts.
+            </p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         CONFIGURATION MENU ITEMS UNDER ACCOUNTING
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <menuitem id="menu_reporting_category"
+              name="Reporting Category"
+              parent="account.menu_finance_configuration"
+              action="action_reporting_category"
+              sequence="45"/>
+
+    <menuitem id="menu_reporting_sub_category"
+              name="Sub Category"
+              parent="account.menu_finance_configuration"
+              action="action_reporting_sub_category"
+              sequence="46"/>
+
+</odoo>

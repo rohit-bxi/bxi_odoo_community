@@ -45,6 +45,43 @@ class AccountAnalyticLine(models.Model):
         compute='_compute_l2_activity_name',
         store=True
     )
+    is_timesheet = fields.Boolean(
+        string="Timesheet",
+        compute="_compute_is_timesheet",
+        search="_search_is_timesheet",
+        store=True,
+    )
+
+    @api.depends('project_id', 'timesheet_category_id', 'timesheet_activity_id', 'employee_id')
+    def _compute_is_timesheet(self):
+        for line in self:
+            line.is_timesheet = bool(
+                line.project_id or
+                line.timesheet_category_id or
+                line.timesheet_activity_id or
+                line.employee_id
+            )
+
+    def _search_is_timesheet(self, operator, value):
+        positive = (operator == '=' and value) or (operator == '!=' and not value)
+        domain = ['|', '|', '|',
+                  ('project_id', '!=', False),
+                  ('timesheet_category_id', '!=', False),
+                  ('timesheet_activity_id', '!=', False),
+                  ('employee_id', '!=', False)]
+        return domain if positive else ['&', '&', '&',
+                                        ('project_id', '=', False),
+                                        ('timesheet_category_id', '=', False),
+                                        ('timesheet_activity_id', '=', False),
+                                        ('employee_id', '=', False)]
+
+    @api.depends('employee_id', 'employee_id.user_id')
+    def _compute_user_id(self):
+        for line in self:
+            if line.employee_id and line.employee_id.user_id:
+                line.user_id = line.employee_id.user_id
+            elif not line.user_id:
+                line.user_id = self.env.user
 
     @api.depends('timesheet_activity_id', 'lead_id', 'project_id', 'task_id')
     def _compute_l2_activity_name(self):
@@ -54,7 +91,10 @@ class AccountAnalyticLine(models.Model):
             elif rec.lead_id:
                 rec.l2_activity_name = rec.lead_id.name or rec.lead_id.display_name
             elif rec.project_id:
-                if rec.task_id:
+                p_name_lower = (rec.project_id.name or '').strip().lower()
+                if p_name_lower in ('other activities', 'other project activities'):
+                    rec.l2_activity_name = 'Other'
+                elif rec.task_id:
                     rec.l2_activity_name = f"{rec.project_id.name} / {rec.task_id.name}"
                 else:
                     rec.l2_activity_name = rec.project_id.name
@@ -116,20 +156,34 @@ class AccountAnalyticLine(models.Model):
 
     @api.onchange('employee_id')
     def _onchange_employee_id_filter_projects(self):
-        """Filter project_id dropdown to only projects where employee is tagged in Employee Allocation or mapped in SSD Allocation."""
+        """Filter project_id dropdown to only projects where employee is tagged in Employee Allocation or mapped in SSD Allocation.
+        Always includes 'Other Activities' so anyone can select Other without allocation."""
         emp = self.employee_id or self.env['hr.employee'].sudo().search([('user_id', '=', self.env.user.id)], limit=1)
         if emp and 'project.resource.allocation' in self.env:
             allocs = self.env['project.resource.allocation'].sudo().search([
                 '|', ('employee_id', '=', emp.id), ('ssd_id', '=', emp.id)
             ])
-            project_ids = allocs.mapped('project_id').ids
-            return {'domain': {'project_id': [('id', 'in', project_ids)]}}
+            project_ids = set(allocs.mapped('project_id').ids)
+            other_projs = self.env['project.project'].sudo().search([
+                ('name', 'in', ['Other Activities', 'Other Project Activities', 'Other'])
+            ])
+            project_ids |= set(other_projs.ids)
+            return {'domain': {'project_id': [('id', 'in', list(project_ids))]}}
         return {'domain': {'project_id': []}}
 
-    @api.constrains('timesheet_category_id', 'lead_id', 'project_id', 'employee_id')
+    @api.constrains('timesheet_category_id', 'lead_id', 'project_id', 'employee_id', 'timesheet_activity_id')
     def _check_category_l2_allocation(self):
-        """Enforce salesperson mapping for Revenue Generation and project allocation/SSD mapping for Delivery / Project Execution."""
+        """Enforce salesperson mapping for Revenue Generation and project allocation/SSD mapping for Delivery / Project Execution.
+        Completely bypassed for 'Other' option so anyone can fill without allocation."""
         for rec in self:
+            # Bypass 'Other' option completely
+            is_other = (
+                (rec.project_id and (rec.project_id.name or '').strip().lower() in ('other activities', 'other project activities', 'other')) or
+                (rec.timesheet_activity_id and (rec.timesheet_activity_id.name or '').strip().lower() == 'other') or
+                ((rec.l2_activity_name or '').strip().lower() == 'other')
+            )
+            if is_other:
+                continue
             if not rec.timesheet_category_id:
                 if rec.project_id and 'project.resource.allocation' in self.env and self.env.user and not self.env.user.has_group('base.group_system'):
                     emp = rec.employee_id or self.env['hr.employee'].sudo().search([('user_id', '=', self.env.user.id)], limit=1)
@@ -157,15 +211,24 @@ class AccountAnalyticLine(models.Model):
                         if not has_alloc:
                             raise ValidationError(_("For Delivery / Project Execution, you can only select projects where you are mapped under project resource allocation or SSD mapping."))
 
-    @api.constrains('project_id', 'employee_id', 'date', 'unit_amount')
+    @api.constrains('project_id', 'employee_id', 'date', 'unit_amount', 'timesheet_activity_id')
     def _check_project_allocation_duration_and_hours(self):
         """
         Validate that timesheet entries for a project:
         1. Fall within the allocated start_date and end_date of the employee.
         2. Do not exceed the allocated hours (working days * 9) for that allocation window.
+        Completely bypassed for 'Other' option so anyone can fill without allocation.
         """
         for rec in self:
             if not rec.project_id or not rec.employee_id or not rec.date or rec.unit_amount <= 0.0:
+                continue
+            # Bypass 'Other' option completely
+            is_other = (
+                (rec.project_id and (rec.project_id.name or '').strip().lower() in ('other activities', 'other project activities', 'other')) or
+                (rec.timesheet_activity_id and (rec.timesheet_activity_id.name or '').strip().lower() == 'other') or
+                ((rec.l2_activity_name or '').strip().lower() == 'other')
+            )
+            if is_other:
                 continue
             if 'holiday_id' in self.env['account.analytic.line']._fields and rec.holiday_id:
                 continue
@@ -302,15 +365,63 @@ class AccountAnalyticLine(models.Model):
             return super()._check_can_write(values)
         return True
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('employee_id') and not vals.get('user_id'):
+                emp = self.env['hr.employee'].browse(vals['employee_id'])
+                vals['user_id'] = emp.user_id.id or self.env.uid
+            elif not vals.get('user_id') and (vals.get('timesheet_category_id') or vals.get('timesheet_activity_id') or vals.get('project_id')):
+                vals['user_id'] = self.env.uid
+        return super().create(vals_list)
+
     def write(self, values):
         """
         Allow approval status and remarks updates on timesheet lines linked to Time Off requests (holiday_id)
         by using superuser mode when updating only approval fields.
+        Also ensure user_id is kept consistent with employee_id.
         """
+        if values.get('employee_id') and not values.get('user_id'):
+            emp = self.env['hr.employee'].browse(values['employee_id'])
+            if emp.user_id:
+                values['user_id'] = emp.user_id.id
         allowed_fields = {'state', 'remarks'}
         if set(values.keys()).issubset(allowed_fields) and any(getattr(line, 'holiday_id', False) for line in self):
             return super(AccountAnalyticLine, self.sudo()).write(values)
         return super().write(values)
+
+    def init(self):
+        super().init()
+        # Backfill user_id and is_timesheet for existing lines where user_id was NULL or is_timesheet was FALSE
+        self.env.cr.execute("""
+            UPDATE account_analytic_line aal
+            SET user_id = he.user_id
+            FROM hr_employee he
+            WHERE aal.employee_id = he.id
+              AND aal.user_id IS NULL
+              AND he.user_id IS NOT NULL;
+
+            UPDATE account_analytic_line
+            SET is_timesheet = TRUE
+            WHERE (project_id IS NOT NULL OR timesheet_category_id IS NOT NULL OR timesheet_activity_id IS NOT NULL OR employee_id IS NOT NULL)
+              AND (is_timesheet IS FALSE OR is_timesheet IS NULL);
+        """)
+        # Dynamically update standard hr_timesheet record rules if present to remove project_id != False
+        rules = self.env['ir.rule'].sudo().search([
+            ('model_id.model', '=', 'account.analytic.line'),
+            ('name', 'in', [
+                'account.analytic.line.timesheet.user',
+                'account.analytic.line.timesheet.approver',
+                'account.analytic.line.timesheet.manager',
+            ])
+        ])
+        for r in rules:
+            if r.name == 'account.analytic.line.timesheet.user':
+                r.domain_force = "['|', ('user_id', '=', user.id), ('employee_id.user_id', '=', user.id)]"
+            elif r.name == 'account.analytic.line.timesheet.approver':
+                r.domain_force = "['|', '|', ('user_id', '=', user.id), ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id)]"
+            elif r.name == 'account.analytic.line.timesheet.manager':
+                r.domain_force = "[(1, '=', 1)]"
 
     def action_submit(self):
         today = date.today()
