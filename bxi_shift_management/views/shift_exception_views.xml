@@ -156,9 +156,11 @@
                         role="alert"
                         invisible="not is_regularization or state != 'draft'"
                     >
-                        The request must be submitted and approved on <strong>21th</strong> of the attendance
+                        The request must be submitted and approved on <strong>23rd to 25TH </strong> of the attendance
                         cycle. Days without an approved request by then are marked
-                        as <strong>Loss of Pay (LOP)</strong>.
+                        as <strong>Loss of Pay (LOP)</strong>.<br/><br/>
+                        Please enter your actual checkout time in 24-hour format 
+                        <strong>(e.g., 18:00 for 6:00 PM or 19:00 for 7:00 PM)</strong> in the Checkout Time field.
                     </div>
 
                     <separator
