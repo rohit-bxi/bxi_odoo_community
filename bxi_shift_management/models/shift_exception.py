@@ -376,12 +376,12 @@ class BxiShiftException(models.Model):
         """
         Attendance regularization window:
         Opens: 22nd at 12:00 PM IST.
-        Closes: 25th at 12:00 PM IST.
+        Closes: 25th at 11:59 PM IST.
         """
         now_ist = self._get_ist_now()
 
         window_start = (22, 12, 0)
-        window_end = (25, 12, 0)
+        window_end = (26, 0, 0)
 
         current_time = (
             now_ist.day,
@@ -394,7 +394,7 @@ class BxiShiftException(models.Model):
                 "The attendance regularization window is currently closed.\n\n"
                 "You can submit Missing Timesheet, Late Checkout, and "
                 "Attendance Regularization requests from the "
-                "22nd at 12:00 PM until the 25th at 12:00 PM IST "
+                "22nd at 12:00 PM until the 25th at 12:00 night IST "
                 "of every month."
             ))
 

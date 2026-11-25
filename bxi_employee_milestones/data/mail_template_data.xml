@@ -7,7 +7,7 @@
             <field name="model_id" ref="hr.model_hr_employee"/>
             <field name="subject">Happy Birthday, {{ object.name }}!</field>
             <field name="email_from">hr_support@bxitech.com</field>
-            <field name="email_to">hr_support@bxitech.com</field>
+            <field name="email_to"></field>
             <field name="email_cc"></field>
             <field name="use_default_to" eval="False"/>
             <field name="auto_delete" eval="True"/>
