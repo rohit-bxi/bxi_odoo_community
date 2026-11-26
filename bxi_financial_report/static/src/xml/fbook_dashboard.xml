@@ -590,18 +590,41 @@
                     </div>
 
                     <div class="fbook-table-wrapper" style="border: none; border-radius: 0; box-shadow: none; margin-bottom: 0;">
-                        <table class="fbook-table" style="min-width: 620px; margin-bottom: 0;">
+                        <table class="fbook-table" style="min-width: 720px; margin-bottom: 0;">
                             <thead>
+                                <!-- Top Header Row -->
                                 <tr>
-                                    <th class="fbook-sticky-col" style="text-align: left; background: #f8fafc; font-weight: 700; width: 220px; color: #334155;">Financial Metric</th>
+                                    <th rowspan="2" class="fbook-sticky-col" style="text-align: left; background: #f8fafc; font-weight: 700; width: 220px; color: #334155; vertical-align: middle;">Financial Metric</th>
                                     <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
-                                        <th style="text-align: right; background: #f1f5f9; font-weight: 700;">
-                                            <span t-att-style="yr.prefix == 'CY' ? 'color: #16a34a; font-weight: 700;' : 'color: #ea580c; font-weight: 700;'">
-                                                <t t-esc="yr.label"/>
-                                            </span>
-                                        </th>
+                                        <t t-if="yr.is_current">
+                                            <th colspan="2" style="text-align: center; background: #dcfce7; font-weight: 700; border-left: 2px solid #86efac; border-right: 2px solid #86efac;">
+                                                <span style="color: #16a34a; font-weight: 700;">
+                                                    <t t-esc="yr.label"/>
+                                                </span>
+                                            </th>
+                                        </t>
+                                        <t t-else="">
+                                            <th rowspan="2" style="text-align: right; background: #f1f5f9; font-weight: 700; vertical-align: middle;">
+                                                <span t-att-style="yr.prefix == 'CY' ? 'color: #16a34a; font-weight: 700;' : 'color: #ea580c; font-weight: 700;'">
+                                                    <t t-esc="yr.label"/>
+                                                </span>
+                                            </th>
+                                        </t>
                                     </t>
-                                    <th style="text-align: right; background: #e0f2fe; color: #0369a1; font-weight: 800; width: 180px;">Total (3 Years)</th>
+                                    <th rowspan="2" style="text-align: right; background: #e0f2fe; color: #0369a1; font-weight: 800; width: 170px; vertical-align: middle;">Total (3 Years)</th>
+                                </tr>
+                                <!-- Sub Header Row for CY: Actual vs Predictive -->
+                                <tr>
+                                    <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
+                                        <t t-if="yr.is_current">
+                                            <th style="text-align: right; background: #f0fdf4; color: #166534; font-weight: 700; font-size: 11px; width: 110px; border-left: 2px solid #86efac;">
+                                                <i class="fa fa-check-circle me-1"/> Actual
+                                            </th>
+                                            <th style="text-align: right; background: #ecfdf5; color: #047857; font-weight: 700; font-size: 11px; width: 110px; border-right: 2px solid #86efac;">
+                                                <i class="fa fa-line-chart me-1"/> Predictive
+                                            </th>
+                                        </t>
+                                    </t>
                                 </tr>
                             </thead>
                             <tbody>
@@ -611,7 +634,13 @@
                                         <i class="fa fa-arrow-circle-o-up text-success" style="margin-right: 6px;"></i> Revenue
                                     </td>
                                     <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
-                                        <td style="font-weight: 600; color: #0f172a;"><t t-out="formatAmt(yr.revenue)"/></td>
+                                        <t t-if="yr.is_current">
+                                            <td style="font-weight: 600; color: #0f172a; border-left: 2px solid #dcfce7;"><t t-out="formatAmt(yr.revenue_actual)"/></td>
+                                            <td style="font-weight: 700; color: #15803d; background: #f0fdf4; border-right: 2px solid #dcfce7;" title="Predictive full year revenue based on actual run-rate, unbilled contracts, confirmed SOs"><t t-out="formatAmt(yr.revenue_predictive)"/></td>
+                                        </t>
+                                        <t t-else="">
+                                            <td style="font-weight: 600; color: #0f172a;"><t t-out="formatAmt(yr.revenue)"/></td>
+                                        </t>
                                     </t>
                                     <td class="total-cell" style="font-weight: 800; background: #f0fdf4; color: #166534;"><t t-out="formatAmt(state.report_data.three_year_summary.total_revenue)"/></td>
                                 </tr>
@@ -622,7 +651,13 @@
                                         <i class="fa fa-arrow-circle-o-down text-danger" style="margin-right: 6px;"></i> Expenses
                                     </td>
                                     <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
-                                        <td style="font-weight: 600; color: #dc2626;"><t t-out="formatAmt(yr.expenses)"/></td>
+                                        <t t-if="yr.is_current">
+                                            <td style="font-weight: 600; color: #dc2626; border-left: 2px solid #dcfce7;"><t t-out="formatAmt(yr.expenses_actual)"/></td>
+                                            <td style="font-weight: 700; color: #b91c1c; background: #fef2f2; border-right: 2px solid #dcfce7;" title="Predictive full year expenses based on actual run-rate, open vendor bills, pending POs, and salary"><t t-out="formatAmt(yr.expenses_predictive)"/></td>
+                                        </t>
+                                        <t t-else="">
+                                            <td style="font-weight: 600; color: #dc2626;"><t t-out="formatAmt(yr.expenses)"/></td>
+                                        </t>
                                     </t>
                                     <td class="total-cell" style="font-weight: 800; background: #fef2f2; color: #991b1b;"><t t-out="formatAmt(state.report_data.three_year_summary.total_expenses)"/></td>
                                 </tr>
@@ -633,9 +668,19 @@
                                         <i class="fa fa-percent text-primary" style="margin-right: 6px;"></i> Margin
                                     </td>
                                     <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
-                                        <td t-att-style="yr.margin >= 0 ? 'font-weight: 700; color: #15803d;' : 'font-weight: 700; color: #b91c1c;'">
-                                            <t t-esc="yr.margin"/>%
-                                        </td>
+                                        <t t-if="yr.is_current">
+                                            <td t-att-style="yr.margin_actual >= 0 ? 'font-weight: 700; color: #15803d; border-left: 2px solid #dcfce7;' : 'font-weight: 700; color: #b91c1c; border-left: 2px solid #dcfce7;'">
+                                                <t t-esc="yr.margin_actual"/>%
+                                            </td>
+                                            <td t-att-style="yr.margin_predictive >= 0 ? 'font-weight: 700; color: #15803d; background: #f0fdf4; border-right: 2px solid #dcfce7;' : 'font-weight: 700; color: #b91c1c; background: #fef2f2; border-right: 2px solid #dcfce7;'">
+                                                <t t-esc="yr.margin_predictive"/>%
+                                            </td>
+                                        </t>
+                                        <t t-else="">
+                                            <td t-att-style="yr.margin >= 0 ? 'font-weight: 700; color: #15803d;' : 'font-weight: 700; color: #b91c1c;'">
+                                                <t t-esc="yr.margin"/>%
+                                            </td>
+                                        </t>
                                     </t>
                                     <td class="total-cell" t-att-style="state.report_data.three_year_summary.total_margin >= 0 ? 'font-weight: 800; background: #ecfdf5; color: #047857;' : 'font-weight: 800; background: #fef2f2; color: #b91c1c;'">
                                         <t t-esc="state.report_data.three_year_summary.total_margin"/>%
@@ -648,7 +693,13 @@
                                         <i class="fa fa-cubes" style="color: #d97706; margin-right: 6px;"></i> Investments Made
                                     </td>
                                     <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
-                                        <td style="font-weight: 600; color: #0f172a;"><t t-out="formatAmt(yr.investments_made)"/></td>
+                                        <t t-if="yr.is_current">
+                                            <td style="font-weight: 600; color: #0f172a; border-left: 2px solid #dcfce7;"><t t-out="formatAmt(yr.investments_made_actual)"/></td>
+                                            <td style="font-weight: 700; color: #d97706; background: #fffbeb; border-right: 2px solid #dcfce7;"><t t-out="formatAmt(yr.investments_made_predictive)"/></td>
+                                        </t>
+                                        <t t-else="">
+                                            <td style="font-weight: 600; color: #0f172a;"><t t-out="formatAmt(yr.investments_made)"/></td>
+                                        </t>
                                     </t>
                                     <td class="total-cell" style="font-weight: 800; background: #fffbeb; color: #b45309;"><t t-out="formatAmt(state.report_data.three_year_summary.total_investments_made)"/></td>
                                 </tr>
@@ -659,7 +710,13 @@
                                         <i class="fa fa-handshake-o" style="color: #0284c7; margin-right: 6px;"></i> Investment Received
                                     </td>
                                     <t t-foreach="state.report_data.three_year_summary.years" t-as="yr" t-key="yr.label">
-                                        <td style="font-weight: 600; color: #0284c7;"><t t-out="formatAmt(yr.investments_received)"/></td>
+                                        <t t-if="yr.is_current">
+                                            <td style="font-weight: 600; color: #0284c7; border-left: 2px solid #dcfce7;"><t t-out="formatAmt(yr.investments_received_actual)"/></td>
+                                            <td style="font-weight: 700; color: #0284c7; background: #f0f9ff; border-right: 2px solid #dcfce7;"><t t-out="formatAmt(yr.investments_received_predictive)"/></td>
+                                        </t>
+                                        <t t-else="">
+                                            <td style="font-weight: 600; color: #0284c7;"><t t-out="formatAmt(yr.investments_received)"/></td>
+                                        </t>
                                     </t>
                                     <td class="total-cell" style="font-weight: 800; background: #f0f9ff; color: #0369a1;"><t t-out="formatAmt(state.report_data.three_year_summary.total_investments_received)"/></td>
                                 </tr>
@@ -896,23 +953,6 @@
                             <td><t t-out="formatPct(state.report_data.data.y2.q3.margin)"/></td>
                             <td><t t-out="formatPct(state.report_data.data.y2.q4.margin)"/></td>
                             <td class="total-cell"><t t-out="formatPct(state.report_data.data.y2.total.margin)"/></td>
-                        </tr>
-
-                        <!-- Cash Flow -->
-                        <tr class="metric-row">
-                            <td class="row-label">Cash Flow</td>
-                            <!-- Y1 -->
-                            <td><t t-out="formatAmt(state.report_data.data.y1.q1.cash_flow)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.data.y1.q2.cash_flow)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.data.y1.q3.cash_flow)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.data.y1.q4.cash_flow)"/></td>
-                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y1.total.cash_flow)"/></td>
-                            <!-- Y2 -->
-                            <td><t t-out="formatAmt(state.report_data.data.y2.q1.cash_flow)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.data.y2.q2.cash_flow)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.data.y2.q3.cash_flow)"/></td>
-                            <td><t t-out="formatAmt(state.report_data.data.y2.q4.cash_flow)"/></td>
-                            <td class="total-cell"><t t-out="formatAmt(state.report_data.data.y2.total.cash_flow)"/></td>
                         </tr>
                     </tbody>
                 </table>
@@ -1370,12 +1410,24 @@
                                                                     <i class="fa fa-cube text-secondary me-1"/>
                                                                     <t t-esc="atype.name"/>
                                                                 </td>
-                                                                <td style="text-align: left; color: #64748b; font-size: 11px;">
-                                                                    <t t-if="atype.assets and atype.assets.length">
-                                                                        <span class="badge" style="background: #f1f5f9; color: #334155;"><t t-esc="atype.assets.length"/> <t t-esc="atype.id.startsWith('sub_') ? 'partners' : 'items'"/></span>
+                                                                <td style="text-align: left; color: #334155; font-size: 11px;">
+                                                                    <t t-if="atype.account_names and atype.account_names.length">
+                                                                        <t t-foreach="atype.account_names" t-as="acc_name" t-key="acc_name_index">
+                                                                            <div class="text-truncate" t-att-title="acc_name" style="line-height: 1.4; color: #334155; font-weight: 500;">
+                                                                                <t t-esc="acc_name"/>
+                                                                            </div>
+                                                                        </t>
+                                                                    </t>
+                                                                    <t t-elif="atype.id and atype.id.startsWith('asset_type_')">
+                                                                        <t t-if="atype.assets and atype.assets.length">
+                                                                            <span class="badge" style="background: #f1f5f9; color: #334155;"><t t-esc="atype.assets.length"/> items</span>
+                                                                        </t>
+                                                                        <t t-else="">
+                                                                            <span class="text-muted">No items</span>
+                                                                        </t>
                                                                     </t>
                                                                     <t t-else="">
-                                                                        <span class="text-muted"><t t-esc="atype.id.startsWith('sub_') ? 'No partners' : 'No items'"/></span>
+                                                                        <span class="text-muted">-</span>
                                                                     </t>
                                                                 </td>
                                                                 <!-- Y1 Quarters -->
@@ -1572,12 +1624,16 @@
                                                                     <i class="fa fa-user-circle-o text-secondary me-1"/>
                                                                     <t t-esc="partner.name"/>
                                                                 </td>
-                                                                <td style="text-align: left; color: #64748b; font-size: 11px;">
-                                                                    <t t-if="partner.transactions and partner.transactions.length">
-                                                                        <span class="badge" style="background: #f1f5f9; color: #334155;"><t t-esc="partner.transactions.length"/> partners</span>
+                                                                <td style="text-align: left; color: #334155; font-size: 11px;">
+                                                                    <t t-if="partner.account_names and partner.account_names.length">
+                                                                        <t t-foreach="partner.account_names" t-as="acc_name" t-key="acc_name_index">
+                                                                            <div class="text-truncate" t-att-title="acc_name" style="line-height: 1.4; color: #334155; font-weight: 500;">
+                                                                                <t t-esc="acc_name"/>
+                                                                            </div>
+                                                                        </t>
                                                                     </t>
                                                                     <t t-else="">
-                                                                        <span class="text-muted">No partners</span>
+                                                                        <span class="text-muted">-</span>
                                                                     </t>
                                                                 </td>
                                                                 <td><t t-out="formatAmt(partner.y1_q1)"/></td>
@@ -1736,114 +1792,6 @@
                 </table>
             </div>
             -->
-
-            <!-- ═══════════════════════════════════════════════════════════
-                 9. CSR FUND
-                 ═══════════════════════════════════════════════════════════ -->
-            <div class="fbook-section-header">
-                <div class="fbook-title">CSR Fund</div>
-                <div class="fbook-scroll-hint"><i class="fa fa-arrows-h"/> Scroll horizontally</div>
-            </div>
-            <div class="fbook-table-wrapper">
-                <table class="fbook-table" style="min-width: 1100px;">
-                    <thead>
-                        <!-- Row 1: Main Headers -->
-                        <tr>
-                            <th class="main-header" style="text-align: left; min-width: 260px;">
-                                <t t-esc="state.report_data.currency_symbol"/>
-                            </th>
-                            <th colspan="5" t-att-class="state.report_data.y1_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'">
-                                <t t-esc="state.report_data.year1_label"/>
-                            </th>
-                            <th colspan="5" t-att-class="state.report_data.y2_prefix == 'CY' ? 'fbook-header-cy' : 'fbook-header-fy'">
-                                <t t-esc="state.report_data.year2_label"/>
-                            </th>
-                        </tr>
-                        <!-- Row 2: Quarter Headers -->
-                        <tr>
-                            <th class="fbook-sticky-col sortable-th" style="text-align: left; min-width: 260px; background: #f8fafc; font-weight: 700;" t-on-click="() => this.setSort('csr', 'particulars')">
-                                Particulars <i t-att-class="getSortIcon('csr', 'particulars')"/>
-                            </th>
-                            <!-- Year 1 Quarters -->
-                            <th class="text-center sortable-th" style="width: 85px;" t-on-click="() => this.setSort('csr', 'y1_q1')">
-                                Q1 <i t-att-class="getSortIcon('csr', 'y1_q1')"/>
-                            </th>
-                            <th class="text-center sortable-th" style="width: 85px;" t-on-click="() => this.setSort('csr', 'y1_q2')">
-                                Q2 <i t-att-class="getSortIcon('csr', 'y1_q2')"/>
-                            </th>
-                            <th class="text-center sortable-th" style="width: 85px;" t-on-click="() => this.setSort('csr', 'y1_q3')">
-                                Q3 <i t-att-class="getSortIcon('csr', 'y1_q3')"/>
-                            </th>
-                            <th class="text-center sortable-th" style="width: 85px;" t-on-click="() => this.setSort('csr', 'y1_q4')">
-                                Q4 <i t-att-class="getSortIcon('csr', 'y1_q4')"/>
-                            </th>
-                            <th class="text-center sortable-th" style="width: 95px; background: #bae6fd; font-weight: 700;" t-on-click="() => this.setSort('csr', 'y1_total')">
-                                Total <i t-att-class="getSortIcon('csr', 'y1_total')"/>
-                            </th>
-                            <!-- Year 2 Quarters -->
-                            <th class="text-center sortable-th" style="width: 85px;" t-on-click="() => this.setSort('csr', 'y2_q1')">
-                                Q1 <i t-att-class="getSortIcon('csr', 'y2_q1')"/>
-                            </th>
-                            <th class="text-center sortable-th" style="width: 85px;" t-on-click="() => this.setSort('csr', 'y2_q2')">
-                                Q2 <i t-att-class="getSortIcon('csr', 'y2_q2')"/>
-                            </th>
-                            <th class="text-center sortable-th" style="width: 85px;" t-on-click="() => this.setSort('csr', 'y2_q3')">
-                                Q3 <i t-att-class="getSortIcon('csr', 'y2_q3')"/>
-                            </th>
-                            <th class="text-center sortable-th" style="width: 85px;" t-on-click="() => this.setSort('csr', 'y2_q4')">
-                                Q4 <i t-att-class="getSortIcon('csr', 'y2_q4')"/>
-                            </th>
-                            <th class="text-center sortable-th" style="width: 95px; background: #bae6fd; font-weight: 700;" t-on-click="() => this.setSort('csr', 'y2_total')">
-                                Total <i t-att-class="getSortIcon('csr', 'y2_total')"/>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <t t-if="state.report_data.csr_rows and state.report_data.csr_rows.length">
-                            <t t-foreach="sortedCsrRows" t-as="csr" t-key="csr.particulars">
-                                <tr class="metric-row">
-                                    <td class="fbook-sticky-col" style="text-align: left; font-weight: 600; color: #0f172a;"><t t-esc="csr.particulars"/></td>
-                                    <!-- Year 1 -->
-                                    <td><t t-out="formatAmt(csr.y1_q1)"/></td>
-                                    <td><t t-out="formatAmt(csr.y1_q2)"/></td>
-                                    <td><t t-out="formatAmt(csr.y1_q3)"/></td>
-                                    <td><t t-out="formatAmt(csr.y1_q4)"/></td>
-                                    <td class="total-cell"><t t-out="formatAmt(csr.y1_total)"/></td>
-                                    <!-- Year 2 -->
-                                    <td><t t-out="formatAmt(csr.y2_q1)"/></td>
-                                    <td><t t-out="formatAmt(csr.y2_q2)"/></td>
-                                    <td><t t-out="formatAmt(csr.y2_q3)"/></td>
-                                    <td><t t-out="formatAmt(csr.y2_q4)"/></td>
-                                    <td class="total-cell"><t t-out="formatAmt(csr.y2_total)"/></td>
-                                </tr>
-                            </t>
-                            <!-- Totals row -->
-                            <tr style="font-weight: bold; background: #e2e8f0; color: #0f172a;">
-                                <td class="fbook-sticky-col" style="text-align: left;">Total</td>
-                                <!-- Year 1 Totals -->
-                                <td><t t-out="formatAmt(state.report_data.csr_totals.y1_q1)"/></td>
-                                <td><t t-out="formatAmt(state.report_data.csr_totals.y1_q2)"/></td>
-                                <td><t t-out="formatAmt(state.report_data.csr_totals.y1_q3)"/></td>
-                                <td><t t-out="formatAmt(state.report_data.csr_totals.y1_q4)"/></td>
-                                <td class="total-cell"><t t-out="formatAmt(state.report_data.csr_totals.y1_total)"/></td>
-                                <!-- Year 2 Totals -->
-                                <td><t t-out="formatAmt(state.report_data.csr_totals.y2_q1)"/></td>
-                                <td><t t-out="formatAmt(state.report_data.csr_totals.y2_q2)"/></td>
-                                <td><t t-out="formatAmt(state.report_data.csr_totals.y2_q3)"/></td>
-                                <td><t t-out="formatAmt(state.report_data.csr_totals.y2_q4)"/></td>
-                                <td class="total-cell"><t t-out="formatAmt(state.report_data.csr_totals.y2_total)"/></td>
-                            </tr>
-                        </t>
-                        <t t-else="">
-                            <tr>
-                                <td colspan="11" class="text-center text-muted" style="padding: 16px;">
-                                    No CSR Expense records found for the selected period.
-                                </td>
-                            </tr>
-                        </t>
-                    </tbody>
-                </table>
-            </div>
         </div>
     </div>
 </t>

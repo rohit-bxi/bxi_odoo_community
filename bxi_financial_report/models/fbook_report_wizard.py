@@ -1351,6 +1351,7 @@ class FbookReportWizard(models.TransientModel):
                     sub_row = {
                         'id': sub.id,
                         'name': sub.name,
+                        'account_names': [f"{acc.code} - {acc.name}" if acc.code else acc.name for acc in sub_accounts],
                         'y1_q1': p_y1_q1,
                         'y1_q2': p_y1_q2,
                         'y1_q3': p_y1_q3,
@@ -2156,6 +2157,7 @@ class FbookReportWizard(models.TransientModel):
                     cat_sub_list.append({
                         'id': f'sub_{sub.id}',
                         'name': sub.name,
+                        'account_names': [f"{acc.code} - {acc.name}" if acc.code else acc.name for acc in sub_accounts],
                         'count_total': 0,
                         'count_in_store': 0,
                         'count_in_use': 0,
@@ -2689,6 +2691,127 @@ class FbookReportWizard(models.TransientModel):
         total_3y_margin = (total_3y_profit / total_3y_revenue * 100) if total_3y_revenue > 0 else 0.0
         total_3y_margin = min(100.0, total_3y_margin)
 
+        # ──────────────────────────────────────────────────────────────────────
+        # PREDICTIVE CALCULATION FOR CURRENT YEAR (y2 / CY)
+        # Based on actuals run-rate, unbilled contracts, confirmed SOs, pending POs,
+        # open bills, recurring payroll and historical growth trend.
+        # ──────────────────────────────────────────────────────────────────────
+        y2_start_dt = fields.Date.from_string(y2_start_str)
+        y2_end_dt = fields.Date.from_string(y2_end_str)
+        effective_y2_today = min(max(today_date, y2_start_dt), y2_end_dt)
+        days_in_y2 = (y2_end_dt - y2_start_dt).days + 1  # 365 or 366
+        days_passed_y2 = (effective_y2_today - y2_start_dt).days + 1
+        days_remaining_y2 = max(0, days_in_y2 - days_passed_y2)
+
+        # 1. Pipeline Unbilled Contracts
+        pred_unbilled_contracts = 0.0
+        if 'project.contract.management' in self.env:
+            active_contracts = self.env['project.contract.management'].sudo().search([
+                ('company_id', 'in', company_ids)
+            ])
+            for c in active_contracts:
+                c_amt = custom_convert(
+                    c.contract_amount or 0.0, c.currency_id, target_currency,
+                    date_val=c.contract_start_date or effective_y2_today, year_key='y2', record=c
+                )
+                billed_c = 0.0
+                for inv in c.invoice_ids:
+                    if inv.state == 'posted' and y2_start_str <= str(inv.invoice_date or '') <= y2_end_str:
+                        billed_c += custom_convert(
+                            inv.amount_total, inv.currency_id, target_currency,
+                            date_val=inv.invoice_date, year_key='y2', record=inv
+                        )
+                unbilled = max(0.0, c_amt - billed_c)
+                # If contract is active within y2, include remaining unbilled in forecast
+                c_end = c.contract_end_date
+                if not c_end or c_end >= y2_start_dt:
+                    pred_unbilled_contracts += unbilled
+
+        # 2. Confirmed Sale Orders not yet invoiced
+        pred_unbilled_so = 0.0
+        if 'sale.order' in self.env:
+            sos = self.env['sale.order'].sudo().search([
+                ('company_id', 'in', company_ids),
+                ('state', 'in', ('sale', 'done')),
+                ('date_order', '>=', y2_start_str),
+                ('date_order', '<=', y2_end_str),
+            ])
+            for so in sos:
+                so_amt = custom_convert(
+                    so.amount_total or 0.0, so.currency_id, target_currency,
+                    date_val=so.date_order, year_key='y2', record=so
+                )
+                so_invoiced = 0.0
+                for inv in so.invoice_ids:
+                    if inv.state == 'posted':
+                        so_invoiced += custom_convert(
+                            inv.amount_total, inv.currency_id, target_currency,
+                            date_val=inv.invoice_date, year_key='y2', record=inv
+                        )
+                pred_unbilled_so += max(0.0, so_amt - so_invoiced)
+
+        # 3. Pending Purchase Orders not yet billed
+        pred_unbilled_po = 0.0
+        if 'purchase.order' in self.env:
+            pos = self.env['purchase.order'].sudo().search([
+                ('company_id', 'in', company_ids),
+                ('state', 'in', ('purchase', 'done')),
+                ('date_order', '>=', y2_start_str),
+                ('date_order', '<=', y2_end_str),
+            ])
+            for po in pos:
+                po_amt = custom_convert(
+                    po.amount_total or 0.0, po.currency_id, target_currency,
+                    date_val=po.date_order, year_key='y2', record=po
+                )
+                po_billed = 0.0
+                for b in po.invoice_ids:
+                    if b.state != 'cancel':
+                        po_billed += custom_convert(
+                            b.amount_total, b.currency_id, target_currency,
+                            date_val=b.invoice_date or po.date_order, year_key='y2', record=b
+                        )
+                pred_unbilled_po += max(0.0, po_amt - po_billed)
+
+        # 4. Projected Run-Rate & Trend
+        # Daily actual rate so far
+        rate_revenue = (y2_revenue / days_passed_y2) if days_passed_y2 > 0 else 0.0
+        rate_expenses = (y2_expenses / days_passed_y2) if days_passed_y2 > 0 else 0.0
+        rate_inv_rec = (y2_investments_received / days_passed_y2) if days_passed_y2 > 0 else 0.0
+        rate_inv_made = (y2_investments_made / days_passed_y2) if days_passed_y2 > 0 else 0.0
+
+        # Run-rate projection for remaining days
+        runrate_rem_rev = rate_revenue * days_remaining_y2
+        runrate_rem_exp = rate_expenses * days_remaining_y2
+        runrate_rem_rec = rate_inv_rec * days_remaining_y2
+        runrate_rem_made = rate_inv_made * days_remaining_y2
+
+        # Combine pipeline signals with run-rate:
+        # For revenue: actual + max(pipeline commit, runrate projection)
+        pipeline_rev_rem = max(pred_unbilled_contracts, pred_unbilled_so)
+        rem_rev_projected = max(pipeline_rev_rem, runrate_rem_rev)
+        pred_y2_revenue = y2_revenue + rem_rev_projected
+
+        # For expenses: actual + max(pending POs, runrate projection)
+        rem_exp_projected = max(pred_unbilled_po, runrate_rem_exp)
+        pred_y2_expenses = y2_expenses + rem_exp_projected
+
+        pred_y2_profit = pred_y2_revenue - pred_y2_expenses
+        pred_y2_margin = (pred_y2_profit / pred_y2_revenue * 100) if pred_y2_revenue > 0 else 0.0
+        pred_y2_margin = min(100.0, pred_y2_margin)
+
+        pred_y2_investments_made = y2_investments_made + runrate_rem_made
+        pred_y2_investments_received = y2_investments_received + runrate_rem_rec
+
+        # If year has finished (no remaining days), predictive equals actual
+        if days_remaining_y2 <= 0:
+            pred_y2_revenue = y2_revenue
+            pred_y2_expenses = y2_expenses
+            pred_y2_profit = y2_profit
+            pred_y2_margin = y2_margin
+            pred_y2_investments_made = y2_investments_made
+            pred_y2_investments_received = y2_investments_received
+
         three_year_summary = {
             'years': [
                 {
@@ -2702,6 +2825,7 @@ class FbookReportWizard(models.TransientModel):
                     'investors': target_currency.round(y0_investments_received),
                     'profit': target_currency.round(y0_profit),
                     'margin': round(y0_margin, 2),
+                    'is_current': False,
                 },
                 {
                     'label': f"{y1_prefix}{y1_start - 2000 + 1} - {y1_start} -{y1_start + 1}",
@@ -2714,6 +2838,7 @@ class FbookReportWizard(models.TransientModel):
                     'investors': target_currency.round(y1_investments_received),
                     'profit': target_currency.round(y1_profit),
                     'margin': round(y1_margin, 2),
+                    'is_current': False,
                 },
                 {
                     'label': f"{y2_prefix}{y2_start - 2000 + 1} - {y2_start} -{y2_start + 1}",
@@ -2726,6 +2851,19 @@ class FbookReportWizard(models.TransientModel):
                     'investors': target_currency.round(y2_investments_received),
                     'profit': target_currency.round(y2_profit),
                     'margin': round(y2_margin, 2),
+                    'is_current': True,
+                    'revenue_actual': target_currency.round(y2_revenue),
+                    'revenue_predictive': target_currency.round(pred_y2_revenue),
+                    'expenses_actual': target_currency.round(y2_expenses),
+                    'expenses_predictive': target_currency.round(pred_y2_expenses),
+                    'profit_actual': target_currency.round(y2_profit),
+                    'profit_predictive': target_currency.round(pred_y2_profit),
+                    'margin_actual': round(y2_margin, 2),
+                    'margin_predictive': round(pred_y2_margin, 2),
+                    'investments_made_actual': target_currency.round(y2_investments_made),
+                    'investments_made_predictive': target_currency.round(pred_y2_investments_made),
+                    'investments_received_actual': target_currency.round(y2_investments_received),
+                    'investments_received_predictive': target_currency.round(pred_y2_investments_received),
                 },
             ],
             'total_revenue': target_currency.round(total_3y_revenue),
@@ -2867,52 +3005,84 @@ class FbookReportWizard(models.TransientModel):
         t3 = data.get('three_year_summary')
         if t3:
             years = t3.get('years', [])
-            max_c = len(years) + 1
+            has_predictive = any(yr.get('is_current') for yr in years)
+            max_c = len(years) + 2 if has_predictive else len(years) + 1
             ws.merge_range(row, 0, row, max_c, "1. LAST THREE FINANCIAL YEARS PERFORMANCE", f_sec_title)
             ws.set_row(row, 24)
             row += 1
-            ws.write(row, 0, "Financial Metric", f_sub_left)
-            for idx, yr in enumerate(years):
+            
+            # Row 1 headers
+            ws.merge_range(row, 0, row + 1, 0, "Financial Metric", f_sub_left)
+            col = 1
+            for yr in years:
                 f_hdr = f_cy_header if yr.get('prefix') == 'CY' else f_fy_header
-                ws.write(row, 1 + idx, yr.get('label', ''), f_hdr)
-            ws.write(row, 1 + len(years), "Total (3 Years)", f_hi_header)
-            ws.set_row(row, 22)
+                if yr.get('is_current'):
+                    ws.merge_range(row, col, row, col + 1, yr.get('label', ''), f_hdr)
+                    col += 2
+                else:
+                    ws.merge_range(row, col, row + 1, col, yr.get('label', ''), f_hdr)
+                    col += 1
+            ws.merge_range(row, col, row + 1, col, "Total (3 Years)", f_hi_header)
+            ws.set_row(row, 20)
             row += 1
+            
+            # Row 2 sub-headers (Actual vs Predictive)
+            col = 1
+            for yr in years:
+                if yr.get('is_current'):
+                    ws.write(row, col, "Actual", f_sub_center)
+                    ws.write(row, col + 1, "Predictive", f_hi_header)
+                    col += 2
+                else:
+                    col += 1
+            ws.set_row(row, 20)
+            row += 1
+
+            # Helper to write rows
+            def write_summary_row(label, key, is_pct=False, is_danger=False):
+                nonlocal row
+                ws.write(row, 0, label, f_text_bold)
+                col = 1
+                for yr in years:
+                    if yr.get('is_current'):
+                        act_v = yr.get(f'{key}_actual', yr.get(key, 0.0))
+                        pred_v = yr.get(f'{key}_predictive', yr.get(key, 0.0))
+                        if is_pct:
+                            ws.write(row, col, act_v / 100.0, f_pct)
+                            ws.write(row, col + 1, pred_v / 100.0, f_pct)
+                        else:
+                            f_c = f_amt_danger if is_danger else f_amt
+                            ws.write(row, col, act_v, f_c)
+                            ws.write(row, col + 1, pred_v, f_c)
+                        col += 2
+                    else:
+                        v = yr.get(key, 0.0)
+                        if is_pct:
+                            ws.write(row, col, v / 100.0, f_pct)
+                        else:
+                            ws.write(row, col, v, f_amt_danger if is_danger else f_amt)
+                        col += 1
+                
+                tot_v = t3.get(f'total_{key}', 0.0)
+                if is_pct:
+                    ws.write(row, col, tot_v / 100.0, f_pct)
+                else:
+                    f_tot = f_exp_tot if is_danger else (f_rev_tot if key == 'revenue' else f_tot_hi)
+                    ws.write(row, col, tot_v, f_tot)
+                ws.set_row(row, 20)
+                row += 1
+
             # Revenue
-            ws.write(row, 0, "Revenue", f_text_bold)
-            for idx, yr in enumerate(years):
-                ws.write(row, 1 + idx, yr.get('revenue', 0.0), f_amt)
-            ws.write(row, 1 + len(years), t3.get('total_revenue', 0.0), f_rev_tot)
-            ws.set_row(row, 20)
-            row += 1
+            write_summary_row("Revenue", "revenue")
             # Expenses
-            ws.write(row, 0, "Expenses", f_text_bold)
-            for idx, yr in enumerate(years):
-                ws.write(row, 1 + idx, yr.get('expenses', 0.0), f_amt_danger)
-            ws.write(row, 1 + len(years), t3.get('total_expenses', 0.0), f_exp_tot)
-            ws.set_row(row, 20)
-            row += 1
+            write_summary_row("Expenses", "expenses", is_danger=True)
             # Margin
-            ws.write(row, 0, "Margin", f_text_bold)
-            for idx, yr in enumerate(years):
-                ws.write(row, 1 + idx, yr.get('margin', 0.0) / 100.0, f_pct)
-            ws.write(row, 1 + len(years), t3.get('total_margin', 0.0) / 100.0, f_pct)
-            ws.set_row(row, 20)
-            row += 1
+            write_summary_row("Margin", "margin", is_pct=True)
             # Investments Made
-            ws.write(row, 0, "Investments Made", f_text_bold)
-            for idx, yr in enumerate(years):
-                ws.write(row, 1 + idx, yr.get('investments_made', 0.0), f_amt)
-            ws.write(row, 1 + len(years), t3.get('total_investments_made', 0.0), f_tot_hi)
-            ws.set_row(row, 20)
-            row += 1
+            write_summary_row("Investments Made", "investments_made")
             # Investment Received
-            ws.write(row, 0, "Investment Received", f_text_bold)
-            for idx, yr in enumerate(years):
-                ws.write(row, 1 + idx, yr.get('investments_received', 0.0), f_amt)
-            ws.write(row, 1 + len(years), t3.get('total_investments_received', 0.0), f_tot_hi)
-            ws.set_row(row, 20)
-            row += 3
+            write_summary_row("Investment Received", "investments_received")
+            row += 2
 
         # 2. Quarterly Business & Financial Overview
         ws.merge_range(row, 0, row, 10, "2. QUARTERLY BUSINESS & FINANCIAL OVERVIEW", f_sec_title)
@@ -2943,7 +3113,6 @@ class FbookReportWizard(models.TransientModel):
             ('Expenses', 'expenses', f_amt, f_amt_hi),
             ('Profit', 'profit', f_amt, f_amt_hi),
             ('GM (%)', 'margin', f_pct, f_pct),
-            ('Cash Flow', 'cash_flow', f_amt, f_amt_hi),
         ]
         for label, m_key, f_val, f_tot in perf_metrics:
             ws.write(row, 0, label, f_text_bold)
@@ -3242,57 +3411,6 @@ class FbookReportWizard(models.TransientModel):
         ws.write(row, 12, inv_t.get('total_net', 0.0), f_tot_hi)
         ws.set_row(row, 22)
         row += 3
-
-        # 9. CSR Fund
-        ws.merge_range(row, 0, row, 10, "9. CSR FUND", f_sec_title)
-        ws.set_row(row, 24)
-        row += 1
-        ws.write(row, 0, data.get('currency_symbol', ''), f_main_header)
-        ws.merge_range(row, 1, row, 5, data.get('year1_label', ''), f_y1)
-        ws.merge_range(row, 6, row, 10, data.get('year2_label', ''), f_y2)
-        ws.set_row(row, 22)
-        row += 1
-        ws.write(row, 0, "Particulars", f_sub_left)
-        for col_idx, q_lbl in enumerate(["Q1", "Q2", "Q3", "Q4"], start=1):
-            ws.write(row, col_idx, q_lbl, f_sub_center)
-        ws.write(row, 5, "Total", f_hi_header)
-        for col_idx, q_lbl in enumerate(["Q1", "Q2", "Q3", "Q4"], start=6):
-            ws.write(row, col_idx, q_lbl, f_sub_center)
-        ws.write(row, 10, "Total", f_hi_header)
-        ws.set_row(row, 22)
-        row += 1
-        csr_rows = data.get('csr_rows', [])
-        if csr_rows:
-            for c in csr_rows:
-                ws.write(row, 0, c.get('particulars', ''), f_text_bold)
-                ws.write(row, 1, c.get('y1_q1', 0.0), f_amt)
-                ws.write(row, 2, c.get('y1_q2', 0.0), f_amt)
-                ws.write(row, 3, c.get('y1_q3', 0.0), f_amt)
-                ws.write(row, 4, c.get('y1_q4', 0.0), f_amt)
-                ws.write(row, 5, c.get('y1_total', 0.0), f_tot_hi)
-                ws.write(row, 6, c.get('y2_q1', 0.0), f_amt)
-                ws.write(row, 7, c.get('y2_q2', 0.0), f_amt)
-                ws.write(row, 8, c.get('y2_q3', 0.0), f_amt)
-                ws.write(row, 9, c.get('y2_q4', 0.0), f_amt)
-                ws.write(row, 10, c.get('y2_total', 0.0), f_tot_hi)
-                ws.set_row(row, 20)
-                row += 1
-            c_t = data.get('csr_totals', {})
-            ws.write(row, 0, "Total", f_tot_label)
-            ws.write(row, 1, c_t.get('y1_q1', 0.0), f_tot_amt)
-            ws.write(row, 2, c_t.get('y1_q2', 0.0), f_tot_amt)
-            ws.write(row, 3, c_t.get('y1_q3', 0.0), f_tot_amt)
-            ws.write(row, 4, c_t.get('y1_q4', 0.0), f_tot_amt)
-            ws.write(row, 5, c_t.get('y1_total', 0.0), f_tot_hi)
-            ws.write(row, 6, c_t.get('y2_q1', 0.0), f_tot_amt)
-            ws.write(row, 7, c_t.get('y2_q2', 0.0), f_tot_amt)
-            ws.write(row, 8, c_t.get('y2_q3', 0.0), f_tot_amt)
-            ws.write(row, 9, c_t.get('y2_q4', 0.0), f_tot_amt)
-            ws.write(row, 10, c_t.get('y2_total', 0.0), f_tot_hi)
-            ws.set_row(row, 22)
-        else:
-            ws.merge_range(row, 0, row, 10, "No CSR Expense records found for the selected period.", f_text)
-            ws.set_row(row, 20)
 
         # Set Column Widths (Professional Spacing)
         ws.set_column(0, 0, 34)
