@@ -63,13 +63,6 @@ class HrEmployee(models.Model):
     # ============================================================
 
     @api.model
-    def _milestone_today(self):
-        """Today in the timezone of the company working schedule, not of
-        the user running the cron, so the date does not shift."""
-        tz = self.env.company.resource_calendar_id.tz or 'Asia/Kolkata'
-        return fields.Date.context_today(self.with_context(tz=tz))
-
-    @api.model
     def _milestone_domain(self, date_field, today):
         """Employees whose ``date_field`` falls on today's day and month.
         A 29 February date is celebrated on 28 February in other years."""
@@ -91,32 +84,57 @@ class HrEmployee(models.Model):
 
     @api.model
     def _cron_send_birthday_wishes(self):
-        """
-        Daily birthday announcement:
-        1. Find birthdays across all companies.
-        2. Collect work emails of all active employees.
-        3. Send one announcement per birthday employee.
-        4. Avoid duplicate announcements in the same year.
-        """
-
-        today = self._milestone_today()
-        Employee = self.sudo().with_context(active_test=False)
-
-        _logger.info(
-            "Birthday cron started. Date: %s", today
+        today = fields.Date.context_today(
+            self.with_context(tz='Asia/Kolkata')
         )
 
-        # --------------------------------------------------
-        # 1. Find all active employees having a birthday
-        # --------------------------------------------------
+        Employee = self.sudo().with_context(active_test=False)
+
+        _logger.info("========== BIRTHDAY CRON START ==========")
+        _logger.info("IST Date: %s", today)
+
+        # Find active employees
         employees = Employee.search([
             ('active', '=', True),
             ('birthday', '!=', False),
-            ('birthday_wish_year', '!=', today.year),
         ])
 
-        # Handle February 29 birthdays:
-        # Celebrate on February 28 in non-leap years.
+        _logger.info(
+            "Total active employees with birthday: %s",
+            len(employees)
+        )
+        ritika = Employee.search([
+            ('name', 'ilike', 'Ritika'),
+        ], limit=10)
+
+        for emp in ritika:
+            _logger.warning(
+                """
+                BIRTHDAY DEBUG:
+                Employee: %s
+                Employee ID: %s
+                Active: %s
+                Birthday: %s
+                Birthday Month: %s
+                Birthday Day: %s
+                Current Month: %s
+                Current Day: %s
+                Birthday Wish Year: %s
+                Current Year: %s
+                """,
+                emp.name,
+                emp.id,
+                emp.active,
+                emp.birthday,
+                emp.birthday.month if emp.birthday else None,
+                emp.birthday.day if emp.birthday else None,
+                today.month,
+                today.day,
+                emp.birthday_wish_year,
+                today.year,
+            )
+
+        # Find today's birthdays
         birthday_employees = employees.filtered(
             lambda emp: (
                 emp.birthday.month == today.month
@@ -129,19 +147,32 @@ class HrEmployee(models.Model):
                         and emp.birthday.day == 29
                     )
                 )
+                and emp.birthday_wish_year != today.year
             )
         )
 
+        _logger.info(
+            "Today's birthday employees: %s",
+            birthday_employees.mapped('name')
+        )
+        _logger.warning(
+            "Birthday matching employees: %s",
+            [
+                (
+                    emp.name,
+                    emp.birthday,
+                    emp.birthday_wish_year
+                )
+                for emp in birthday_employees
+            ]
+        )
+
         if not birthday_employees:
-            _logger.info(
-                "No birthdays found for %s", today
-            )
+            _logger.info("No birthday announcements required today.")
+            _logger.info("========== BIRTHDAY CRON END ==========")
             return
 
-        # --------------------------------------------------
-        # 2. Collect ALL active employee email addresses
-        #    Across ALL companies
-        # --------------------------------------------------
+        # Get all active employee recipients across companies
         recipients = Employee.search([
             ('active', '=', True),
             ('work_email', '!=', False),
@@ -153,79 +184,80 @@ class HrEmployee(models.Model):
             if email and email.strip()
         ))
 
+        _logger.info("Total recipients: %s", len(recipient_emails))
+
         if not recipient_emails:
-            _logger.warning(
-                "Birthday cron: No active employee work emails found."
-            )
+            _logger.error("No employee work email addresses found.")
             return
 
-        # --------------------------------------------------
-        # 3. Get birthday email template
-        # --------------------------------------------------
+        # Get template
         template = self.env.ref(
             'bxi_employee_milestones.mail_template_birthday_wish',
             raise_if_not_found=False,
         )
 
         if not template:
-            _logger.error(
-                "Birthday email template not found."
-            )
+            _logger.error("Birthday email template not found.")
             return
 
         template = template.sudo()
 
-        # Send to every active employee in one email.
+        _logger.info(
+            "Birthday template: %s | ID: %s",
+            template.name, template.id
+        )
+
         email_values = {
             'email_from': 'hr_support@bxitech.com',
             'email_to': ','.join(recipient_emails),
             'email_cc': False,
         }
 
-        # --------------------------------------------------
-        # 4. Send one announcement per birthday employee
-        # --------------------------------------------------
         queued_count = 0
 
         for employee in birthday_employees:
             try:
+                _logger.info(
+                    "Creating birthday email for: %s",
+                    employee.name
+                )
+
                 mail_id = template.send_mail(
                     employee.id,
                     force_send=False,
+                    raise_exception=True,
                     email_values=email_values,
                 )
 
                 if mail_id:
-                    employee.sudo().write({
+                    _logger.info(
+                        "Birthday email created successfully. "
+                        "Employee: %s | Mail ID: %s",
+                        employee.name, mail_id
+                    )
+
+                    employee.write({
                         'birthday_wish_year': today.year,
                     })
 
                     queued_count += 1
 
-                    _logger.info(
-                        "Birthday announcement queued for %s. "
-                        "Mail ID: %s",
-                        employee.name,
-                        mail_id,
-                    )
-
             except Exception:
                 _logger.exception(
-                    "Failed to queue birthday announcement "
-                    "for employee: %s (ID: %s)",
-                    employee.name,
-                    employee.id,
+                    "Birthday email creation failed for %s",
+                    employee.name
                 )
 
         _logger.info(
             "Birthday cron completed. "
-            "Birthday employees: %s | "
-            "Emails queued: %s | "
-            "Total recipients: %s",
+            "Birthday employees: %s | Emails queued: %s | "
+            "Recipients: %s",
             len(birthday_employees),
             queued_count,
             len(recipient_emails),
         )
+
+        _logger.info("========== BIRTHDAY CRON END ==========")
 
     @api.model
     def _cron_send_anniversary_wishes(self):
